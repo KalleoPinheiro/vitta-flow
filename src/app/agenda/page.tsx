@@ -51,11 +51,16 @@ export default function AgendaPage() {
     refresh();
   };
 
-  const handleAction = async (action: "confirm" | "cancel" | "no_show" | "complete") => {
+  const handleAction = async (
+    action: "confirm" | "cancel" | "no_show" | "complete",
+    followUpInDays?: number | null,
+  ) => {
     if (!selected) return;
     await apiFetch<AppointmentDto>(`/api/appointments/${selected.id}`, {
       method: "PATCH",
-      body: JSON.stringify({ action }),
+      body: JSON.stringify(
+        action === "complete" ? { action, followUpInDays: followUpInDays ?? null } : { action },
+      ),
     });
     setSelected(null);
     refresh();

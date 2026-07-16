@@ -1,0 +1,154 @@
+import { describe, it, expect, beforeAll, beforeEach } from "vitest";
+import path from "node:path";
+import { PGlite } from "@electric-sql/pglite";
+import { drizzle, type PgliteDatabase } from "drizzle-orm/pglite";
+import { migrate } from "drizzle-orm/pglite/migrator";
+import * as schema from "@/infrastructure/persistence/drizzle/schema";
+import type { AppDb } from "@/infrastructure/persistence/drizzle/db";
+import { DrizzlePatientRepository } from "@/infrastructure/persistence/drizzle/drizzle-patient-repository";
+import {
+  DrizzleAnamnesisRepository,
+  DrizzleClinicalConditionRepository,
+  DrizzleConditionAssessmentRepository,
+  DrizzleEvolutionNoteRepository,
+} from "@/infrastructure/persistence/drizzle/drizzle-clinical-repositories";
+import {
+  DrizzleFollowUpRepository,
+  DrizzleStockMovementRepository,
+  DrizzleSupplyRepository,
+} from "@/infrastructure/persistence/drizzle/drizzle-inventory-repositories";
+import { Patient } from "@/domain/patient/patient";
+import { Anamnesis } from "@/domain/clinical/anamnesis";
+import { EvolutionNote } from "@/domain/clinical/evolution-note";
+import { ClinicalCondition } from "@/domain/clinical/clinical-condition";
+import { ConditionAssessment } from "@/domain/clinical/condition-assessment";
+import { Supply } from "@/domain/inventory/supply";
+import { StockMovement } from "@/domain/inventory/stock-movement";
+import { FollowUp } from "@/domain/followup/follow-up";
+
+describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e retornos", () => {
+  let db: PgliteDatabase<typeof schema>;
+  let appDb: AppDb;
+  let patient: Patient;
+
+  beforeAll(async () => {
+    const client = new PGlite();
+    db = drizzle(client, { schema });
+    await migrate(db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
+    appDb = db as unknown as AppDb;
+  });
+
+  beforeEach(async () => {
+    await db.delete(schema.conditionAssessments);
+    await db.delete(schema.clinicalConditions);
+    await db.delete(schema.evolutionNotes);
+    await db.delete(schema.anamneses);
+    await db.delete(schema.stockMovements);
+    await db.delete(schema.supplies);
+    await db.delete(schema.followUps);
+    await db.delete(schema.patients);
+    patient = Patient.create({
+      fullName: "Maria da Silva",
+      email: "maria@example.com",
+      phone: "11999990000",
+    });
+    await new DrizzlePatientRepository(appDb).save(patient);
+  });
+
+  it("Dado anamnese salva, Quando upsert e buscar, Então dados preservados e atualizados", async () => {
+    const repo = new DrizzleAnamnesisRepository(appDb);
+    await repo.save(Anamnesis.create({ patientId: patient.id, comorbidities: "DM2" }));
+
+    const stored = await repo.findByPatientId(patient.id);
+    await repo.save(stored!.update({ allergies: "Látex" }));
+
+    const updated = await repo.findByPatientId(patient.id);
+    expect(updated?.comorbidities).toBe("DM2");
+    expect(updated?.allergies).toBe("Látex");
+  });
+
+  it("Dado evoluções salvas, Quando listar por paciente, Então ordem cronológica reversa", async () => {
+    const repo = new DrizzleEvolutionNoteRepository(appDb);
+    await repo.save(
+      EvolutionNote.create({ patientId: patient.id, subjective: "Primeira", objective: "", assessment: "", plan: "" }),
+    );
+    await repo.save(
+      EvolutionNote.create({ patientId: patient.id, subjective: "", objective: "Segunda", assessment: "", plan: "" }),
+    );
+
+    const notes = await repo.findByPatientId(patient.id);
+
+    expect(notes).toHaveLength(2);
+  });
+
+  it("Dado condição com avaliações, Quando salvar e buscar, Então roundtrip completo", async () => {
+    const conditionRepo = new DrizzleClinicalConditionRepository(appDb);
+    const assessmentRepo = new DrizzleConditionAssessmentRepository(appDb);
+
+    const condition = ClinicalCondition.create({
+      patientId: patient.id,
+      kind: "stoma",
+      title: "Colostomia terminal",
+      stomaType: "colostomia",
+      startedAt: new Date("2026-01-10T00:00:00Z"),
+    });
+    await conditionRepo.save(condition);
+    await assessmentRepo.save(
+      ConditionAssessment.create({
+        conditionId: condition.id,
+        skinCondition: "Dermatite leve",
+        painScale: 2,
+      }),
+    );
+
+    const storedCondition = await conditionRepo.findById(condition.id);
+    const byPatient = await conditionRepo.findByPatientId(patient.id);
+    const assessments = await assessmentRepo.findByConditionId(condition.id);
+
+    expect(storedCondition?.stomaType).toBe("colostomia");
+    expect(storedCondition?.startedAt).toEqual(new Date("2026-01-10T00:00:00Z"));
+    expect(byPatient).toHaveLength(1);
+    expect(assessments[0].painScale).toBe(2);
+
+    await conditionRepo.save(condition.resolve());
+    expect((await conditionRepo.findById(condition.id))?.status).toBe("resolved");
+  });
+
+  it("Dado insumo com movimentações, Quando salvar e buscar, Então estoque e histórico corretos", async () => {
+    const supplyRepo = new DrizzleSupplyRepository(appDb);
+    const movementRepo = new DrizzleStockMovementRepository(appDb);
+
+    const supply = Supply.create({ name: "Bolsa 60mm", unit: "un", minQty: 10, priceCents: 3500 });
+    const stocked = supply.registerEntry(50);
+    await supplyRepo.save(stocked);
+    await movementRepo.save(
+      StockMovement.create({ supplyId: supply.id, type: "in", quantity: 50, reason: "Compra" }),
+    );
+
+    const stored = await supplyRepo.findById(supply.id);
+    expect(stored?.stockQty).toBe(50);
+    expect(stored?.isLowStock).toBe(false);
+    expect(await movementRepo.findBySupplyId(supply.id)).toHaveLength(1);
+    expect(await supplyRepo.findAll()).toHaveLength(1);
+  });
+
+  it("Dado retornos, Quando filtrar por status e vencimento, Então subconjuntos corretos", async () => {
+    const repo = new DrizzleFollowUpRepository(appDb);
+    const pending = FollowUp.create({
+      patientId: patient.id,
+      dueDate: new Date("2026-07-01T12:00:00Z"),
+      reason: "Reavaliação",
+    });
+    const done = FollowUp.create({
+      patientId: patient.id,
+      dueDate: new Date("2026-09-01T12:00:00Z"),
+      reason: "Retorno",
+    }).markDone();
+    await repo.save(pending);
+    await repo.save(done);
+
+    expect(await repo.findAll({ status: "pending" })).toHaveLength(1);
+    expect(await repo.findAll({ dueBefore: new Date("2026-08-01T00:00:00Z") })).toHaveLength(1);
+    expect((await repo.findById(done.id))?.status).toBe("done");
+  });
+});

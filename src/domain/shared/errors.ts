@@ -34,3 +34,7 @@ export class NotFoundError extends DomainError {
 export class SchedulingConflictError extends DomainError {
   readonly code = "SCHEDULING_CONFLICT";
 }
+
+export class InsufficientStockError extends DomainError {
+  readonly code = "INSUFFICIENT_STOCK";
+}

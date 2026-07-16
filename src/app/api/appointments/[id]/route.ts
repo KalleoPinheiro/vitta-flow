@@ -9,7 +9,10 @@ import { toAppointmentDto } from "@/lib/dto";
 
 const actionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.enum(["confirm", "cancel", "no_show"]) }),
-  z.object({ action: z.literal("complete") }),
+  z.object({
+    action: z.literal("complete"),
+    followUpInDays: z.number().int().positive().nullish(),
+  }),
   z.object({
     action: z.literal("reschedule"),
     startsAt: z.iso.datetime(),
@@ -23,10 +26,13 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = actionSchema.parse(await request.json());
-    const { appointments, invoices, calendar } = await getRepositories();
+    const { appointments, invoices, followUps, calendar } = await getRepositories();
 
     if (body.action === "complete") {
-      const completed = await new CompleteAppointment(appointments, invoices).execute({ id });
+      const completed = await new CompleteAppointment(appointments, invoices, followUps).execute({
+        id,
+        followUpInDays: body.followUpInDays ?? null,
+      });
       return toAppointmentDto(completed);
     }
     if (body.action === "reschedule") {

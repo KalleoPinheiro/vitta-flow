@@ -24,6 +24,30 @@ export const INVOICE_STATUS_LABELS: Record<string, string> = {
   cancelled: "Cancelada",
 };
 
+export const STOMA_TYPE_LABELS: Record<string, string> = {
+  colostomia: "Colostomia",
+  ileostomia: "Ileostomia",
+  urostomia: "Urostomia",
+};
+
+export const CONDITION_KIND_LABELS: Record<string, string> = {
+  stoma: "Estomia",
+  wound: "Ferida",
+};
+
+export const EXUDATE_LABELS: Record<string, string> = {
+  none: "Nenhum",
+  low: "Baixo",
+  moderate: "Moderado",
+  high: "Alto",
+};
+
+export const FOLLOW_UP_STATUS_LABELS: Record<string, string> = {
+  pending: "Pendente",
+  done: "Concluído",
+  cancelled: "Cancelado",
+};
+
 export const PAYMENT_METHOD_LABELS: Record<string, string> = {
   pix: "Pix",
   cash: "Dinheiro",

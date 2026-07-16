@@ -1,0 +1,43 @@
+import type { NextRequest } from "next/server";
+import { z } from "zod";
+import { getRepositories } from "@/infrastructure/container";
+import { CreateFollowUp } from "@/application/followups/create-follow-up";
+import { ListFollowUps } from "@/application/followups/list-follow-ups";
+import { FOLLOW_UP_STATUSES } from "@/domain/followup/follow-up";
+import { handleRequest } from "@/lib/api-response";
+import { toFollowUpDto } from "@/lib/dto";
+
+const createSchema = z.object({
+  patientId: z.string().min(1),
+  appointmentId: z.string().nullish(),
+  dueDate: z.iso.datetime(),
+  reason: z.string().min(1),
+});
+
+const statusSchema = z.enum(FOLLOW_UP_STATUSES).optional();
+
+export async function GET(request: NextRequest) {
+  return handleRequest(async () => {
+    const status = statusSchema.parse(request.nextUrl.searchParams.get("status") ?? undefined);
+    const patientId = request.nextUrl.searchParams.get("patientId") ?? undefined;
+    const { followUps, patients } = await getRepositories();
+    const result = await new ListFollowUps(followUps, patients).execute({ status, patientId });
+    return result.map(({ followUp, patientName, isOverdue }) =>
+      toFollowUpDto(followUp, patientName, isOverdue),
+    );
+  });
+}
+
+export async function POST(request: NextRequest) {
+  return handleRequest(async () => {
+    const body = createSchema.parse(await request.json());
+    const { followUps, patients } = await getRepositories();
+    const followUp = await new CreateFollowUp(followUps, patients).execute({
+      patientId: body.patientId,
+      appointmentId: body.appointmentId ?? null,
+      dueDate: new Date(body.dueDate),
+      reason: body.reason,
+    });
+    return toFollowUpDto(followUp);
+  });
+}

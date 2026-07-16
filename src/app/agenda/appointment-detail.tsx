@@ -15,9 +15,18 @@ type AppointmentAction = "confirm" | "cancel" | "no_show" | "complete";
 
 interface AppointmentDetailProps {
   appointment: AppointmentDto;
-  onAction: (action: AppointmentAction) => Promise<void>;
+  onAction: (action: AppointmentAction, followUpInDays?: number | null) => Promise<void>;
   onReschedule: (startsAt: Date, endsAt: Date) => Promise<void>;
 }
+
+const FOLLOW_UP_OPTIONS = [
+  { value: 0, label: "Sem retorno" },
+  { value: 7, label: "Retorno em 7 dias" },
+  { value: 15, label: "Retorno em 15 dias" },
+  { value: 30, label: "Retorno em 30 dias" },
+  { value: 60, label: "Retorno em 60 dias" },
+  { value: 90, label: "Retorno em 90 dias" },
+];
 
 const ACTION_BUTTONS: Array<{ action: AppointmentAction; label: string; className: string }> = [
   { action: "confirm", label: "Confirmar", className: "bg-teal-700 hover:bg-teal-800" },
@@ -35,6 +44,7 @@ export function AppointmentDetail({ appointment, onAction, onReschedule }: Appoi
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
+  const [followUpInDays, setFollowUpInDays] = useState(30);
   const [newDate, setNewDate] = useState(appointment.startsAt.slice(0, 10));
   const [newTime, setNewTime] = useState(formatTime(appointment.startsAt));
 
@@ -91,6 +101,23 @@ export function AppointmentDetail({ appointment, onAction, onReschedule }: Appoi
         </p>
       )}
 
+      {visibleActions.includes("complete") && (
+        <label className="mt-1 text-xs font-medium text-slate-600">
+          Ao concluir, programar retorno:
+          <select
+            value={followUpInDays}
+            onChange={(e) => setFollowUpInDays(Number(e.target.value))}
+            className="ml-2 rounded-lg border border-slate-300 px-2 py-1 text-xs"
+          >
+            {FOLLOW_UP_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
       {visibleActions.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-2">
           {ACTION_BUTTONS.filter((button) => visibleActions.includes(button.action)).map(
@@ -99,7 +126,14 @@ export function AppointmentDetail({ appointment, onAction, onReschedule }: Appoi
                 key={button.action}
                 type="button"
                 disabled={busy}
-                onClick={() => void run(() => onAction(button.action))}
+                onClick={() =>
+                  void run(() =>
+                    onAction(
+                      button.action,
+                      button.action === "complete" && followUpInDays > 0 ? followUpInDays : null,
+                    ),
+                  )
+                }
                 className={`rounded-lg px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50 ${button.className}`}
               >
                 {button.label}

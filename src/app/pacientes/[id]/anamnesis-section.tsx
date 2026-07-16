@@ -1,0 +1,81 @@
+"use client";
+
+import { useState } from "react";
+import { apiFetch } from "@/lib/client";
+import type { AnamnesisDto } from "@/lib/dto";
+import { ErrorAlert } from "@/components/feedback";
+
+interface AnamnesisSectionProps {
+  patientId: string;
+  anamnesis: AnamnesisDto | null;
+  onSaved: () => void;
+}
+
+const FIELDS = [
+  { key: "comorbidities", label: "Comorbidades", placeholder: "Ex.: Diabetes tipo 2, HAS" },
+  { key: "allergies", label: "Alergias", placeholder: "Ex.: adesivo hidrocoloide, látex" },
+  { key: "medications", label: "Medicações em uso", placeholder: "Ex.: Metformina 850mg 2x/dia" },
+  { key: "surgicalHistory", label: "Histórico cirúrgico", placeholder: "Ex.: Colectomia (2024)" },
+  { key: "notes", label: "Observações", placeholder: "" },
+] as const;
+
+type FieldKey = (typeof FIELDS)[number]["key"];
+
+export function AnamnesisSection({ patientId, anamnesis, onSaved }: AnamnesisSectionProps) {
+  const [values, setValues] = useState<Record<FieldKey, string>>(() => ({
+    comorbidities: anamnesis?.comorbidities ?? "",
+    allergies: anamnesis?.allergies ?? "",
+    medications: anamnesis?.medications ?? "",
+    surgicalHistory: anamnesis?.surgicalHistory ?? "",
+    notes: anamnesis?.notes ?? "",
+  }));
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      await apiFetch<AnamnesisDto>(`/api/patients/${patientId}/anamnesis`, {
+        method: "PUT",
+        body: JSON.stringify(values),
+      });
+      setSavedAt(new Date().toLocaleTimeString("pt-BR"));
+      onSaved();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao salvar anamnese");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+      {error && <ErrorAlert message={error} />}
+      {FIELDS.map((field) => (
+        <label key={field.key} className="text-sm font-medium">
+          {field.label}
+          <textarea
+            rows={2}
+            value={values[field.key]}
+            placeholder={field.placeholder}
+            onChange={(e) => setValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none"
+          />
+        </label>
+      ))}
+      <div className="flex items-center gap-3">
+        <button
+          type="submit"
+          disabled={saving}
+          className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-50"
+        >
+          {saving ? "Salvando…" : "Salvar anamnese"}
+        </button>
+        {savedAt && <span className="text-xs text-slate-500">Salvo às {savedAt}</span>}
+      </div>
+    </form>
+  );
+}

@@ -18,6 +18,8 @@ const NAV_ITEMS = [
   { href: "/agenda", label: "Agenda" },
   { href: "/pacientes", label: "Pacientes" },
   { href: "/faturamento", label: "Faturamento" },
+  { href: "/materiais", label: "Materiais" },
+  { href: "/relatorios", label: "Relatórios" },
 ];
 
 export default function RootLayout({

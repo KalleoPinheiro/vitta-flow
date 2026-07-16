@@ -1,6 +1,8 @@
 # VittaFlow
 
-Sistema de gestão para clínica de estomaterapia: cadastro de pacientes, agendamento de consultas com calendário e controle de faturamento.
+Sistema de gestão completo para clínica de estomaterapia: prontuário eletrônico (anamnese, evolução SOAP, acompanhamento de estomias e feridas), agenda com calendário e regras de negócio, faturamento, estoque de insumos, recall de retornos e relatórios gerenciais.
+
+📄 PRD do módulo clínico: [docs/PRD.md](docs/PRD.md)
 
 ## Como rodar
 
@@ -44,7 +46,7 @@ npm run dev                      # http://localhost:3000
 Qualidade:
 
 ```bash
-npm test              # 141 testes (domínio, aplicação, integração Postgres via PGlite, API)
+npm test              # 191 testes (domínio, aplicação, integração Postgres via PGlite, API)
 npm run test:coverage # cobertura mínima de 80% imposta
 npm run lint          # ESLint
 ```
@@ -84,6 +86,30 @@ npm run lint          # ESLint
 - **Fatura avulsa**: emitir manualmente para qualquer paciente ativo (descrição, valor, vencimento opcional) — além das geradas automaticamente pelas consultas concluídas.
 - **Receber pagamento** escolhendo o método: Pix, dinheiro, cartão de crédito, cartão de débito, convênio ou transferência; registra data do pagamento.
 - **Cancelar fatura** pendente (faturas pagas não podem ser canceladas).
+
+### Prontuário do paciente (`/pacientes/[id]`)
+- **Anamnese estruturada** (1 por paciente, editável): comorbidades, alergias, medicações em uso, histórico cirúrgico e observações.
+- **Destaque de segurança**: alergias registradas aparecem em banner vermelho no topo do prontuário.
+- **Evoluções de enfermagem no padrão SOAP** (Subjetivo, Objetivo, Avaliação, Plano) — imutáveis após registradas (integridade de prontuário, exigência COFEN); exigem ao menos um campo preenchido; listadas em ordem cronológica reversa.
+- **Condições clínicas** com linha do tempo de avaliações:
+  - **Estomia**: tipo obrigatório (colostomia/ileostomia/urostomia), data de confecção, avaliações de pele periestomal e complicações (dermatite, prolapso, hérnia…).
+  - **Ferida**: medidas C×L×P em mm com **área calculada (C×L)** para acompanhar a cicatrização, tecido predominante (granulação/esfacelo/necrose/epitelização), nível de exsudato e **escala de dor 0–10**.
+  - Condição pode ser marcada como **resolvida** (alta); condição resolvida não recebe novas avaliações.
+
+### Materiais e estoque (`/materiais`)
+- Catálogo de insumos (bolsas, placas, coberturas, cremes) com unidade, **estoque mínimo** e preço.
+- **Movimentações de entrada e saída** com motivo obrigatório e histórico auditável.
+- **Estoque nunca fica negativo**: saída maior que o disponível é bloqueada com mensagem clara.
+- **Alerta de estoque baixo** (quantidade ≤ mínimo) na listagem e no dashboard.
+
+### Recall de retornos
+- Ao **concluir uma consulta**, opção de programar retorno em 7/15/30/60/90 dias — cria pendência automática.
+- **Painel de retornos pendentes no dashboard**, com atrasados destacados em vermelho e ações de concluir/cancelar.
+- Retornos manuais via API (`POST /api/follow-ups`).
+
+### Relatórios gerenciais (`/relatorios`)
+- Seleção de mês; consultas por status; **taxa de falta (no-show)** com alerta visual acima de 15%.
+- Recebido × a receber no mês; **receita por procedimento** das consultas concluídas.
 
 ### Regras de negócio garantidas por teste
 - Máquina de estados da consulta: `scheduled → confirmed → completed`, com desvios para `cancelled`/`no_show`; transições inválidas são rejeitadas.
@@ -150,3 +176,16 @@ Todas as respostas usam o envelope `{ success, data, error }`.
 | GET/POST | `/api/invoices` | Listar (`?status=&from=&to=`) / emitir fatura |
 | PATCH | `/api/invoices/:id` | `{action: pay, method}` ou `{action: cancel}` |
 | GET | `/api/summary` | Resumo do mês (`?month=YYYY-MM`) para o dashboard |
+| GET/PUT | `/api/patients/:id/anamnesis` | Buscar / criar-atualizar anamnese |
+| GET/POST | `/api/patients/:id/evolutions` | Listar / registrar evolução SOAP (imutável) |
+| GET/POST | `/api/patients/:id/conditions` | Listar / criar condição (estomia ou ferida) |
+| PATCH | `/api/conditions/:id` | `{action: resolve}` — marcar condição resolvida |
+| GET/POST | `/api/conditions/:id/assessments` | Listar / registrar avaliação seriada |
+| GET/POST | `/api/supplies` | Listar (com flag estoque baixo) / cadastrar insumo |
+| PUT | `/api/supplies/:id` | Atualizar insumo (nome, mínimo, preço, ativo) |
+| GET/POST | `/api/supplies/:id/movements` | Histórico / registrar entrada-saída de estoque |
+| GET/POST | `/api/follow-ups` | Listar retornos (`?status=`) / criar retorno manual |
+| PATCH | `/api/follow-ups/:id` | `{status: done\|cancelled}` |
+| GET | `/api/reports` | Relatório gerencial do mês (`?month=YYYY-MM`) |
+
+`PATCH /api/appointments/:id` com `{action: complete}` aceita `followUpInDays` (7/15/30/60/90) para programar retorno automático.

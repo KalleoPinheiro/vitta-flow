@@ -122,6 +122,12 @@ export default function PatientsPage() {
                     />
                   </td>
                   <td className="px-4 py-3 text-right">
+                    <a
+                      href={`/pacientes/${patient.id}`}
+                      className="mr-2 font-medium text-teal-700 hover:underline"
+                    >
+                      Prontuário
+                    </a>
                     <button
                       type="button"
                       onClick={() => setEditing(patient)}

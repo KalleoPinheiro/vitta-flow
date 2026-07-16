@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     const from = new Date(year, monthIndex, 1);
     const to = new Date(year, monthIndex + 1, 1);
 
-    const { appointments, patients, invoices } = getRepositories();
+    const { appointments, patients, invoices } = await getRepositories();
     const billing = await new GetBillingSummary(invoices).execute({ from, to });
     const monthAppointments = await new ListAppointments(appointments, patients).execute({
       from,

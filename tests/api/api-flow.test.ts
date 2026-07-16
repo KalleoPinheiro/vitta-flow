@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { NextRequest } from "next/server";
 
-process.env.VITTA_DB_PATH = ":memory:";
+process.env.VITTA_DB_DRIVER = "pglite";
 
 const jsonRequest = (url: string, method: string, body?: unknown) =>
   new NextRequest(`http://localhost${url}`, {

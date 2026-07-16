@@ -17,7 +17,7 @@ const createPatientSchema = z.object({
 export async function GET(request: NextRequest) {
   return handleRequest(async () => {
     const search = request.nextUrl.searchParams.get("search") ?? undefined;
-    const { patients } = getRepositories();
+    const { patients } = await getRepositories();
     const result = await new ListPatients(patients).execute({ search });
     return result.map((p) => toPatientDto(p));
   });
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   return handleRequest(async () => {
     const body = createPatientSchema.parse(await request.json());
-    const { patients } = getRepositories();
+    const { patients } = await getRepositories();
     const patient = await new CreatePatient(patients).execute({
       fullName: body.fullName,
       email: body.email,

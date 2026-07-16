@@ -22,6 +22,13 @@ export class TimeSlot {
     return (this.end.getTime() - this.start.getTime()) / MS_PER_MINUTE;
   }
 
+  expand(marginMinutes: number): TimeSlot {
+    return new TimeSlot(
+      new Date(this.start.getTime() - marginMinutes * MS_PER_MINUTE),
+      new Date(this.end.getTime() + marginMinutes * MS_PER_MINUTE),
+    );
+  }
+
   overlaps(other: TimeSlot): boolean {
     return this.start.getTime() < other.end.getTime() && other.start.getTime() < this.end.getTime();
   }

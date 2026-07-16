@@ -1,9 +1,13 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import Database from "better-sqlite3";
-import { migrate } from "@/infrastructure/persistence/sqlite/migrate";
-import { SqlitePatientRepository } from "@/infrastructure/persistence/sqlite/sqlite-patient-repository";
-import { SqliteAppointmentRepository } from "@/infrastructure/persistence/sqlite/sqlite-appointment-repository";
-import { SqliteInvoiceRepository } from "@/infrastructure/persistence/sqlite/sqlite-invoice-repository";
+import { describe, it, expect, beforeAll, beforeEach } from "vitest";
+import path from "node:path";
+import { PGlite } from "@electric-sql/pglite";
+import { drizzle, type PgliteDatabase } from "drizzle-orm/pglite";
+import { migrate } from "drizzle-orm/pglite/migrator";
+import * as schema from "@/infrastructure/persistence/drizzle/schema";
+import type { AppDb } from "@/infrastructure/persistence/drizzle/db";
+import { DrizzlePatientRepository } from "@/infrastructure/persistence/drizzle/drizzle-patient-repository";
+import { DrizzleAppointmentRepository } from "@/infrastructure/persistence/drizzle/drizzle-appointment-repository";
+import { DrizzleInvoiceRepository } from "@/infrastructure/persistence/drizzle/drizzle-invoice-repository";
 import { Patient } from "@/domain/patient/patient";
 import { Appointment } from "@/domain/scheduling/appointment";
 import { Invoice } from "@/domain/billing/invoice";
@@ -13,18 +17,26 @@ import { TimeSlot } from "@/domain/shared/time-slot";
 const slot = (startIso: string, endIso: string) =>
   TimeSlot.create(new Date(startIso), new Date(endIso));
 
-describe("Feature: Persistência SQLite", () => {
-  let db: InstanceType<typeof Database>;
-  let patientRepo: SqlitePatientRepository;
-  let appointmentRepo: SqliteAppointmentRepository;
-  let invoiceRepo: SqliteInvoiceRepository;
+describe("Feature: Persistência PostgreSQL (Drizzle)", () => {
+  let db: PgliteDatabase<typeof schema>;
+  let patientRepo: DrizzlePatientRepository;
+  let appointmentRepo: DrizzleAppointmentRepository;
+  let invoiceRepo: DrizzleInvoiceRepository;
 
-  beforeEach(() => {
-    db = new Database(":memory:");
-    migrate(db);
-    patientRepo = new SqlitePatientRepository(db);
-    appointmentRepo = new SqliteAppointmentRepository(db);
-    invoiceRepo = new SqliteInvoiceRepository(db);
+  beforeAll(async () => {
+    const client = new PGlite();
+    db = drizzle(client, { schema });
+    await migrate(db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
+    const appDb = db as unknown as AppDb;
+    patientRepo = new DrizzlePatientRepository(appDb);
+    appointmentRepo = new DrizzleAppointmentRepository(appDb);
+    invoiceRepo = new DrizzleInvoiceRepository(appDb);
+  });
+
+  beforeEach(async () => {
+    await db.delete(schema.invoices);
+    await db.delete(schema.appointments);
+    await db.delete(schema.patients);
   });
 
   const savedPatient = async () => {
@@ -71,21 +83,24 @@ describe("Feature: Persistência SQLite", () => {
     });
   });
 
-  describe("Cenário: consulta ida e volta com conflitos", () => {
-    it("Dado consulta salva, Quando buscar, Então campos e status preservados", async () => {
+  describe("Cenário: consulta ida e volta com conflitos e googleEventId", () => {
+    it("Dado consulta salva com googleEventId, Quando buscar, Então campos preservados", async () => {
       const patient = await savedPatient();
       const appointment = Appointment.create({
         patientId: patient.id,
         slot: slot("2026-07-20T09:00:00Z", "2026-07-20T10:00:00Z"),
         procedure: "Troca de bolsa",
         price: Money.fromCents(25000),
-      }).confirm();
+      })
+        .confirm()
+        .withGoogleEventId("gcal-123");
       await appointmentRepo.save(appointment);
 
       const stored = await appointmentRepo.findById(appointment.id);
 
       expect(stored?.status).toBe("confirmed");
       expect(stored?.price.cents).toBe(25000);
+      expect(stored?.googleEventId).toBe("gcal-123");
       expect(stored?.slot.start).toEqual(new Date("2026-07-20T09:00:00Z"));
     });
 

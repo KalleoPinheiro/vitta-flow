@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { PatientDto } from "@/lib/dto";
+import { BUSINESS_HOURS, MIN_GAP_MINUTES } from "@/domain/scheduling/business-hours";
 import { ErrorAlert } from "@/components/feedback";
 import { dayKey } from "./calendar-grid";
 
@@ -57,6 +58,11 @@ export function AppointmentForm({ patients, defaultDate, onSubmit }: Appointment
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       {error && <ErrorAlert message={error} />}
+      <p className="rounded-lg bg-teal-50 px-3 py-2 text-xs text-teal-900">
+        Atendimento de {BUSINESS_HOURS.weekDays}, das{" "}
+        {String(BUSINESS_HOURS.startHour).padStart(2, "0")}:00 às {BUSINESS_HOURS.endHour}:00,
+        com intervalo mínimo de {MIN_GAP_MINUTES} minutos entre consultas.
+      </p>
       <label className="text-sm font-medium">
         Paciente *
         <select

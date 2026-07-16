@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     const to = params.get("to");
     const patientId = params.get("patientId") ?? undefined;
 
-    const { invoices, patients } = getRepositories();
+    const { invoices, patients } = await getRepositories();
     const result = await new ListInvoices(invoices, patients).execute({
       status,
       patientId,
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   return handleRequest(async () => {
     const body = createInvoiceSchema.parse(await request.json());
-    const { invoices, patients } = getRepositories();
+    const { invoices, patients } = await getRepositories();
     const invoice = await new CreateInvoice(invoices, patients).execute({
       patientId: body.patientId,
       description: body.description,

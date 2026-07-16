@@ -11,13 +11,17 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    env: {
+      TZ: "UTC",
+    },
     include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
     coverage: {
       provider: "v8",
       include: ["src/domain/**", "src/application/**", "src/infrastructure/**"],
       exclude: [
         "src/infrastructure/container.ts",
-        "src/infrastructure/persistence/sqlite/db.ts",
+        "src/infrastructure/persistence/drizzle/db.ts",
+        "src/infrastructure/calendar/**",
       ],
       thresholds: {
         lines: 80,

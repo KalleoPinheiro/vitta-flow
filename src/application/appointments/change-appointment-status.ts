@@ -1,6 +1,10 @@
 import type { Appointment } from "@/domain/scheduling/appointment";
 import type { AppointmentRepository } from "@/domain/scheduling/appointment-repository";
 import { NotFoundError } from "@/domain/shared/errors";
+import {
+  NullCalendarGateway,
+  type CalendarGateway,
+} from "@/application/ports/calendar-gateway";
 
 export const APPOINTMENT_STATUS_ACTIONS = ["confirm", "cancel", "no_show"] as const;
 export type AppointmentStatusAction = (typeof APPOINTMENT_STATUS_ACTIONS)[number];
@@ -10,8 +14,13 @@ export interface ChangeAppointmentStatusInput {
   action: AppointmentStatusAction;
 }
 
+const ACTIONS_REMOVING_EVENT: readonly AppointmentStatusAction[] = ["cancel", "no_show"];
+
 export class ChangeAppointmentStatus {
-  constructor(private readonly appointments: AppointmentRepository) {}
+  constructor(
+    private readonly appointments: AppointmentRepository,
+    private readonly calendar: CalendarGateway = new NullCalendarGateway(),
+  ) {}
 
   async execute(input: ChangeAppointmentStatusInput): Promise<Appointment> {
     const appointment = await this.appointments.findById(input.id);
@@ -21,6 +30,11 @@ export class ChangeAppointmentStatus {
 
     const changed = this.apply(appointment, input.action);
     await this.appointments.save(changed);
+
+    if (ACTIONS_REMOVING_EVENT.includes(input.action) && changed.googleEventId) {
+      await this.calendar.deleteEvent(changed.googleEventId);
+    }
+
     return changed;
   }
 

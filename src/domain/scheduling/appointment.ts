@@ -25,6 +25,7 @@ export interface AppointmentState extends AppointmentProps {
   id: string;
   status: AppointmentStatus;
   createdAt: Date;
+  googleEventId?: string | null;
 }
 
 const ACTIVE_STATUSES: readonly AppointmentStatus[] = ["scheduled", "confirmed"];
@@ -47,6 +48,7 @@ export class Appointment {
       id: newId(),
       status: "scheduled",
       createdAt: new Date(),
+      googleEventId: null,
     });
   }
 
@@ -99,6 +101,14 @@ export class Appointment {
       price: changes.price ?? this.state.price,
       notes: changes.notes !== undefined ? changes.notes : this.state.notes,
     });
+  }
+
+  withGoogleEventId(googleEventId: string | null): Appointment {
+    return new Appointment({ ...this.state, googleEventId });
+  }
+
+  get googleEventId(): string | null {
+    return this.state.googleEventId ?? null;
   }
 
   get isActive(): boolean {

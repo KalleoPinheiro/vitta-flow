@@ -2,7 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
-  serverExternalPackages: ["better-sqlite3"],
+  output: "standalone",
+  serverExternalPackages: ["pg", "@electric-sql/pglite", "googleapis"],
 };
 
 export default nextConfig;

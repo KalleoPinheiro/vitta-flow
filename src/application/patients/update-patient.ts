@@ -2,7 +2,7 @@ import type { Patient } from "@/domain/patient/patient";
 import type { PatientRepository } from "@/domain/patient/patient-repository";
 import type { PartnerRepository } from "@/domain/partner/partner-repository";
 import { NotFoundError, ValidationError } from "@/domain/shared/errors";
-import { assertValidReferrer } from "./create-patient";
+import { assertValidReferrer } from "./assert-valid-referrer";
 
 export interface UpdatePatientInput {
   id: string;

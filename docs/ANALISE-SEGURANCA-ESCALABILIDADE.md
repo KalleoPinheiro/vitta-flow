@@ -132,6 +132,22 @@ Revalidação completa das regras de negócio (232 testes BDD verdes, cobertura 
 
 **Riscos residuais aceitos/documentados:** `X-Forwarded-For` spoofável no rate limit quando sem proxy reverso confiável (P1: configurar trust proxy no deploy); `console.error` pode logar objetos de erro do Google (P1: logger estruturado com redação); criptografia em repouso dos campos clínicos segue P1.
 
+## 4.2 Revisão estrutural de arquitetura (2026-07-16)
+
+Varredura por violações de camada, duplicação de regra e consistência. **7 problemas corrigidos:**
+
+| # | Problema | Correção |
+|---|----------|----------|
+| A1 | Camada de aplicação importava `UserRole` de `src/lib` (infra web) — dependência invertida | Tipo movido para `domain/auth/user-role.ts`; `lib` re-exporta |
+| A2 | Callback OAuth instanciava repositórios Drizzle direto (`getDb` + 3 repos) — segunda raiz de composição | Callback consome o container (`getRepositories`), que ganhou `googleAccounts` |
+| A3 | `CompleteAppointment` sem transação: falha entre salvar consulta e criar fatura deixava estado irreparável (re-concluir → 409, fatura nunca nasce) | Use case **idempotente-reparador**: re-executar sobre consulta concluída garante a fatura sem duplicar nada (retorno só na 1ª conclusão); coberto por teste de falha parcial |
+| A4 | Validação nome/email/telefone duplicada em `Patient` e `Partner` | `domain/shared/person-validation.ts` única |
+| A5 | Regra de disponibilidade (horário comercial + folga) duplicada em Schedule/Reschedule | `assertSlotAvailable` única na aplicação |
+| A6 | `assertValidReferrer` definido dentro de `create-patient.ts` e importado por `update-patient` | Arquivo próprio `assert-valid-referrer.ts` |
+| A7 | Atributos do cookie de sessão duplicados em login e callback | `sessionCookieOptions()` única em `lib/auth/session` |
+
+**Avaliado e mantido conscientemente:** container como service locator simples (adequado a route handlers; DI framework seria overhead); UI importando tipos/constantes do domínio (domínio é a camada mais interna e sem dependências — importável por todos); repositórios recriados por request (wrappers stateless, custo zero). **P1:** unit-of-work/transação real entre agregados; quebrar `lib/dto.ts` por contexto quando ultrapassar 800 linhas.
+
 ## 5. Plano de ação consolidado
 
 ### Executado nesta rodada (P0) ✅

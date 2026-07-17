@@ -20,14 +20,23 @@ export class CompleteAppointment {
     private readonly followUps?: FollowUpRepository,
   ) {}
 
+  /**
+   * Idempotente-reparador: sem transação distribuída entre consulta e fatura,
+   * uma falha parcial poderia deixar a consulta concluída sem fatura, sem caminho
+   * de recuperação (re-concluir daria erro de transição). Por isso, re-executar
+   * sobre consulta já concluída não é erro: apenas garante que a fatura exista.
+   */
   async execute(input: CompleteAppointmentInput): Promise<Appointment> {
     const appointment = await this.appointments.findById(input.id);
     if (!appointment) {
       throw new NotFoundError("Consulta", input.id);
     }
 
-    const completed = appointment.complete();
-    await this.appointments.save(completed);
+    const isRepairRun = appointment.status === "completed";
+    const completed = isRepairRun ? appointment : appointment.complete();
+    if (!isRepairRun) {
+      await this.appointments.save(completed);
+    }
 
     const existingInvoice = await this.invoices.findByAppointmentId(completed.id);
     if (!existingInvoice) {
@@ -40,7 +49,8 @@ export class CompleteAppointment {
       await this.invoices.save(invoice);
     }
 
-    if (input.followUpInDays && this.followUps) {
+    // Retorno só na primeira conclusão — reparo não deve duplicar pendências.
+    if (!isRepairRun && input.followUpInDays && this.followUps) {
       const followUp = FollowUp.create({
         patientId: completed.patientId,
         appointmentId: completed.id,

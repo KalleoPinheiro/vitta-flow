@@ -3,11 +3,24 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 export const SESSION_COOKIE = "vitta_session";
 export const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 
+/** Atributos padrão do cookie de sessão (única fonte para login por senha e OAuth). */
+export function sessionCookieOptions() {
+  return {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: Math.floor(SESSION_TTL_MS / 1000),
+  };
+}
+
 const sign = (secret: string, payload: string): string =>
   createHmac("sha256", secret).update(payload).digest("hex");
 
-export const USER_ROLES = ["admin", "partner", "patient"] as const;
-export type UserRole = (typeof USER_ROLES)[number];
+import { USER_ROLES, type UserRole } from "@/domain/auth/user-role";
+
+export type { UserRole };
+export { USER_ROLES };
 
 export interface Session {
   expiresAtMs: number;

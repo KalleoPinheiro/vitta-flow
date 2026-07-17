@@ -1,11 +1,8 @@
 import type { Appointment } from "@/domain/scheduling/appointment";
 import type { AppointmentRepository } from "@/domain/scheduling/appointment-repository";
-import {
-  assertWithinBusinessHours,
-  MIN_GAP_MINUTES,
-} from "@/domain/scheduling/business-hours";
 import { TimeSlot } from "@/domain/shared/time-slot";
-import { NotFoundError, SchedulingConflictError } from "@/domain/shared/errors";
+import { NotFoundError } from "@/domain/shared/errors";
+import { assertSlotAvailable } from "./assert-slot-available";
 import {
   NullCalendarGateway,
   type CalendarGateway,
@@ -30,17 +27,7 @@ export class RescheduleAppointment {
     }
 
     const slot = TimeSlot.create(input.startsAt, input.endsAt);
-    assertWithinBusinessHours(slot);
-
-    const conflicts = await this.appointments.findConflicting(
-      slot.expand(MIN_GAP_MINUTES),
-      appointment.id,
-    );
-    if (conflicts.length > 0) {
-      throw new SchedulingConflictError(
-        `Horário indisponível: é necessário intervalo mínimo de ${MIN_GAP_MINUTES} minutos entre consultas`,
-      );
-    }
+    await assertSlotAvailable(this.appointments, slot, appointment.id);
 
     const rescheduled = appointment.reschedule(slot);
     await this.appointments.save(rescheduled);

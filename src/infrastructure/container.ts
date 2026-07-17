@@ -46,6 +46,7 @@ import {
 export interface Services {
   patients: PatientRepository;
   partners: PartnerRepository;
+  googleAccounts: DrizzleGoogleAccountRepository;
   appointments: AppointmentRepository;
   invoices: InvoiceRepository;
   anamneses: AnamnesisRepository;
@@ -116,6 +117,7 @@ export async function getRepositories(): Promise<Services> {
   return {
     patients: new DrizzlePatientRepository(db),
     partners: new DrizzlePartnerRepository(db),
+    googleAccounts: new DrizzleGoogleAccountRepository(db),
     appointments: new DrizzleAppointmentRepository(db),
     invoices: new DrizzleInvoiceRepository(db),
     anamneses: new DrizzleAnamnesisRepository(db),

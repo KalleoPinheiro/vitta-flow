@@ -7,17 +7,15 @@ import {
 } from "@/lib/auth/google-oauth";
 import { createOAuthClient } from "@/lib/auth/google-oauth-client";
 import { ResolveUserRole } from "@/application/auth/resolve-user-role";
-import { DrizzlePatientRepository } from "@/infrastructure/persistence/drizzle/drizzle-patient-repository";
-import { DrizzlePartnerRepository } from "@/infrastructure/persistence/drizzle/drizzle-partner-repository";
 import {
   SESSION_COOKIE,
   SESSION_TTL_MS,
   createSessionToken,
   getAuthConfig,
+  sessionCookieOptions,
 } from "@/lib/auth/session";
 import { encryptSecret } from "@/lib/auth/crypto";
-import { getDb } from "@/infrastructure/persistence/drizzle/db";
-import { DrizzleGoogleAccountRepository } from "@/infrastructure/persistence/drizzle/drizzle-google-account-repository";
+import { getRepositories } from "@/infrastructure/container";
 
 /** Base pública p/ redirects: APP_URL (a URL interna do container não é acessível ao navegador). */
 const publicBaseUrl = (request: NextRequest): string => process.env.APP_URL ?? request.url;
@@ -47,7 +45,10 @@ async function exchangeCode(config: GoogleOAuthConfig, code: string): Promise<Go
   return { email, refreshToken: tokens.refresh_token ?? null };
 }
 
+type GoogleAccounts = Awaited<ReturnType<typeof getRepositories>>["googleAccounts"];
+
 async function persistRefreshToken(
+  googleAccounts: GoogleAccounts,
   email: string,
   refreshToken: string | null,
   secret: string,
@@ -55,8 +56,7 @@ async function persistRefreshToken(
   if (!refreshToken) {
     return;
   }
-  const db = await getDb();
-  await new DrizzleGoogleAccountRepository(db).save({
+  await googleAccounts.save({
     email,
     encryptedRefreshToken: encryptSecret(refreshToken, secret),
     connectedAt: new Date(),
@@ -93,18 +93,18 @@ export async function GET(request: NextRequest) {
       return loginErrorRedirect(request, "Não foi possível obter o email da conta Google");
     }
 
-    const db = await getDb();
-    const role = await new ResolveUserRole(
-      new DrizzlePatientRepository(db),
-      new DrizzlePartnerRepository(db),
-    ).execute({ email: identity.email, adminEmails: config.allowedEmails });
+    const { patients, partners, googleAccounts } = await getRepositories();
+    const role = await new ResolveUserRole(patients, partners).execute({
+      email: identity.email,
+      adminEmails: config.allowedEmails,
+    });
     if (!role) {
       return loginErrorRedirect(request, `Conta ${identity.email} não autorizada nesta clínica`);
     }
 
     // Credencial do Calendar pertence à clínica: só persiste quando quem loga é da equipe.
     if (role === "admin") {
-      await persistRefreshToken(identity.email, identity.refreshToken, auth.secret);
+      await persistRefreshToken(googleAccounts, identity.email, identity.refreshToken, auth.secret);
     }
 
     const destination = role === "admin" ? "/" : "/portal";
@@ -113,13 +113,7 @@ export async function GET(request: NextRequest) {
     response.cookies.set(
       SESSION_COOKIE,
       createSessionToken(auth.secret, Date.now() + SESSION_TTL_MS, identity.email, role),
-      {
-        httpOnly: true,
-        sameSite: "lax",
-        secure: process.env.NODE_ENV === "production",
-        path: "/",
-        maxAge: Math.floor(SESSION_TTL_MS / 1000),
-      },
+      sessionCookieOptions(),
     );
     return response;
   } catch (error) {

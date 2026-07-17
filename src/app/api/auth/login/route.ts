@@ -4,6 +4,7 @@ import {
   createSessionToken,
   getAuthConfig,
   passwordMatches,
+  sessionCookieOptions,
   SESSION_COOKIE,
   SESSION_TTL_MS,
 } from "@/lib/auth/session";
@@ -35,12 +36,10 @@ export async function POST(request: NextRequest) {
 
   const expiresAtMs = Date.now() + SESSION_TTL_MS;
   const response = NextResponse.json({ success: true, data: { ok: true }, error: null });
-  response.cookies.set(SESSION_COOKIE, createSessionToken(auth.secret, expiresAtMs), {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: Math.floor(SESSION_TTL_MS / 1000),
-  });
+  response.cookies.set(
+    SESSION_COOKIE,
+    createSessionToken(auth.secret, expiresAtMs),
+    sessionCookieOptions(),
+  );
   return response;
 }

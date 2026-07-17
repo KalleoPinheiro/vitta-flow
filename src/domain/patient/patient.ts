@@ -1,8 +1,5 @@
-import { ValidationError } from "../shared/errors";
 import { newId } from "../shared/id";
-
-const MIN_NAME_LENGTH = 3;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+import { validatePersonContact } from "../shared/person-validation";
 
 export interface PatientProps {
   fullName: string;
@@ -37,24 +34,8 @@ export class Patient {
   }
 
   private static validate(props: PatientProps): PatientProps {
-    const fullName = props.fullName.trim();
-    const email = props.email.trim().toLowerCase();
-    const phone = props.phone.trim();
-
-    if (fullName.length < MIN_NAME_LENGTH) {
-      throw new ValidationError(`Nome deve ter pelo menos ${MIN_NAME_LENGTH} caracteres`);
-    }
-    if (!EMAIL_REGEX.test(email)) {
-      throw new ValidationError(`Email inválido: ${props.email}`);
-    }
-    if (phone.length === 0) {
-      throw new ValidationError("Telefone é obrigatório");
-    }
-
     return {
-      fullName,
-      email,
-      phone,
+      ...validatePersonContact(props),
       birthDate: props.birthDate ?? null,
       notes: props.notes ?? null,
       referredByPartnerId: props.referredByPartnerId ?? null,

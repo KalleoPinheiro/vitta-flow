@@ -2,20 +2,7 @@ import { Patient } from "@/domain/patient/patient";
 import type { PatientRepository } from "@/domain/patient/patient-repository";
 import type { PartnerRepository } from "@/domain/partner/partner-repository";
 import { ValidationError } from "@/domain/shared/errors";
-
-/** Indicação só é aceita para parceiro cadastrado e ativo. */
-export async function assertValidReferrer(
-  partners: PartnerRepository | undefined,
-  referredByPartnerId: string | null | undefined,
-): Promise<void> {
-  if (!referredByPartnerId || !partners) {
-    return;
-  }
-  const partner = await partners.findById(referredByPartnerId);
-  if (!partner || !partner.isActive) {
-    throw new ValidationError("Parceiro da indicação não encontrado ou inativo");
-  }
-}
+import { assertValidReferrer } from "./assert-valid-referrer";
 
 export interface CreatePatientInput {
   fullName: string;

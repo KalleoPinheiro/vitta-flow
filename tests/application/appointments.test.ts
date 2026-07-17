@@ -179,6 +179,35 @@ describe("Feature: Agendamento de consultas com controle de conflitos", () => {
       const all = await invoiceRepo.findAll();
       expect(all).toHaveLength(1);
     });
+
+    it("Dado consulta concluída SEM fatura (falha parcial anterior), Quando concluir de novo, Então repara criando a fatura", async () => {
+      const appointment = await schedule();
+      // Simula falha parcial: consulta ficou completed mas a fatura nunca foi criada.
+      await appointmentRepo.save(appointment.complete());
+
+      const useCase = new CompleteAppointment(appointmentRepo, invoiceRepo);
+      await useCase.execute({ id: appointment.id });
+
+      const invoices = await invoiceRepo.findAll();
+      expect(invoices).toHaveLength(1);
+      expect(invoices[0].appointmentId).toBe(appointment.id);
+
+      // Idempotente: repetir não duplica.
+      await useCase.execute({ id: appointment.id });
+      expect(await invoiceRepo.findAll()).toHaveLength(1);
+    });
+
+    it("Dado consulta cancelada, Quando concluir, Então segue rejeitando (não é reparo)", async () => {
+      const appointment = await schedule();
+      await new ChangeAppointmentStatus(appointmentRepo).execute({
+        id: appointment.id,
+        action: "cancel",
+      });
+
+      await expect(
+        new CompleteAppointment(appointmentRepo, invoiceRepo).execute({ id: appointment.id }),
+      ).rejects.toThrow();
+    });
   });
 
   describe("Cenário: listar agenda por período", () => {

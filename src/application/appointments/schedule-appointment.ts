@@ -1,17 +1,10 @@
 import { Appointment } from "@/domain/scheduling/appointment";
 import type { AppointmentRepository } from "@/domain/scheduling/appointment-repository";
 import type { PatientRepository } from "@/domain/patient/patient-repository";
-import {
-  assertWithinBusinessHours,
-  MIN_GAP_MINUTES,
-} from "@/domain/scheduling/business-hours";
 import { Money } from "@/domain/shared/money";
 import { TimeSlot } from "@/domain/shared/time-slot";
-import {
-  NotFoundError,
-  SchedulingConflictError,
-  ValidationError,
-} from "@/domain/shared/errors";
+import { NotFoundError, ValidationError } from "@/domain/shared/errors";
+import { assertSlotAvailable } from "./assert-slot-available";
 import {
   NullCalendarGateway,
   type CalendarGateway,
@@ -43,14 +36,7 @@ export class ScheduleAppointment {
     }
 
     const slot = TimeSlot.create(input.startsAt, input.endsAt);
-    assertWithinBusinessHours(slot);
-
-    const conflicts = await this.appointments.findConflicting(slot.expand(MIN_GAP_MINUTES));
-    if (conflicts.length > 0) {
-      throw new SchedulingConflictError(
-        `Horário indisponível: é necessário intervalo mínimo de ${MIN_GAP_MINUTES} minutos entre consultas`,
-      );
-    }
+    await assertSlotAvailable(this.appointments, slot);
 
     const appointment = Appointment.create({
       patientId: input.patientId,

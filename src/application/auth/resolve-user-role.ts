@@ -1,6 +1,6 @@
 import type { PatientRepository } from "@/domain/patient/patient-repository";
 import type { PartnerRepository } from "@/domain/partner/partner-repository";
-import type { UserRole } from "@/lib/auth/session";
+import type { UserRole } from "@/domain/auth/user-role";
 
 export interface ResolveUserRoleInput {
   email: string;

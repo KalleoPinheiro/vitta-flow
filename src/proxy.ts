@@ -1,10 +1,17 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getAuthConfig, verifySessionToken, SESSION_COOKIE } from "@/lib/auth/session";
+import { googleOAuthConfigFromEnv } from "@/lib/auth/google-oauth";
 import { RateLimiter } from "@/lib/auth/rate-limit";
 
 const API_RATE_LIMIT = new RateLimiter(120, 60_000);
 
-const PUBLIC_PATHS = ["/login", "/api/auth/login"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/api/auth/login",
+  "/api/auth/providers",
+  "/api/auth/google",
+  "/api/auth/google/callback",
+];
 
 const isProduction = () => process.env.NODE_ENV === "production";
 
@@ -39,20 +46,8 @@ export function proxy(request: NextRequest): NextResponse {
   }
 
   const auth = getAuthConfig();
-  if (!auth) {
-    if (isProduction()) {
-      return NextResponse.json(
-        { success: false, data: null, error: "Autenticação não configurada (AUTH_PASSWORD/AUTH_SECRET)" },
-        { status: 503 },
-      );
-    }
-    if (!warnedAuthDisabled) {
-      warnedAuthDisabled = true;
-      console.warn(
-        "⚠ AUTH_PASSWORD/AUTH_SECRET não configurados — autenticação DESATIVADA (permitido apenas em desenvolvimento)",
-      );
-    }
-    return NextResponse.next();
+  if (!isAuthUsable(auth)) {
+    return authNotConfiguredResponse();
   }
 
   const token = request.cookies.get(SESSION_COOKIE)?.value;
@@ -60,6 +55,36 @@ export function proxy(request: NextRequest): NextResponse {
     return unauthorized(request);
   }
 
+  return NextResponse.next();
+}
+
+type AuthConfig = ReturnType<typeof getAuthConfig>;
+
+function isAuthUsable(auth: AuthConfig): auth is NonNullable<AuthConfig> {
+  if (!auth) {
+    return false;
+  }
+  return Boolean(auth.password) || Boolean(googleOAuthConfigFromEnv());
+}
+
+function authNotConfiguredResponse(): NextResponse {
+  if (isProduction()) {
+    return NextResponse.json(
+      {
+        success: false,
+        data: null,
+        error:
+          "Autenticação não configurada: defina AUTH_SECRET e AUTH_PASSWORD (ou login Google via GOOGLE_CLIENT_ID/SECRET + APP_URL + GOOGLE_ALLOWED_EMAILS)",
+      },
+      { status: 503 },
+    );
+  }
+  if (!warnedAuthDisabled) {
+    warnedAuthDisabled = true;
+    console.warn(
+      "⚠ Autenticação DESATIVADA — configure AUTH_SECRET + senha ou Google (permitido apenas em desenvolvimento)",
+    );
+  }
   return NextResponse.next();
 }
 

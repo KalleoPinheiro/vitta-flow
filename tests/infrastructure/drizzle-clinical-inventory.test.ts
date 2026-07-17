@@ -25,6 +25,7 @@ import { ConditionAssessment } from "@/domain/clinical/condition-assessment";
 import { Supply } from "@/domain/inventory/supply";
 import { StockMovement } from "@/domain/inventory/stock-movement";
 import { FollowUp } from "@/domain/followup/follow-up";
+import { DrizzleGoogleAccountRepository } from "@/infrastructure/persistence/drizzle/drizzle-google-account-repository";
 
 describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e retornos", () => {
   let db: PgliteDatabase<typeof schema>;
@@ -39,6 +40,7 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
   });
 
   beforeEach(async () => {
+    await db.delete(schema.googleAccounts);
     await db.delete(schema.conditionAssessments);
     await db.delete(schema.clinicalConditions);
     await db.delete(schema.evolutionNotes);
@@ -130,6 +132,28 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
     expect(stored?.isLowStock).toBe(false);
     expect(await movementRepo.findBySupplyId(supply.id)).toHaveLength(1);
     expect(await supplyRepo.findAll()).toHaveLength(1);
+  });
+
+  it("Dado conta Google conectada, Quando salvar e reconectar (upsert), Então guarda a mais recente", async () => {
+    const repo = new DrizzleGoogleAccountRepository(appDb);
+    await repo.save({
+      email: "ana@clinica.com",
+      encryptedRefreshToken: "cifrado-v1",
+      connectedAt: new Date("2026-07-01T10:00:00Z"),
+    });
+    await repo.save({
+      email: "ana@clinica.com",
+      encryptedRefreshToken: "cifrado-v2",
+      connectedAt: new Date("2026-07-16T10:00:00Z"),
+    });
+    await repo.save({
+      email: "joao@clinica.com",
+      encryptedRefreshToken: "cifrado-j",
+      connectedAt: new Date("2026-07-10T10:00:00Z"),
+    });
+
+    expect((await repo.findByEmail("ana@clinica.com"))?.encryptedRefreshToken).toBe("cifrado-v2");
+    expect((await repo.findMostRecent())?.email).toBe("ana@clinica.com");
   });
 
   it("Dado retornos, Quando filtrar por status e vencimento, Então subconjuntos corretos", async () => {

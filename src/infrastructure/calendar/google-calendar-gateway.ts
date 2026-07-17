@@ -24,16 +24,41 @@ export function googleCalendarConfigFromEnv(): GoogleCalendarConfig | null {
   };
 }
 
-export class GoogleCalendarGateway implements CalendarGateway {
-  private readonly client: calendar_v3.Calendar;
+export interface OAuthCalendarInput {
+  clientId: string;
+  clientSecret: string;
+  refreshToken: string;
+  /** Calendário de destino; "primary" = calendário principal da conta logada. */
+  calendarId?: string;
+}
 
-  constructor(private readonly config: GoogleCalendarConfig) {
+export class GoogleCalendarGateway implements CalendarGateway {
+  private constructor(
+    private readonly client: calendar_v3.Calendar,
+    private readonly calendarId: string,
+  ) {}
+
+  /** Autenticação por service account (calendário compartilhado com a service account). */
+  static withServiceAccount(config: GoogleCalendarConfig): GoogleCalendarGateway {
     const auth = new google.auth.JWT({
       email: config.serviceAccountEmail,
       key: config.privateKey,
       scopes: ["https://www.googleapis.com/auth/calendar"],
     });
-    this.client = google.calendar({ version: "v3", auth });
+    return new GoogleCalendarGateway(
+      google.calendar({ version: "v3", auth }),
+      config.calendarId,
+    );
+  }
+
+  /** Autenticação pela conta Google logada (login com Google) — eventos no calendário do usuário. */
+  static withOAuth(input: OAuthCalendarInput): GoogleCalendarGateway {
+    const auth = new google.auth.OAuth2(input.clientId, input.clientSecret);
+    auth.setCredentials({ refresh_token: input.refreshToken });
+    return new GoogleCalendarGateway(
+      google.calendar({ version: "v3", auth }),
+      input.calendarId ?? "primary",
+    );
   }
 
   private toEventBody(input: CalendarEventInput): calendar_v3.Schema$Event {
@@ -48,7 +73,7 @@ export class GoogleCalendarGateway implements CalendarGateway {
   async createEvent(input: CalendarEventInput): Promise<string | null> {
     try {
       const response = await this.client.events.insert({
-        calendarId: this.config.calendarId,
+        calendarId: this.calendarId,
         requestBody: this.toEventBody(input),
       });
       return response.data.id ?? null;
@@ -61,7 +86,7 @@ export class GoogleCalendarGateway implements CalendarGateway {
   async updateEvent(eventId: string, input: CalendarEventInput): Promise<void> {
     try {
       await this.client.events.patch({
-        calendarId: this.config.calendarId,
+        calendarId: this.calendarId,
         eventId,
         requestBody: this.toEventBody(input),
       });
@@ -73,7 +98,7 @@ export class GoogleCalendarGateway implements CalendarGateway {
   async deleteEvent(eventId: string): Promise<void> {
     try {
       await this.client.events.delete({
-        calendarId: this.config.calendarId,
+        calendarId: this.calendarId,
         eventId,
       });
     } catch (error) {

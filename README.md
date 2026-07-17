@@ -37,14 +37,23 @@ npm run dev                      # http://localhost:3000
 | Variável | Obrigatória | Descrição |
 |----------|-------------|-----------|
 | `DATABASE_URL` | Sim (fora do compose) | Conexão PostgreSQL, ex.: `postgres://vitta:vitta@localhost:5432/vitta` |
-| `AUTH_PASSWORD` | Sim em produção | Senha de acesso ao sistema (login único da equipe) |
-| `AUTH_SECRET` | Sim em produção | Segredo de assinatura da sessão — gere com `openssl rand -hex 32` |
+| `AUTH_PASSWORD` | Sim em produção* | Senha de acesso ao sistema (login local da equipe) |
+| `AUTH_SECRET` | Sim em produção | Segredo de assinatura da sessão e da cifra de credenciais — `openssl rand -hex 32` |
+| `APP_URL` | P/ login Google | URL pública da aplicação (redirect do OAuth), ex.: `http://localhost:3000` |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | P/ login Google | OAuth client (Web) do Google Cloud Console |
+| `GOOGLE_ALLOWED_EMAILS` | P/ login Google | **Allowlist obrigatória** de emails autorizados, separados por vírgula |
+
+\* Em produção é preciso ao menos um método de login: senha (`AUTH_PASSWORD`) ou Google (3 variáveis acima). Sem nenhum, o sistema responde 503 (fail-closed).
 | `TZ` | Recomendada | Fuso da clínica — horário comercial é validado em hora local (`America/Sao_Paulo` no compose) |
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | Não | Email da service account do Google Cloud |
 | `GOOGLE_PRIVATE_KEY` | Não | Chave privada da service account (aceita `\n` escapado) |
 | `GOOGLE_CALENDAR_ID` | Não | ID do calendário que receberá os eventos |
 
-**Google Calendar**: crie uma service account no Google Cloud, habilite a Calendar API e compartilhe o calendário com o email da service account (permissão "Fazer alterações em eventos"). Sem as 3 variáveis, a sincronização fica desativada e o sistema funciona normalmente.
+**Login com Google + Calendar (recomendado)**: no Google Cloud Console crie um *OAuth client ID* (tipo Web application) com redirect URI `{APP_URL}/api/auth/google/callback` e habilite a **Google Calendar API**. Preencha `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `APP_URL` e `GOOGLE_ALLOWED_EMAILS`. A partir daí:
+- A tela de login mostra **"Entrar com Google"**; apenas emails da allowlist entram (qualquer outra conta é recusada).
+- Ao logar, o sistema guarda o refresh token **cifrado (AES-256-GCM)** e passa a criar/atualizar/remover os eventos da agenda **no calendário da própria conta logada** (`primary`) — sem precisar de service account nem compartilhamento manual. `GOOGLE_CALENDAR_ID` pode sobrescrever o destino.
+
+**Google Calendar via service account (alternativa sem login Google)**: crie uma service account, habilite a Calendar API e compartilhe o calendário com o email dela (permissão "Fazer alterações em eventos"); preencha `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY` e `GOOGLE_CALENDAR_ID`. Usada apenas quando nenhuma conta Google está conectada. Sem nenhuma das duas integrações, a agenda funciona normalmente sem sincronização.
 
 Qualidade:
 

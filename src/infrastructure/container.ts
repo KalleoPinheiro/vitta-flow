@@ -17,6 +17,11 @@ import {
   GoogleCalendarGateway,
   googleCalendarConfigFromEnv,
 } from "./calendar/google-calendar-gateway";
+import { DrizzleGoogleAccountRepository } from "./persistence/drizzle/drizzle-google-account-repository";
+import { googleOAuthConfigFromEnv } from "@/lib/auth/google-oauth";
+import { getAuthConfig } from "@/lib/auth/session";
+import { decryptSecret } from "@/lib/auth/crypto";
+import type { AppDb } from "./persistence/drizzle/db";
 import type { PatientRepository } from "@/domain/patient/patient-repository";
 import type { AppointmentRepository } from "@/domain/scheduling/appointment-repository";
 import type { InvoiceRepository } from "@/domain/billing/invoice-repository";
@@ -50,18 +55,61 @@ export interface Services {
   calendar: CalendarGateway;
 }
 
-function buildCalendarGateway(): CalendarGateway {
-  const config = googleCalendarConfigFromEnv();
-  return config ? new GoogleCalendarGateway(config) : new NullCalendarGateway();
+const globalForServices = globalThis as unknown as {
+  vittaCalendar?: { key: string; gateway: CalendarGateway };
+};
+
+async function oauthCalendarGateway(db: AppDb): Promise<{ key: string; gateway: CalendarGateway } | null> {
+  const oauthConfig = googleOAuthConfigFromEnv();
+  const auth = getAuthConfig();
+  if (!oauthConfig || !auth) {
+    return null;
+  }
+  const account = await new DrizzleGoogleAccountRepository(db).findMostRecent();
+  if (!account) {
+    return null;
+  }
+  try {
+    const refreshToken = decryptSecret(account.encryptedRefreshToken, auth.secret);
+    return {
+      key: `oauth:${account.email}:${account.connectedAt.getTime()}`,
+      gateway: GoogleCalendarGateway.withOAuth({
+        clientId: oauthConfig.clientId,
+        clientSecret: oauthConfig.clientSecret,
+        refreshToken,
+        calendarId: process.env.GOOGLE_CALENDAR_ID || "primary",
+      }),
+    };
+  } catch (error) {
+    console.error("Google Calendar: falha ao decifrar credencial OAuth", error);
+    return null;
+  }
 }
 
-const globalForServices = globalThis as unknown as { vittaCalendar?: CalendarGateway };
+/**
+ * Prioridade: conta Google logada (OAuth) → service account → desativado.
+ * Cache global por credencial para reaproveitar o access token do googleapis.
+ */
+async function buildCalendarGateway(db: AppDb): Promise<CalendarGateway> {
+  const oauth = await oauthCalendarGateway(db);
+  const serviceConfig = oauth ? null : googleCalendarConfigFromEnv();
+  const next = oauth ?? {
+    key: serviceConfig ? "service-account" : "null",
+    gateway: serviceConfig
+      ? GoogleCalendarGateway.withServiceAccount(serviceConfig)
+      : new NullCalendarGateway(),
+  };
+
+  if (globalForServices.vittaCalendar?.key === next.key) {
+    return globalForServices.vittaCalendar.gateway;
+  }
+  globalForServices.vittaCalendar = next;
+  return next.gateway;
+}
 
 export async function getRepositories(): Promise<Services> {
   const db = await getDb();
-  if (!globalForServices.vittaCalendar) {
-    globalForServices.vittaCalendar = buildCalendarGateway();
-  }
+  const calendar = await buildCalendarGateway(db);
   return {
     patients: new DrizzlePatientRepository(db),
     appointments: new DrizzleAppointmentRepository(db),
@@ -73,6 +121,6 @@ export async function getRepositories(): Promise<Services> {
     supplies: new DrizzleSupplyRepository(db),
     stockMovements: new DrizzleStockMovementRepository(db),
     followUps: new DrizzleFollowUpRepository(db),
-    calendar: globalForServices.vittaCalendar,
+    calendar,
   };
 }

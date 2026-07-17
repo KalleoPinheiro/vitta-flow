@@ -35,6 +35,13 @@ export const appointments = pgTable(
   ],
 );
 
+export const googleAccounts = pgTable("google_accounts", {
+  email: text("email").primaryKey(),
+  // Refresh token do OAuth cifrado com AES-256-GCM (chave derivada de AUTH_SECRET).
+  encryptedRefreshToken: text("encrypted_refresh_token").notNull(),
+  connectedAt: timestamp("connected_at", { withTimezone: true, mode: "date" }).notNull(),
+});
+
 export const anamneses = pgTable("anamneses", {
   patientId: text("patient_id")
     .primaryKey()

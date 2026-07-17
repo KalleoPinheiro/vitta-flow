@@ -24,6 +24,9 @@ export async function POST(request: NextRequest) {
   if (!auth) {
     return fail("Autenticação não configurada no servidor", 503);
   }
+  if (!auth.password) {
+    return fail("Login por senha desativado — use o login com Google", 403);
+  }
 
   const parsed = loginSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success || !passwordMatches(auth.password, parsed.data.password)) {

@@ -7,10 +7,10 @@ import { handleRequest } from "@/lib/api-response";
 import { toSupplyDto } from "@/lib/dto";
 
 const supplySchema = z.object({
-  name: z.string().min(1),
-  unit: z.string().min(1),
-  minQty: z.number().int().nonnegative(),
-  priceCents: z.number().int().nonnegative(),
+  name: z.string().min(1).max(200),
+  unit: z.string().min(1).max(20),
+  minQty: z.number().int().nonnegative().max(1_000_000),
+  priceCents: z.number().int().nonnegative().max(1_000_000_000),
 });
 
 export async function GET() {

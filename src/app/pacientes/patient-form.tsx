@@ -20,14 +20,21 @@ interface PatientFormProps {
 const inputClass =
   "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none";
 
+const toFormValues = (initial?: PatientDto): PatientFormValues => {
+  if (!initial) {
+    return { fullName: "", email: "", phone: "", birthDate: "", notes: "" };
+  }
+  return {
+    fullName: initial.fullName,
+    email: initial.email,
+    phone: initial.phone,
+    birthDate: initial.birthDate ? initial.birthDate.slice(0, 10) : "",
+    notes: initial.notes ?? "",
+  };
+};
+
 export function PatientForm({ initial, onSubmit }: PatientFormProps) {
-  const [values, setValues] = useState<PatientFormValues>({
-    fullName: initial?.fullName ?? "",
-    email: initial?.email ?? "",
-    phone: initial?.phone ?? "",
-    birthDate: initial?.birthDate ? initial.birthDate.slice(0, 10) : "",
-    notes: initial?.notes ?? "",
-  });
+  const [values, setValues] = useState<PatientFormValues>(() => toFormValues(initial));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 

@@ -3,6 +3,7 @@
 Sistema de gestão completo para clínica de estomaterapia: prontuário eletrônico (anamnese, evolução SOAP, acompanhamento de estomias e feridas), agenda com calendário e regras de negócio, faturamento, estoque de insumos, recall de retornos e relatórios gerenciais.
 
 📄 PRD do módulo clínico: [docs/PRD.md](docs/PRD.md)
+🔐 Análise de segurança/escalabilidade + plano de ação: [docs/ANALISE-SEGURANCA-ESCALABILIDADE.md](docs/ANALISE-SEGURANCA-ESCALABILIDADE.md)
 
 ## Como rodar
 
@@ -11,8 +12,8 @@ Sistema de gestão completo para clínica de estomaterapia: prontuário eletrôn
 Pré-requisito: Docker + Docker Compose. Sobe PostgreSQL 16 + aplicação; as migrações do Drizzle rodam automaticamente na primeira requisição.
 
 ```bash
-docker compose up -d --build
-# aplicação: http://localhost:3000
+AUTH_PASSWORD=sua-senha AUTH_SECRET=$(openssl rand -hex 32) docker compose up -d --build
+# aplicação: http://localhost:3000 (login com AUTH_PASSWORD)
 # postgres:  localhost:5432 (vitta/vitta, database vitta)
 ```
 
@@ -36,6 +37,8 @@ npm run dev                      # http://localhost:3000
 | Variável | Obrigatória | Descrição |
 |----------|-------------|-----------|
 | `DATABASE_URL` | Sim (fora do compose) | Conexão PostgreSQL, ex.: `postgres://vitta:vitta@localhost:5432/vitta` |
+| `AUTH_PASSWORD` | Sim em produção | Senha de acesso ao sistema (login único da equipe) |
+| `AUTH_SECRET` | Sim em produção | Segredo de assinatura da sessão — gere com `openssl rand -hex 32` |
 | `TZ` | Recomendada | Fuso da clínica — horário comercial é validado em hora local (`America/Sao_Paulo` no compose) |
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | Não | Email da service account do Google Cloud |
 | `GOOGLE_PRIVATE_KEY` | Não | Chave privada da service account (aceita `\n` escapado) |

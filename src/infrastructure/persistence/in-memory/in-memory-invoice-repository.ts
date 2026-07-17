@@ -18,15 +18,20 @@ export class InMemoryInvoiceRepository implements InvoiceRepository {
     );
   }
 
+  private matchesFilter(invoice: Invoice, filter?: InvoiceFilter): boolean {
+    if (!filter) {
+      return true;
+    }
+    if (filter.status && invoice.status !== filter.status) return false;
+    if (filter.patientId && invoice.patientId !== filter.patientId) return false;
+    if (filter.from && invoice.issuedAt.getTime() < filter.from.getTime()) return false;
+    if (filter.to && invoice.issuedAt.getTime() >= filter.to.getTime()) return false;
+    return true;
+  }
+
   async findAll(filter?: InvoiceFilter): Promise<Invoice[]> {
     return [...this.invoices.values()]
-      .filter((i) => {
-        if (filter?.status && i.status !== filter.status) return false;
-        if (filter?.patientId && i.patientId !== filter.patientId) return false;
-        if (filter?.from && i.issuedAt.getTime() < filter.from.getTime()) return false;
-        if (filter?.to && i.issuedAt.getTime() >= filter.to.getTime()) return false;
-        return true;
-      })
+      .filter((invoice) => this.matchesFilter(invoice, filter))
       .sort((a, b) => b.issuedAt.getTime() - a.issuedAt.getTime());
   }
 }

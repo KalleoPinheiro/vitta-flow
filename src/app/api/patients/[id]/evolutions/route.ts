@@ -8,10 +8,10 @@ import { toEvolutionNoteDto } from "@/lib/dto";
 
 const evolutionSchema = z.object({
   appointmentId: z.string().nullish(),
-  subjective: z.string().default(""),
-  objective: z.string().default(""),
-  assessment: z.string().default(""),
-  plan: z.string().default(""),
+  subjective: z.string().max(5000).default(""),
+  objective: z.string().max(5000).default(""),
+  assessment: z.string().max(5000).default(""),
+  plan: z.string().max(5000).default(""),
 });
 
 type RouteContext = { params: Promise<{ id: string }> };

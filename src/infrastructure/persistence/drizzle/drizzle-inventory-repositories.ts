@@ -10,7 +10,7 @@ import type {
   FollowUpFilter,
   FollowUpRepository,
 } from "@/domain/followup/follow-up-repository";
-import type { AppDb } from "./db";
+import { MAX_ROWS, type AppDb } from "./db";
 import { followUps, stockMovements, supplies } from "./schema";
 
 export class DrizzleSupplyRepository implements SupplyRepository {
@@ -39,7 +39,11 @@ export class DrizzleSupplyRepository implements SupplyRepository {
   }
 
   async findAll(): Promise<Supply[]> {
-    const rows = await this.db.select().from(supplies).orderBy(asc(supplies.name));
+    const rows = await this.db
+      .select()
+      .from(supplies)
+      .orderBy(asc(supplies.name))
+      .limit(MAX_ROWS);
     return rows.map((row) => Supply.restore(row));
   }
 }
@@ -106,7 +110,8 @@ export class DrizzleFollowUpRepository implements FollowUpRepository {
       .select()
       .from(followUps)
       .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(asc(followUps.dueDate));
+      .orderBy(asc(followUps.dueDate))
+      .limit(MAX_ROWS);
     return rows.map((row) => this.toEntity(row));
   }
 }

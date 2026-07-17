@@ -10,9 +10,9 @@ const scheduleSchema = z.object({
   patientId: z.string().min(1),
   startsAt: z.iso.datetime(),
   endsAt: z.iso.datetime(),
-  procedure: z.string().min(1),
-  priceCents: z.number().int().nonnegative(),
-  notes: z.string().nullish(),
+  procedure: z.string().min(1).max(500),
+  priceCents: z.number().int().nonnegative().max(1_000_000_000),
+  notes: z.string().max(5000).nullish(),
 });
 
 export async function GET(request: NextRequest) {

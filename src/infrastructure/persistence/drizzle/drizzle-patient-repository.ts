@@ -1,7 +1,7 @@
-import { eq, ilike, or } from "drizzle-orm";
+import { eq, ilike, inArray, or } from "drizzle-orm";
 import { Patient } from "@/domain/patient/patient";
 import type { PatientRepository } from "@/domain/patient/patient-repository";
-import type { AppDb } from "./db";
+import { MAX_ROWS, type AppDb } from "./db";
 import { patients } from "./schema";
 
 type PatientRow = typeof patients.$inferSelect;
@@ -52,17 +52,28 @@ export class DrizzlePatientRepository implements PatientRepository {
     return rows[0] ? toPatient(rows[0]) : null;
   }
 
+  async findByIds(ids: string[]): Promise<Patient[]> {
+    const unique = [...new Set(ids)];
+    if (unique.length === 0) {
+      return [];
+    }
+    const rows = await this.db.select().from(patients).where(inArray(patients.id, unique));
+    return rows.map(toPatient);
+  }
+
   async findAll(search?: string): Promise<Patient[]> {
     const query = this.db.select().from(patients);
     const rows = search
-      ? await query.where(
-          or(
-            ilike(patients.fullName, `%${search}%`),
-            ilike(patients.email, `%${search}%`),
-            ilike(patients.phone, `%${search}%`),
-          ),
-        )
-      : await query;
+      ? await query
+          .where(
+            or(
+              ilike(patients.fullName, `%${search}%`),
+              ilike(patients.email, `%${search}%`),
+              ilike(patients.phone, `%${search}%`),
+            ),
+          )
+          .limit(MAX_ROWS)
+      : await query.limit(MAX_ROWS);
     return rows
       .map(toPatient)
       .sort((a, b) => a.fullName.localeCompare(b.fullName));

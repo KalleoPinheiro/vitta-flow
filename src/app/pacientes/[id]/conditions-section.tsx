@@ -298,6 +298,33 @@ function ConditionForm({ patientId, onSaved }: { patientId: string; onSaved: () 
   );
 }
 
+interface AssessmentFormValues {
+  lengthMm: string;
+  widthMm: string;
+  depthMm: string;
+  tissueType: string;
+  exudate: string;
+  painScale: string;
+  skinCondition: string;
+  complications: string;
+  notes: string;
+}
+
+const toNumberOrNull = (value: string): number | null => (value ? Number(value) : null);
+const toTextOrNull = (value: string): string | null => value || null;
+
+const toAssessmentPayload = (values: AssessmentFormValues) => ({
+  lengthMm: toNumberOrNull(values.lengthMm),
+  widthMm: toNumberOrNull(values.widthMm),
+  depthMm: toNumberOrNull(values.depthMm),
+  tissueType: toTextOrNull(values.tissueType),
+  exudate: toTextOrNull(values.exudate),
+  painScale: toNumberOrNull(values.painScale),
+  skinCondition: toTextOrNull(values.skinCondition),
+  complications: toTextOrNull(values.complications),
+  notes: toTextOrNull(values.notes),
+});
+
 function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSaved: () => void }) {
   const isWound = condition.kind === "wound";
   const [values, setValues] = useState({
@@ -324,17 +351,7 @@ function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSav
     try {
       await apiFetch(`/api/conditions/${condition.id}/assessments`, {
         method: "POST",
-        body: JSON.stringify({
-          lengthMm: values.lengthMm ? Number(values.lengthMm) : null,
-          widthMm: values.widthMm ? Number(values.widthMm) : null,
-          depthMm: values.depthMm ? Number(values.depthMm) : null,
-          tissueType: values.tissueType || null,
-          exudate: values.exudate || null,
-          painScale: values.painScale ? Number(values.painScale) : null,
-          skinCondition: values.skinCondition || null,
-          complications: values.complications || null,
-          notes: values.notes || null,
-        }),
+        body: JSON.stringify(toAssessmentPayload(values)),
       });
       onSaved();
     } catch (err) {

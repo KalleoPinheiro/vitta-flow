@@ -20,6 +20,8 @@ export const appointments = pgTable(
       .references(() => patients.id),
     startsAt: timestamp("starts_at", { withTimezone: true, mode: "date" }).notNull(),
     endsAt: timestamp("ends_at", { withTimezone: true, mode: "date" }).notNull(),
+    // Mantida por trigger (migração 0002) para a constraint de exclusão anti-double-booking.
+    endsAtBuffered: timestamp("ends_at_buffered", { withTimezone: true, mode: "date" }),
     procedure: text("procedure").notNull(),
     priceCents: integer("price_cents").notNull(),
     notes: text("notes"),

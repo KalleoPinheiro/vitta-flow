@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import Link from "next/link";
+import { LogoutButton } from "@/components/logout-button";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -36,7 +37,7 @@ export default function RootLayout({
               <span className="text-lg font-bold text-teal-700">VittaFlow</span>
               <p className="mt-0.5 text-xs text-slate-500">Clínica de Estomaterapia</p>
             </div>
-            <nav className="flex flex-col gap-1 p-3">
+            <nav className="flex flex-1 flex-col gap-1 p-3">
               {NAV_ITEMS.map((item) => (
                 <Link
                   key={item.href}
@@ -47,6 +48,9 @@ export default function RootLayout({
                 </Link>
               ))}
             </nav>
+            <div className="border-t border-slate-200 p-3">
+              <LogoutButton />
+            </div>
           </aside>
           <main className="flex-1 overflow-x-hidden p-6 lg:p-8">{children}</main>
         </div>

@@ -8,11 +8,11 @@ import { handleRequest } from "@/lib/api-response";
 import { toPatientDto } from "@/lib/dto";
 
 const updatePatientSchema = z.object({
-  fullName: z.string().min(1).optional(),
-  email: z.string().min(1).optional(),
-  phone: z.string().min(1).optional(),
+  fullName: z.string().min(1).max(200).optional(),
+  email: z.string().min(1).max(200).optional(),
+  phone: z.string().min(1).max(50).optional(),
   birthDate: z.iso.datetime().nullish(),
-  notes: z.string().nullish(),
+  notes: z.string().max(5000).nullish(),
 });
 
 const setActiveSchema = z.object({

@@ -13,6 +13,7 @@ import { Appointment } from "@/domain/scheduling/appointment";
 import { Invoice } from "@/domain/billing/invoice";
 import { Money } from "@/domain/shared/money";
 import { TimeSlot } from "@/domain/shared/time-slot";
+import { SchedulingConflictError } from "@/domain/shared/errors";
 
 const slot = (startIso: string, endIso: string) =>
   TimeSlot.create(new Date(startIso), new Date(endIso));
@@ -147,6 +148,72 @@ describe("Feature: Persistência PostgreSQL (Drizzle)", () => {
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe(july.id);
       expect(await appointmentRepo.findByPatientId(patient.id)).toHaveLength(2);
+    });
+  });
+
+  describe("Cenário: constraint do banco impede double-booking (TOCTOU)", () => {
+    const makeAppointment = (patientId: string, startIso: string, endIso: string) =>
+      Appointment.create({
+        patientId,
+        slot: slot(startIso, endIso),
+        procedure: "Troca de bolsa",
+        price: Money.fromCents(25000),
+      });
+
+    it("Dado consulta ativa, Quando inserir sobreposta direto no banco, Então SchedulingConflictError", async () => {
+      const patient = await savedPatient();
+      await appointmentRepo.save(
+        makeAppointment(patient.id, "2026-07-20T09:00:00Z", "2026-07-20T10:00:00Z"),
+      );
+
+      await expect(
+        appointmentRepo.save(
+          makeAppointment(patient.id, "2026-07-20T09:30:00Z", "2026-07-20T10:30:00Z"),
+        ),
+      ).rejects.toThrow(SchedulingConflictError);
+    });
+
+    it("Dado consulta ativa, Quando inserir com folga de 10min, Então banco rejeita; com 15min, aceita", async () => {
+      const patient = await savedPatient();
+      await appointmentRepo.save(
+        makeAppointment(patient.id, "2026-07-20T09:00:00Z", "2026-07-20T10:00:00Z"),
+      );
+
+      await expect(
+        appointmentRepo.save(
+          makeAppointment(patient.id, "2026-07-20T10:10:00Z", "2026-07-20T11:00:00Z"),
+        ),
+      ).rejects.toThrow(SchedulingConflictError);
+      await expect(
+        appointmentRepo.save(
+          makeAppointment(patient.id, "2026-07-20T10:15:00Z", "2026-07-20T11:00:00Z"),
+        ),
+      ).resolves.toBeUndefined();
+    });
+
+    it("Dado consulta cancelada no horário, Quando inserir sobreposta, Então banco aceita", async () => {
+      const patient = await savedPatient();
+      await appointmentRepo.save(
+        makeAppointment(patient.id, "2026-07-20T09:00:00Z", "2026-07-20T10:00:00Z").cancel(),
+      );
+
+      await expect(
+        appointmentRepo.save(
+          makeAppointment(patient.id, "2026-07-20T09:00:00Z", "2026-07-20T10:00:00Z"),
+        ),
+      ).resolves.toBeUndefined();
+    });
+
+    it("Dado a própria consulta, Quando atualizar (upsert) mesmo horário, Então não conflita consigo", async () => {
+      const patient = await savedPatient();
+      const appointment = makeAppointment(
+        patient.id,
+        "2026-07-20T09:00:00Z",
+        "2026-07-20T10:00:00Z",
+      );
+      await appointmentRepo.save(appointment);
+
+      await expect(appointmentRepo.save(appointment.confirm())).resolves.toBeUndefined();
     });
   });
 

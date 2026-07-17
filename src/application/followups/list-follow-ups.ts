@@ -26,7 +26,7 @@ export class ListFollowUps {
       status: input.status,
       patientId: input.patientId,
     });
-    const patients = await this.patients.findAll();
+    const patients = await this.patients.findByIds(followUps.map((f) => f.patientId));
     const namesById = new Map(patients.map((p) => [p.id, p.fullName]));
 
     return followUps.map((followUp) => ({

@@ -9,10 +9,10 @@ import { toConditionDto } from "@/lib/dto";
 
 const conditionSchema = z.object({
   kind: z.enum(CONDITION_KINDS),
-  title: z.string().min(1),
+  title: z.string().min(1).max(200),
   stomaType: z.enum(STOMA_TYPES).nullish(),
   startedAt: z.iso.datetime().nullish(),
-  notes: z.string().nullish(),
+  notes: z.string().max(5000).nullish(),
 });
 
 type RouteContext = { params: Promise<{ id: string }> };

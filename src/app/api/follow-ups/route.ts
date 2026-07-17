@@ -11,7 +11,7 @@ const createSchema = z.object({
   patientId: z.string().min(1),
   appointmentId: z.string().nullish(),
   dueDate: z.iso.datetime(),
-  reason: z.string().min(1),
+  reason: z.string().min(1).max(500),
 });
 
 const statusSchema = z.enum(FOLLOW_UP_STATUSES).optional();

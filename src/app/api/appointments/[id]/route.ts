@@ -11,7 +11,7 @@ const actionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.enum(["confirm", "cancel", "no_show"]) }),
   z.object({
     action: z.literal("complete"),
-    followUpInDays: z.number().int().positive().nullish(),
+    followUpInDays: z.number().int().positive().max(365).nullish(),
   }),
   z.object({
     action: z.literal("reschedule"),

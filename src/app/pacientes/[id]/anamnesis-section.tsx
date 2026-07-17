@@ -21,14 +21,13 @@ const FIELDS = [
 
 type FieldKey = (typeof FIELDS)[number]["key"];
 
+const toFormValues = (anamnesis: AnamnesisDto | null): Record<FieldKey, string> => {
+  const entries = FIELDS.map((field) => [field.key, anamnesis ? anamnesis[field.key] : ""]);
+  return Object.fromEntries(entries) as Record<FieldKey, string>;
+};
+
 export function AnamnesisSection({ patientId, anamnesis, onSaved }: AnamnesisSectionProps) {
-  const [values, setValues] = useState<Record<FieldKey, string>>(() => ({
-    comorbidities: anamnesis?.comorbidities ?? "",
-    allergies: anamnesis?.allergies ?? "",
-    medications: anamnesis?.medications ?? "",
-    surgicalHistory: anamnesis?.surgicalHistory ?? "",
-    notes: anamnesis?.notes ?? "",
-  }));
+  const [values, setValues] = useState<Record<FieldKey, string>>(() => toFormValues(anamnesis));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);

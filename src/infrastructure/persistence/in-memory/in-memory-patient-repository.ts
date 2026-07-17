@@ -17,6 +17,14 @@ export class InMemoryPatientRepository implements PatientRepository {
     return [...this.patients.values()].find((p) => p.email === normalized) ?? null;
   }
 
+  async findByIds(ids: string[]): Promise<Patient[]> {
+    const unique = [...new Set(ids)];
+    return unique.flatMap((id) => {
+      const patient = this.patients.get(id);
+      return patient ? [patient] : [];
+    });
+  }
+
   async findAll(search?: string): Promise<Patient[]> {
     const all = [...this.patients.values()].sort((a, b) =>
       a.fullName.localeCompare(b.fullName),

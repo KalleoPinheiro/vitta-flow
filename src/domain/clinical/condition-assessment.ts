@@ -27,15 +27,16 @@ export interface ConditionAssessmentState extends ConditionAssessmentProps {
 export class ConditionAssessment {
   private constructor(private readonly state: ConditionAssessmentState) {}
 
-  static create(props: ConditionAssessmentProps): ConditionAssessment {
+  private static validate(props: ConditionAssessmentProps): void {
     if (props.conditionId.trim().length === 0) {
       throw new ValidationError("Condição é obrigatória");
     }
-    for (const [label, value] of [
+    const measurements = [
       ["comprimento", props.lengthMm],
       ["largura", props.widthMm],
       ["profundidade", props.depthMm],
-    ] as const) {
+    ] as const;
+    for (const [label, value] of measurements) {
       if (value != null && value < 0) {
         throw new ValidationError(`Medida de ${label} não pode ser negativa`);
       }
@@ -43,18 +44,26 @@ export class ConditionAssessment {
     if (props.painScale != null && (props.painScale < 0 || props.painScale > MAX_PAIN)) {
       throw new ValidationError(`Escala de dor deve estar entre 0 e ${MAX_PAIN}`);
     }
+  }
 
+  private static normalizeText(value: string | null | undefined): string | null {
+    const trimmed = value?.trim();
+    return trimmed ? trimmed : null;
+  }
+
+  static create(props: ConditionAssessmentProps): ConditionAssessment {
+    ConditionAssessment.validate(props);
     return new ConditionAssessment({
       conditionId: props.conditionId,
       lengthMm: props.lengthMm ?? null,
       widthMm: props.widthMm ?? null,
       depthMm: props.depthMm ?? null,
-      tissueType: props.tissueType?.trim() || null,
+      tissueType: ConditionAssessment.normalizeText(props.tissueType),
       exudate: props.exudate ?? null,
       painScale: props.painScale ?? null,
-      skinCondition: props.skinCondition?.trim() || null,
-      complications: props.complications?.trim() || null,
-      notes: props.notes?.trim() || null,
+      skinCondition: ConditionAssessment.normalizeText(props.skinCondition),
+      complications: ConditionAssessment.normalizeText(props.complications),
+      notes: ConditionAssessment.normalizeText(props.notes),
       id: newId(),
       createdAt: new Date(),
     });

@@ -6,10 +6,10 @@ import { handleRequest } from "@/lib/api-response";
 import { toSupplyDto } from "@/lib/dto";
 
 const updateSchema = z.object({
-  name: z.string().min(1).optional(),
-  unit: z.string().min(1).optional(),
-  minQty: z.number().int().nonnegative().optional(),
-  priceCents: z.number().int().nonnegative().optional(),
+  name: z.string().min(1).max(200).optional(),
+  unit: z.string().min(1).max(20).optional(),
+  minQty: z.number().int().nonnegative().max(1_000_000).optional(),
+  priceCents: z.number().int().nonnegative().max(1_000_000_000).optional(),
   active: z.boolean().optional(),
 });
 

@@ -15,7 +15,7 @@ export class ListInvoices {
 
   async execute(filter: InvoiceFilter = {}): Promise<InvoiceWithPatient[]> {
     const invoices = await this.invoices.findAll(filter);
-    const patients = await this.patients.findAll();
+    const patients = await this.patients.findByIds(invoices.map((i) => i.patientId));
     const namesById = new Map(patients.map((p) => [p.id, p.fullName]));
 
     return invoices.map((invoice) => ({

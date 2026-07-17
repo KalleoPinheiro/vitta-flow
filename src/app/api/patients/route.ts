@@ -7,11 +7,11 @@ import { handleRequest } from "@/lib/api-response";
 import { toPatientDto } from "@/lib/dto";
 
 const createPatientSchema = z.object({
-  fullName: z.string().min(1),
-  email: z.string().min(1),
-  phone: z.string().min(1),
+  fullName: z.string().min(1).max(200),
+  email: z.string().min(1).max(200),
+  phone: z.string().min(1).max(50),
   birthDate: z.iso.datetime().nullish(),
-  notes: z.string().nullish(),
+  notes: z.string().max(5000).nullish(),
 });
 
 export async function GET(request: NextRequest) {

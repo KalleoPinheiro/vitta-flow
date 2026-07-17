@@ -9,8 +9,8 @@ import { toInvoiceDto } from "@/lib/dto";
 
 const createInvoiceSchema = z.object({
   patientId: z.string().min(1),
-  description: z.string().min(1),
-  amountCents: z.number().int().positive(),
+  description: z.string().min(1).max(500),
+  amountCents: z.number().int().positive().max(1_000_000_000),
   appointmentId: z.string().nullish(),
   dueDate: z.iso.datetime().nullish(),
 });

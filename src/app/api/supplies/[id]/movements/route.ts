@@ -8,8 +8,8 @@ import { toStockMovementDto, toSupplyDto } from "@/lib/dto";
 
 const movementSchema = z.object({
   type: z.enum(MOVEMENT_TYPES),
-  quantity: z.number().int().positive(),
-  reason: z.string().min(1),
+  quantity: z.number().int().positive().max(1_000_000),
+  reason: z.string().min(1).max(500),
 });
 
 type RouteContext = { params: Promise<{ id: string }> };

@@ -15,6 +15,13 @@
       "when": 1784202773624,
       "tag": "0001_clinical-inventory-followups",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784252341546,
+      "tag": "0002_appointment-overlap-guard",
+      "breakpoints": true
     }
   ]
 }

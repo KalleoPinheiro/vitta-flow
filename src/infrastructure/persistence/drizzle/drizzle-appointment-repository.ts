@@ -1,10 +1,24 @@
 import { and, asc, eq, gt, inArray, lt, ne } from "drizzle-orm";
 import { Appointment, type AppointmentStatus } from "@/domain/scheduling/appointment";
 import type { AppointmentRepository } from "@/domain/scheduling/appointment-repository";
+import { SchedulingConflictError } from "@/domain/shared/errors";
 import { Money } from "@/domain/shared/money";
 import { TimeSlot } from "@/domain/shared/time-slot";
 import type { AppDb } from "./db";
 import { appointments } from "./schema";
+
+const PG_EXCLUSION_VIOLATION = "23P01";
+
+function isExclusionViolation(error: unknown): boolean {
+  let current: unknown = error;
+  while (typeof current === "object" && current !== null) {
+    if ((current as { code?: string }).code === PG_EXCLUSION_VIOLATION) {
+      return true;
+    }
+    current = (current as { cause?: unknown }).cause;
+  }
+  return false;
+}
 
 type AppointmentRow = typeof appointments.$inferSelect;
 
@@ -39,10 +53,19 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
       googleEventId: appointment.googleEventId,
       createdAt: appointment.createdAt,
     };
-    await this.db
-      .insert(appointments)
-      .values(values)
-      .onConflictDoUpdate({ target: appointments.id, set: values });
+    try {
+      await this.db
+        .insert(appointments)
+        .values(values)
+        .onConflictDoUpdate({ target: appointments.id, set: values });
+    } catch (error) {
+      if (isExclusionViolation(error)) {
+        throw new SchedulingConflictError(
+          "Horário indisponível: conflito com outra consulta (intervalo mínimo de 15 minutos)",
+        );
+      }
+      throw error;
+    }
   }
 
   async findById(id: string): Promise<Appointment | null> {

@@ -4,6 +4,9 @@ import * as schema from "./schema";
 
 export type AppDb = PgDatabase<PgQueryResultHKT, typeof schema>;
 
+/** Teto de linhas por listagem — protege o banco de queries sem limite (paginação real: P1). */
+export const MAX_ROWS = 500;
+
 const MIGRATIONS_FOLDER = path.join(process.cwd(), "drizzle");
 
 const globalForDb = globalThis as unknown as { vittaDbPromise?: Promise<AppDb> };

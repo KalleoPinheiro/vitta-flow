@@ -18,8 +18,6 @@ export default function SuppliesPage() {
   const [moving, setMoving] = useState<SupplyDto | null>(null);
   const [history, setHistory] = useState<SupplyDto | null>(null);
 
-  const lowStockCount = (supplies ?? []).filter((s) => s.active && s.isLowStock).length;
-
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -34,79 +32,14 @@ export default function SuppliesPage() {
       </div>
 
       {error && <ErrorAlert message={error} />}
-      {lowStockCount > 0 && (
-        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          ⚠ {lowStockCount} {lowStockCount === 1 ? "insumo está" : "insumos estão"} com estoque
-          baixo (≤ mínimo).
-        </div>
-      )}
+      <LowStockBanner supplies={supplies} />
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-        {!supplies ? (
-          <LoadingIndicator />
-        ) : supplies.length === 0 ? (
-          <EmptyState message="Nenhum insumo cadastrado." />
-        ) : (
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
-              <tr>
-                <th className="px-4 py-3">Insumo</th>
-                <th className="px-4 py-3">Estoque</th>
-                <th className="px-4 py-3">Mínimo</th>
-                <th className="px-4 py-3">Preço</th>
-                <th className="px-4 py-3">Situação</th>
-                <th className="px-4 py-3 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {supplies.map((supply) => (
-                <tr key={supply.id} className={supply.active ? "" : "opacity-50"}>
-                  <td className="px-4 py-3 font-medium">{supply.name}</td>
-                  <td className="px-4 py-3">
-                    {supply.stockQty} {supply.unit}
-                    {supply.active && supply.isLowStock && (
-                      <span className="ml-2">
-                        <StatusBadge status="pending" label="Estoque baixo" />
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">{supply.minQty}</td>
-                  <td className="px-4 py-3">{formatCurrency(supply.priceCents)}</td>
-                  <td className="px-4 py-3">
-                    <StatusBadge
-                      status={supply.active ? "confirmed" : "cancelled"}
-                      label={supply.active ? "Ativo" : "Inativo"}
-                    />
-                  </td>
-                  <td className="px-4 py-3 text-right text-sm">
-                    <button
-                      type="button"
-                      onClick={() => setMoving(supply)}
-                      className="mr-2 font-medium text-emerald-700 hover:underline"
-                    >
-                      Movimentar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setHistory(supply)}
-                      className="mr-2 font-medium text-teal-700 hover:underline"
-                    >
-                      Histórico
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setEditing(supply)}
-                      className="font-medium text-slate-500 hover:underline"
-                    >
-                      Editar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <SuppliesTable
+        supplies={supplies}
+        onMove={setMoving}
+        onHistory={setHistory}
+        onEdit={setEditing}
+      />
 
       {editing && (
         <Modal
@@ -144,14 +77,138 @@ export default function SuppliesPage() {
   );
 }
 
+function LowStockBanner({ supplies }: { supplies: SupplyDto[] | null }) {
+  const count = (supplies ?? []).filter((s) => s.active && s.isLowStock).length;
+  if (count === 0) {
+    return null;
+  }
+  return (
+    <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+      ⚠ {count} {count === 1 ? "insumo está" : "insumos estão"} com estoque baixo (≤ mínimo).
+    </div>
+  );
+}
+
+interface SuppliesTableProps {
+  supplies: SupplyDto[] | null;
+  onMove: (supply: SupplyDto) => void;
+  onHistory: (supply: SupplyDto) => void;
+  onEdit: (supply: SupplyDto) => void;
+}
+
+function SuppliesTable({ supplies, onMove, onHistory, onEdit }: SuppliesTableProps) {
+  return (
+    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+      {!supplies ? (
+        <LoadingIndicator />
+      ) : supplies.length === 0 ? (
+        <EmptyState message="Nenhum insumo cadastrado." />
+      ) : (
+        <table className="w-full text-left text-sm">
+          <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
+            <tr>
+              <th className="px-4 py-3">Insumo</th>
+              <th className="px-4 py-3">Estoque</th>
+              <th className="px-4 py-3">Mínimo</th>
+              <th className="px-4 py-3">Preço</th>
+              <th className="px-4 py-3">Situação</th>
+              <th className="px-4 py-3 text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {supplies.map((supply) => (
+              <SupplyRow
+                key={supply.id}
+                supply={supply}
+                onMove={() => onMove(supply)}
+                onHistory={() => onHistory(supply)}
+                onEdit={() => onEdit(supply)}
+              />
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+interface SupplyRowProps {
+  supply: SupplyDto;
+  onMove: () => void;
+  onHistory: () => void;
+  onEdit: () => void;
+}
+
+function SupplyRow({ supply, onMove, onHistory, onEdit }: SupplyRowProps) {
+  return (
+    <tr className={supply.active ? "" : "opacity-50"}>
+      <td className="px-4 py-3 font-medium">{supply.name}</td>
+      <td className="px-4 py-3">
+        {supply.stockQty} {supply.unit}
+        {supply.active && supply.isLowStock && (
+          <span className="ml-2">
+            <StatusBadge status="pending" label="Estoque baixo" />
+          </span>
+        )}
+      </td>
+      <td className="px-4 py-3 text-slate-600">{supply.minQty}</td>
+      <td className="px-4 py-3">{formatCurrency(supply.priceCents)}</td>
+      <td className="px-4 py-3">
+        <StatusBadge
+          status={supply.active ? "confirmed" : "cancelled"}
+          label={supply.active ? "Ativo" : "Inativo"}
+        />
+      </td>
+      <td className="px-4 py-3 text-right text-sm">
+        <button type="button" onClick={onMove} className="mr-2 font-medium text-emerald-700 hover:underline">
+          Movimentar
+        </button>
+        <button type="button" onClick={onHistory} className="mr-2 font-medium text-teal-700 hover:underline">
+          Histórico
+        </button>
+        <button type="button" onClick={onEdit} className="font-medium text-slate-500 hover:underline">
+          Editar
+        </button>
+      </td>
+    </tr>
+  );
+}
+
+interface SupplyFormValues {
+  name: string;
+  unit: string;
+  minQty: string;
+  price: string;
+  active: boolean;
+}
+
+const toSupplyFormValues = (initial?: SupplyDto): SupplyFormValues => ({
+  name: initial?.name ?? "",
+  unit: initial?.unit ?? "un",
+  minQty: initial ? String(initial.minQty) : "0",
+  price: initial ? String(initial.priceCents / 100) : "",
+  active: initial?.active ?? true,
+});
+
+const saveSupply = async (values: SupplyFormValues, initial?: SupplyDto): Promise<void> => {
+  const payload = {
+    name: values.name,
+    unit: values.unit,
+    minQty: Number(values.minQty),
+    priceCents: Math.round(Number(values.price) * 100),
+  };
+  if (initial) {
+    await apiFetch<SupplyDto>(`/api/supplies/${initial.id}`, {
+      method: "PUT",
+      body: JSON.stringify({ ...payload, active: values.active }),
+    });
+    return;
+  }
+  await apiFetch<SupplyDto>("/api/supplies", { method: "POST", body: JSON.stringify(payload) });
+};
+
 function SupplyForm({ initial, onSaved }: { initial?: SupplyDto; onSaved: () => void }) {
-  const [values, setValues] = useState({
-    name: initial?.name ?? "",
-    unit: initial?.unit ?? "un",
-    minQty: initial ? String(initial.minQty) : "0",
-    price: initial ? String(initial.priceCents / 100) : "",
-    active: initial?.active ?? true,
-  });
+  const [values, setValues] = useState<SupplyFormValues>(() => toSupplyFormValues(initial));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -160,23 +217,7 @@ function SupplyForm({ initial, onSaved }: { initial?: SupplyDto; onSaved: () => 
     setSaving(true);
     setError(null);
     try {
-      const payload = {
-        name: values.name,
-        unit: values.unit,
-        minQty: Number(values.minQty),
-        priceCents: Math.round(Number(values.price) * 100),
-      };
-      if (initial) {
-        await apiFetch<SupplyDto>(`/api/supplies/${initial.id}`, {
-          method: "PUT",
-          body: JSON.stringify({ ...payload, active: values.active }),
-        });
-      } else {
-        await apiFetch<SupplyDto>("/api/supplies", {
-          method: "POST",
-          body: JSON.stringify(payload),
-        });
-      }
+      await saveSupply(values, initial);
       onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao salvar insumo");

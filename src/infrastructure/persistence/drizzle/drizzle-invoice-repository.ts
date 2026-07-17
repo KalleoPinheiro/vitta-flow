@@ -2,7 +2,7 @@ import { and, desc, eq, gte, lt, type SQL } from "drizzle-orm";
 import { Invoice, type InvoiceStatus, type PaymentMethod } from "@/domain/billing/invoice";
 import type { InvoiceFilter, InvoiceRepository } from "@/domain/billing/invoice-repository";
 import { Money } from "@/domain/shared/money";
-import type { AppDb } from "./db";
+import { MAX_ROWS, type AppDb } from "./db";
 import { invoices } from "./schema";
 
 type InvoiceRow = typeof invoices.$inferSelect;
@@ -68,7 +68,8 @@ export class DrizzleInvoiceRepository implements InvoiceRepository {
       .select()
       .from(invoices)
       .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(desc(invoices.issuedAt));
+      .orderBy(desc(invoices.issuedAt))
+      .limit(MAX_ROWS);
     return rows.map(toInvoice);
   }
 }

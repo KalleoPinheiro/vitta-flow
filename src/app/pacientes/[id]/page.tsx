@@ -18,6 +18,66 @@ const TABS = [
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
+type Tab = (typeof TABS)[number];
+
+function tabLabel(tab: Tab, conditions: ConditionDto[], evolutions: EvolutionNoteDto[]): string {
+  const counts: Partial<Record<TabKey, number>> = {
+    condicoes: conditions.length,
+    evolucoes: evolutions.length,
+  };
+  const count = counts[tab.key] ?? 0;
+  return count > 0 ? `${tab.label} (${count})` : tab.label;
+}
+
+interface TabButtonProps {
+  label: string;
+  isActive: boolean;
+  onClick: () => void;
+}
+
+function PatientHeader({ patient }: { patient: PatientDto }) {
+  return (
+    <div className="mb-6 flex flex-wrap items-center gap-3">
+      <h1 className="text-2xl font-bold">{patient.fullName}</h1>
+      <StatusBadge
+        status={patient.active ? "confirmed" : "cancelled"}
+        label={patient.active ? "Ativo" : "Inativo"}
+      />
+      <span className="text-sm text-slate-500">
+        {patient.phone} · {patient.email}
+        {patient.birthDate ? ` · nasc. ${formatDate(patient.birthDate)}` : ""}
+      </span>
+    </div>
+  );
+}
+
+function AllergyBanner({ allergies }: { allergies?: string }) {
+  if (!allergies) {
+    return null;
+  }
+  return (
+    <div className="mb-6 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm">
+      <span className="font-bold text-red-800">⚠ Alergias: </span>
+      <span className="text-red-900">{allergies}</span>
+    </div>
+  );
+}
+
+function TabButton({ label, isActive, onClick }: TabButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium ${
+        isActive
+          ? "border-teal-700 text-teal-800"
+          : "border-transparent text-slate-500 hover:text-slate-700"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
 
 export default function PatientRecordPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -44,72 +104,77 @@ export default function PatientRecordPage({ params }: { params: Promise<{ id: st
           ← Pacientes
         </Link>
       </div>
-      <div className="mb-6 flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-bold">{patient.fullName}</h1>
-        <StatusBadge
-          status={patient.active ? "confirmed" : "cancelled"}
-          label={patient.active ? "Ativo" : "Inativo"}
-        />
-        <span className="text-sm text-slate-500">
-          {patient.phone} · {patient.email}
-          {patient.birthDate ? ` · nasc. ${formatDate(patient.birthDate)}` : ""}
-        </span>
-      </div>
-
-      {anamnesis?.allergies && (
-        <div className="mb-6 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm">
-          <span className="font-bold text-red-800">⚠ Alergias: </span>
-          <span className="text-red-900">{anamnesis.allergies}</span>
-        </div>
-      )}
+      <PatientHeader patient={patient} />
+      <AllergyBanner allergies={anamnesis?.allergies} />
 
       <div className="mb-4 flex gap-2 border-b border-slate-200">
         {TABS.map((item) => (
-          <button
+          <TabButton
             key={item.key}
-            type="button"
+            label={tabLabel(item, conditions ?? [], evolutions ?? [])}
+            isActive={tab === item.key}
             onClick={() => setTab(item.key)}
-            className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium ${
-              tab === item.key
-                ? "border-teal-700 text-teal-800"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            {item.label}
-            {item.key === "condicoes" && conditions && conditions.length > 0
-              ? ` (${conditions.length})`
-              : ""}
-            {item.key === "evolucoes" && evolutions && evolutions.length > 0
-              ? ` (${evolutions.length})`
-              : ""}
-          </button>
+          />
         ))}
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-5">
-        {tab === "anamnese" && (
-          <AnamnesisSection
-            key={anamnesis ? anamnesis.updatedAt : "empty"}
-            patientId={id}
-            anamnesis={anamnesis ?? null}
-            onSaved={refreshAnamnesis}
-          />
-        )}
-        {tab === "condicoes" && (
-          <ConditionsSection
-            patientId={id}
-            conditions={conditions ?? []}
-            onChanged={refreshConditions}
-          />
-        )}
-        {tab === "evolucoes" && (
-          <EvolutionsSection
-            patientId={id}
-            evolutions={evolutions ?? []}
-            onSaved={refreshEvolutions}
-          />
-        )}
+        <RecordTabPanel
+          tab={tab}
+          patientId={id}
+          anamnesis={anamnesis ?? null}
+          conditions={conditions ?? []}
+          evolutions={evolutions ?? []}
+          refreshAnamnesis={refreshAnamnesis}
+          refreshConditions={refreshConditions}
+          refreshEvolutions={refreshEvolutions}
+        />
       </div>
     </div>
+  );
+}
+
+interface RecordTabPanelProps {
+  tab: TabKey;
+  patientId: string;
+  anamnesis: AnamnesisDto | null;
+  conditions: ConditionDto[];
+  evolutions: EvolutionNoteDto[];
+  refreshAnamnesis: () => void;
+  refreshConditions: () => void;
+  refreshEvolutions: () => void;
+}
+
+function RecordTabPanel({
+  tab,
+  patientId,
+  anamnesis,
+  conditions,
+  evolutions,
+  refreshAnamnesis,
+  refreshConditions,
+  refreshEvolutions,
+}: RecordTabPanelProps) {
+  if (tab === "condicoes") {
+    return (
+      <ConditionsSection
+        patientId={patientId}
+        conditions={conditions}
+        onChanged={refreshConditions}
+      />
+    );
+  }
+  if (tab === "evolucoes") {
+    return (
+      <EvolutionsSection patientId={patientId} evolutions={evolutions} onSaved={refreshEvolutions} />
+    );
+  }
+  return (
+    <AnamnesisSection
+      key={anamnesis ? anamnesis.updatedAt : "empty"}
+      patientId={patientId}
+      anamnesis={anamnesis}
+      onSaved={refreshAnamnesis}
+    />
   );
 }

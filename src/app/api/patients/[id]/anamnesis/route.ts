@@ -7,11 +7,11 @@ import { handleRequest } from "@/lib/api-response";
 import { toAnamnesisDto } from "@/lib/dto";
 
 const anamnesisSchema = z.object({
-  comorbidities: z.string().optional(),
-  allergies: z.string().optional(),
-  medications: z.string().optional(),
-  surgicalHistory: z.string().optional(),
-  notes: z.string().optional(),
+  comorbidities: z.string().max(5000).optional(),
+  allergies: z.string().max(5000).optional(),
+  medications: z.string().max(5000).optional(),
+  surgicalHistory: z.string().max(5000).optional(),
+  notes: z.string().max(5000).optional(),
 });
 
 type RouteContext = { params: Promise<{ id: string }> };

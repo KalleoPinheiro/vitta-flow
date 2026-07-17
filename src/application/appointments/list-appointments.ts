@@ -20,7 +20,7 @@ export class ListAppointments {
 
   async execute(input: ListAppointmentsInput): Promise<AppointmentWithPatient[]> {
     const appointments = await this.appointments.findInRange(input.from, input.to);
-    const patients = await this.patients.findAll();
+    const patients = await this.patients.findByIds(appointments.map((a) => a.patientId));
     const namesById = new Map(patients.map((p) => [p.id, p.fullName]));
 
     return appointments.map((appointment) => ({

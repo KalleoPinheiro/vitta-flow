@@ -19,6 +19,32 @@ export interface AnamnesisState {
   updatedAt: Date;
 }
 
+const TEXT_FIELDS = [
+  "comorbidities",
+  "allergies",
+  "medications",
+  "surgicalHistory",
+  "notes",
+] as const;
+
+type AnamnesisTextField = (typeof TEXT_FIELDS)[number];
+
+const mergeTextFields = (
+  base: Record<AnamnesisTextField, string>,
+  changes: Partial<Record<AnamnesisTextField, string>>,
+): Record<AnamnesisTextField, string> =>
+  Object.fromEntries(
+    TEXT_FIELDS.map((field) => [field, changes[field]?.trim() ?? base[field]]),
+  ) as Record<AnamnesisTextField, string>;
+
+const EMPTY_FIELDS: Record<AnamnesisTextField, string> = {
+  comorbidities: "",
+  allergies: "",
+  medications: "",
+  surgicalHistory: "",
+  notes: "",
+};
+
 export class Anamnesis {
   private constructor(private readonly state: AnamnesisState) {}
 
@@ -28,11 +54,7 @@ export class Anamnesis {
     }
     return new Anamnesis({
       patientId: props.patientId,
-      comorbidities: props.comorbidities?.trim() ?? "",
-      allergies: props.allergies?.trim() ?? "",
-      medications: props.medications?.trim() ?? "",
-      surgicalHistory: props.surgicalHistory?.trim() ?? "",
-      notes: props.notes?.trim() ?? "",
+      ...mergeTextFields(EMPTY_FIELDS, props),
       updatedAt: new Date(),
     });
   }
@@ -44,11 +66,7 @@ export class Anamnesis {
   update(changes: Omit<Partial<AnamnesisProps>, "patientId">): Anamnesis {
     return new Anamnesis({
       ...this.state,
-      comorbidities: changes.comorbidities?.trim() ?? this.state.comorbidities,
-      allergies: changes.allergies?.trim() ?? this.state.allergies,
-      medications: changes.medications?.trim() ?? this.state.medications,
-      surgicalHistory: changes.surgicalHistory?.trim() ?? this.state.surgicalHistory,
-      notes: changes.notes?.trim() ?? this.state.notes,
+      ...mergeTextFields(this.state, changes),
       updatedAt: new Date(),
     });
   }

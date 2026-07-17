@@ -7,15 +7,15 @@ import { handleRequest } from "@/lib/api-response";
 import { toAssessmentDto } from "@/lib/dto";
 
 const assessmentSchema = z.object({
-  lengthMm: z.number().int().nullish(),
-  widthMm: z.number().int().nullish(),
-  depthMm: z.number().int().nullish(),
-  tissueType: z.string().nullish(),
+  lengthMm: z.number().int().min(0).max(10_000).nullish(),
+  widthMm: z.number().int().min(0).max(10_000).nullish(),
+  depthMm: z.number().int().min(0).max(10_000).nullish(),
+  tissueType: z.string().max(200).nullish(),
   exudate: z.enum(EXUDATE_LEVELS).nullish(),
-  painScale: z.number().int().nullish(),
-  skinCondition: z.string().nullish(),
-  complications: z.string().nullish(),
-  notes: z.string().nullish(),
+  painScale: z.number().int().min(0).max(10).nullish(),
+  skinCondition: z.string().max(1000).nullish(),
+  complications: z.string().max(1000).nullish(),
+  notes: z.string().max(5000).nullish(),
 });
 
 type RouteContext = { params: Promise<{ id: string }> };

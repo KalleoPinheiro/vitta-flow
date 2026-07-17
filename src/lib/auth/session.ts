@@ -6,20 +6,26 @@ export const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 const sign = (secret: string, payload: string): string =>
   createHmac("sha256", secret).update(payload).digest("hex");
 
+export const USER_ROLES = ["admin", "partner", "patient"] as const;
+export type UserRole = (typeof USER_ROLES)[number];
+
 export interface Session {
   expiresAtMs: number;
   /** Quem está logado: "local" (senha da clínica) ou o email da conta Google. */
   subject: string;
+  /** Papel de acesso: admin (equipe), partner (médico parceiro) ou patient (paciente). */
+  role: UserRole;
 }
 
 export function createSessionToken(
   secret: string,
   expiresAtMs: number,
   subject = "local",
+  role: UserRole = "admin",
 ): string {
-  const payload = Buffer.from(JSON.stringify({ exp: expiresAtMs, sub: subject })).toString(
-    "base64url",
-  );
+  const payload = Buffer.from(
+    JSON.stringify({ exp: expiresAtMs, sub: subject, role }),
+  ).toString("base64url");
   return `${payload}.${sign(secret, payload)}`;
 }
 
@@ -37,11 +43,15 @@ function parsePayload(payload: string): Session | null {
     const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as {
       exp?: unknown;
       sub?: unknown;
+      role?: unknown;
     };
     if (typeof parsed.exp !== "number" || typeof parsed.sub !== "string") {
       return null;
     }
-    return { expiresAtMs: parsed.exp, subject: parsed.sub };
+    if (!USER_ROLES.includes(parsed.role as UserRole)) {
+      return null;
+    }
+    return { expiresAtMs: parsed.exp, subject: parsed.sub, role: parsed.role as UserRole };
   } catch {
     return null;
   }

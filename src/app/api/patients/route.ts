@@ -12,6 +12,7 @@ const createPatientSchema = z.object({
   phone: z.string().min(1).max(50),
   birthDate: z.iso.datetime().nullish(),
   notes: z.string().max(5000).nullish(),
+  referredByPartnerId: z.string().max(100).nullish(),
 });
 
 export async function GET(request: NextRequest) {
@@ -33,6 +34,7 @@ export async function POST(request: NextRequest) {
       phone: body.phone,
       birthDate: body.birthDate ? new Date(body.birthDate) : null,
       notes: body.notes ?? null,
+      referredByPartnerId: body.referredByPartnerId ?? null,
     });
     return toPatientDto(patient);
   });

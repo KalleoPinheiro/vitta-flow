@@ -123,6 +123,21 @@ npm run lint          # ESLint
 - Seleção de mês; consultas por status; **taxa de falta (no-show)** com alerta visual acima de 15%.
 - Recebido × a receber no mês; **receita por procedimento** das consultas concluídas.
 
+### Papéis de acesso (RBAC) e portais
+Três papéis, resolvidos automaticamente no login com Google pelo email da conta (senha local = admin):
+
+| Papel | Quem | O que acessa |
+|-------|------|--------------|
+| **admin** | Equipe da clínica (emails em `GOOGLE_ALLOWED_EMAILS` ou senha local) | Sistema completo |
+| **partner** | Médico parceiro cadastrado em `/parceiros` | Portal com **apenas os pacientes que ele indicou**: consultas e evolução clínica (sem financeiro, sem anamnese) |
+| **patient** | Paciente cadastrado em `/pacientes` | Portal com **apenas os próprios dados**: próximas consultas, retornos recomendados, evolução clínica, histórico e faturas |
+
+- **Parceria e indicação**: cadastro de médicos parceiros (`/parceiros` — nome, email, CRM, especialidade) e campo "Indicado por" no cadastro do paciente.
+- **Portais** em `/portal` (layout próprio, sem menu da clínica): a visão é escolhida pelo papel da sessão.
+- **Enforcement no proxy**: papel embutido no cookie assinado; rotas da clínica são exclusivas do admin (paciente/parceiro recebem 403 na API e redirect para `/portal` nas páginas); rotas `/api/portal/*` revalidam o papel e escopam os dados pelo email da sessão no servidor.
+- Parceiro/paciente desativado perde o login imediatamente (resolução nega o acesso).
+- Login Google de paciente/parceiro **não** grava credencial de Calendar (ela pertence à equipe).
+
 ### Regras de negócio garantidas por teste
 - Máquina de estados da consulta: `scheduled → confirmed → completed`, com desvios para `cancelled`/`no_show`; transições inválidas são rejeitadas.
 - Fatura: `pending → paid` ou `pending → cancelled`; nunca paga/cancela duas vezes.

@@ -20,10 +20,20 @@ describe("Feature: Sessão assinada (HMAC)", () => {
     expect(session?.subject).toBe("maria@clinica.com");
   });
 
-  it("Dado token sem subject explícito, Quando verificar, Então subject padrão 'local'", () => {
+  it("Dado token sem subject explícito, Quando verificar, Então subject 'local' e papel 'admin'", () => {
     const token = createSessionToken(SECRET, Date.now() + 60_000);
 
-    expect(verifySessionToken(SECRET, token)?.subject).toBe("local");
+    const session = verifySessionToken(SECRET, token);
+    expect(session?.subject).toBe("local");
+    expect(session?.role).toBe("admin");
+  });
+
+  it("Dado token com papel patient/partner, Quando verificar, Então papel preservado", () => {
+    const patientToken = createSessionToken(SECRET, Date.now() + 60_000, "maria@x.com", "patient");
+    const partnerToken = createSessionToken(SECRET, Date.now() + 60_000, "dr@x.com", "partner");
+
+    expect(verifySessionToken(SECRET, patientToken)?.role).toBe("patient");
+    expect(verifySessionToken(SECRET, partnerToken)?.role).toBe("partner");
   });
 
   it("Dado token expirado, Quando verificar, Então inválido", () => {

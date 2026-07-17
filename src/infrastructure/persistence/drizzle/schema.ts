@@ -1,15 +1,31 @@
 import { boolean, index, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
-export const patients = pgTable("patients", {
+export const partners = pgTable("partners", {
   id: text("id").primaryKey(),
   fullName: text("full_name").notNull(),
   email: text("email").notNull().unique(),
   phone: text("phone").notNull(),
-  birthDate: timestamp("birth_date", { withTimezone: true, mode: "date" }),
-  notes: text("notes"),
+  crm: text("crm"),
+  specialty: text("specialty"),
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
 });
+
+export const patients = pgTable(
+  "patients",
+  {
+    id: text("id").primaryKey(),
+    fullName: text("full_name").notNull(),
+    email: text("email").notNull().unique(),
+    phone: text("phone").notNull(),
+    birthDate: timestamp("birth_date", { withTimezone: true, mode: "date" }),
+    notes: text("notes"),
+    referredByPartnerId: text("referred_by_partner_id").references(() => partners.id),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [index("idx_patients_referrer").on(table.referredByPartnerId)],
+);
 
 export const appointments = pgTable(
   "appointments",

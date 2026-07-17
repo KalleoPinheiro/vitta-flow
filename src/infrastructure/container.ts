@@ -18,6 +18,8 @@ import {
   googleCalendarConfigFromEnv,
 } from "./calendar/google-calendar-gateway";
 import { DrizzleGoogleAccountRepository } from "./persistence/drizzle/drizzle-google-account-repository";
+import { DrizzlePartnerRepository } from "./persistence/drizzle/drizzle-partner-repository";
+import type { PartnerRepository } from "@/domain/partner/partner-repository";
 import { googleOAuthConfigFromEnv } from "@/lib/auth/google-oauth";
 import { getAuthConfig } from "@/lib/auth/session";
 import { decryptSecret } from "@/lib/auth/crypto";
@@ -43,6 +45,7 @@ import {
 
 export interface Services {
   patients: PatientRepository;
+  partners: PartnerRepository;
   appointments: AppointmentRepository;
   invoices: InvoiceRepository;
   anamneses: AnamnesisRepository;
@@ -112,6 +115,7 @@ export async function getRepositories(): Promise<Services> {
   const calendar = await buildCalendarGateway(db);
   return {
     patients: new DrizzlePatientRepository(db),
+    partners: new DrizzlePartnerRepository(db),
     appointments: new DrizzleAppointmentRepository(db),
     invoices: new DrizzleInvoiceRepository(db),
     anamneses: new DrizzleAnamnesisRepository(db),

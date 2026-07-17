@@ -51,11 +51,37 @@ export function proxy(request: NextRequest): NextResponse {
   }
 
   const token = request.cookies.get(SESSION_COOKIE)?.value;
-  if (!verifySessionToken(auth.secret, token)) {
+  const session = verifySessionToken(auth.secret, token);
+  if (!session) {
     return unauthorized(request);
+  }
+  if (!isAllowedForRole(pathname, session.role)) {
+    return forbidden(request);
   }
 
   return NextResponse.next();
+}
+
+/** Rotas acessíveis a qualquer papel autenticado; todo o resto é exclusivo do admin (equipe). */
+const SHARED_PATH_PREFIXES = ["/portal", "/api/portal", "/api/auth/logout"];
+
+function isAllowedForRole(pathname: string, role: string): boolean {
+  if (role === "admin") {
+    return true;
+  }
+  return SHARED_PATH_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
+function forbidden(request: NextRequest): NextResponse {
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    return NextResponse.json(
+      { success: false, data: null, error: "Acesso restrito à equipe da clínica" },
+      { status: 403 },
+    );
+  }
+  return NextResponse.redirect(new URL("/portal", request.url));
 }
 
 type AuthConfig = ReturnType<typeof getAuthConfig>;

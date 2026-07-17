@@ -10,6 +10,8 @@ export interface PatientProps {
   phone: string;
   birthDate?: Date | null;
   notes?: string | null;
+  /** Médico parceiro que indicou o paciente (estrutura de indicação). */
+  referredByPartnerId?: string | null;
 }
 
 export interface PatientState extends PatientProps {
@@ -55,6 +57,7 @@ export class Patient {
       phone,
       birthDate: props.birthDate ?? null,
       notes: props.notes ?? null,
+      referredByPartnerId: props.referredByPartnerId ?? null,
     };
   }
 
@@ -65,6 +68,10 @@ export class Patient {
       phone: changes.phone ?? this.state.phone,
       birthDate: changes.birthDate !== undefined ? changes.birthDate : this.state.birthDate,
       notes: changes.notes !== undefined ? changes.notes : this.state.notes,
+      referredByPartnerId:
+        changes.referredByPartnerId !== undefined
+          ? changes.referredByPartnerId
+          : this.state.referredByPartnerId,
     });
     return new Patient({ ...this.state, ...validated });
   }
@@ -99,6 +106,10 @@ export class Patient {
 
   get notes(): string | null {
     return this.state.notes ?? null;
+  }
+
+  get referredByPartnerId(): string | null {
+    return this.state.referredByPartnerId ?? null;
   }
 
   get isActive(): boolean {

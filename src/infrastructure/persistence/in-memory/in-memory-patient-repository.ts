@@ -17,6 +17,10 @@ export class InMemoryPatientRepository implements PatientRepository {
     return [...this.patients.values()].find((p) => p.email === normalized) ?? null;
   }
 
+  async findByReferrer(partnerId: string): Promise<Patient[]> {
+    return [...this.patients.values()].filter((p) => p.referredByPartnerId === partnerId);
+  }
+
   async findByIds(ids: string[]): Promise<Patient[]> {
     const unique = [...new Set(ids)];
     return unique.flatMap((id) => {

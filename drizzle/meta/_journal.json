@@ -29,6 +29,13 @@
       "when": 1784253924571,
       "tag": "0003_google-accounts",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1784300517340,
+      "tag": "0004_partners-referral",
+      "breakpoints": true
     }
   ]
 }

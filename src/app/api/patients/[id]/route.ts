@@ -13,6 +13,7 @@ const updatePatientSchema = z.object({
   phone: z.string().min(1).max(50).optional(),
   birthDate: z.iso.datetime().nullish(),
   notes: z.string().max(5000).nullish(),
+  referredByPartnerId: z.string().max(100).nullish(),
 });
 
 const setActiveSchema = z.object({
@@ -41,6 +42,8 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       phone: body.phone,
       birthDate: body.birthDate === undefined ? undefined : body.birthDate ? new Date(body.birthDate) : null,
       notes: body.notes === undefined ? undefined : body.notes,
+      referredByPartnerId:
+        body.referredByPartnerId === undefined ? undefined : body.referredByPartnerId,
     });
     return toPatientDto(patient);
   });

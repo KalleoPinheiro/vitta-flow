@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "@/lib/client";
-import type { PatientDto } from "@/lib/dto";
+import type { PartnerDto, PatientDto } from "@/lib/dto";
+import { useApiQuery } from "@/lib/use-api-query";
 import { formatDate } from "@/lib/format";
 import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
@@ -14,6 +15,7 @@ export default function PatientsPage() {
   const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<PatientDto | "new" | null>(null);
+  const { data: partners } = useApiQuery<PartnerDto[]>("/api/partners");
 
   const load = useCallback(async (term: string) => {
     try {
@@ -37,6 +39,7 @@ export default function PatientsPage() {
       phone: values.phone,
       birthDate: values.birthDate ? new Date(values.birthDate).toISOString() : null,
       notes: values.notes || null,
+      referredByPartnerId: values.referredByPartnerId || null,
     };
     if (editing === "new") {
       await apiFetch<PatientDto>("/api/patients", {
@@ -157,6 +160,7 @@ export default function PatientsPage() {
         >
           <PatientForm
             initial={editing === "new" ? undefined : editing}
+            partners={partners ?? []}
             onSubmit={handleSubmit}
           />
         </Modal>

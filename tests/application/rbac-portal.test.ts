@@ -1,0 +1,249 @@
+import { describe, it, expect, beforeEach } from "vitest";
+import { InMemoryPatientRepository } from "@/infrastructure/persistence/in-memory/in-memory-patient-repository";
+import { InMemoryPartnerRepository } from "@/infrastructure/persistence/in-memory/in-memory-partner-repository";
+import { InMemoryAppointmentRepository } from "@/infrastructure/persistence/in-memory/in-memory-appointment-repository";
+import { InMemoryInvoiceRepository } from "@/infrastructure/persistence/in-memory/in-memory-invoice-repository";
+import {
+  InMemoryClinicalConditionRepository,
+  InMemoryConditionAssessmentRepository,
+} from "@/infrastructure/persistence/in-memory/in-memory-clinical-repositories";
+import { InMemoryFollowUpRepository } from "@/infrastructure/persistence/in-memory/in-memory-inventory-repositories";
+import { CreatePatient } from "@/application/patients/create-patient";
+import { CreatePartner } from "@/application/partners/create-partner";
+import { UpdatePartner } from "@/application/partners/update-partner";
+import { ListPartners } from "@/application/partners/list-partners";
+import { ResolveUserRole } from "@/application/auth/resolve-user-role";
+import { ScheduleAppointment } from "@/application/appointments/schedule-appointment";
+import { CreateCondition } from "@/application/clinical/create-condition";
+import { AddConditionAssessment } from "@/application/clinical/add-condition-assessment";
+import { CreateInvoice } from "@/application/billing/create-invoice";
+import { GetPatientPortalData } from "@/application/portal/get-patient-portal-data";
+import { GetPartnerPortalData } from "@/application/portal/get-partner-portal-data";
+import { NotFoundError, ValidationError } from "@/domain/shared/errors";
+
+describe("Feature: RBAC — parceria, indicação e portais", () => {
+  let patientRepo: InMemoryPatientRepository;
+  let partnerRepo: InMemoryPartnerRepository;
+  let appointmentRepo: InMemoryAppointmentRepository;
+  let invoiceRepo: InMemoryInvoiceRepository;
+  let conditionRepo: InMemoryClinicalConditionRepository;
+  let assessmentRepo: InMemoryConditionAssessmentRepository;
+  let followUpRepo: InMemoryFollowUpRepository;
+
+  beforeEach(() => {
+    patientRepo = new InMemoryPatientRepository();
+    partnerRepo = new InMemoryPartnerRepository();
+    appointmentRepo = new InMemoryAppointmentRepository();
+    invoiceRepo = new InMemoryInvoiceRepository();
+    conditionRepo = new InMemoryClinicalConditionRepository();
+    assessmentRepo = new InMemoryConditionAssessmentRepository();
+    followUpRepo = new InMemoryFollowUpRepository();
+  });
+
+  const createPartner = (email = "dr.carlos@x.com") =>
+    new CreatePartner(partnerRepo).execute({
+      fullName: "Dr. Carlos Andrade",
+      email,
+      phone: "11955550000",
+      crm: "CRM-SP 123456",
+      specialty: "Cirurgia vascular",
+    });
+
+  const createPatient = (email: string, referredByPartnerId?: string | null) =>
+    new CreatePatient(patientRepo).execute({
+      fullName: `Paciente ${email}`,
+      email,
+      phone: "11999990000",
+      referredByPartnerId: referredByPartnerId ?? null,
+    });
+
+  describe("Cenário: CRUD de parceiro", () => {
+    it("Dado email duplicado, Quando criar parceiro, Então lança ValidationError", async () => {
+      await createPartner();
+
+      await expect(createPartner()).rejects.toThrow(ValidationError);
+    });
+
+    it("Dado parceiro, Quando atualizar e desativar, Então persiste; listar retorna todos", async () => {
+      const partner = await createPartner();
+
+      await new UpdatePartner(partnerRepo).execute({
+        id: partner.id,
+        specialty: "Angiologia",
+        active: false,
+      });
+
+      const list = await new ListPartners(partnerRepo).execute();
+      expect(list).toHaveLength(1);
+      expect(list[0].specialty).toBe("Angiologia");
+      expect(list[0].isActive).toBe(false);
+    });
+  });
+
+  describe("Cenário: resolução de papel no login", () => {
+    it("Dado email na allowlist da equipe, Quando resolver, Então admin (mesmo sendo parceiro)", async () => {
+      await createPartner("ana@clinica.com");
+
+      const role = await new ResolveUserRole(patientRepo, partnerRepo).execute({
+        email: "Ana@Clinica.com",
+        adminEmails: ["ana@clinica.com"],
+      });
+
+      expect(role).toBe("admin");
+    });
+
+    it("Dado email de parceiro ativo, Quando resolver, Então partner", async () => {
+      await createPartner("dr.carlos@x.com");
+
+      const role = await new ResolveUserRole(patientRepo, partnerRepo).execute({
+        email: "dr.carlos@x.com",
+        adminEmails: [],
+      });
+
+      expect(role).toBe("partner");
+    });
+
+    it("Dado email de paciente ativo, Quando resolver, Então patient", async () => {
+      await createPatient("maria@x.com");
+
+      const role = await new ResolveUserRole(patientRepo, partnerRepo).execute({
+        email: "maria@x.com",
+        adminEmails: [],
+      });
+
+      expect(role).toBe("patient");
+    });
+
+    it("Dado parceiro desativado ou email desconhecido, Quando resolver, Então null (negado)", async () => {
+      const partner = await createPartner("dr.ex@x.com");
+      await new UpdatePartner(partnerRepo).execute({ id: partner.id, active: false });
+
+      const resolver = new ResolveUserRole(patientRepo, partnerRepo);
+      expect(await resolver.execute({ email: "dr.ex@x.com", adminEmails: [] })).toBeNull();
+      expect(await resolver.execute({ email: "intruso@x.com", adminEmails: [] })).toBeNull();
+    });
+  });
+
+  describe("Cenário: portal do paciente vê apenas os próprios dados", () => {
+    it("Dado dois pacientes com consultas e faturas, Quando carregar portal de um, Então só os dados dele", async () => {
+      const maria = await createPatient("maria@x.com");
+      const joao = await createPatient("joao@x.com");
+
+      const schedule = new ScheduleAppointment(appointmentRepo, patientRepo);
+      await schedule.execute({
+        patientId: maria.id,
+        startsAt: new Date("2026-07-20T09:00:00Z"),
+        endsAt: new Date("2026-07-20T10:00:00Z"),
+        procedure: "Troca de bolsa",
+        priceCents: 25000,
+      });
+      await schedule.execute({
+        patientId: joao.id,
+        startsAt: new Date("2026-07-21T09:00:00Z"),
+        endsAt: new Date("2026-07-21T10:00:00Z"),
+        procedure: "Curativo",
+        priceCents: 15000,
+      });
+      await new CreateInvoice(invoiceRepo, patientRepo).execute({
+        patientId: maria.id,
+        description: "Consulta",
+        amountCents: 25000,
+      });
+      const condition = await new CreateCondition(conditionRepo, patientRepo).execute({
+        patientId: maria.id,
+        kind: "wound",
+        title: "Úlcera venosa",
+      });
+      await new AddConditionAssessment(assessmentRepo, conditionRepo).execute({
+        conditionId: condition.id,
+        lengthMm: 40,
+        widthMm: 20,
+        painScale: 3,
+      });
+
+      const portal = new GetPatientPortalData(
+        patientRepo,
+        appointmentRepo,
+        conditionRepo,
+        assessmentRepo,
+        invoiceRepo,
+        followUpRepo,
+      );
+      const data = await portal.execute({ email: "maria@x.com" });
+
+      expect(data.patient.id).toBe(maria.id);
+      expect(data.appointments).toHaveLength(1);
+      expect(data.appointments[0].procedure).toBe("Troca de bolsa");
+      expect(data.invoices).toHaveLength(1);
+      expect(data.conditions).toHaveLength(1);
+      expect(data.conditions[0].assessments[0].areaMm2).toBe(800);
+    });
+
+    it("Dado email sem paciente, Quando carregar portal, Então NotFoundError", async () => {
+      const portal = new GetPatientPortalData(
+        patientRepo,
+        appointmentRepo,
+        conditionRepo,
+        assessmentRepo,
+        invoiceRepo,
+        followUpRepo,
+      );
+
+      await expect(portal.execute({ email: "ghost@x.com" })).rejects.toThrow(NotFoundError);
+    });
+  });
+
+  describe("Cenário: portal do parceiro vê apenas pacientes que indicou", () => {
+    it("Dado pacientes de vários parceiros, Quando carregar portal, Então só as indicações dele com evolução", async () => {
+      const carlos = await createPartner("dr.carlos@x.com");
+      const outra = await createPartner("dra.outra@x.com");
+      const indicada = await createPatient("indicada@x.com", carlos.id);
+      await createPatient("de-outra@x.com", outra.id);
+      await createPatient("sem-indicacao@x.com");
+
+      await new ScheduleAppointment(appointmentRepo, patientRepo).execute({
+        patientId: indicada.id,
+        startsAt: new Date("2026-07-20T09:00:00Z"),
+        endsAt: new Date("2026-07-20T10:00:00Z"),
+        procedure: "Avaliação de estomia",
+        priceCents: 20000,
+      });
+      const condition = await new CreateCondition(conditionRepo, patientRepo).execute({
+        patientId: indicada.id,
+        kind: "stoma",
+        title: "Colostomia terminal",
+        stomaType: "colostomia",
+      });
+      await new AddConditionAssessment(assessmentRepo, conditionRepo).execute({
+        conditionId: condition.id,
+        skinCondition: "Íntegra",
+      });
+
+      const data = await new GetPartnerPortalData(
+        partnerRepo,
+        patientRepo,
+        appointmentRepo,
+        conditionRepo,
+        assessmentRepo,
+      ).execute({ email: "dr.carlos@x.com" });
+
+      expect(data.partner.id).toBe(carlos.id);
+      expect(data.referredPatients).toHaveLength(1);
+      expect(data.referredPatients[0].patient.email).toBe("indicada@x.com");
+      expect(data.referredPatients[0].appointments).toHaveLength(1);
+      expect(data.referredPatients[0].conditions[0].assessments).toHaveLength(1);
+    });
+
+    it("Dado email sem parceiro ativo, Quando carregar portal, Então NotFoundError", async () => {
+      await expect(
+        new GetPartnerPortalData(
+          partnerRepo,
+          patientRepo,
+          appointmentRepo,
+          conditionRepo,
+          assessmentRepo,
+        ).execute({ email: "ghost@x.com" }),
+      ).rejects.toThrow(NotFoundError);
+    });
+  });
+});

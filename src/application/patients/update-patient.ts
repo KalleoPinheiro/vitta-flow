@@ -9,6 +9,7 @@ export interface UpdatePatientInput {
   phone?: string;
   birthDate?: Date | null;
   notes?: string | null;
+  referredByPartnerId?: string | null;
 }
 
 export class UpdatePatient {

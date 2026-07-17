@@ -5,5 +5,6 @@ export interface PatientRepository {
   findById(id: string): Promise<Patient | null>;
   findByEmail(email: string): Promise<Patient | null>;
   findByIds(ids: string[]): Promise<Patient[]>;
+  findByReferrer(partnerId: string): Promise<Patient[]>;
   findAll(search?: string): Promise<Patient[]>;
 }

@@ -26,6 +26,9 @@ import { Supply } from "@/domain/inventory/supply";
 import { StockMovement } from "@/domain/inventory/stock-movement";
 import { FollowUp } from "@/domain/followup/follow-up";
 import { DrizzleGoogleAccountRepository } from "@/infrastructure/persistence/drizzle/drizzle-google-account-repository";
+import { DrizzlePartnerRepository } from "@/infrastructure/persistence/drizzle/drizzle-partner-repository";
+import { DrizzlePatientRepository as PatientRepo } from "@/infrastructure/persistence/drizzle/drizzle-patient-repository";
+import { Partner } from "@/domain/partner/partner";
 
 describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e retornos", () => {
   let db: PgliteDatabase<typeof schema>;
@@ -41,6 +44,7 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
 
   beforeEach(async () => {
     await db.delete(schema.googleAccounts);
+    await db.update(schema.patients).set({ referredByPartnerId: null });
     await db.delete(schema.conditionAssessments);
     await db.delete(schema.clinicalConditions);
     await db.delete(schema.evolutionNotes);
@@ -49,6 +53,7 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
     await db.delete(schema.supplies);
     await db.delete(schema.followUps);
     await db.delete(schema.patients);
+    await db.delete(schema.partners);
     patient = Patient.create({
       fullName: "Maria da Silva",
       email: "maria@example.com",
@@ -132,6 +137,33 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
     expect(stored?.isLowStock).toBe(false);
     expect(await movementRepo.findBySupplyId(supply.id)).toHaveLength(1);
     expect(await supplyRepo.findAll()).toHaveLength(1);
+  });
+
+  it("Dado parceiro salvo e paciente indicado, Quando buscar, Então roundtrip e escopo por indicação", async () => {
+    const partnerRepo = new DrizzlePartnerRepository(appDb);
+    const patientRepo = new PatientRepo(appDb);
+    const partner = Partner.create({
+      fullName: "Dr. Carlos Andrade",
+      email: "carlos@x.com",
+      phone: "11955550000",
+      crm: "CRM-SP 123456",
+      specialty: "Cirurgia vascular",
+    });
+    await partnerRepo.save(partner);
+    await patientRepo.save(patient.update({ referredByPartnerId: partner.id }));
+
+    const storedPartner = await partnerRepo.findByEmail("carlos@x.com");
+    expect(storedPartner?.crm).toBe("CRM-SP 123456");
+    expect(await partnerRepo.findById(partner.id)).not.toBeNull();
+    expect(await partnerRepo.findAll()).toHaveLength(1);
+
+    const referred = await patientRepo.findByReferrer(partner.id);
+    expect(referred).toHaveLength(1);
+    expect(referred[0].id).toBe(patient.id);
+    expect((await patientRepo.findById(patient.id))?.referredByPartnerId).toBe(partner.id);
+
+    await partnerRepo.save(partner.deactivate());
+    expect((await partnerRepo.findById(partner.id))?.isActive).toBe(false);
   });
 
   it("Dado conta Google conectada, Quando salvar e reconectar (upsert), Então guarda a mais recente", async () => {

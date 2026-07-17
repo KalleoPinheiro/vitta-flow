@@ -1,4 +1,5 @@
 import type { Patient } from "@/domain/patient/patient";
+import type { Partner } from "@/domain/partner/partner";
 import type { Appointment } from "@/domain/scheduling/appointment";
 import type { Invoice } from "@/domain/billing/invoice";
 import type { Anamnesis } from "@/domain/clinical/anamnesis";
@@ -16,6 +17,7 @@ export interface PatientDto {
   phone: string;
   birthDate: string | null;
   notes: string | null;
+  referredByPartnerId: string | null;
   active: boolean;
   createdAt: string;
 }
@@ -27,8 +29,29 @@ export const toPatientDto = (patient: Patient): PatientDto => ({
   phone: patient.phone,
   birthDate: patient.birthDate?.toISOString() ?? null,
   notes: patient.notes,
+  referredByPartnerId: patient.referredByPartnerId,
   active: patient.isActive,
   createdAt: patient.createdAt.toISOString(),
+});
+
+export interface PartnerDto {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  crm: string | null;
+  specialty: string | null;
+  active: boolean;
+}
+
+export const toPartnerDto = (partner: Partner): PartnerDto => ({
+  id: partner.id,
+  fullName: partner.fullName,
+  email: partner.email,
+  phone: partner.phone,
+  crm: partner.crm,
+  specialty: partner.specialty,
+  active: partner.isActive,
 });
 
 export interface AppointmentDto {

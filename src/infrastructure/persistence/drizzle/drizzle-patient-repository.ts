@@ -14,6 +14,7 @@ const toPatient = (row: PatientRow): Patient =>
     phone: row.phone,
     birthDate: row.birthDate,
     notes: row.notes,
+    referredByPartnerId: row.referredByPartnerId,
     active: row.active,
     createdAt: row.createdAt,
   });
@@ -29,6 +30,7 @@ export class DrizzlePatientRepository implements PatientRepository {
       phone: patient.phone,
       birthDate: patient.birthDate,
       notes: patient.notes,
+      referredByPartnerId: patient.referredByPartnerId,
       active: patient.isActive,
       createdAt: patient.createdAt,
     };
@@ -58,6 +60,15 @@ export class DrizzlePatientRepository implements PatientRepository {
       return [];
     }
     const rows = await this.db.select().from(patients).where(inArray(patients.id, unique));
+    return rows.map(toPatient);
+  }
+
+  async findByReferrer(partnerId: string): Promise<Patient[]> {
+    const rows = await this.db
+      .select()
+      .from(patients)
+      .where(eq(patients.referredByPartnerId, partnerId))
+      .limit(MAX_ROWS);
     return rows.map(toPatient);
   }
 

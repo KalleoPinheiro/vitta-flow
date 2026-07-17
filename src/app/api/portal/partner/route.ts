@@ -1,0 +1,46 @@
+import type { NextRequest } from "next/server";
+import { getRepositories } from "@/infrastructure/container";
+import { GetPartnerPortalData } from "@/application/portal/get-partner-portal-data";
+import { getRequestSession } from "@/lib/auth/request-session";
+import { handleRequest, fail } from "@/lib/api-response";
+import {
+  toAppointmentDto,
+  toAssessmentDto,
+  toConditionDto,
+  toPartnerDto,
+  toPatientDto,
+} from "@/lib/dto";
+
+export async function GET(request: NextRequest) {
+  const session = getRequestSession(request);
+  if (!session) {
+    return fail("Não autenticado", 401);
+  }
+  if (session.role !== "partner") {
+    return fail("Rota exclusiva do portal do parceiro", 403);
+  }
+
+  return handleRequest(async () => {
+    const { partners, patients, appointments, conditions, assessments } =
+      await getRepositories();
+    const data = await new GetPartnerPortalData(
+      partners,
+      patients,
+      appointments,
+      conditions,
+      assessments,
+    ).execute({ email: session.subject });
+
+    return {
+      partner: toPartnerDto(data.partner),
+      referredPatients: data.referredPatients.map((entry) => ({
+        patient: toPatientDto(entry.patient),
+        appointments: entry.appointments.map((a) => toAppointmentDto(a)),
+        conditions: entry.conditions.map(({ condition, assessments: list }) => ({
+          condition: toConditionDto(condition),
+          assessments: list.map(toAssessmentDto),
+        })),
+      })),
+    };
+  });
+}

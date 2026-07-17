@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { PatientDto } from "@/lib/dto";
+import type { PartnerDto, PatientDto } from "@/lib/dto";
 import { ErrorAlert } from "@/components/feedback";
 
 export interface PatientFormValues {
@@ -10,10 +10,12 @@ export interface PatientFormValues {
   phone: string;
   birthDate: string;
   notes: string;
+  referredByPartnerId: string;
 }
 
 interface PatientFormProps {
   initial?: PatientDto;
+  partners: PartnerDto[];
   onSubmit: (values: PatientFormValues) => Promise<void>;
 }
 
@@ -22,7 +24,7 @@ const inputClass =
 
 const toFormValues = (initial?: PatientDto): PatientFormValues => {
   if (!initial) {
-    return { fullName: "", email: "", phone: "", birthDate: "", notes: "" };
+    return { fullName: "", email: "", phone: "", birthDate: "", notes: "", referredByPartnerId: "" };
   }
   return {
     fullName: initial.fullName,
@@ -30,10 +32,11 @@ const toFormValues = (initial?: PatientDto): PatientFormValues => {
     phone: initial.phone,
     birthDate: initial.birthDate ? initial.birthDate.slice(0, 10) : "",
     notes: initial.notes ?? "",
+    referredByPartnerId: initial.referredByPartnerId ?? "",
   };
 };
 
-export function PatientForm({ initial, onSubmit }: PatientFormProps) {
+export function PatientForm({ initial, partners, onSubmit }: PatientFormProps) {
   const [values, setValues] = useState<PatientFormValues>(() => toFormValues(initial));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -93,6 +96,24 @@ export function PatientForm({ initial, onSubmit }: PatientFormProps) {
           onChange={(e) => set("birthDate")(e.target.value)}
           className={`mt-1 ${inputClass}`}
         />
+      </label>
+      <label className="text-sm font-medium">
+        Indicado por (médico parceiro)
+        <select
+          value={values.referredByPartnerId}
+          onChange={(e) => set("referredByPartnerId")(e.target.value)}
+          className={`mt-1 ${inputClass}`}
+        >
+          <option value="">Sem indicação</option>
+          {partners
+            .filter((p) => p.active)
+            .map((partner) => (
+              <option key={partner.id} value={partner.id}>
+                {partner.fullName}
+                {partner.specialty ? ` — ${partner.specialty}` : ""}
+              </option>
+            ))}
+        </select>
       </label>
       <label className="text-sm font-medium">
         Observações clínicas

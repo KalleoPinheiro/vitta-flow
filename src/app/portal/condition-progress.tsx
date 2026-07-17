@@ -1,0 +1,62 @@
+"use client";
+
+import type { AssessmentDto, ConditionDto } from "@/lib/dto";
+import {
+  CONDITION_KIND_LABELS,
+  EXUDATE_LABELS,
+  STOMA_TYPE_LABELS,
+  formatDate,
+} from "@/lib/format";
+import { StatusBadge } from "@/components/status-badge";
+
+export interface ConditionWithAssessmentsDto {
+  condition: ConditionDto;
+  assessments: AssessmentDto[];
+}
+
+/** Linha do tempo de evolução clínica de uma condição (compartilhada entre os portais). */
+export function ConditionProgress({ condition, assessments }: ConditionWithAssessmentsDto) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-4">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <span className="font-medium">{condition.title}</span>
+        <span className="text-xs text-slate-500">
+          {CONDITION_KIND_LABELS[condition.kind]}
+          {condition.stomaType ? ` · ${STOMA_TYPE_LABELS[condition.stomaType]}` : ""}
+        </span>
+        <StatusBadge
+          status={condition.status === "active" ? "confirmed" : "completed"}
+          label={condition.status === "active" ? "Em acompanhamento" : "Resolvida"}
+        />
+      </div>
+      {assessments.length === 0 ? (
+        <p className="text-sm text-slate-500">Nenhuma avaliação registrada ainda.</p>
+      ) : (
+        <ul className="flex flex-col gap-2 text-sm">
+          {assessments.map((assessment) => (
+            <li key={assessment.id} className="rounded bg-slate-50 px-3 py-2">
+              <span className="mr-2 text-xs font-medium text-slate-400">
+                {formatDate(assessment.createdAt)}
+              </span>
+              {describeAssessment(assessment)}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function describeAssessment(assessment: AssessmentDto): string {
+  const parts: string[] = [];
+  if (assessment.areaMm2 != null) {
+    parts.push(`ferida ${assessment.lengthMm}×${assessment.widthMm}mm (área ${assessment.areaMm2}mm²)`);
+  }
+  if (assessment.tissueType) parts.push(`tecido: ${assessment.tissueType}`);
+  if (assessment.exudate) parts.push(`exsudato: ${EXUDATE_LABELS[assessment.exudate] ?? assessment.exudate}`);
+  if (assessment.painScale != null) parts.push(`dor ${assessment.painScale}/10`);
+  if (assessment.skinCondition) parts.push(`pele periestomal: ${assessment.skinCondition}`);
+  if (assessment.complications) parts.push(`complicações: ${assessment.complications}`);
+  if (assessment.notes) parts.push(assessment.notes);
+  return parts.length > 0 ? parts.join(" · ") : "Avaliação registrada";
+}

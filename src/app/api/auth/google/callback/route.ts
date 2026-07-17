@@ -3,10 +3,12 @@ import { google } from "googleapis";
 import {
   OAUTH_STATE_COOKIE,
   googleOAuthConfigFromEnv,
-  isEmailAllowed,
   type GoogleOAuthConfig,
 } from "@/lib/auth/google-oauth";
 import { createOAuthClient } from "@/lib/auth/google-oauth-client";
+import { ResolveUserRole } from "@/application/auth/resolve-user-role";
+import { DrizzlePatientRepository } from "@/infrastructure/persistence/drizzle/drizzle-patient-repository";
+import { DrizzlePartnerRepository } from "@/infrastructure/persistence/drizzle/drizzle-partner-repository";
 import {
   SESSION_COOKIE,
   SESSION_TTL_MS,
@@ -90,17 +92,27 @@ export async function GET(request: NextRequest) {
     if (!identity) {
       return loginErrorRedirect(request, "Não foi possível obter o email da conta Google");
     }
-    if (!isEmailAllowed(identity.email, config.allowedEmails)) {
+
+    const db = await getDb();
+    const role = await new ResolveUserRole(
+      new DrizzlePatientRepository(db),
+      new DrizzlePartnerRepository(db),
+    ).execute({ email: identity.email, adminEmails: config.allowedEmails });
+    if (!role) {
       return loginErrorRedirect(request, `Conta ${identity.email} não autorizada nesta clínica`);
     }
 
-    await persistRefreshToken(identity.email, identity.refreshToken, auth.secret);
+    // Credencial do Calendar pertence à clínica: só persiste quando quem loga é da equipe.
+    if (role === "admin") {
+      await persistRefreshToken(identity.email, identity.refreshToken, auth.secret);
+    }
 
-    const response = NextResponse.redirect(new URL("/", publicBaseUrl(request)));
+    const destination = role === "admin" ? "/" : "/portal";
+    const response = NextResponse.redirect(new URL(destination, publicBaseUrl(request)));
     response.cookies.set(OAUTH_STATE_COOKIE, "", { httpOnly: true, path: "/", maxAge: 0 });
     response.cookies.set(
       SESSION_COOKIE,
-      createSessionToken(auth.secret, Date.now() + SESSION_TTL_MS, identity.email),
+      createSessionToken(auth.secret, Date.now() + SESSION_TTL_MS, identity.email, role),
       {
         httpOnly: true,
         sameSite: "lax",

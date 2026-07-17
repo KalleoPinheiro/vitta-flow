@@ -8,6 +8,7 @@ export interface CreatePatientInput {
   phone: string;
   birthDate?: Date | null;
   notes?: string | null;
+  referredByPartnerId?: string | null;
 }
 
 export class CreatePatient {

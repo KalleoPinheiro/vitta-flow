@@ -117,6 +117,21 @@ Estado verificado: **zero violações** após ajustes. Somado ao que já existia
 
 ---
 
+## 4.1 Auditoria de validação (2026-07-16, pós-RBAC/portais)
+
+Revalidação completa das regras de negócio (232 testes BDD verdes, cobertura ≥80%, complexidade ≤10 imposta) e caça a violações de segurança/LGPD no código dos portais e OAuth. **4 violações reais encontradas e corrigidas na hora:**
+
+| # | Severidade | Violação | Correção |
+|---|-----------|----------|----------|
+| V1 | ALTO (LGPD art. 6º III) | Portal do parceiro reutilizava DTOs completos: vazava `notes` clínicas internas, email/telefone/nascimento do paciente e **preço das consultas** | DTOs de portal dedicados: parceiro vê só `{id, fullName}` do paciente e consultas sem preço/anotações |
+| V2 | MÉDIO (LGPD) | Portal do paciente expunha `notes` internas da equipe (perfil e consultas) | `PortalPatientProfileDto` e `PortalAppointmentDto` sem campos internos |
+| V3 | ALTO (LGPD minimização) | OAuth pedia escopo `calendar.events` + `prompt=consent` de **todos** — paciente concedia escrita na própria agenda sem uso algum | Escopo padrão mínimo (openid+email, `access_type=online`); agenda só via link explícito da equipe (`?connect=calendar`) |
+| V4 | MÉDIO (regra de negócio) | `referredByPartnerId` inexistente/inativo caía na FK do banco → 500 genérico | `assertValidReferrer` nos use cases → 400 com mensagem clara; coberto por teste |
+
+**Conferido e já correto:** escopo por sessão revalidado no servidor em todas as rotas de portal; papel assinado no cookie (não forjável sem `AUTH_SECRET`); paciente/parceiro desativado perde acesso na resolução; refresh token só persiste para admin; portais não expõem anamnese nem evolução SOAP; direito de acesso do titular atendido pelo portal (art. 18); histórico do portal limitado a 24 meses.
+
+**Riscos residuais aceitos/documentados:** `X-Forwarded-For` spoofável no rate limit quando sem proxy reverso confiável (P1: configurar trust proxy no deploy); `console.error` pode logar objetos de erro do Google (P1: logger estruturado com redação); criptografia em repouso dos campos clínicos segue P1.
+
 ## 5. Plano de ação consolidado
 
 ### Executado nesta rodada (P0) ✅

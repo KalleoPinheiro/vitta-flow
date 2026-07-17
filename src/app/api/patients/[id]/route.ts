@@ -34,8 +34,8 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = updatePatientSchema.parse(await request.json());
-    const { patients } = await getRepositories();
-    const patient = await new UpdatePatient(patients).execute({
+    const { patients, partners } = await getRepositories();
+    const patient = await new UpdatePatient(patients, partners).execute({
       id,
       fullName: body.fullName,
       email: body.email,

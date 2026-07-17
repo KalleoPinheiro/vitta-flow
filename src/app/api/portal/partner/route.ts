@@ -4,11 +4,11 @@ import { GetPartnerPortalData } from "@/application/portal/get-partner-portal-da
 import { getRequestSession } from "@/lib/auth/request-session";
 import { handleRequest, fail } from "@/lib/api-response";
 import {
-  toAppointmentDto,
   toAssessmentDto,
   toConditionDto,
   toPartnerDto,
-  toPatientDto,
+  toPortalAppointmentDto,
+  toReferredPatientSummaryDto,
 } from "@/lib/dto";
 
 export async function GET(request: NextRequest) {
@@ -34,8 +34,8 @@ export async function GET(request: NextRequest) {
     return {
       partner: toPartnerDto(data.partner),
       referredPatients: data.referredPatients.map((entry) => ({
-        patient: toPatientDto(entry.patient),
-        appointments: entry.appointments.map((a) => toAppointmentDto(a)),
+        patient: toReferredPatientSummaryDto(entry.patient),
+        appointments: entry.appointments.map(toPortalAppointmentDto),
         conditions: entry.conditions.map(({ condition, assessments: list }) => ({
           condition: toConditionDto(condition),
           assessments: list.map(toAssessmentDto),

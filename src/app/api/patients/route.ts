@@ -27,8 +27,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   return handleRequest(async () => {
     const body = createPatientSchema.parse(await request.json());
-    const { patients } = await getRepositories();
-    const patient = await new CreatePatient(patients).execute({
+    const { patients, partners } = await getRepositories();
+    const patient = await new CreatePatient(patients, partners).execute({
       fullName: body.fullName,
       email: body.email,
       phone: body.phone,

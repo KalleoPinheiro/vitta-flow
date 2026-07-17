@@ -57,6 +57,20 @@ function ProviderButtons({ providers }: { providers: Providers }) {
 
 function GoogleLoginButton() {
   return (
+    <>
+      <GoogleAnchor />
+      <p className="mt-2 text-center text-xs text-slate-400">
+        Equipe:{" "}
+        <a href="/api/auth/google?connect=calendar" className="text-teal-700 hover:underline">
+          entrar conectando o Google Agenda
+        </a>
+      </p>
+    </>
+  );
+}
+
+function GoogleAnchor() {
+  return (
     <a
       href="/api/auth/google"
       className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"

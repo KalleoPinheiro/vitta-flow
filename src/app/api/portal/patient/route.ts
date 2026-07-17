@@ -4,12 +4,12 @@ import { GetPatientPortalData } from "@/application/portal/get-patient-portal-da
 import { getRequestSession } from "@/lib/auth/request-session";
 import { handleRequest, fail } from "@/lib/api-response";
 import {
-  toAppointmentDto,
   toAssessmentDto,
   toConditionDto,
   toFollowUpDto,
   toInvoiceDto,
-  toPatientDto,
+  toPortalAppointmentDto,
+  toPortalPatientProfileDto,
 } from "@/lib/dto";
 
 export async function GET(request: NextRequest) {
@@ -34,8 +34,8 @@ export async function GET(request: NextRequest) {
     ).execute({ email: session.subject });
 
     return {
-      patient: toPatientDto(data.patient),
-      appointments: data.appointments.map((a) => toAppointmentDto(a)),
+      patient: toPortalPatientProfileDto(data.patient),
+      appointments: data.appointments.map(toPortalAppointmentDto),
       conditions: data.conditions.map(({ condition, assessments: list }) => ({
         condition: toConditionDto(condition),
         assessments: list.map(toAssessmentDto),

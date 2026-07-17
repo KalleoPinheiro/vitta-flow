@@ -1,6 +1,11 @@
 "use client";
 
-import type { AppointmentDto, FollowUpDto, InvoiceDto, PatientDto } from "@/lib/dto";
+import type {
+  FollowUpDto,
+  InvoiceDto,
+  PortalAppointmentDto,
+  PortalPatientProfileDto,
+} from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import {
   APPOINTMENT_STATUS_LABELS,
@@ -14,8 +19,8 @@ import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback"
 import { ConditionProgress, type ConditionWithAssessmentsDto } from "./condition-progress";
 
 interface PatientPortalDto {
-  patient: PatientDto;
-  appointments: AppointmentDto[];
+  patient: PortalPatientProfileDto;
+  appointments: PortalAppointmentDto[];
   conditions: ConditionWithAssessmentsDto[];
   invoices: InvoiceDto[];
   followUps: FollowUpDto[];
@@ -118,7 +123,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function AppointmentList({ appointments }: { appointments: AppointmentDto[] }) {
+function AppointmentList({ appointments }: { appointments: PortalAppointmentDto[] }) {
   return (
     <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white text-sm">
       {appointments.map((appointment) => (

@@ -34,6 +34,54 @@ export const toPatientDto = (patient: Patient): PatientDto => ({
   createdAt: patient.createdAt.toISOString(),
 });
 
+/**
+ * DTOs de portal — minimização de dados (LGPD art. 6º, III):
+ * cada papel recebe apenas o estritamente necessário à sua finalidade.
+ */
+
+/** Consulta vista pelos portais: sem preço e sem anotações internas da equipe. */
+export interface PortalAppointmentDto {
+  id: string;
+  startsAt: string;
+  endsAt: string;
+  procedure: string;
+  status: string;
+}
+
+export const toPortalAppointmentDto = (appointment: Appointment): PortalAppointmentDto => ({
+  id: appointment.id,
+  startsAt: appointment.slot.start.toISOString(),
+  endsAt: appointment.slot.end.toISOString(),
+  procedure: appointment.procedure,
+  status: appointment.status,
+});
+
+/** Perfil do paciente no próprio portal: sem observações internas da equipe. */
+export interface PortalPatientProfileDto {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+}
+
+export const toPortalPatientProfileDto = (patient: Patient): PortalPatientProfileDto => ({
+  id: patient.id,
+  fullName: patient.fullName,
+  email: patient.email,
+  phone: patient.phone,
+});
+
+/** Paciente visto pelo parceiro: apenas identificação nominal da indicação. */
+export interface ReferredPatientSummaryDto {
+  id: string;
+  fullName: string;
+}
+
+export const toReferredPatientSummaryDto = (patient: Patient): ReferredPatientSummaryDto => ({
+  id: patient.id,
+  fullName: patient.fullName,
+});
+
 export interface PartnerDto {
   id: string;
   fullName: string;

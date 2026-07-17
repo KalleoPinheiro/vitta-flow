@@ -5,9 +5,15 @@ export interface GoogleOAuthConfig {
   allowedEmails: string[];
 }
 
-export const GOOGLE_OAUTH_SCOPES = [
+/** Escopo mínimo (LGPD): identificação apenas — usado por pacientes e parceiros. */
+export const GOOGLE_OAUTH_BASE_SCOPES = [
   "openid",
   "https://www.googleapis.com/auth/userinfo.email",
+];
+
+/** Escopo adicional pedido SOMENTE quando a equipe conecta a agenda da clínica. */
+export const GOOGLE_OAUTH_CALENDAR_SCOPES = [
+  ...GOOGLE_OAUTH_BASE_SCOPES,
   "https://www.googleapis.com/auth/calendar.events",
 ];
 

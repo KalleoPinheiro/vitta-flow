@@ -1,7 +1,8 @@
 import { randomBytes } from "node:crypto";
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import {
-  GOOGLE_OAUTH_SCOPES,
+  GOOGLE_OAUTH_BASE_SCOPES,
+  GOOGLE_OAUTH_CALENDAR_SCOPES,
   OAUTH_STATE_COOKIE,
   googleOAuthConfigFromEnv,
 } from "@/lib/auth/google-oauth";
@@ -10,7 +11,7 @@ import { fail } from "@/lib/api-response";
 
 const STATE_TTL_SECONDS = 600;
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const config = googleOAuthConfigFromEnv();
   if (!config) {
     return fail(
@@ -19,11 +20,15 @@ export async function GET() {
     );
   }
 
+  // Minimização (LGPD): pacientes/parceiros concedem apenas identificação.
+  // O escopo de agenda (+ consent p/ refresh token) só é pedido quando a
+  // equipe conecta explicitamente o Google Agenda da clínica.
+  const wantsCalendar = request.nextUrl.searchParams.get("connect") === "calendar";
   const state = randomBytes(16).toString("hex");
   const authUrl = createOAuthClient(config).generateAuthUrl({
-    access_type: "offline",
-    prompt: "consent",
-    scope: GOOGLE_OAUTH_SCOPES,
+    access_type: wantsCalendar ? "offline" : "online",
+    prompt: wantsCalendar ? "consent" : undefined,
+    scope: wantsCalendar ? GOOGLE_OAUTH_CALENDAR_SCOPES : GOOGLE_OAUTH_BASE_SCOPES,
     state,
   });
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { AppointmentDto, PartnerDto, PatientDto } from "@/lib/dto";
+import type { PartnerDto, PortalAppointmentDto, ReferredPatientSummaryDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import { APPOINTMENT_STATUS_LABELS, formatDateTime } from "@/lib/format";
 import { StatusBadge } from "@/components/status-badge";
@@ -9,8 +9,8 @@ import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback"
 import { ConditionProgress, type ConditionWithAssessmentsDto } from "./condition-progress";
 
 interface ReferredPatientDto {
-  patient: PatientDto;
-  appointments: AppointmentDto[];
+  patient: ReferredPatientSummaryDto;
+  appointments: PortalAppointmentDto[];
   conditions: ConditionWithAssessmentsDto[];
 }
 

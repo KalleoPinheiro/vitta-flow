@@ -9,6 +9,7 @@ import {
 } from "@/infrastructure/persistence/in-memory/in-memory-clinical-repositories";
 import { InMemoryFollowUpRepository } from "@/infrastructure/persistence/in-memory/in-memory-inventory-repositories";
 import { CreatePatient } from "@/application/patients/create-patient";
+import { UpdatePatient } from "@/application/patients/update-patient";
 import { CreatePartner } from "@/application/partners/create-partner";
 import { UpdatePartner } from "@/application/partners/update-partner";
 import { ListPartners } from "@/application/partners/list-partners";
@@ -56,6 +57,52 @@ describe("Feature: RBAC — parceria, indicação e portais", () => {
       phone: "11999990000",
       referredByPartnerId: referredByPartnerId ?? null,
     });
+
+  describe("Cenário: indicação exige parceiro válido e ativo", () => {
+    it("Dado parceiro inexistente, Quando criar paciente indicado, Então lança ValidationError", async () => {
+      await expect(
+        new CreatePatient(patientRepo, partnerRepo).execute({
+          fullName: "Maria da Silva",
+          email: "maria@x.com",
+          phone: "11999990000",
+          referredByPartnerId: "ghost",
+        }),
+      ).rejects.toThrow(ValidationError);
+    });
+
+    it("Dado parceiro desativado, Quando indicar, Então lança ValidationError", async () => {
+      const partner = await createPartner();
+      await new UpdatePartner(partnerRepo).execute({ id: partner.id, active: false });
+
+      await expect(
+        new CreatePatient(patientRepo, partnerRepo).execute({
+          fullName: "Maria da Silva",
+          email: "maria@x.com",
+          phone: "11999990000",
+          referredByPartnerId: partner.id,
+        }),
+      ).rejects.toThrow(ValidationError);
+    });
+
+    it("Dado parceiro ativo, Quando indicar na criação e na atualização, Então aceita", async () => {
+      const partner = await createPartner();
+      const patient = await new CreatePatient(patientRepo, partnerRepo).execute({
+        fullName: "Maria da Silva",
+        email: "maria@x.com",
+        phone: "11999990000",
+        referredByPartnerId: partner.id,
+      });
+
+      expect(patient.referredByPartnerId).toBe(partner.id);
+
+      await expect(
+        new UpdatePatient(patientRepo, partnerRepo).execute({
+          id: patient.id,
+          referredByPartnerId: "ghost",
+        }),
+      ).rejects.toThrow(ValidationError);
+    });
+  });
 
   describe("Cenário: CRUD de parceiro", () => {
     it("Dado email duplicado, Quando criar parceiro, Então lança ValidationError", async () => {

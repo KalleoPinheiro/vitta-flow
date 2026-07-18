@@ -1,6 +1,6 @@
-import { eq, ilike, inArray, or } from "drizzle-orm";
+import { asc, eq, ilike, inArray, or } from "drizzle-orm";
 import { Patient } from "@/domain/patient/patient";
-import type { PatientRepository } from "@/domain/patient/patient-repository";
+import type { PatientPage, PatientRepository } from "@/domain/patient/patient-repository";
 import { MAX_ROWS, type AppDb } from "./db";
 import { patients } from "./schema";
 
@@ -72,21 +72,22 @@ export class DrizzlePatientRepository implements PatientRepository {
     return rows.map(toPatient);
   }
 
-  async findAll(search?: string): Promise<Patient[]> {
-    const query = this.db.select().from(patients);
-    const rows = search
-      ? await query
-          .where(
-            or(
-              ilike(patients.fullName, `%${search}%`),
-              ilike(patients.email, `%${search}%`),
-              ilike(patients.phone, `%${search}%`),
-            ),
-          )
-          .limit(MAX_ROWS)
-      : await query.limit(MAX_ROWS);
-    return rows
-      .map(toPatient)
-      .sort((a, b) => a.fullName.localeCompare(b.fullName));
+  async findAll(search?: string, page: PatientPage = {}): Promise<Patient[]> {
+    const limit = Math.min(page.limit ?? MAX_ROWS, MAX_ROWS);
+    const where = search
+      ? or(
+          ilike(patients.fullName, `%${search}%`),
+          ilike(patients.email, `%${search}%`),
+          ilike(patients.phone, `%${search}%`),
+        )
+      : undefined;
+    const rows = await this.db
+      .select()
+      .from(patients)
+      .where(where)
+      .orderBy(asc(patients.fullName), asc(patients.id))
+      .limit(limit)
+      .offset(page.offset ?? 0);
+    return rows.map(toPatient);
   }
 }

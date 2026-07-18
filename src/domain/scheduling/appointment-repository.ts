@@ -1,10 +1,30 @@
-import type { Appointment } from "./appointment";
+import type { Appointment, AppointmentStatus } from "./appointment";
 import type { TimeSlot } from "../shared/time-slot";
+
+export interface ProcedureRevenue {
+  procedure: string;
+  count: number;
+  totalCents: number;
+}
+
+export interface AppointmentRangeStats {
+  byStatus: Record<AppointmentStatus, number>;
+  revenueByProcedure: ProcedureRevenue[];
+}
+
+export interface FindByPatientOptions {
+  /** Só consultas cujo fim é a partir desta data (corte de histórico no banco). */
+  endsAfter?: Date;
+}
 
 export interface AppointmentRepository {
   save(appointment: Appointment): Promise<void>;
   findById(id: string): Promise<Appointment | null>;
-  findByPatientId(patientId: string): Promise<Appointment[]>;
+  findByPatientId(patientId: string, options?: FindByPatientOptions): Promise<Appointment[]>;
+  /** Busca em lote — evita N+1 ao montar dados de vários pacientes. */
+  findByPatientIds(patientIds: string[], options?: FindByPatientOptions): Promise<Appointment[]>;
   findInRange(start: Date, end: Date): Promise<Appointment[]>;
   findConflicting(slot: TimeSlot, excludeId?: string): Promise<Appointment[]>;
+  /** Agregação no banco — contagens e receita corretas independentemente do volume. */
+  getStatsInRange(start: Date, end: Date): Promise<AppointmentRangeStats>;
 }

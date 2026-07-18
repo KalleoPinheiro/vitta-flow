@@ -17,9 +17,13 @@ export interface ClinicalConditionRepository {
   save(condition: ClinicalCondition): Promise<void>;
   findById(id: string): Promise<ClinicalCondition | null>;
   findByPatientId(patientId: string): Promise<ClinicalCondition[]>;
+  /** Busca em lote — evita N+1 ao montar dados de vários pacientes. */
+  findByPatientIds(patientIds: string[]): Promise<ClinicalCondition[]>;
 }
 
 export interface ConditionAssessmentRepository {
   save(assessment: ConditionAssessment): Promise<void>;
   findByConditionId(conditionId: string): Promise<ConditionAssessment[]>;
+  /** Busca em lote — evita N+1 ao montar dados de várias condições. */
+  findByConditionIds(conditionIds: string[]): Promise<ConditionAssessment[]>;
 }

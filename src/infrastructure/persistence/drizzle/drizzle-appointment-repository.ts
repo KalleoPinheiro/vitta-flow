@@ -1,6 +1,14 @@
-import { and, asc, eq, gt, inArray, lt, ne } from "drizzle-orm";
-import { Appointment, type AppointmentStatus } from "@/domain/scheduling/appointment";
-import type { AppointmentRepository } from "@/domain/scheduling/appointment-repository";
+import { and, asc, desc, eq, gt, gte, inArray, lt, ne, sql, type SQL } from "drizzle-orm";
+import {
+  Appointment,
+  APPOINTMENT_STATUSES,
+  type AppointmentStatus,
+} from "@/domain/scheduling/appointment";
+import type {
+  AppointmentRangeStats,
+  AppointmentRepository,
+  FindByPatientOptions,
+} from "@/domain/scheduling/appointment-repository";
 import { SchedulingConflictError } from "@/domain/shared/errors";
 import { Money } from "@/domain/shared/money";
 import { TimeSlot } from "@/domain/shared/time-slot";
@@ -77,11 +85,34 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
     return rows[0] ? toAppointment(rows[0]) : null;
   }
 
-  async findByPatientId(patientId: string): Promise<Appointment[]> {
+  private patientConditions(base: SQL, options?: FindByPatientOptions): SQL | undefined {
+    return options?.endsAfter ? and(base, gte(appointments.endsAt, options.endsAfter)) : base;
+  }
+
+  async findByPatientId(
+    patientId: string,
+    options?: FindByPatientOptions,
+  ): Promise<Appointment[]> {
     const rows = await this.db
       .select()
       .from(appointments)
-      .where(eq(appointments.patientId, patientId))
+      .where(this.patientConditions(eq(appointments.patientId, patientId), options))
+      .orderBy(asc(appointments.startsAt));
+    return rows.map(toAppointment);
+  }
+
+  async findByPatientIds(
+    patientIds: string[],
+    options?: FindByPatientOptions,
+  ): Promise<Appointment[]> {
+    const unique = [...new Set(patientIds)];
+    if (unique.length === 0) {
+      return [];
+    }
+    const rows = await this.db
+      .select()
+      .from(appointments)
+      .where(this.patientConditions(inArray(appointments.patientId, unique), options))
       .orderBy(asc(appointments.startsAt));
     return rows.map(toAppointment);
   }
@@ -93,6 +124,48 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
       .where(and(lt(appointments.startsAt, end), gt(appointments.endsAt, start)))
       .orderBy(asc(appointments.startsAt));
     return rows.map(toAppointment);
+  }
+
+  async getStatsInRange(start: Date, end: Date): Promise<AppointmentRangeStats> {
+    const inRange = and(lt(appointments.startsAt, end), gt(appointments.endsAt, start));
+
+    const statusRows = await this.db
+      .select({
+        status: appointments.status,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(appointments)
+      .where(inRange)
+      .groupBy(appointments.status);
+
+    const byStatus = Object.fromEntries(
+      APPOINTMENT_STATUSES.map((status) => [status, 0]),
+    ) as Record<AppointmentStatus, number>;
+    for (const row of statusRows) {
+      if (row.status in byStatus) {
+        byStatus[row.status as AppointmentStatus] = Number(row.count);
+      }
+    }
+
+    const revenueRows = await this.db
+      .select({
+        procedure: appointments.procedure,
+        count: sql<number>`count(*)::int`,
+        totalCents: sql<number>`coalesce(sum(${appointments.priceCents}), 0)`,
+      })
+      .from(appointments)
+      .where(and(inRange, eq(appointments.status, "completed")))
+      .groupBy(appointments.procedure)
+      .orderBy(desc(sql`coalesce(sum(${appointments.priceCents}), 0)`));
+
+    return {
+      byStatus,
+      revenueByProcedure: revenueRows.map((row) => ({
+        procedure: row.procedure,
+        count: Number(row.count),
+        totalCents: Number(row.totalCents),
+      })),
+    };
   }
 
   async findConflicting(slot: TimeSlot, excludeId?: string): Promise<Appointment[]> {

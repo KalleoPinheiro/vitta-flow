@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 import { Anamnesis } from "@/domain/clinical/anamnesis";
 import { EvolutionNote } from "@/domain/clinical/evolution-note";
 import {
@@ -122,6 +122,19 @@ export class DrizzleClinicalConditionRepository implements ClinicalConditionRepo
       .orderBy(desc(clinicalConditions.createdAt));
     return rows.map((row) => this.toEntity(row));
   }
+
+  async findByPatientIds(patientIds: string[]): Promise<ClinicalCondition[]> {
+    const unique = [...new Set(patientIds)];
+    if (unique.length === 0) {
+      return [];
+    }
+    const rows = await this.db
+      .select()
+      .from(clinicalConditions)
+      .where(inArray(clinicalConditions.patientId, unique))
+      .orderBy(desc(clinicalConditions.createdAt));
+    return rows.map((row) => this.toEntity(row));
+  }
 }
 
 export class DrizzleConditionAssessmentRepository implements ConditionAssessmentRepository {
@@ -149,6 +162,21 @@ export class DrizzleConditionAssessmentRepository implements ConditionAssessment
       .select()
       .from(conditionAssessments)
       .where(eq(conditionAssessments.conditionId, conditionId))
+      .orderBy(desc(conditionAssessments.createdAt), desc(conditionAssessments.id));
+    return rows.map((row) =>
+      ConditionAssessment.restore({ ...row, exudate: row.exudate as ExudateLevel | null }),
+    );
+  }
+
+  async findByConditionIds(conditionIds: string[]): Promise<ConditionAssessment[]> {
+    const unique = [...new Set(conditionIds)];
+    if (unique.length === 0) {
+      return [];
+    }
+    const rows = await this.db
+      .select()
+      .from(conditionAssessments)
+      .where(inArray(conditionAssessments.conditionId, unique))
       .orderBy(desc(conditionAssessments.createdAt), desc(conditionAssessments.id));
     return rows.map((row) =>
       ConditionAssessment.restore({ ...row, exudate: row.exudate as ExudateLevel | null }),

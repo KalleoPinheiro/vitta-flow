@@ -7,9 +7,25 @@ export interface InvoiceFilter {
   to?: Date;
 }
 
+export interface InvoicePage {
+  limit?: number;
+  offset?: number;
+}
+
+export interface InvoiceSummary {
+  paidCents: number;
+  pendingCents: number;
+  totalInvoices: number;
+  paidCount: number;
+  pendingCount: number;
+  cancelledCount: number;
+}
+
 export interface InvoiceRepository {
   save(invoice: Invoice): Promise<void>;
   findById(id: string): Promise<Invoice | null>;
   findByAppointmentId(appointmentId: string): Promise<Invoice | null>;
-  findAll(filter?: InvoiceFilter): Promise<Invoice[]>;
+  findAll(filter?: InvoiceFilter, page?: InvoicePage): Promise<Invoice[]>;
+  /** Agregação no banco — totais corretos independentemente do volume de faturas. */
+  summarize(filter?: InvoiceFilter): Promise<InvoiceSummary>;
 }

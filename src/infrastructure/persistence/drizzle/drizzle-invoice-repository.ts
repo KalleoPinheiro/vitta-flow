@@ -1,6 +1,11 @@
-import { and, desc, eq, gte, lt, type SQL } from "drizzle-orm";
+import { and, desc, eq, gte, lt, sql, type SQL } from "drizzle-orm";
 import { Invoice, type InvoiceStatus, type PaymentMethod } from "@/domain/billing/invoice";
-import type { InvoiceFilter, InvoiceRepository } from "@/domain/billing/invoice-repository";
+import type {
+  InvoiceFilter,
+  InvoicePage,
+  InvoiceRepository,
+  InvoiceSummary,
+} from "@/domain/billing/invoice-repository";
 import { Money } from "@/domain/shared/money";
 import { MAX_ROWS, type AppDb } from "./db";
 import { invoices } from "./schema";
@@ -57,19 +62,49 @@ export class DrizzleInvoiceRepository implements InvoiceRepository {
     return rows[0] ? toInvoice(rows[0]) : null;
   }
 
-  async findAll(filter: InvoiceFilter = {}): Promise<Invoice[]> {
+  private buildConditions(filter: InvoiceFilter): SQL | undefined {
     const conditions: SQL[] = [];
     if (filter.status) conditions.push(eq(invoices.status, filter.status));
     if (filter.patientId) conditions.push(eq(invoices.patientId, filter.patientId));
     if (filter.from) conditions.push(gte(invoices.issuedAt, filter.from));
     if (filter.to) conditions.push(lt(invoices.issuedAt, filter.to));
+    return conditions.length > 0 ? and(...conditions) : undefined;
+  }
 
+  async findAll(filter: InvoiceFilter = {}, page: InvoicePage = {}): Promise<Invoice[]> {
+    const limit = Math.min(page.limit ?? MAX_ROWS, MAX_ROWS);
     const rows = await this.db
       .select()
       .from(invoices)
-      .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(desc(invoices.issuedAt))
-      .limit(MAX_ROWS);
+      .where(this.buildConditions(filter))
+      .orderBy(desc(invoices.issuedAt), desc(invoices.id))
+      .limit(limit)
+      .offset(page.offset ?? 0);
     return rows.map(toInvoice);
+  }
+
+  async summarize(filter: InvoiceFilter = {}): Promise<InvoiceSummary> {
+    const paid = sql`${invoices.status} = 'paid'`;
+    const pending = sql`${invoices.status} = 'pending'`;
+    const cancelled = sql`${invoices.status} = 'cancelled'`;
+    const [row] = await this.db
+      .select({
+        paidCents: sql<number>`coalesce(sum(${invoices.amountCents}) filter (where ${paid}), 0)`,
+        pendingCents: sql<number>`coalesce(sum(${invoices.amountCents}) filter (where ${pending}), 0)`,
+        totalInvoices: sql<number>`count(*)::int`,
+        paidCount: sql<number>`(count(*) filter (where ${paid}))::int`,
+        pendingCount: sql<number>`(count(*) filter (where ${pending}))::int`,
+        cancelledCount: sql<number>`(count(*) filter (where ${cancelled}))::int`,
+      })
+      .from(invoices)
+      .where(this.buildConditions(filter));
+    return {
+      paidCents: Number(row.paidCents),
+      pendingCents: Number(row.pendingCents),
+      totalInvoices: Number(row.totalInvoices),
+      paidCount: Number(row.paidCount),
+      pendingCount: Number(row.pendingCount),
+      cancelledCount: Number(row.cancelledCount),
+    };
   }
 }

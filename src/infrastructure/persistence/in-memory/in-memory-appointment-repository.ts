@@ -1,5 +1,14 @@
-import type { Appointment } from "@/domain/scheduling/appointment";
-import type { AppointmentRepository } from "@/domain/scheduling/appointment-repository";
+import {
+  APPOINTMENT_STATUSES,
+  type Appointment,
+  type AppointmentStatus,
+} from "@/domain/scheduling/appointment";
+import type {
+  AppointmentRangeStats,
+  AppointmentRepository,
+  FindByPatientOptions,
+  ProcedureRevenue,
+} from "@/domain/scheduling/appointment-repository";
 import type { TimeSlot } from "@/domain/shared/time-slot";
 
 export class InMemoryAppointmentRepository implements AppointmentRepository {
@@ -13,10 +22,61 @@ export class InMemoryAppointmentRepository implements AppointmentRepository {
     return this.appointments.get(id) ?? null;
   }
 
-  async findByPatientId(patientId: string): Promise<Appointment[]> {
+  private matchesPatientOptions(appointment: Appointment, options?: FindByPatientOptions) {
+    return !options?.endsAfter || appointment.slot.end.getTime() >= options.endsAfter.getTime();
+  }
+
+  async findByPatientId(
+    patientId: string,
+    options?: FindByPatientOptions,
+  ): Promise<Appointment[]> {
     return [...this.appointments.values()]
-      .filter((a) => a.patientId === patientId)
+      .filter((a) => a.patientId === patientId && this.matchesPatientOptions(a, options))
       .sort((a, b) => a.slot.start.getTime() - b.slot.start.getTime());
+  }
+
+  async findByPatientIds(
+    patientIds: string[],
+    options?: FindByPatientOptions,
+  ): Promise<Appointment[]> {
+    const ids = new Set(patientIds);
+    return [...this.appointments.values()]
+      .filter((a) => ids.has(a.patientId) && this.matchesPatientOptions(a, options))
+      .sort((a, b) => a.slot.start.getTime() - b.slot.start.getTime());
+  }
+
+  async getStatsInRange(start: Date, end: Date): Promise<AppointmentRangeStats> {
+    const inRange = [...this.appointments.values()].filter(
+      (a) =>
+        a.slot.start.getTime() < end.getTime() && a.slot.end.getTime() > start.getTime(),
+    );
+
+    const byStatus = Object.fromEntries(
+      APPOINTMENT_STATUSES.map((status) => [status, 0]),
+    ) as Record<AppointmentStatus, number>;
+    for (const appointment of inRange) {
+      byStatus[appointment.status] += 1;
+    }
+
+    const revenueMap = new Map<string, ProcedureRevenue>();
+    for (const appointment of inRange) {
+      if (appointment.status !== "completed") continue;
+      const current = revenueMap.get(appointment.procedure) ?? {
+        procedure: appointment.procedure,
+        count: 0,
+        totalCents: 0,
+      };
+      revenueMap.set(appointment.procedure, {
+        procedure: appointment.procedure,
+        count: current.count + 1,
+        totalCents: current.totalCents + appointment.price.cents,
+      });
+    }
+    const revenueByProcedure = [...revenueMap.values()].sort(
+      (a, b) => b.totalCents - a.totalCents,
+    );
+
+    return { byStatus, revenueByProcedure };
   }
 
   async findInRange(start: Date, end: Date): Promise<Appointment[]> {

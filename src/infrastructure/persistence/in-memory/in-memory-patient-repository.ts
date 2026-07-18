@@ -1,5 +1,5 @@
 import type { Patient } from "@/domain/patient/patient";
-import type { PatientRepository } from "@/domain/patient/patient-repository";
+import type { PatientPage, PatientRepository } from "@/domain/patient/patient-repository";
 
 export class InMemoryPatientRepository implements PatientRepository {
   private readonly patients = new Map<string, Patient>();
@@ -29,19 +29,22 @@ export class InMemoryPatientRepository implements PatientRepository {
     });
   }
 
-  async findAll(search?: string): Promise<Patient[]> {
+  async findAll(search?: string, page: PatientPage = {}): Promise<Patient[]> {
     const all = [...this.patients.values()].sort((a, b) =>
       a.fullName.localeCompare(b.fullName),
     );
-    if (!search) {
-      return all;
-    }
-    const term = search.toLowerCase();
-    return all.filter(
-      (p) =>
-        p.fullName.toLowerCase().includes(term) ||
-        p.email.toLowerCase().includes(term) ||
-        p.phone.includes(term),
-    );
+    const term = search?.toLowerCase();
+    const filtered = term
+      ? all.filter(
+          (p) =>
+            p.fullName.toLowerCase().includes(term) ||
+            p.email.toLowerCase().includes(term) ||
+            p.phone.includes(term),
+        )
+      : all;
+    const offset = page.offset ?? 0;
+    return page.limit != null
+      ? filtered.slice(offset, offset + page.limit)
+      : filtered.slice(offset);
   }
 }

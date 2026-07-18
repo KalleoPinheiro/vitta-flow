@@ -60,6 +60,13 @@ export class InMemoryClinicalConditionRepository implements ClinicalConditionRep
       .filter((c) => c.patientId === patientId)
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
+
+  async findByPatientIds(patientIds: string[]): Promise<ClinicalCondition[]> {
+    const ids = new Set(patientIds);
+    return [...this.items.values()]
+      .filter((c) => ids.has(c.patientId))
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
 }
 
 export class InMemoryConditionAssessmentRepository implements ConditionAssessmentRepository {
@@ -72,6 +79,13 @@ export class InMemoryConditionAssessmentRepository implements ConditionAssessmen
   async findByConditionId(conditionId: string): Promise<ConditionAssessment[]> {
     return [...this.items.values()]
       .filter((a) => a.conditionId === conditionId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async findByConditionIds(conditionIds: string[]): Promise<ConditionAssessment[]> {
+    const ids = new Set(conditionIds);
+    return [...this.items.values()]
+      .filter((a) => ids.has(a.conditionId))
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 }

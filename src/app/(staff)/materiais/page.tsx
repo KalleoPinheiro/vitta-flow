@@ -4,7 +4,7 @@ import { useState } from "react";
 import { apiFetch } from "@/lib/client";
 import type { AppointmentDto, StockMovementDto, SupplyDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
-import { formatCurrency, formatDateTime } from "@/lib/format";
+import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
@@ -12,8 +12,33 @@ import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback"
 const inputClass =
   "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none";
 
+interface SupplyInsightDto {
+  supplyId: string;
+  avgDailyOut: number;
+  daysToStockout: number | null;
+}
+
+interface ExpiringBatchDto {
+  batchId: string;
+  supplyId: string;
+  supplyName: string;
+  label: string | null;
+  expiresAt: string;
+  remaining: number;
+  isExpired: boolean;
+}
+
+interface SupplyInsightsDto {
+  bySupply: SupplyInsightDto[];
+  expiringBatches: ExpiringBatchDto[];
+}
+
+const STOCKOUT_ALERT_DAYS = 30;
+
 export default function SuppliesPage() {
   const { data: supplies, error, refresh } = useApiQuery<SupplyDto[]>("/api/supplies");
+  const { data: insights, refresh: refreshInsights } =
+    useApiQuery<SupplyInsightsDto>("/api/supplies/insights");
   const [editing, setEditing] = useState<SupplyDto | "new" | null>(null);
   const [moving, setMoving] = useState<SupplyDto | null>(null);
   const [history, setHistory] = useState<SupplyDto | null>(null);
@@ -33,28 +58,24 @@ export default function SuppliesPage() {
 
       {error && <ErrorAlert message={error} />}
       <LowStockBanner supplies={supplies} />
+      <ExpiryBanner batches={insights?.expiringBatches ?? []} />
 
       <SuppliesTable
         supplies={supplies}
+        insights={insights?.bySupply ?? []}
         onMove={setMoving}
         onHistory={setHistory}
         onEdit={setEditing}
       />
 
-      {editing && (
-        <Modal
-          title={editing === "new" ? "Novo insumo" : "Editar insumo"}
-          onClose={() => setEditing(null)}
-        >
-          <SupplyForm
-            initial={editing === "new" ? undefined : editing}
-            onSaved={() => {
-              setEditing(null);
-              refresh();
-            }}
-          />
-        </Modal>
-      )}
+      <EditSupplyModal
+        editing={editing}
+        onClose={() => setEditing(null)}
+        onSaved={() => {
+          setEditing(null);
+          refresh();
+        }}
+      />
 
       {moving && (
         <Modal title={`Movimentar — ${moving.name}`} onClose={() => setMoving(null)}>
@@ -63,6 +84,7 @@ export default function SuppliesPage() {
             onSaved={() => {
               setMoving(null);
               refresh();
+              refreshInsights();
             }}
           />
         </Modal>
@@ -74,6 +96,23 @@ export default function SuppliesPage() {
         </Modal>
       )}
     </div>
+  );
+}
+
+interface EditSupplyModalProps {
+  editing: SupplyDto | "new" | null;
+  onClose: () => void;
+  onSaved: () => void;
+}
+
+function EditSupplyModal({ editing, onClose, onSaved }: EditSupplyModalProps) {
+  if (!editing) {
+    return null;
+  }
+  return (
+    <Modal title={editing === "new" ? "Novo insumo" : "Editar insumo"} onClose={onClose}>
+      <SupplyForm initial={editing === "new" ? undefined : editing} onSaved={onSaved} />
+    </Modal>
   );
 }
 
@@ -89,14 +128,46 @@ function LowStockBanner({ supplies }: { supplies: SupplyDto[] | null }) {
   );
 }
 
+function ExpiryBanner({ batches }: { batches: ExpiringBatchDto[] }) {
+  if (batches.length === 0) {
+    return null;
+  }
+  const expired = batches.filter((b) => b.isExpired);
+  const expiring = batches.filter((b) => !b.isExpired);
+  return (
+    <div className="mb-4 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900">
+      {expired.length > 0 && (
+        <p>
+          ⛔ {expired.length} {expired.length === 1 ? "lote vencido" : "lotes vencidos"} com saldo:{" "}
+          {expired.map((b) => `${b.supplyName}${b.label ? ` (${b.label})` : ""}`).join(", ")}
+        </p>
+      )}
+      {expiring.length > 0 && (
+        <p>
+          ⏳ {expiring.length} {expiring.length === 1 ? "lote vence" : "lotes vencem"} em até 30
+          dias:{" "}
+          {expiring
+            .map(
+              (b) =>
+                `${b.supplyName}${b.label ? ` (${b.label})` : ""} — ${formatDate(b.expiresAt)}`,
+            )
+            .join(", ")}
+        </p>
+      )}
+    </div>
+  );
+}
+
 interface SuppliesTableProps {
   supplies: SupplyDto[] | null;
+  insights: SupplyInsightDto[];
   onMove: (supply: SupplyDto) => void;
   onHistory: (supply: SupplyDto) => void;
   onEdit: (supply: SupplyDto) => void;
 }
 
-function SuppliesTable({ supplies, onMove, onHistory, onEdit }: SuppliesTableProps) {
+function SuppliesTable({ supplies, insights, onMove, onHistory, onEdit }: SuppliesTableProps) {
+  const insightBySupply = new Map(insights.map((i) => [i.supplyId, i]));
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
       {!supplies ? (
@@ -110,6 +181,7 @@ function SuppliesTable({ supplies, onMove, onHistory, onEdit }: SuppliesTablePro
               <th className="px-4 py-3">Insumo</th>
               <th className="px-4 py-3">Estoque</th>
               <th className="px-4 py-3">Mínimo</th>
+              <th className="px-4 py-3">Previsão</th>
               <th className="px-4 py-3">Preço</th>
               <th className="px-4 py-3">Situação</th>
               <th className="px-4 py-3 text-right">Ações</th>
@@ -120,6 +192,7 @@ function SuppliesTable({ supplies, onMove, onHistory, onEdit }: SuppliesTablePro
               <SupplyRow
                 key={supply.id}
                 supply={supply}
+                insight={insightBySupply.get(supply.id)}
                 onMove={() => onMove(supply)}
                 onHistory={() => onHistory(supply)}
                 onEdit={() => onEdit(supply)}
@@ -134,12 +207,26 @@ function SuppliesTable({ supplies, onMove, onHistory, onEdit }: SuppliesTablePro
 
 interface SupplyRowProps {
   supply: SupplyDto;
+  insight?: SupplyInsightDto;
   onMove: () => void;
   onHistory: () => void;
   onEdit: () => void;
 }
 
-function SupplyRow({ supply, onMove, onHistory, onEdit }: SupplyRowProps) {
+function StockoutForecast({ insight }: { insight?: SupplyInsightDto }) {
+  if (!insight || insight.daysToStockout == null) {
+    return <span className="text-slate-400">—</span>;
+  }
+  const days = insight.daysToStockout;
+  const urgent = days <= STOCKOUT_ALERT_DAYS;
+  return (
+    <span className={urgent ? "font-medium text-red-700" : "text-slate-600"}>
+      ~{days} {days === 1 ? "dia" : "dias"}
+    </span>
+  );
+}
+
+function SupplyRow({ supply, insight, onMove, onHistory, onEdit }: SupplyRowProps) {
   return (
     <tr className={supply.active ? "" : "opacity-50"}>
       <td className="px-4 py-3 font-medium">{supply.name}</td>
@@ -152,6 +239,9 @@ function SupplyRow({ supply, onMove, onHistory, onEdit }: SupplyRowProps) {
         )}
       </td>
       <td className="px-4 py-3 text-slate-600">{supply.minQty}</td>
+      <td className="px-4 py-3">
+        <StockoutForecast insight={insight} />
+      </td>
       <td className="px-4 py-3">{formatCurrency(supply.priceCents)}</td>
       <td className="px-4 py-3">
         <StatusBadge
@@ -306,6 +396,8 @@ function MovementForm({ supply, onSaved }: { supply: SupplyDto; onSaved: () => v
   const [quantity, setQuantity] = useState("");
   const [reason, setReason] = useState("");
   const [appointmentId, setAppointmentId] = useState("");
+  const [batchLabel, setBatchLabel] = useState("");
+  const [expiresAt, setExpiresAt] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -326,6 +418,8 @@ function MovementForm({ supply, onSaved }: { supply: SupplyDto; onSaved: () => v
           quantity: Number(quantity),
           reason,
           appointmentId: type === "out" && appointmentId ? appointmentId : null,
+          batchLabel: type === "in" && batchLabel ? batchLabel : null,
+          expiresAt: type === "in" && expiresAt ? new Date(expiresAt).toISOString() : null,
         }),
       });
       onSaved();
@@ -376,6 +470,28 @@ function MovementForm({ supply, onSaved }: { supply: SupplyDto; onSaved: () => v
           className={`mt-1 ${inputClass}`}
         />
       </label>
+      {type === "in" && (
+        <div className="grid grid-cols-2 gap-3">
+          <label className="text-sm font-medium">
+            Lote (opcional)
+            <input
+              value={batchLabel}
+              onChange={(e) => setBatchLabel(e.target.value)}
+              placeholder="Ex.: L2026-091"
+              className={`mt-1 ${inputClass}`}
+            />
+          </label>
+          <label className="text-sm font-medium">
+            Validade (opcional)
+            <input
+              type="date"
+              value={expiresAt}
+              onChange={(e) => setExpiresAt(e.target.value)}
+              className={`mt-1 ${inputClass}`}
+            />
+          </label>
+        </div>
+      )}
       {type === "out" && (
         <label className="text-sm font-medium">
           Consulta atendida (custo por atendimento)

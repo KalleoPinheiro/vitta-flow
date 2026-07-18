@@ -1,9 +1,12 @@
-import { and, asc, desc, eq, gte, lt, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, lt, lte, sql, type SQL } from "drizzle-orm";
 import { Supply } from "@/domain/inventory/supply";
 import { StockMovement, type MovementType } from "@/domain/inventory/stock-movement";
+import { SupplyBatch } from "@/domain/inventory/supply-batch";
 import type {
+  OutflowBySupply,
   OutflowCostByAppointment,
   StockMovementRepository,
+  SupplyBatchRepository,
   SupplyRepository,
 } from "@/domain/inventory/inventory-repositories";
 import { FollowUp, type FollowUpStatus } from "@/domain/followup/follow-up";
@@ -12,7 +15,7 @@ import type {
   FollowUpRepository,
 } from "@/domain/followup/follow-up-repository";
 import { MAX_ROWS, type AppDb } from "./db";
-import { followUps, stockMovements, supplies } from "./schema";
+import { followUps, stockMovements, supplies, supplyBatches } from "./schema";
 
 export class DrizzleSupplyRepository implements SupplyRepository {
   constructor(private readonly db: AppDb) {}
@@ -93,6 +96,63 @@ export class DrizzleStockMovementRepository implements StockMovementRepository {
       appointmentId: row.appointmentId,
       totalCents: Number(row.totalCents),
     }));
+  }
+
+  async getOutflowQtyInRange(from: Date, to: Date): Promise<OutflowBySupply[]> {
+    const rows = await this.db
+      .select({
+        supplyId: stockMovements.supplyId,
+        totalQty: sql<number>`coalesce(sum(${stockMovements.quantity}), 0)::int`,
+      })
+      .from(stockMovements)
+      .where(
+        and(
+          eq(stockMovements.type, "out"),
+          gte(stockMovements.createdAt, from),
+          lt(stockMovements.createdAt, to),
+        ),
+      )
+      .groupBy(stockMovements.supplyId);
+    return rows.map((row) => ({ supplyId: row.supplyId, totalQty: Number(row.totalQty) }));
+  }
+}
+
+export class DrizzleSupplyBatchRepository implements SupplyBatchRepository {
+  constructor(private readonly db: AppDb) {}
+
+  async save(batch: SupplyBatch): Promise<void> {
+    const values = {
+      id: batch.id,
+      supplyId: batch.supplyId,
+      label: batch.label,
+      expiresAt: batch.expiresAt,
+      quantity: batch.quantity,
+      remaining: batch.remaining,
+      createdAt: batch.createdAt,
+    };
+    await this.db
+      .insert(supplyBatches)
+      .values(values)
+      .onConflictDoUpdate({ target: supplyBatches.id, set: values });
+  }
+
+  async findActiveBySupplyId(supplyId: string): Promise<SupplyBatch[]> {
+    const rows = await this.db
+      .select()
+      .from(supplyBatches)
+      .where(and(eq(supplyBatches.supplyId, supplyId), gt(supplyBatches.remaining, 0)))
+      .orderBy(sql`${supplyBatches.expiresAt} ASC NULLS LAST`, asc(supplyBatches.createdAt));
+    return rows.map((row) => SupplyBatch.restore(row));
+  }
+
+  async findExpiringBefore(limit: Date): Promise<SupplyBatch[]> {
+    const rows = await this.db
+      .select()
+      .from(supplyBatches)
+      .where(and(gt(supplyBatches.remaining, 0), lte(supplyBatches.expiresAt, limit)))
+      .orderBy(asc(supplyBatches.expiresAt))
+      .limit(MAX_ROWS);
+    return rows.map((row) => SupplyBatch.restore(row));
   }
 }
 

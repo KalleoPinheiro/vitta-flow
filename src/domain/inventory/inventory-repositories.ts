@@ -1,5 +1,6 @@
 import type { Supply } from "./supply";
 import type { StockMovement } from "./stock-movement";
+import type { SupplyBatch } from "./supply-batch";
 
 export interface SupplyRepository {
   save(supply: Supply): Promise<void>;
@@ -13,9 +14,25 @@ export interface OutflowCostByAppointment {
   totalCents: number;
 }
 
+/** Total de saídas por insumo no período — base da previsão de ruptura. */
+export interface OutflowBySupply {
+  supplyId: string;
+  totalQty: number;
+}
+
 export interface StockMovementRepository {
   save(movement: StockMovement): Promise<void>;
   findBySupplyId(supplyId: string): Promise<StockMovement[]>;
   /** Soma quantity × unit_price_cents das saídas no período, agrupada por consulta. */
   getOutflowCostInRange(from: Date, to: Date): Promise<OutflowCostByAppointment[]>;
+  /** Quantidade total de saídas por insumo no período. */
+  getOutflowQtyInRange(from: Date, to: Date): Promise<OutflowBySupply[]>;
+}
+
+export interface SupplyBatchRepository {
+  save(batch: SupplyBatch): Promise<void>;
+  /** Lotes com saldo, ordenados por validade mais próxima (FEFO; sem validade por último). */
+  findActiveBySupplyId(supplyId: string): Promise<SupplyBatch[]>;
+  /** Lotes com saldo e validade até a data-limite (vencidos inclusos). */
+  findExpiringBefore(limit: Date): Promise<SupplyBatch[]>;
 }

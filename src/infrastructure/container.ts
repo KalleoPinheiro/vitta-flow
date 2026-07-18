@@ -11,6 +11,7 @@ import {
 import {
   DrizzleFollowUpRepository,
   DrizzleStockMovementRepository,
+  DrizzleSupplyBatchRepository,
   DrizzleSupplyRepository,
 } from "./persistence/drizzle/drizzle-inventory-repositories";
 import {
@@ -37,6 +38,7 @@ import type {
 } from "@/domain/clinical/clinical-repositories";
 import type {
   StockMovementRepository,
+  SupplyBatchRepository,
   SupplyRepository,
 } from "@/domain/inventory/inventory-repositories";
 import type { FollowUpRepository } from "@/domain/followup/follow-up-repository";
@@ -57,6 +59,7 @@ export interface Services {
   assessments: ConditionAssessmentRepository;
   supplies: SupplyRepository;
   stockMovements: StockMovementRepository;
+  supplyBatches: SupplyBatchRepository;
   followUps: FollowUpRepository;
   auditEvents: AuditEventRepository;
   calendar: CalendarGateway;
@@ -129,6 +132,7 @@ export async function getRepositories(): Promise<Services> {
     assessments: new DrizzleConditionAssessmentRepository(db),
     supplies: new DrizzleSupplyRepository(db),
     stockMovements: new DrizzleStockMovementRepository(db),
+    supplyBatches: new DrizzleSupplyBatchRepository(db),
     followUps: new DrizzleFollowUpRepository(db),
     auditEvents: new DrizzleAuditEventRepository(db),
     calendar,

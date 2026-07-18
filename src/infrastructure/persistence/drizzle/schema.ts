@@ -146,6 +146,25 @@ export const supplies = pgTable("supplies", {
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
 });
 
+export const supplyBatches = pgTable(
+  "supply_batches",
+  {
+    id: text("id").primaryKey(),
+    supplyId: text("supply_id")
+      .notNull()
+      .references(() => supplies.id),
+    label: text("label"),
+    expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }),
+    quantity: integer("quantity").notNull(),
+    remaining: integer("remaining").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [
+    index("idx_supply_batches_supply").on(table.supplyId),
+    index("idx_supply_batches_expires_at").on(table.expiresAt),
+  ],
+);
+
 export const stockMovements = pgTable(
   "stock_movements",
   {

@@ -1,8 +1,11 @@
 import type { Supply } from "@/domain/inventory/supply";
 import type { StockMovement } from "@/domain/inventory/stock-movement";
+import type { SupplyBatch } from "@/domain/inventory/supply-batch";
 import type {
+  OutflowBySupply,
   OutflowCostByAppointment,
   StockMovementRepository,
+  SupplyBatchRepository,
   SupplyRepository,
 } from "@/domain/inventory/inventory-repositories";
 import type { FollowUp } from "@/domain/followup/follow-up";
@@ -52,6 +55,45 @@ export class InMemoryStockMovementRepository implements StockMovementRepository 
       appointmentId,
       totalCents,
     }));
+  }
+
+  async getOutflowQtyInRange(from: Date, to: Date): Promise<OutflowBySupply[]> {
+    const totals = new Map<string, number>();
+    for (const movement of this.items.values()) {
+      const at = movement.createdAt.getTime();
+      if (movement.type !== "out" || at < from.getTime() || at >= to.getTime()) continue;
+      totals.set(movement.supplyId, (totals.get(movement.supplyId) ?? 0) + movement.quantity);
+    }
+    return [...totals.entries()].map(([supplyId, totalQty]) => ({ supplyId, totalQty }));
+  }
+}
+
+export class InMemorySupplyBatchRepository implements SupplyBatchRepository {
+  private readonly items = new Map<string, SupplyBatch>();
+
+  async save(batch: SupplyBatch): Promise<void> {
+    this.items.set(batch.id, batch);
+  }
+
+  private static byExpiryFefo(a: SupplyBatch, b: SupplyBatch): number {
+    const aT = a.expiresAt?.getTime() ?? Number.POSITIVE_INFINITY;
+    const bT = b.expiresAt?.getTime() ?? Number.POSITIVE_INFINITY;
+    return aT - bT || a.createdAt.getTime() - b.createdAt.getTime();
+  }
+
+  async findActiveBySupplyId(supplyId: string): Promise<SupplyBatch[]> {
+    return [...this.items.values()]
+      .filter((b) => b.supplyId === supplyId && b.remaining > 0)
+      .sort(InMemorySupplyBatchRepository.byExpiryFefo);
+  }
+
+  async findExpiringBefore(limit: Date): Promise<SupplyBatch[]> {
+    return [...this.items.values()]
+      .filter(
+        (b) =>
+          b.remaining > 0 && b.expiresAt != null && b.expiresAt.getTime() <= limit.getTime(),
+      )
+      .sort(InMemorySupplyBatchRepository.byExpiryFefo);
   }
 }
 

@@ -1,6 +1,8 @@
 import { StockMovement, type MovementType } from "@/domain/inventory/stock-movement";
+import { SupplyBatch } from "@/domain/inventory/supply-batch";
 import type {
   StockMovementRepository,
+  SupplyBatchRepository,
   SupplyRepository,
 } from "@/domain/inventory/inventory-repositories";
 import type { AppointmentRepository } from "@/domain/scheduling/appointment-repository";
@@ -14,6 +16,10 @@ export interface RegisterStockMovementInput {
   reason: string;
   /** Consulta atendida com o material (opcional; só para saídas). */
   appointmentId?: string | null;
+  /** Lote do fornecedor (opcional; só para entradas). */
+  batchLabel?: string | null;
+  /** Validade do lote (opcional; só para entradas). */
+  expiresAt?: Date | null;
 }
 
 export class RegisterStockMovement {
@@ -21,6 +27,7 @@ export class RegisterStockMovement {
     private readonly supplies: SupplyRepository,
     private readonly movements: StockMovementRepository,
     private readonly appointments?: AppointmentRepository,
+    private readonly batches?: SupplyBatchRepository,
   ) {}
 
   async execute(input: RegisterStockMovementInput): Promise<Supply> {
@@ -53,6 +60,39 @@ export class RegisterStockMovement {
 
     await this.supplies.save(updated);
     await this.movements.save(movement);
+    await this.syncBatches(input);
     return updated;
+  }
+
+  /**
+   * Lotes são camada informativa (validade/FEFO); o estoque do insumo segue
+   * sendo a fonte de verdade. Entrada sem lote não cria lote (retrocompatível);
+   * saída consome dos lotes com validade mais próxima até onde houver saldo.
+   */
+  private async syncBatches(input: RegisterStockMovementInput): Promise<void> {
+    if (!this.batches) {
+      return;
+    }
+    if (input.type === "in") {
+      if (input.batchLabel || input.expiresAt) {
+        await this.batches.save(
+          SupplyBatch.create({
+            supplyId: input.supplyId,
+            quantity: input.quantity,
+            label: input.batchLabel ?? null,
+            expiresAt: input.expiresAt ?? null,
+          }),
+        );
+      }
+      return;
+    }
+
+    let toConsume = input.quantity;
+    for (const batch of await this.batches.findActiveBySupplyId(input.supplyId)) {
+      if (toConsume <= 0) break;
+      const { batch: consumed, leftover } = batch.consume(toConsume);
+      await this.batches.save(consumed);
+      toConsume = leftover;
+    }
   }
 }

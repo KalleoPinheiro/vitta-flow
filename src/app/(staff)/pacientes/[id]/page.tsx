@@ -47,6 +47,12 @@ function PatientHeader({ patient }: { patient: PatientDto }) {
         {patient.phone} · {patient.email}
         {patient.birthDate ? ` · nasc. ${formatDate(patient.birthDate)}` : ""}
       </span>
+      <a
+        href={`/documentos/consentimento/${patient.id}`}
+        className="ml-auto text-sm font-medium text-teal-700 hover:underline"
+      >
+        Termo de consentimento
+      </a>
     </div>
   );
 }

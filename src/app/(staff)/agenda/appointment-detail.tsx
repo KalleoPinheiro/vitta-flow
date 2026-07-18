@@ -101,6 +101,13 @@ export function AppointmentDetail({ appointment, onAction, onReschedule }: Appoi
         </p>
       )}
 
+      <a
+        href={`/documentos/atestado/${appointment.id}`}
+        className="text-xs font-medium text-teal-700 hover:underline"
+      >
+        Declaração de comparecimento
+      </a>
+
       {visibleActions.includes("complete") && (
         <label className="mt-1 text-xs font-medium text-slate-600">
           Ao concluir, programar retorno:

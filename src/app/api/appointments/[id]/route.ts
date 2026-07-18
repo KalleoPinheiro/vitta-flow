@@ -26,6 +26,19 @@ const actionSchema = z.discriminatedUnion("action", [
 
 type RouteContext = { params: Promise<{ id: string }> };
 
+export async function GET(_request: NextRequest, context: RouteContext) {
+  return handleRequest(async () => {
+    const { id } = await context.params;
+    const { appointments, patients } = await getRepositories();
+    const appointment = await appointments.findById(id);
+    if (!appointment) {
+      return null;
+    }
+    const patient = await patients.findById(appointment.patientId);
+    return toAppointmentDto(appointment, patient?.fullName);
+  });
+}
+
 export async function PATCH(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;

@@ -121,6 +121,12 @@ export function ConditionsSection({ patientId, conditions, onChanged }: Conditio
                         </button>
                       </>
                     )}
+                    <a
+                      href={`/documentos/relatorio/${condition.id}`}
+                      className="font-medium text-teal-700 hover:underline"
+                    >
+                      Relatório p/ parceiro
+                    </a>
                   </div>
                 </div>
 

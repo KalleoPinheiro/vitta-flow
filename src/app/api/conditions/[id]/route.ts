@@ -11,6 +11,24 @@ const actionSchema = z.object({ action: z.literal("resolve") });
 
 type RouteContext = { params: Promise<{ id: string }> };
 
+export async function GET(request: NextRequest, context: RouteContext) {
+  return handleRequest(async () => {
+    const { id } = await context.params;
+    const { conditions, auditEvents } = await getRepositories();
+    const condition = await conditions.findById(id);
+    if (!condition) {
+      return null;
+    }
+    recordAudit(auditEvents, getRequestSession(request), {
+      action: "read",
+      resourceType: "condition",
+      resourceId: condition.id,
+      patientId: condition.patientId,
+    });
+    return toConditionDto(condition);
+  });
+}
+
 export async function PATCH(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;

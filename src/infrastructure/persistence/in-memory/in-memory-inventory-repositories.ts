@@ -43,6 +43,12 @@ export class InMemoryStockMovementRepository implements StockMovementRepository 
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
+  async findByAppointmentId(appointmentId: string): Promise<StockMovement[]> {
+    return [...this.items.values()]
+      .filter((m) => m.appointmentId === appointmentId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
   async getOutflowCostInRange(from: Date, to: Date): Promise<OutflowCostByAppointment[]> {
     const totals = new Map<string | null, number>();
     for (const movement of this.items.values()) {

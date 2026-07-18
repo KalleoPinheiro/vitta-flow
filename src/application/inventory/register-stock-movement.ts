@@ -37,8 +37,9 @@ export class RegisterStockMovement {
     }
 
     const appointmentId = input.type === "out" ? (input.appointmentId ?? null) : null;
-    if (appointmentId) {
-      const appointment = await this.appointments?.findById(appointmentId);
+    // Valida o vínculo apenas quando o repositório de consultas foi fornecido.
+    if (appointmentId && this.appointments) {
+      const appointment = await this.appointments.findById(appointmentId);
       if (!appointment) {
         throw new NotFoundError("Consulta", appointmentId);
       }

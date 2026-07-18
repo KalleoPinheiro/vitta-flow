@@ -44,6 +44,20 @@ export const procedures = pgTable(
   ],
 );
 
+export const procedureSupplies = pgTable(
+  "procedure_supplies",
+  {
+    procedureId: text("procedure_id")
+      .notNull()
+      .references(() => procedures.id),
+    supplyId: text("supply_id").notNull(),
+    quantity: integer("quantity").notNull(),
+  },
+  (table) => [
+    uniqueIndex("uq_procedure_supplies").on(table.procedureId, table.supplyId),
+  ],
+);
+
 export const userAccounts = pgTable("user_accounts", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
@@ -189,6 +203,15 @@ export const conditionAssessments = pgTable(
     painScale: integer("pain_scale"),
     skinCondition: text("skin_condition"),
     complications: text("complications"),
+    // Complicações canônicas (CSV de enum) — O2.2; texto livre legado preservado acima.
+    complicationCodes: text("complication_codes"),
+    // Escala DET (estomias): área 0–3 e severidade 0–2 por domínio — O2.2.
+    detDiscolorationArea: integer("det_discoloration_area"),
+    detDiscolorationSeverity: integer("det_discoloration_severity"),
+    detErosionArea: integer("det_erosion_area"),
+    detErosionSeverity: integer("det_erosion_severity"),
+    detOvergrowthArea: integer("det_overgrowth_area"),
+    detOvergrowthSeverity: integer("det_overgrowth_severity"),
     notes: text("notes"),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
   },

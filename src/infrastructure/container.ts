@@ -35,10 +35,12 @@ import {
 import type { ReminderLogRepository } from "@/domain/messaging/reminder-log";
 import { DrizzleProfessionalRepository } from "./persistence/drizzle/drizzle-professional-repository";
 import {
+  DrizzleProcedureKitRepository,
   DrizzleProcedureRepository,
   DrizzleScheduleConfigRepository,
   DrizzleUserAccountRepository,
 } from "./persistence/drizzle/drizzle-foundation-repositories";
+import type { ProcedureKitRepository } from "@/domain/catalog/procedure-kit";
 import type { ProcedureRepository } from "@/domain/catalog/procedure-repository";
 import type { UserAccountRepository } from "@/domain/auth/user-account";
 import type { ScheduleConfigRepository } from "@/domain/scheduling/schedule-config";
@@ -76,6 +78,7 @@ export interface Services {
   partners: PartnerRepository;
   professionals: ProfessionalRepository;
   procedures: ProcedureRepository;
+  procedureKits: ProcedureKitRepository;
   userAccounts: UserAccountRepository;
   scheduleConfig: ScheduleConfigRepository;
   googleAccounts: DrizzleGoogleAccountRepository;
@@ -162,6 +165,7 @@ export async function getRepositories(): Promise<Services> {
     partners: new DrizzlePartnerRepository(db),
     professionals: new DrizzleProfessionalRepository(db),
     procedures: new DrizzleProcedureRepository(db),
+    procedureKits: new DrizzleProcedureKitRepository(db),
     userAccounts: new DrizzleUserAccountRepository(db),
     scheduleConfig: new DrizzleScheduleConfigRepository(db),
     googleAccounts: new DrizzleGoogleAccountRepository(db),

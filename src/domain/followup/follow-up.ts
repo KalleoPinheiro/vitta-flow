@@ -1,7 +1,7 @@
 import { InvalidStatusTransitionError, ValidationError } from "../shared/errors";
 import { newId } from "../shared/id";
 
-export const FOLLOW_UP_STATUSES = ["pending", "done", "cancelled"] as const;
+export const FOLLOW_UP_STATUSES = ["pending", "scheduled", "done", "cancelled"] as const;
 export type FollowUpStatus = (typeof FOLLOW_UP_STATUSES)[number];
 
 export interface FollowUpProps {
@@ -43,8 +43,8 @@ export class FollowUp {
     return new FollowUp({ ...state });
   }
 
-  private transitionTo(status: FollowUpStatus): FollowUp {
-    if (this.state.status !== "pending") {
+  private transitionTo(status: FollowUpStatus, allowedFrom: FollowUpStatus[]): FollowUp {
+    if (!allowedFrom.includes(this.state.status)) {
       throw new InvalidStatusTransitionError(
         `Retorno já está "${this.state.status}", não pode mudar para "${status}"`,
       );
@@ -52,12 +52,17 @@ export class FollowUp {
     return new FollowUp({ ...this.state, status });
   }
 
+  /** Retorno virou agendamento (recall de 1 clique) — sai da pendência. */
+  markScheduled(): FollowUp {
+    return this.transitionTo("scheduled", ["pending"]);
+  }
+
   markDone(): FollowUp {
-    return this.transitionTo("done");
+    return this.transitionTo("done", ["pending", "scheduled"]);
   }
 
   cancel(): FollowUp {
-    return this.transitionTo("cancelled");
+    return this.transitionTo("cancelled", ["pending", "scheduled"]);
   }
 
   isOverdue(now: Date): boolean {

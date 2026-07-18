@@ -8,6 +8,9 @@ import { getRequestSession } from "@/lib/auth/request-session";
 import { recordAudit } from "@/lib/audit";
 import { toAssessmentDto } from "@/lib/dto";
 
+const detArea = z.number().int().min(0).max(3).nullish();
+const detSeverity = z.number().int().min(0).max(2).nullish();
+
 const assessmentSchema = z.object({
   lengthMm: z.number().int().min(0).max(10_000).nullish(),
   widthMm: z.number().int().min(0).max(10_000).nullish(),
@@ -17,6 +20,13 @@ const assessmentSchema = z.object({
   painScale: z.number().int().min(0).max(10).nullish(),
   skinCondition: z.string().max(1000).nullish(),
   complications: z.string().max(1000).nullish(),
+  complicationCodes: z.string().max(500).nullish(),
+  detDiscolorationArea: detArea,
+  detDiscolorationSeverity: detSeverity,
+  detErosionArea: detArea,
+  detErosionSeverity: detSeverity,
+  detOvergrowthArea: detArea,
+  detOvergrowthSeverity: detSeverity,
   notes: z.string().max(5000).nullish(),
 });
 

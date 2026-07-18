@@ -23,6 +23,8 @@ interface AppointmentFormProps {
   patients: PatientDto[];
   professionals?: ProfessionalDto[];
   defaultDate?: Date;
+  defaultPatientId?: string;
+  defaultProcedure?: string;
   onSubmit: (values: AppointmentFormValues) => Promise<void>;
 }
 
@@ -35,14 +37,16 @@ export function AppointmentForm({
   patients,
   professionals = [],
   defaultDate,
+  defaultPatientId,
+  defaultProcedure,
   onSubmit,
 }: AppointmentFormProps) {
   const [values, setValues] = useState<AppointmentFormValues>({
-    patientId: "",
+    patientId: defaultPatientId ?? "",
     date: defaultDate ? dayKey(defaultDate) : dayKey(new Date()),
     startTime: "09:00",
     durationMinutes: 60,
-    procedure: "",
+    procedure: defaultProcedure ?? "",
     price: "",
     notes: "",
     professionalId: "",

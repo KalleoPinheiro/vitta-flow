@@ -23,6 +23,7 @@ export interface OutflowBySupply {
 export interface StockMovementRepository {
   save(movement: StockMovement): Promise<void>;
   findBySupplyId(supplyId: string): Promise<StockMovement[]>;
+  findByAppointmentId(appointmentId: string): Promise<StockMovement[]>;
   /** Soma quantity × unit_price_cents das saídas no período, agrupada por consulta. */
   getOutflowCostInRange(from: Date, to: Date): Promise<OutflowCostByAppointment[]>;
   /** Quantidade total de saídas por insumo no período. */

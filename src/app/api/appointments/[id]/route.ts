@@ -7,6 +7,8 @@ import {
 } from "@/application/appointments/change-appointment-status";
 import { CompleteAppointment } from "@/application/appointments/complete-appointment";
 import { RescheduleAppointment } from "@/application/appointments/reschedule-appointment";
+import { RegisterStockMovement } from "@/application/inventory/register-stock-movement";
+import { DispenseProcedureKit } from "@/application/inventory/dispense-procedure-kit";
 import { handleRequest } from "@/lib/api-response";
 import { scheduleCalendarSync } from "@/lib/calendar-sync";
 import { toAppointmentDto } from "@/lib/dto";
@@ -51,7 +53,27 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         id,
         followUpInDays: body.followUpInDays ?? null,
       });
-      return toAppointmentDto(completed);
+      // Kit do procedimento: baixa automática, nunca bloqueia a conclusão.
+      let kitWarnings: string[] = [];
+      if (completed.procedureId) {
+        const dispense = new DispenseProcedureKit(
+          services.procedureKits,
+          services.supplies,
+          services.stockMovements,
+          new RegisterStockMovement(
+            services.supplies,
+            services.stockMovements,
+            services.appointments,
+            services.supplyBatches,
+          ),
+        );
+        const result = await dispense.execute({
+          appointmentId: completed.id,
+          procedureId: completed.procedureId,
+        });
+        kitWarnings = result.warnings;
+      }
+      return { ...toAppointmentDto(completed), kitWarnings };
     }
     if (body.action === "reschedule") {
       const rescheduled = await new RescheduleAppointment(

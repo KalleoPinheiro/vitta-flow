@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { apiFetch } from "@/lib/client";
-import type { ProcedureDto } from "@/lib/dto";
+import type { ProcedureDto, SupplyDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import { formatCurrency } from "@/lib/format";
 import { Modal } from "@/components/modal";
@@ -15,6 +15,7 @@ const inputClass =
 export default function ProceduresPage() {
   const { data: procedures, error, refresh } = useApiQuery<ProcedureDto[]>("/api/procedures");
   const [editing, setEditing] = useState<ProcedureDto | "new" | null>(null);
+  const [kitFor, setKitFor] = useState<ProcedureDto | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const toggleActive = async (procedure: ProcedureDto) => {
@@ -81,6 +82,13 @@ export default function ProceduresPage() {
                   <td className="px-4 py-3 text-right">
                     <button
                       type="button"
+                      onClick={() => setKitFor(procedure)}
+                      className="mr-2 font-medium text-emerald-700 hover:underline"
+                    >
+                      Kit
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => setEditing(procedure)}
                       className="mr-2 font-medium text-teal-700 hover:underline"
                     >
@@ -100,6 +108,8 @@ export default function ProceduresPage() {
           </table>
         )}
       </div>
+
+      <KitModal procedure={kitFor} onClose={() => setKitFor(null)} />
 
       {editing && (
         <Modal
@@ -205,5 +215,129 @@ function ProcedureForm({
         {saving ? "Salvando…" : "Salvar"}
       </button>
     </form>
+  );
+}
+
+function KitModal({
+  procedure,
+  onClose,
+}: {
+  procedure: ProcedureDto | null;
+  onClose: () => void;
+}) {
+  if (!procedure) {
+    return null;
+  }
+  return (
+    <Modal title={`Kit de insumos — ${procedure.name}`} onClose={onClose}>
+      <KitForm procedure={procedure} onSaved={onClose} />
+    </Modal>
+  );
+}
+
+interface KitItemDraft {
+  supplyId: string;
+  quantity: string;
+}
+
+/** Kit padrão do procedimento: baixado automaticamente ao concluir a consulta. */
+function KitForm({ procedure, onSaved }: { procedure: ProcedureDto; onSaved: () => void }) {
+  const { data: supplies } = useApiQuery<SupplyDto[]>("/api/supplies");
+  const { data: kit } = useApiQuery<{ items: Array<{ supplyId: string; quantity: number }> }>(
+    `/api/procedures/${procedure.id}/kit`,
+  );
+  const [edits, setEdits] = useState<KitItemDraft[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  if (!supplies || !kit) return <LoadingIndicator />;
+
+  const items =
+    edits ?? kit.items.map((item) => ({ supplyId: item.supplyId, quantity: String(item.quantity) }));
+  const activeSupplies = supplies.filter((s) => s.active);
+  const supplyName = (id: string) => supplies.find((s) => s.id === id)?.name ?? id;
+
+  const save = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      await apiFetch(`/api/procedures/${procedure.id}/kit`, {
+        method: "PUT",
+        body: JSON.stringify({
+          items: items
+            .filter((item) => item.supplyId)
+            .map((item) => ({ supplyId: item.supplyId, quantity: Number(item.quantity) || 1 })),
+        }),
+      });
+      onSaved();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao salvar kit");
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-3">
+      {error && <ErrorAlert message={error} />}
+      <p className="text-sm text-slate-500">
+        Ao concluir uma consulta deste procedimento, estes insumos são baixados
+        automaticamente com custo vinculado ao atendimento.
+      </p>
+      {items.length === 0 && (
+        <p className="text-sm text-slate-400">Nenhum item — a conclusão não baixa estoque.</p>
+      )}
+      {items.map((item, index) => (
+        <div key={`${item.supplyId}-${index}`} className="flex items-center gap-2">
+          <select
+            value={item.supplyId}
+            onChange={(e) =>
+              setEdits(items.map((it, i) => (i === index ? { ...it, supplyId: e.target.value } : it)))
+            }
+            className={`flex-1 ${inputClass}`}
+          >
+            <option value="">Selecione o insumo…</option>
+            {activeSupplies.map((supply) => (
+              <option key={supply.id} value={supply.id}>
+                {supply.name}
+              </option>
+            ))}
+            {item.supplyId && !activeSupplies.some((s) => s.id === item.supplyId) && (
+              <option value={item.supplyId}>{supplyName(item.supplyId)}</option>
+            )}
+          </select>
+          <input
+            type="number"
+            min="1"
+            value={item.quantity}
+            onChange={(e) =>
+              setEdits(items.map((it, i) => (i === index ? { ...it, quantity: e.target.value } : it)))
+            }
+            className={`w-20 ${inputClass}`}
+          />
+          <button
+            type="button"
+            onClick={() => setEdits(items.filter((_, i) => i !== index))}
+            className="text-sm font-medium text-red-700 hover:underline"
+          >
+            remover
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={() => setEdits([...items, { supplyId: "", quantity: "1" }])}
+        className="self-start text-sm font-medium text-teal-700 hover:underline"
+      >
+        + Adicionar insumo
+      </button>
+      <button
+        type="button"
+        disabled={saving}
+        onClick={() => void save()}
+        className="mt-1 self-start rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-50"
+      >
+        {saving ? "Salvando…" : "Salvar kit"}
+      </button>
+    </div>
   );
 }

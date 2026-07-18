@@ -7,8 +7,13 @@ import {
   type ScheduleConfig,
   type ScheduleConfigRepository,
 } from "@/domain/scheduling/schedule-config";
+import {
+  validateKitItems,
+  type ProcedureKitItem,
+  type ProcedureKitRepository,
+} from "@/domain/catalog/procedure-kit";
 import { MAX_ROWS, type AppDb } from "./db";
-import { procedures, scheduleSettings, userAccounts } from "./schema";
+import { procedureSupplies, procedures, scheduleSettings, userAccounts } from "./schema";
 
 export class DrizzleProcedureRepository implements ProcedureRepository {
   constructor(private readonly db: AppDb) {}
@@ -130,5 +135,33 @@ export class DrizzleScheduleConfigRepository implements ScheduleConfigRepository
       .insert(scheduleSettings)
       .values(values)
       .onConflictDoUpdate({ target: scheduleSettings.id, set: values });
+  }
+}
+
+export class DrizzleProcedureKitRepository implements ProcedureKitRepository {
+  constructor(private readonly db: AppDb) {}
+
+  async getKit(procedureId: string): Promise<ProcedureKitItem[]> {
+    const rows = await this.db
+      .select()
+      .from(procedureSupplies)
+      .where(eq(procedureSupplies.procedureId, procedureId));
+    return rows.map((row) => ({ supplyId: row.supplyId, quantity: row.quantity }));
+  }
+
+  async setKit(procedureId: string, items: ProcedureKitItem[]): Promise<void> {
+    const validated = validateKitItems(items);
+    await this.db.transaction(async (tx) => {
+      await tx.delete(procedureSupplies).where(eq(procedureSupplies.procedureId, procedureId));
+      if (validated.length > 0) {
+        await tx.insert(procedureSupplies).values(
+          validated.map((item) => ({
+            procedureId,
+            supplyId: item.supplyId,
+            quantity: item.quantity,
+          })),
+        );
+      }
+    });
   }
 }

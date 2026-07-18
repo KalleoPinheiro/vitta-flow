@@ -188,6 +188,25 @@ export const followUps = pgTable(
   ],
 );
 
+export const auditEvents = pgTable(
+  "audit_events",
+  {
+    id: text("id").primaryKey(),
+    actorRole: text("actor_role").notNull(),
+    actorId: text("actor_id").notNull(),
+    action: text("action").notNull(),
+    resourceType: text("resource_type").notNull(),
+    resourceId: text("resource_id").notNull(),
+    patientId: text("patient_id"),
+    detail: text("detail"),
+    occurredAt: timestamp("occurred_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [
+    index("idx_audit_events_patient").on(table.patientId),
+    index("idx_audit_events_occurred_at").on(table.occurredAt),
+  ],
+);
+
 export const invoices = pgTable(
   "invoices",
   {

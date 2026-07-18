@@ -19,6 +19,8 @@ import {
 } from "./calendar/google-calendar-gateway";
 import { DrizzleGoogleAccountRepository } from "./persistence/drizzle/drizzle-google-account-repository";
 import { DrizzlePartnerRepository } from "./persistence/drizzle/drizzle-partner-repository";
+import { DrizzleAuditEventRepository } from "./persistence/drizzle/drizzle-audit-event-repository";
+import type { AuditEventRepository } from "@/domain/audit/audit-event-repository";
 import type { PartnerRepository } from "@/domain/partner/partner-repository";
 import { googleOAuthConfigFromEnv } from "@/lib/auth/google-oauth";
 import { getAuthConfig } from "@/lib/auth/session";
@@ -56,6 +58,7 @@ export interface Services {
   supplies: SupplyRepository;
   stockMovements: StockMovementRepository;
   followUps: FollowUpRepository;
+  auditEvents: AuditEventRepository;
   calendar: CalendarGateway;
 }
 
@@ -127,6 +130,7 @@ export async function getRepositories(): Promise<Services> {
     supplies: new DrizzleSupplyRepository(db),
     stockMovements: new DrizzleStockMovementRepository(db),
     followUps: new DrizzleFollowUpRepository(db),
+    auditEvents: new DrizzleAuditEventRepository(db),
     calendar,
   };
 }

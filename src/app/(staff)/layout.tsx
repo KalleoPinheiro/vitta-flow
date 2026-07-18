@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { href: "/faturamento", label: "Faturamento" },
   { href: "/materiais", label: "Materiais" },
   { href: "/relatorios", label: "Relatórios" },
+  { href: "/auditoria", label: "Auditoria" },
 ];
 
 export default function StaffLayout({ children }: { children: React.ReactNode }) {

@@ -4,6 +4,8 @@ import { getRepositories } from "@/infrastructure/container";
 import { AddConditionAssessment } from "@/application/clinical/add-condition-assessment";
 import { EXUDATE_LEVELS } from "@/domain/clinical/condition-assessment";
 import { handleRequest } from "@/lib/api-response";
+import { getRequestSession } from "@/lib/auth/request-session";
+import { recordAudit } from "@/lib/audit";
 import { toAssessmentDto } from "@/lib/dto";
 
 const assessmentSchema = z.object({
@@ -20,11 +22,20 @@ const assessmentSchema = z.object({
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(_request: NextRequest, context: RouteContext) {
+export async function GET(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { assessments } = await getRepositories();
-    const result = await assessments.findByConditionId(id);
+    const { assessments, conditions, auditEvents } = await getRepositories();
+    const [result, condition] = await Promise.all([
+      assessments.findByConditionId(id),
+      conditions.findById(id),
+    ]);
+    recordAudit(auditEvents, getRequestSession(request), {
+      action: "read",
+      resourceType: "assessments",
+      resourceId: id,
+      patientId: condition?.patientId ?? null,
+    });
     return result.map(toAssessmentDto);
   });
 }
@@ -33,10 +44,17 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = assessmentSchema.parse(await request.json());
-    const { assessments, conditions } = await getRepositories();
+    const { assessments, conditions, auditEvents } = await getRepositories();
     const assessment = await new AddConditionAssessment(assessments, conditions).execute({
       conditionId: id,
       ...body,
+    });
+    const condition = await conditions.findById(id);
+    recordAudit(auditEvents, getRequestSession(request), {
+      action: "create",
+      resourceType: "assessment",
+      resourceId: assessment.id,
+      patientId: condition?.patientId ?? null,
     });
     return toAssessmentDto(assessment);
   });

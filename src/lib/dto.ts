@@ -9,6 +9,7 @@ import type { ConditionAssessment } from "@/domain/clinical/condition-assessment
 import type { Supply } from "@/domain/inventory/supply";
 import type { StockMovement } from "@/domain/inventory/stock-movement";
 import type { FollowUp } from "@/domain/followup/follow-up";
+import type { AuditEvent } from "@/domain/audit/audit-event";
 
 export interface PatientDto {
   id: string;
@@ -323,4 +324,28 @@ export const toInvoiceDto = (invoice: Invoice, patientName?: string): InvoiceDto
   dueDate: invoice.dueDate?.toISOString() ?? null,
   paidAt: invoice.paidAt?.toISOString() ?? null,
   paymentMethod: invoice.paymentMethod,
+});
+
+export interface AuditEventDto {
+  id: string;
+  actorRole: string;
+  actorId: string;
+  action: string;
+  resourceType: string;
+  resourceId: string;
+  patientId: string | null;
+  detail: string | null;
+  occurredAt: string;
+}
+
+export const toAuditEventDto = (event: AuditEvent): AuditEventDto => ({
+  id: event.id,
+  actorRole: event.actorRole,
+  actorId: event.actorId,
+  action: event.action,
+  resourceType: event.resourceType,
+  resourceId: event.resourceId,
+  patientId: event.patientId,
+  detail: event.detail,
+  occurredAt: event.occurredAt.toISOString(),
 });

@@ -3,6 +3,7 @@ import { getRepositories } from "@/infrastructure/container";
 import { GetPatientPortalData } from "@/application/portal/get-patient-portal-data";
 import { getRequestSession } from "@/lib/auth/request-session";
 import { handleRequest, fail } from "@/lib/api-response";
+import { recordAudit } from "@/lib/audit";
 import {
   toAssessmentDto,
   toConditionDto,
@@ -33,6 +34,12 @@ export async function GET(request: NextRequest) {
       followUps,
     ).execute({ email: session.subject });
 
+    recordAudit((await getRepositories()).auditEvents, session, {
+      action: "read",
+      resourceType: "portal-patient",
+      resourceId: data.patient.id,
+      patientId: data.patient.id,
+    });
     return {
       patient: toPortalPatientProfileDto(data.patient),
       appointments: data.appointments.map(toPortalAppointmentDto),

@@ -16,6 +16,8 @@ const scheduleSchema = z.object({
   notes: z.string().max(5000).nullish(),
   professionalId: z.string().max(100).nullish(),
   procedureId: z.string().max(100).nullish(),
+  /** Recall de 1 clique: follow-up de origem vira "scheduled" após criar. */
+  followUpId: z.string().max(100).nullish(),
 });
 
 export async function GET(request: NextRequest) {
@@ -56,6 +58,12 @@ export async function POST(request: NextRequest) {
       professionalId: body.professionalId ?? null,
       procedureId: body.procedureId ?? null,
     });
+    if (body.followUpId) {
+      const followUp = await services.followUps.findById(body.followUpId);
+      if (followUp?.status === "pending" && followUp.patientId === appointment.patientId) {
+        await services.followUps.save(followUp.markScheduled());
+      }
+    }
     scheduleCalendarSync(services, (sync) => sync.created(appointment.id));
     return toAppointmentDto(appointment);
   });

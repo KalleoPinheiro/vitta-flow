@@ -152,6 +152,7 @@ export function ConditionsSection({ patientId, conditions, onChanged }: Conditio
                               <th className="py-1 pr-3">Tecido</th>
                               <th className="py-1 pr-3">Exsudato</th>
                               <th className="py-1 pr-3">Dor</th>
+                              <th className="py-1 pr-3">PUSH/DET</th>
                               <th className="py-1 pr-3">Pele periestomal</th>
                               <th className="py-1">Complicações</th>
                             </tr>
@@ -173,6 +174,7 @@ export function ConditionsSection({ patientId, conditions, onChanged }: Conditio
                                 <td className="py-1.5 pr-3">
                                   {a.painScale != null ? `${a.painScale}/10` : "—"}
                                 </td>
+                                <td className="py-1.5 pr-3 font-medium">{scoreLabel(a)}</td>
                                 <td className="py-1.5 pr-3">{a.skinCondition ?? "—"}</td>
                                 <td className="py-1.5">{a.complications ?? "—"}</td>
                               </tr>
@@ -313,6 +315,13 @@ function ConditionForm({ patientId, onSaved }: { patientId: string; onSaved: () 
   );
 }
 
+/** Score clínico validado da avaliação: PUSH (ferida) ou DET (estomia). */
+function scoreLabel(assessment: AssessmentDto): string {
+  if (assessment.pushScore != null) return `PUSH ${assessment.pushScore}`;
+  if (assessment.detScore != null) return `DET ${assessment.detScore}`;
+  return "—";
+}
+
 interface AssessmentFormValues {
   lengthMm: string;
   widthMm: string;
@@ -322,8 +331,27 @@ interface AssessmentFormValues {
   painScale: string;
   skinCondition: string;
   complications: string;
+  complicationCodes: string[];
+  detDiscolorationArea: string;
+  detDiscolorationSeverity: string;
+  detErosionArea: string;
+  detErosionSeverity: string;
+  detOvergrowthArea: string;
+  detOvergrowthSeverity: string;
   notes: string;
 }
+
+/** Complicações canônicas de estomia (O2.2) — labels em pt-BR. */
+const COMPLICATION_OPTIONS = [
+  { value: "dermatitis", label: "Dermatite" },
+  { value: "prolapse", label: "Prolapso" },
+  { value: "hernia", label: "Hérnia" },
+  { value: "retraction", label: "Retração" },
+  { value: "bleeding", label: "Sangramento" },
+  { value: "granuloma", label: "Granuloma" },
+  { value: "stenosis", label: "Estenose" },
+  { value: "other", label: "Outra" },
+];
 
 const toNumberOrNull = (value: string): number | null => (value ? Number(value) : null);
 const toTextOrNull = (value: string): string | null => value || null;
@@ -337,12 +365,20 @@ const toAssessmentPayload = (values: AssessmentFormValues) => ({
   painScale: toNumberOrNull(values.painScale),
   skinCondition: toTextOrNull(values.skinCondition),
   complications: toTextOrNull(values.complications),
+  complicationCodes:
+    values.complicationCodes.length > 0 ? values.complicationCodes.join(",") : null,
+  detDiscolorationArea: toNumberOrNull(values.detDiscolorationArea),
+  detDiscolorationSeverity: toNumberOrNull(values.detDiscolorationSeverity),
+  detErosionArea: toNumberOrNull(values.detErosionArea),
+  detErosionSeverity: toNumberOrNull(values.detErosionSeverity),
+  detOvergrowthArea: toNumberOrNull(values.detOvergrowthArea),
+  detOvergrowthSeverity: toNumberOrNull(values.detOvergrowthSeverity),
   notes: toTextOrNull(values.notes),
 });
 
 function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSaved: () => void }) {
   const isWound = condition.kind === "wound";
-  const [values, setValues] = useState({
+  const [values, setValues] = useState<AssessmentFormValues>({
     lengthMm: "",
     widthMm: "",
     depthMm: "",
@@ -351,6 +387,13 @@ function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSav
     painScale: "",
     skinCondition: "",
     complications: "",
+    complicationCodes: [],
+    detDiscolorationArea: "",
+    detDiscolorationSeverity: "",
+    detErosionArea: "",
+    detErosionSeverity: "",
+    detOvergrowthArea: "",
+    detOvergrowthSeverity: "",
     notes: "",
   });
   const [error, setError] = useState<string | null>(null);
@@ -358,6 +401,14 @@ function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSav
 
   const set = (key: keyof typeof values) => (value: string) =>
     setValues((prev) => ({ ...prev, [key]: value }));
+
+  const toggleComplication = (code: string) =>
+    setValues((prev) => ({
+      ...prev,
+      complicationCodes: prev.complicationCodes.includes(code)
+        ? prev.complicationCodes.filter((c) => c !== code)
+        : [...prev.complicationCodes, code],
+    }));
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -400,10 +451,12 @@ function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSav
               Tecido predominante
               <select value={values.tissueType} onChange={(e) => set("tissueType")(e.target.value)} className={`mt-1 ${inputClass}`}>
                 <option value="">—</option>
-                <option value="granulação">Granulação</option>
-                <option value="epitelização">Epitelização</option>
-                <option value="esfacelo">Esfacelo</option>
-                <option value="necrose">Necrose</option>
+                {/* Valores canônicos do PUSH 3.0 — texto livre legado permanece no histórico. */}
+                <option value="closed">Fechado (0)</option>
+                <option value="epithelial">Epitelização (1)</option>
+                <option value="granulation">Granulação (2)</option>
+                <option value="slough">Esfacelo (3)</option>
+                <option value="necrotic">Necrose (4)</option>
               </select>
             </label>
             <label className="text-sm font-medium">
@@ -422,6 +475,53 @@ function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSav
       )}
       {!isWound && (
         <>
+          <fieldset className="rounded-lg border border-slate-200 p-3">
+            <legend className="px-1 text-xs font-semibold uppercase text-slate-500">
+              Escala DET (0–15) — área 0–3 · severidade 0–2
+            </legend>
+            <div className="grid grid-cols-3 gap-3 text-sm">
+              <DetDomainInputs
+                label="Descoloração"
+                area={values.detDiscolorationArea}
+                severity={values.detDiscolorationSeverity}
+                onArea={set("detDiscolorationArea")}
+                onSeverity={set("detDiscolorationSeverity")}
+              />
+              <DetDomainInputs
+                label="Erosão"
+                area={values.detErosionArea}
+                severity={values.detErosionSeverity}
+                onArea={set("detErosionArea")}
+                onSeverity={set("detErosionSeverity")}
+              />
+              <DetDomainInputs
+                label="Hiperplasia"
+                area={values.detOvergrowthArea}
+                severity={values.detOvergrowthSeverity}
+                onArea={set("detOvergrowthArea")}
+                onSeverity={set("detOvergrowthSeverity")}
+              />
+            </div>
+          </fieldset>
+          <div>
+            <p className="mb-1 text-sm font-medium">Complicações</p>
+            <div className="flex flex-wrap gap-2">
+              {COMPLICATION_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => toggleComplication(option.value)}
+                  className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                    values.complicationCodes.includes(option.value)
+                      ? "bg-red-700 text-white"
+                      : "border border-slate-300 text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
           <label className="text-sm font-medium">
             Pele periestomal
             <input
@@ -432,11 +532,11 @@ function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSav
             />
           </label>
           <label className="text-sm font-medium">
-            Complicações
+            Observação de complicações (texto livre)
             <input
               value={values.complications}
               onChange={(e) => set("complications")(e.target.value)}
-              placeholder="Ex.: dermatite, prolapso, hérnia, retração…"
+              placeholder="Detalhe as complicações selecionadas…"
               className={`mt-1 ${inputClass}`}
             />
           </label>
@@ -458,5 +558,45 @@ function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSav
         {saving ? "Registrando…" : "Registrar avaliação"}
       </button>
     </form>
+  );
+}
+
+function DetDomainInputs({
+  label,
+  area,
+  severity,
+  onArea,
+  onSeverity,
+}: {
+  label: string;
+  area: string;
+  severity: string;
+  onArea: (value: string) => void;
+  onSeverity: (value: string) => void;
+}) {
+  return (
+    <div>
+      <p className="mb-1 font-medium">{label}</p>
+      <div className="flex gap-2">
+        <input
+          type="number"
+          min="0"
+          max="3"
+          placeholder="área"
+          value={area}
+          onChange={(e) => onArea(e.target.value)}
+          className={inputClass}
+        />
+        <input
+          type="number"
+          min="0"
+          max="2"
+          placeholder="sev."
+          value={severity}
+          onChange={(e) => onSeverity(e.target.value)}
+          className={inputClass}
+        />
+      </div>
+    </div>
   );
 }

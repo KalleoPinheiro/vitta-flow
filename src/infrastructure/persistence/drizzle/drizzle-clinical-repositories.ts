@@ -164,6 +164,16 @@ export class DrizzleConditionAssessmentRepository implements ConditionAssessment
       painScale: assessment.painScale,
       skinCondition: assessment.skinCondition,
       complications: assessment.complications,
+      complicationCodes:
+        assessment.complicationCodes.length > 0
+          ? assessment.complicationCodes.join(",")
+          : null,
+      detDiscolorationArea: assessment.detDiscolorationArea,
+      detDiscolorationSeverity: assessment.detDiscolorationSeverity,
+      detErosionArea: assessment.detErosionArea,
+      detErosionSeverity: assessment.detErosionSeverity,
+      detOvergrowthArea: assessment.detOvergrowthArea,
+      detOvergrowthSeverity: assessment.detOvergrowthSeverity,
       notes: assessment.notes,
       createdAt: assessment.createdAt,
     });

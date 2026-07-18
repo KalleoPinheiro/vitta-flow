@@ -5,6 +5,11 @@ import type {
   ScheduleConfig,
   ScheduleConfigRepository,
 } from "@/domain/scheduling/schedule-config";
+import {
+  validateKitItems,
+  type ProcedureKitItem,
+  type ProcedureKitRepository,
+} from "@/domain/catalog/procedure-kit";
 
 export class InMemoryProcedureRepository implements ProcedureRepository {
   private readonly items = new Map<string, Procedure>();
@@ -55,5 +60,17 @@ export class InMemoryScheduleConfigRepository implements ScheduleConfigRepositor
 
   async save(config: ScheduleConfig): Promise<void> {
     this.config = config;
+  }
+}
+
+export class InMemoryProcedureKitRepository implements ProcedureKitRepository {
+  private readonly kits = new Map<string, ProcedureKitItem[]>();
+
+  async getKit(procedureId: string): Promise<ProcedureKitItem[]> {
+    return [...(this.kits.get(procedureId) ?? [])];
+  }
+
+  async setKit(procedureId: string, items: ProcedureKitItem[]): Promise<void> {
+    this.kits.set(procedureId, validateKitItems(items));
   }
 }

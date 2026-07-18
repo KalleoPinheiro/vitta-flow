@@ -41,12 +41,31 @@ function ProfessionalFilter({
 const monthLabel = (date: Date): string =>
   date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 
+/** Parâmetros do recall de 1 clique (?followUpId&patientId&procedure). */
+function readRecallParams() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  const params = new URLSearchParams(window.location.search);
+  const followUpId = params.get("followUpId");
+  return followUpId
+    ? {
+        followUpId,
+        patientId: params.get("patientId") ?? "",
+        procedure: params.get("procedure") ?? "",
+      }
+    : null;
+}
+
 export default function AgendaPage() {
   const [monthDate, setMonthDate] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
-  const [creatingFor, setCreatingFor] = useState<Date | null>(null);
+  const [recall] = useState(readRecallParams);
+  const [creatingFor, setCreatingFor] = useState<Date | null>(() =>
+    readRecallParams() ? new Date() : null,
+  );
   const [selected, setSelected] = useState<AppointmentDto | null>(null);
   const [professionalFilter, setProfessionalFilter] = useState("");
 
@@ -80,6 +99,7 @@ export default function AgendaPage() {
         notes: values.notes || null,
         professionalId: values.professionalId || null,
         procedureId: values.procedureId || null,
+        followUpId: recall?.followUpId ?? null,
       }),
     });
     setCreatingFor(null);
@@ -174,6 +194,8 @@ export default function AgendaPage() {
             patients={patients ?? []}
             professionals={(professionals ?? []).filter((p) => p.active)}
             defaultDate={creatingFor}
+            defaultPatientId={recall?.patientId}
+            defaultProcedure={recall?.procedure}
             onSubmit={handleCreate}
           />
         </Modal>

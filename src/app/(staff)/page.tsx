@@ -119,6 +119,12 @@ export default function DashboardPage() {
                       {followUp.isOverdue ? "⚠ Atrasado — " : ""}
                       {formatDate(followUp.dueDate)}
                     </span>
+                    <Link
+                      href={`/agenda?followUpId=${followUp.id}&patientId=${followUp.patientId}&procedure=${encodeURIComponent(followUp.reason.replace(/^Retorno: /, ""))}`}
+                      className="shrink-0 font-medium text-teal-700 hover:underline"
+                    >
+                      Agendar
+                    </Link>
                     <button
                       type="button"
                       onClick={() => void resolveFollowUp(followUp.id, "done")}

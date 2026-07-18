@@ -77,6 +77,15 @@ export class DrizzleStockMovementRepository implements StockMovementRepository {
     return rows.map((row) => StockMovement.restore({ ...row, type: row.type as MovementType }));
   }
 
+  async findByAppointmentId(appointmentId: string): Promise<StockMovement[]> {
+    const rows = await this.db
+      .select()
+      .from(stockMovements)
+      .where(eq(stockMovements.appointmentId, appointmentId))
+      .orderBy(desc(stockMovements.createdAt));
+    return rows.map((row) => StockMovement.restore({ ...row, type: row.type as MovementType }));
+  }
+
   async getOutflowCostInRange(from: Date, to: Date): Promise<OutflowCostByAppointment[]> {
     const rows = await this.db
       .select({

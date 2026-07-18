@@ -230,6 +230,9 @@ export interface AssessmentDto {
   painScale: number | null;
   skinCondition: string | null;
   complications: string | null;
+  complicationCodes: string[];
+  detScore: number | null;
+  pushScore: number | null;
   notes: string | null;
   createdAt: string;
 }
@@ -246,6 +249,9 @@ export const toAssessmentDto = (assessment: ConditionAssessment): AssessmentDto 
   painScale: assessment.painScale,
   skinCondition: assessment.skinCondition,
   complications: assessment.complications,
+  complicationCodes: assessment.complicationCodes,
+  detScore: assessment.detScore,
+  pushScore: assessment.pushScore,
   notes: assessment.notes,
   createdAt: assessment.createdAt.toISOString(),
 });

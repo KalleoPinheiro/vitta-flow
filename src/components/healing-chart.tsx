@@ -31,9 +31,12 @@ function toPoints(values: SeriesPoint[], min: number, max: number, xOf: (d: Date
     .join(" ");
 }
 
+const CLINICAL_SCORE_MAX = 17; // PUSH 0–17 (DET 0–15 compartilha o eixo)
+
 interface ChartModel {
   areaSeries: SeriesPoint[];
   painSeries: SeriesPoint[];
+  scoreSeries: SeriesPoint[];
   minT: number;
   maxT: number;
   areaMax: number;
@@ -51,12 +54,22 @@ function buildChartModel(assessments: AssessmentDto[]): ChartModel | null {
   const painSeries: SeriesPoint[] = ordered
     .filter((a) => a.painScale != null)
     .map((a) => ({ date: new Date(a.createdAt), value: a.painScale as number }));
+  // Score clínico validado: PUSH (ferida) ou DET (estomia) — nunca ambos na mesma condição.
+  const scoreSeries: SeriesPoint[] = ordered
+    .filter((a) => a.pushScore != null || a.detScore != null)
+    .map((a) => ({
+      date: new Date(a.createdAt),
+      value: (a.pushScore ?? a.detScore) as number,
+    }));
 
-  if (areaSeries.length < MIN_MEASURED_POINTS && painSeries.length < MIN_MEASURED_POINTS) {
+  const hasEnough = [areaSeries, painSeries, scoreSeries].some(
+    (series) => series.length >= MIN_MEASURED_POINTS,
+  );
+  if (!hasEnough) {
     return null;
   }
 
-  const allDates = [...areaSeries, ...painSeries].map((p) => p.date.getTime());
+  const allDates = [...areaSeries, ...painSeries, ...scoreSeries].map((p) => p.date.getTime());
   const minT = Math.min(...allDates);
   const maxT = Math.max(...allDates);
   const spanT = maxT - minT || 1;
@@ -70,6 +83,7 @@ function buildChartModel(assessments: AssessmentDto[]): ChartModel | null {
   return {
     areaSeries,
     painSeries,
+    scoreSeries,
     minT,
     maxT,
     areaMax: Math.max(...areaSeries.map((p) => p.value), 1),
@@ -92,7 +106,7 @@ export function HealingChart({ assessments }: HealingChartProps) {
       </p>
     );
   }
-  const { areaSeries, painSeries, minT, maxT, areaMax, trend, xOf } = model;
+  const { areaSeries, painSeries, scoreSeries, minT, maxT, areaMax, trend, xOf } = model;
 
   return (
     <div>
@@ -140,6 +154,25 @@ export function HealingChart({ assessments }: HealingChartProps) {
             </text>
           </>
         )}
+        {scoreSeries.length >= MIN_MEASURED_POINTS && (
+          <>
+            <polyline
+              points={toPoints(scoreSeries, 0, CLINICAL_SCORE_MAX, xOf)}
+              fill="none"
+              stroke="#7c3aed"
+              strokeWidth="2"
+            />
+            {scoreSeries.map((p) => (
+              <circle
+                key={`s-${p.date.getTime()}`}
+                cx={xOf(p.date)}
+                cy={PAD_TOP + (HEIGHT - PAD_TOP - PAD_BOTTOM) * (1 - p.value / CLINICAL_SCORE_MAX)}
+                r="3"
+                fill="#7c3aed"
+              />
+            ))}
+          </>
+        )}
         {painSeries.length >= MIN_MEASURED_POINTS && (
           <>
             <polyline
@@ -162,7 +195,7 @@ export function HealingChart({ assessments }: HealingChartProps) {
         </text>
       </svg>
       <p className="mt-1 text-[11px] text-slate-400">
-        Linha contínua: área da ferida (mm²) · tracejada: dor (0–10)
+        Verde: área (mm²) · roxa: score PUSH/DET · tracejada: dor (0–10)
       </p>
     </div>
   );

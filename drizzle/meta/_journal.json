@@ -36,6 +36,13 @@
       "when": 1784300517340,
       "tag": "0004_partners-referral",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784347248033,
+      "tag": "0005_performance-indexes",
+      "breakpoints": true
     }
   ]
 }

@@ -24,7 +24,15 @@ export const patients = pgTable(
     active: boolean("active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
   },
-  (table) => [index("idx_patients_referrer").on(table.referredByPartnerId)],
+  (table) => [
+    index("idx_patients_referrer").on(table.referredByPartnerId),
+    // Ordenação padrão das listagens.
+    index("idx_patients_full_name").on(table.fullName),
+    // Busca com ILIKE '%termo%' — GIN + pg_trgm evita full scan.
+    index("idx_patients_full_name_trgm").using("gin", table.fullName.op("gin_trgm_ops")),
+    index("idx_patients_email_trgm").using("gin", table.email.op("gin_trgm_ops")),
+    index("idx_patients_phone_trgm").using("gin", table.phone.op("gin_trgm_ops")),
+  ],
 );
 
 export const appointments = pgTable(
@@ -47,7 +55,8 @@ export const appointments = pgTable(
   },
   (table) => [
     index("idx_appointments_starts_at").on(table.startsAt),
-    index("idx_appointments_patient").on(table.patientId),
+    // Composto cobre findByPatientId com ORDER BY starts_at.
+    index("idx_appointments_patient").on(table.patientId, table.startsAt),
   ],
 );
 
@@ -190,5 +199,7 @@ export const invoices = pgTable(
   (table) => [
     index("idx_invoices_status").on(table.status),
     index("idx_invoices_issued_at").on(table.issuedAt),
+    // Portal do paciente e filtros por paciente.
+    index("idx_invoices_patient").on(table.patientId),
   ],
 );

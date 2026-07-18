@@ -23,6 +23,16 @@ import { DrizzleGoogleAccountRepository } from "./persistence/drizzle/drizzle-go
 import { DrizzlePartnerRepository } from "./persistence/drizzle/drizzle-partner-repository";
 import { DrizzleAuditEventRepository } from "./persistence/drizzle/drizzle-audit-event-repository";
 import { LocalPhotoStorage } from "./storage/local-photo-storage";
+import { DrizzleReminderLogRepository } from "./persistence/drizzle/drizzle-reminder-log-repository";
+import {
+  MetaWhatsAppGateway,
+  metaWhatsAppConfigFromEnv,
+} from "./messaging/meta-whatsapp-gateway";
+import {
+  NullMessagingGateway,
+  type MessagingGateway,
+} from "@/application/ports/messaging-gateway";
+import type { ReminderLogRepository } from "@/domain/messaging/reminder-log";
 import type { PhotoStorage } from "@/application/ports/photo-storage";
 import type { AuditEventRepository } from "@/domain/audit/audit-event-repository";
 import type { PartnerRepository } from "@/domain/partner/partner-repository";
@@ -68,7 +78,9 @@ export interface Services {
   supplyBatches: SupplyBatchRepository;
   followUps: FollowUpRepository;
   auditEvents: AuditEventRepository;
+  reminderLog: ReminderLogRepository;
   calendar: CalendarGateway;
+  messaging: MessagingGateway;
 }
 
 const globalForServices = globalThis as unknown as {
@@ -123,6 +135,11 @@ async function buildCalendarGateway(db: AppDb): Promise<CalendarGateway> {
   return next.gateway;
 }
 
+function buildMessagingGateway(): MessagingGateway {
+  const config = metaWhatsAppConfigFromEnv();
+  return config ? new MetaWhatsAppGateway(config) : new NullMessagingGateway();
+}
+
 export async function getRepositories(): Promise<Services> {
   const db = await getDb();
   const calendar = await buildCalendarGateway(db);
@@ -143,6 +160,8 @@ export async function getRepositories(): Promise<Services> {
     supplyBatches: new DrizzleSupplyBatchRepository(db),
     followUps: new DrizzleFollowUpRepository(db),
     auditEvents: new DrizzleAuditEventRepository(db),
+    reminderLog: new DrizzleReminderLogRepository(db),
     calendar,
+    messaging: buildMessagingGateway(),
   };
 }

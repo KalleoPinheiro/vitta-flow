@@ -11,6 +11,8 @@ const PUBLIC_PATHS = [
   "/api/auth/providers",
   "/api/auth/google",
   "/api/auth/google/callback",
+  // Cron externo — a própria rota exige o header x-cron-secret (CRON_SECRET).
+  "/api/reminders/run",
 ];
 
 const isProduction = () => process.env.NODE_ENV === "production";

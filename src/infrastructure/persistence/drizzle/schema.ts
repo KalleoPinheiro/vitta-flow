@@ -1,4 +1,12 @@
-import { boolean, index, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  index,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 
 export const partners = pgTable("partners", {
   id: text("id").primaryKey(),
@@ -219,6 +227,21 @@ export const followUps = pgTable(
   (table) => [
     index("idx_follow_ups_status").on(table.status),
     index("idx_follow_ups_due_date").on(table.dueDate),
+  ],
+);
+
+export const reminderLogs = pgTable(
+  "reminder_logs",
+  {
+    id: text("id").primaryKey(),
+    kind: text("kind").notNull(),
+    referenceId: text("reference_id").notNull(),
+    sentOn: text("sent_on").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [
+    // Idempotência diária: um lembrete por (tipo, referência, dia).
+    uniqueIndex("uq_reminder_logs_daily").on(table.kind, table.referenceId, table.sentOn),
   ],
 );
 

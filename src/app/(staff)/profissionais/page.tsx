@@ -1,0 +1,180 @@
+"use client";
+
+import { useState } from "react";
+import { apiFetch } from "@/lib/client";
+import type { ProfessionalDto } from "@/lib/dto";
+import { useApiQuery } from "@/lib/use-api-query";
+import { Modal } from "@/components/modal";
+import { StatusBadge } from "@/components/status-badge";
+import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
+
+const inputClass =
+  "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none";
+
+export default function ProfessionalsPage() {
+  const { data: professionals, error, refresh } = useApiQuery<ProfessionalDto[]>(
+    "/api/professionals",
+  );
+  const [editing, setEditing] = useState<ProfessionalDto | "new" | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const toggleActive = async (professional: ProfessionalDto) => {
+    try {
+      await apiFetch(`/api/professionals/${professional.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ active: !professional.active }),
+      });
+      setActionError(null);
+      refresh();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Erro ao atualizar profissional");
+    }
+  };
+
+  return (
+    <div>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">Profissionais</h1>
+        <button
+          type="button"
+          onClick={() => setEditing("new")}
+          className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800"
+        >
+          + Novo profissional
+        </button>
+      </div>
+
+      {(error || actionError) && <ErrorAlert message={actionError ?? error ?? ""} />}
+
+      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+        {!professionals ? (
+          <LoadingIndicator />
+        ) : professionals.length === 0 ? (
+          <EmptyState message="Nenhum profissional cadastrado. Consultas e evoluções podem ser atribuídas após o cadastro." />
+        ) : (
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
+              <tr>
+                <th className="px-4 py-3">Nome</th>
+                <th className="px-4 py-3">Registro</th>
+                <th className="px-4 py-3">Situação</th>
+                <th className="px-4 py-3 text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {professionals.map((professional) => (
+                <tr key={professional.id} className={professional.active ? "" : "opacity-50"}>
+                  <td className="px-4 py-3 font-medium">{professional.fullName}</td>
+                  <td className="px-4 py-3 text-slate-600">{professional.registry ?? "—"}</td>
+                  <td className="px-4 py-3">
+                    <StatusBadge
+                      status={professional.active ? "confirmed" : "cancelled"}
+                      label={professional.active ? "Ativo" : "Inativo"}
+                    />
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      type="button"
+                      onClick={() => setEditing(professional)}
+                      className="mr-2 font-medium text-teal-700 hover:underline"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void toggleActive(professional)}
+                      className="font-medium text-slate-500 hover:underline"
+                    >
+                      {professional.active ? "Desativar" : "Reativar"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {editing && (
+        <Modal
+          title={editing === "new" ? "Novo profissional" : "Editar profissional"}
+          onClose={() => setEditing(null)}
+        >
+          <ProfessionalForm
+            initial={editing === "new" ? undefined : editing}
+            onSaved={() => {
+              setEditing(null);
+              refresh();
+            }}
+          />
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+function ProfessionalForm({
+  initial,
+  onSaved,
+}: {
+  initial?: ProfessionalDto;
+  onSaved: () => void;
+}) {
+  const [fullName, setFullName] = useState(initial?.fullName ?? "");
+  const [registry, setRegistry] = useState(initial?.registry ?? "");
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      const payload = { fullName, registry: registry || null };
+      if (initial) {
+        await apiFetch(`/api/professionals/${initial.id}`, {
+          method: "PATCH",
+          body: JSON.stringify(payload),
+        });
+      } else {
+        await apiFetch("/api/professionals", { method: "POST", body: JSON.stringify(payload) });
+      }
+      onSaved();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao salvar profissional");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+      {error && <ErrorAlert message={error} />}
+      <label className="text-sm font-medium">
+        Nome *
+        <input
+          required
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          className={`mt-1 ${inputClass}`}
+        />
+      </label>
+      <label className="text-sm font-medium">
+        Registro profissional
+        <input
+          value={registry}
+          onChange={(e) => setRegistry(e.target.value)}
+          placeholder="Ex.: COREN-SP 123456"
+          className={`mt-1 ${inputClass}`}
+        />
+      </label>
+      <button
+        type="submit"
+        disabled={saving}
+        className="mt-1 rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-50"
+      >
+        {saving ? "Salvando…" : "Salvar"}
+      </button>
+    </form>
+  );
+}

@@ -10,6 +10,7 @@ import { toEvolutionNoteDto } from "@/lib/dto";
 
 const evolutionSchema = z.object({
   appointmentId: z.string().nullish(),
+  professionalId: z.string().max(100).nullish(),
   subjective: z.string().max(5000).default(""),
   objective: z.string().max(5000).default(""),
   assessment: z.string().max(5000).default(""),
@@ -41,6 +42,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const note = await new AddEvolutionNote(evolutions, patients).execute({
       patientId: id,
       appointmentId: body.appointmentId ?? null,
+      professionalId: body.professionalId ?? null,
       subjective: body.subjective,
       objective: body.objective,
       assessment: body.assessment,

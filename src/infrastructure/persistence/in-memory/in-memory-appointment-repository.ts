@@ -87,9 +87,18 @@ export class InMemoryAppointmentRepository implements AppointmentRepository {
     return { byStatus, revenueByProcedure };
   }
 
-  async findInRange(start: Date, end: Date): Promise<Appointment[]> {
+  async findInRange(
+    start: Date,
+    end: Date,
+    options?: { professionalId?: string },
+  ): Promise<Appointment[]> {
     return [...this.appointments.values()]
-      .filter((a) => a.slot.start.getTime() < end.getTime() && a.slot.end.getTime() > start.getTime())
+      .filter(
+        (a) =>
+          a.slot.start.getTime() < end.getTime() &&
+          a.slot.end.getTime() > start.getTime() &&
+          (!options?.professionalId || a.professionalId === options.professionalId),
+      )
       .sort((a, b) => a.slot.start.getTime() - b.slot.start.getTime());
   }
 

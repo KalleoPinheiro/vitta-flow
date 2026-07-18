@@ -19,6 +19,8 @@ export interface AppointmentProps {
   procedure: string;
   price: Money;
   notes?: string | null;
+  /** Profissional responsável (opcional — retrocompatível com histórico). */
+  professionalId?: string | null;
 }
 
 export interface AppointmentState extends AppointmentProps {
@@ -45,6 +47,7 @@ export class Appointment {
       ...props,
       procedure,
       notes: props.notes ?? null,
+      professionalId: props.professionalId ?? null,
       id: newId(),
       status: "scheduled",
       createdAt: new Date(),
@@ -144,6 +147,10 @@ export class Appointment {
 
   get notes(): string | null {
     return this.state.notes ?? null;
+  }
+
+  get professionalId(): string | null {
+    return this.state.professionalId ?? null;
   }
 
   get status(): AppointmentStatus {

@@ -14,6 +14,7 @@ const scheduleSchema = z.object({
   procedure: z.string().min(1).max(500),
   priceCents: z.number().int().nonnegative().max(1_000_000_000),
   notes: z.string().max(5000).nullish(),
+  professionalId: z.string().max(100).nullish(),
 });
 
 export async function GET(request: NextRequest) {
@@ -22,11 +23,13 @@ export async function GET(request: NextRequest) {
   if (!from || !to) {
     return fail("Parâmetros obrigatórios: from, to (ISO 8601)", 400);
   }
+  const professionalId = request.nextUrl.searchParams.get("professionalId") ?? undefined;
   return handleRequest(async () => {
     const { appointments, patients } = await getRepositories();
     const result = await new ListAppointments(appointments, patients).execute({
       from: new Date(from),
       to: new Date(to),
+      professionalId,
     });
     return result.map(({ appointment, patientName }) =>
       toAppointmentDto(appointment, patientName),
@@ -48,6 +51,7 @@ export async function POST(request: NextRequest) {
       procedure: body.procedure,
       priceCents: body.priceCents,
       notes: body.notes ?? null,
+      professionalId: body.professionalId ?? null,
     });
     scheduleCalendarSync(services, (sync) => sync.created(appointment.id));
     return toAppointmentDto(appointment);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { PatientDto } from "@/lib/dto";
+import type { PatientDto, ProfessionalDto } from "@/lib/dto";
 import { BUSINESS_HOURS, MIN_GAP_MINUTES } from "@/domain/scheduling/business-hours";
 import { ErrorAlert } from "@/components/feedback";
 import { dayKey } from "./calendar-grid";
@@ -14,10 +14,12 @@ export interface AppointmentFormValues {
   procedure: string;
   price: string;
   notes: string;
+  professionalId: string;
 }
 
 interface AppointmentFormProps {
   patients: PatientDto[];
+  professionals?: ProfessionalDto[];
   defaultDate?: Date;
   onSubmit: (values: AppointmentFormValues) => Promise<void>;
 }
@@ -27,7 +29,12 @@ const inputClass =
 
 const DURATION_OPTIONS = [30, 45, 60, 90, 120];
 
-export function AppointmentForm({ patients, defaultDate, onSubmit }: AppointmentFormProps) {
+export function AppointmentForm({
+  patients,
+  professionals = [],
+  defaultDate,
+  onSubmit,
+}: AppointmentFormProps) {
   const [values, setValues] = useState<AppointmentFormValues>({
     patientId: "",
     date: defaultDate ? dayKey(defaultDate) : dayKey(new Date()),
@@ -36,6 +43,7 @@ export function AppointmentForm({ patients, defaultDate, onSubmit }: Appointment
     procedure: "",
     price: "",
     notes: "",
+    professionalId: "",
   });
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -79,6 +87,23 @@ export function AppointmentForm({ patients, defaultDate, onSubmit }: Appointment
           ))}
         </select>
       </label>
+      {professionals.length > 0 && (
+        <label className="text-sm font-medium">
+          Profissional
+          <select
+            value={values.professionalId}
+            onChange={(e) => setValues((prev) => ({ ...prev, professionalId: e.target.value }))}
+            className={`mt-1 ${inputClass}`}
+          >
+            <option value="">— sem atribuição —</option>
+            {professionals.map((professional) => (
+              <option key={professional.id} value={professional.id}>
+                {professional.fullName}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <div className="grid grid-cols-3 gap-3">
         <label className="text-sm font-medium">
           Data *

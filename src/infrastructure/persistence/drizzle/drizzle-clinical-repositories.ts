@@ -68,6 +68,7 @@ export class DrizzleEvolutionNoteRepository implements EvolutionNoteRepository {
       id: note.id,
       patientId: note.patientId,
       appointmentId: note.appointmentId,
+      professionalId: note.professionalId,
       subjective: note.subjective,
       objective: note.objective,
       assessment: note.assessment,

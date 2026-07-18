@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { href: "/agenda", label: "Agenda" },
   { href: "/pacientes", label: "Pacientes" },
   { href: "/parceiros", label: "Parceiros" },
+  { href: "/profissionais", label: "Profissionais" },
   { href: "/faturamento", label: "Faturamento" },
   { href: "/materiais", label: "Materiais" },
   { href: "/relatorios", label: "Relatórios" },

@@ -78,6 +78,13 @@
       "when": 1784364434539,
       "tag": "0010_reminder-logs",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1784364723501,
+      "tag": "0011_professionals",
+      "breakpoints": true
     }
   ]
 }

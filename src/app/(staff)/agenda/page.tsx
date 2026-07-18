@@ -2,13 +2,41 @@
 
 import { useMemo, useState } from "react";
 import { apiFetch } from "@/lib/client";
-import type { AppointmentDto, PatientDto } from "@/lib/dto";
+import type { AppointmentDto, PatientDto, ProfessionalDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import { Modal } from "@/components/modal";
 import { ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import { CalendarGrid } from "./calendar-grid";
 import { AppointmentForm, type AppointmentFormValues } from "./appointment-form";
 import { AppointmentDetail } from "./appointment-detail";
+
+function ProfessionalFilter({
+  professionals,
+  value,
+  onChange,
+}: {
+  professionals: ProfessionalDto[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  if (professionals.length === 0) {
+    return null;
+  }
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="ml-auto rounded-lg border border-slate-300 px-3 py-1.5 text-sm focus:border-teal-500 focus:outline-none"
+    >
+      <option value="">Todos os profissionais</option>
+      {professionals.map((professional) => (
+        <option key={professional.id} value={professional.id}>
+          {professional.fullName}
+        </option>
+      ))}
+    </select>
+  );
+}
 
 const monthLabel = (date: Date): string =>
   date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
@@ -20,15 +48,20 @@ export default function AgendaPage() {
   });
   const [creatingFor, setCreatingFor] = useState<Date | null>(null);
   const [selected, setSelected] = useState<AppointmentDto | null>(null);
+  const [professionalFilter, setProfessionalFilter] = useState("");
 
   const appointmentsUrl = useMemo(() => {
     const from = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
     const to = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 1);
-    return `/api/appointments?from=${from.toISOString()}&to=${to.toISOString()}`;
-  }, [monthDate]);
+    const filter = professionalFilter
+      ? `&professionalId=${encodeURIComponent(professionalFilter)}`
+      : "";
+    return `/api/appointments?from=${from.toISOString()}&to=${to.toISOString()}${filter}`;
+  }, [monthDate, professionalFilter]);
 
   const { data: appointments, error, refresh } = useApiQuery<AppointmentDto[]>(appointmentsUrl);
   const { data: patients } = useApiQuery<PatientDto[]>("/api/patients");
+  const { data: professionals } = useApiQuery<ProfessionalDto[]>("/api/professionals");
 
   const changeMonth = (delta: number) =>
     setMonthDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
@@ -45,6 +78,7 @@ export default function AgendaPage() {
         procedure: values.procedure,
         priceCents: Math.round(Number(values.price) * 100),
         notes: values.notes || null,
+        professionalId: values.professionalId || null,
       }),
     });
     setCreatingFor(null);
@@ -115,6 +149,11 @@ export default function AgendaPage() {
         >
           →
         </button>
+        <ProfessionalFilter
+          professionals={professionals ?? []}
+          value={professionalFilter}
+          onChange={setProfessionalFilter}
+        />
       </div>
 
       {!appointments ? (
@@ -132,6 +171,7 @@ export default function AgendaPage() {
         <Modal title="Nova consulta" onClose={() => setCreatingFor(null)}>
           <AppointmentForm
             patients={patients ?? []}
+            professionals={(professionals ?? []).filter((p) => p.active)}
             defaultDate={creatingFor}
             onSubmit={handleCreate}
           />

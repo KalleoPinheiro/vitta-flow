@@ -13,6 +13,7 @@ export interface ScheduleAppointmentInput {
   procedure: string;
   priceCents: number;
   notes?: string | null;
+  professionalId?: string | null;
 }
 
 export class ScheduleAppointment {
@@ -39,6 +40,7 @@ export class ScheduleAppointment {
       procedure: input.procedure,
       price: Money.fromCents(input.priceCents),
       notes: input.notes,
+      professionalId: input.professionalId ?? null,
     });
     await this.appointments.save(appointment);
 

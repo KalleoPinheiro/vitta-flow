@@ -11,6 +11,7 @@ import type { StockMovement } from "@/domain/inventory/stock-movement";
 import type { FollowUp } from "@/domain/followup/follow-up";
 import type { AuditEvent } from "@/domain/audit/audit-event";
 import type { ConditionPhoto } from "@/domain/clinical/condition-photo";
+import type { Professional } from "@/domain/professional/professional";
 
 export interface PatientDto {
   id: string;
@@ -114,6 +115,7 @@ export interface AppointmentDto {
   priceCents: number;
   notes: string | null;
   status: string;
+  professionalId: string | null;
 }
 
 export const toAppointmentDto = (
@@ -129,6 +131,7 @@ export const toAppointmentDto = (
   priceCents: appointment.price.cents,
   notes: appointment.notes,
   status: appointment.status,
+  professionalId: appointment.professionalId,
 });
 
 export interface InvoiceDto {
@@ -169,6 +172,7 @@ export interface EvolutionNoteDto {
   id: string;
   patientId: string;
   appointmentId: string | null;
+  professionalId: string | null;
   subjective: string;
   objective: string;
   assessment: string;
@@ -180,6 +184,7 @@ export const toEvolutionNoteDto = (note: EvolutionNote): EvolutionNoteDto => ({
   id: note.id,
   patientId: note.patientId,
   appointmentId: note.appointmentId,
+  professionalId: note.professionalId,
   subjective: note.subjective,
   objective: note.objective,
   assessment: note.assessment,
@@ -367,4 +372,18 @@ export const toConditionPhotoDto = (photo: ConditionPhoto): ConditionPhotoDto =>
   contentType: photo.contentType,
   sizeBytes: photo.sizeBytes,
   createdAt: photo.createdAt.toISOString(),
+});
+
+export interface ProfessionalDto {
+  id: string;
+  fullName: string;
+  registry: string | null;
+  active: boolean;
+}
+
+export const toProfessionalDto = (professional: Professional): ProfessionalDto => ({
+  id: professional.id,
+  fullName: professional.fullName,
+  registry: professional.registry,
+  active: professional.isActive,
 });

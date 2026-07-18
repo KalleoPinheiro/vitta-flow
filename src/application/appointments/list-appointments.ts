@@ -10,6 +10,7 @@ export interface AppointmentWithPatient {
 export interface ListAppointmentsInput {
   from: Date;
   to: Date;
+  professionalId?: string;
 }
 
 export class ListAppointments {
@@ -19,7 +20,9 @@ export class ListAppointments {
   ) {}
 
   async execute(input: ListAppointmentsInput): Promise<AppointmentWithPatient[]> {
-    const appointments = await this.appointments.findInRange(input.from, input.to);
+    const appointments = await this.appointments.findInRange(input.from, input.to, {
+      professionalId: input.professionalId,
+    });
     const patients = await this.patients.findByIds(appointments.map((a) => a.patientId));
     const namesById = new Map(patients.map((p) => [p.id, p.fullName]));
 

@@ -6,6 +6,7 @@ import { NotFoundError } from "@/domain/shared/errors";
 export interface AddEvolutionNoteInput {
   patientId: string;
   appointmentId?: string | null;
+  professionalId?: string | null;
   subjective: string;
   objective: string;
   assessment: string;

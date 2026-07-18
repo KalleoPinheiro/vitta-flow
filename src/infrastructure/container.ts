@@ -33,6 +33,8 @@ import {
   type MessagingGateway,
 } from "@/application/ports/messaging-gateway";
 import type { ReminderLogRepository } from "@/domain/messaging/reminder-log";
+import { DrizzleProfessionalRepository } from "./persistence/drizzle/drizzle-professional-repository";
+import type { ProfessionalRepository } from "@/domain/professional/professional-repository";
 import type { PhotoStorage } from "@/application/ports/photo-storage";
 import type { AuditEventRepository } from "@/domain/audit/audit-event-repository";
 import type { PartnerRepository } from "@/domain/partner/partner-repository";
@@ -64,6 +66,7 @@ import {
 export interface Services {
   patients: PatientRepository;
   partners: PartnerRepository;
+  professionals: ProfessionalRepository;
   googleAccounts: DrizzleGoogleAccountRepository;
   appointments: AppointmentRepository;
   invoices: InvoiceRepository;
@@ -146,6 +149,7 @@ export async function getRepositories(): Promise<Services> {
   return {
     patients: new DrizzlePatientRepository(db),
     partners: new DrizzlePartnerRepository(db),
+    professionals: new DrizzleProfessionalRepository(db),
     googleAccounts: new DrizzleGoogleAccountRepository(db),
     appointments: new DrizzleAppointmentRepository(db),
     invoices: new DrizzleInvoiceRepository(db),

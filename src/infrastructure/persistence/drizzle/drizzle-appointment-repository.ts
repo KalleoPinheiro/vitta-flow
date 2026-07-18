@@ -42,6 +42,7 @@ const toAppointment = (row: AppointmentRow): Appointment =>
     notes: row.notes,
     status: row.status as AppointmentStatus,
     googleEventId: row.googleEventId,
+    professionalId: row.professionalId,
     createdAt: row.createdAt,
   });
 
@@ -59,6 +60,7 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
       notes: appointment.notes,
       status: appointment.status,
       googleEventId: appointment.googleEventId,
+      professionalId: appointment.professionalId,
       createdAt: appointment.createdAt,
     };
     try {
@@ -129,11 +131,20 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
     return rows.map(toAppointment);
   }
 
-  async findInRange(start: Date, end: Date): Promise<Appointment[]> {
+  async findInRange(
+    start: Date,
+    end: Date,
+    options?: { professionalId?: string },
+  ): Promise<Appointment[]> {
+    const base = and(lt(appointments.startsAt, end), gt(appointments.endsAt, start));
     const rows = await this.db
       .select()
       .from(appointments)
-      .where(and(lt(appointments.startsAt, end), gt(appointments.endsAt, start)))
+      .where(
+        options?.professionalId
+          ? and(base, eq(appointments.professionalId, options.professionalId))
+          : base,
+      )
       .orderBy(asc(appointments.startsAt));
     return rows.map(toAppointment);
   }

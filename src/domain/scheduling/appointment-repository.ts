@@ -24,7 +24,11 @@ export interface AppointmentRepository {
   findByPatientId(patientId: string, options?: FindByPatientOptions): Promise<Appointment[]>;
   /** Busca em lote — evita N+1 ao montar dados de vários pacientes. */
   findByPatientIds(patientIds: string[], options?: FindByPatientOptions): Promise<Appointment[]>;
-  findInRange(start: Date, end: Date): Promise<Appointment[]>;
+  findInRange(
+    start: Date,
+    end: Date,
+    options?: { professionalId?: string },
+  ): Promise<Appointment[]>;
   findConflicting(slot: TimeSlot, excludeId?: string): Promise<Appointment[]>;
   /** Agregação no banco — contagens e receita corretas independentemente do volume. */
   getStatsInRange(start: Date, end: Date): Promise<AppointmentRangeStats>;

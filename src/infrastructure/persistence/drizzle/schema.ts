@@ -19,6 +19,14 @@ export const partners = pgTable("partners", {
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
 });
 
+export const professionals = pgTable("professionals", {
+  id: text("id").primaryKey(),
+  fullName: text("full_name").notNull(),
+  registry: text("registry"),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+});
+
 export const patients = pgTable(
   "patients",
   {
@@ -59,10 +67,13 @@ export const appointments = pgTable(
     notes: text("notes"),
     status: text("status").notNull(),
     googleEventId: text("google_event_id"),
+    // Profissional responsável (F9) — nullable, retrocompatível.
+    professionalId: text("professional_id").references(() => professionals.id),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
   },
   (table) => [
     index("idx_appointments_starts_at").on(table.startsAt),
+    index("idx_appointments_professional").on(table.professionalId),
     // Composto cobre findByPatientId com ORDER BY starts_at.
     index("idx_appointments_patient").on(table.patientId, table.startsAt),
   ],
@@ -95,6 +106,8 @@ export const evolutionNotes = pgTable(
       .notNull()
       .references(() => patients.id),
     appointmentId: text("appointment_id"),
+    // Autor da evolução (F9) — nullable, retrocompatível.
+    professionalId: text("professional_id").references(() => professionals.id),
     subjective: text("subjective").notNull().default(""),
     objective: text("objective").notNull().default(""),
     assessment: text("assessment").notNull().default(""),

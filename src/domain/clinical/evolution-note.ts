@@ -8,6 +8,8 @@ export interface EvolutionNoteProps {
   objective: string;
   assessment: string;
   plan: string;
+  /** Autor da evolução (opcional — retrocompatível com histórico). */
+  professionalId?: string | null;
 }
 
 export interface EvolutionNoteState extends EvolutionNoteProps {
@@ -39,6 +41,7 @@ export class EvolutionNote {
       objective,
       assessment,
       plan,
+      professionalId: props.professionalId ?? null,
       id: newId(),
       createdAt: new Date(),
     });
@@ -74,6 +77,10 @@ export class EvolutionNote {
 
   get plan(): string {
     return this.state.plan;
+  }
+
+  get professionalId(): string | null {
+    return this.state.professionalId ?? null;
   }
 
   get createdAt(): Date {

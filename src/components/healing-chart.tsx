@@ -31,11 +31,17 @@ function toPoints(values: SeriesPoint[], min: number, max: number, xOf: (d: Date
     .join(" ");
 }
 
-/**
- * Tendência de cicatrização: área da ferida (C×L) e dor ao longo das avaliações.
- * SVG puro — sem dependência externa (CSP default-src 'self').
- */
-export function HealingChart({ assessments }: HealingChartProps) {
+interface ChartModel {
+  areaSeries: SeriesPoint[];
+  painSeries: SeriesPoint[];
+  minT: number;
+  maxT: number;
+  areaMax: number;
+  trend: number | null;
+  xOf: (d: Date) => number;
+}
+
+function buildChartModel(assessments: AssessmentDto[]): ChartModel | null {
   const ordered = [...assessments].sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   );
@@ -47,27 +53,46 @@ export function HealingChart({ assessments }: HealingChartProps) {
     .map((a) => ({ date: new Date(a.createdAt), value: a.painScale as number }));
 
   if (areaSeries.length < MIN_MEASURED_POINTS && painSeries.length < MIN_MEASURED_POINTS) {
-    return (
-      <p className="text-xs text-slate-400">
-        Registre medidas (C×L) ou dor em pelo menos duas avaliações para acompanhar a tendência.
-      </p>
-    );
+    return null;
   }
 
   const allDates = [...areaSeries, ...painSeries].map((p) => p.date.getTime());
   const minT = Math.min(...allDates);
   const maxT = Math.max(...allDates);
   const spanT = maxT - minT || 1;
-  const xOf = (d: Date) =>
-    PAD_LEFT + (WIDTH - PAD_LEFT - PAD_RIGHT) * ((d.getTime() - minT) / spanT);
-
-  const areaMax = Math.max(...areaSeries.map((p) => p.value), 1);
   const first = areaSeries[0];
   const last = areaSeries[areaSeries.length - 1];
   const trend =
     areaSeries.length >= MIN_MEASURED_POINTS && first.value > 0
       ? Math.round(((last.value - first.value) / first.value) * 100)
       : null;
+
+  return {
+    areaSeries,
+    painSeries,
+    minT,
+    maxT,
+    areaMax: Math.max(...areaSeries.map((p) => p.value), 1),
+    trend,
+    xOf: (d: Date) =>
+      PAD_LEFT + (WIDTH - PAD_LEFT - PAD_RIGHT) * ((d.getTime() - minT) / spanT),
+  };
+}
+
+/**
+ * Tendência de cicatrização: área da ferida (C×L) e dor ao longo das avaliações.
+ * SVG puro — sem dependência externa (CSP default-src 'self').
+ */
+export function HealingChart({ assessments }: HealingChartProps) {
+  const model = buildChartModel(assessments);
+  if (!model) {
+    return (
+      <p className="text-xs text-slate-400">
+        Registre medidas (C×L) ou dor em pelo menos duas avaliações para acompanhar a tendência.
+      </p>
+    );
+  }
+  const { areaSeries, painSeries, minT, maxT, areaMax, trend, xOf } = model;
 
   return (
     <div>

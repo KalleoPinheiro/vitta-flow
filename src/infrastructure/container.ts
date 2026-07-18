@@ -6,6 +6,7 @@ import {
   DrizzleAnamnesisRepository,
   DrizzleClinicalConditionRepository,
   DrizzleConditionAssessmentRepository,
+  DrizzleConditionPhotoRepository,
   DrizzleEvolutionNoteRepository,
 } from "./persistence/drizzle/drizzle-clinical-repositories";
 import {
@@ -21,6 +22,8 @@ import {
 import { DrizzleGoogleAccountRepository } from "./persistence/drizzle/drizzle-google-account-repository";
 import { DrizzlePartnerRepository } from "./persistence/drizzle/drizzle-partner-repository";
 import { DrizzleAuditEventRepository } from "./persistence/drizzle/drizzle-audit-event-repository";
+import { LocalPhotoStorage } from "./storage/local-photo-storage";
+import type { PhotoStorage } from "@/application/ports/photo-storage";
 import type { AuditEventRepository } from "@/domain/audit/audit-event-repository";
 import type { PartnerRepository } from "@/domain/partner/partner-repository";
 import { googleOAuthConfigFromEnv } from "@/lib/auth/google-oauth";
@@ -34,6 +37,7 @@ import type {
   AnamnesisRepository,
   ClinicalConditionRepository,
   ConditionAssessmentRepository,
+  ConditionPhotoRepository,
   EvolutionNoteRepository,
 } from "@/domain/clinical/clinical-repositories";
 import type {
@@ -57,6 +61,8 @@ export interface Services {
   evolutions: EvolutionNoteRepository;
   conditions: ClinicalConditionRepository;
   assessments: ConditionAssessmentRepository;
+  conditionPhotos: ConditionPhotoRepository;
+  photoStorage: PhotoStorage;
   supplies: SupplyRepository;
   stockMovements: StockMovementRepository;
   supplyBatches: SupplyBatchRepository;
@@ -130,6 +136,8 @@ export async function getRepositories(): Promise<Services> {
     evolutions: new DrizzleEvolutionNoteRepository(db),
     conditions: new DrizzleClinicalConditionRepository(db),
     assessments: new DrizzleConditionAssessmentRepository(db),
+    conditionPhotos: new DrizzleConditionPhotoRepository(db),
+    photoStorage: new LocalPhotoStorage(),
     supplies: new DrizzleSupplyRepository(db),
     stockMovements: new DrizzleStockMovementRepository(db),
     supplyBatches: new DrizzleSupplyBatchRepository(db),

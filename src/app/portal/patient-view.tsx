@@ -94,7 +94,11 @@ export function PatientPortalView() {
         ) : (
           <div className="flex flex-col gap-3">
             {data.conditions.map((entry) => (
-              <ConditionProgress key={entry.condition.id} {...entry} />
+              <ConditionProgress
+                key={entry.condition.id}
+                {...entry}
+                photoUrlBase="/api/portal/patient/photos"
+              />
             ))}
           </div>
         )}

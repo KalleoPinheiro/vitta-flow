@@ -14,6 +14,7 @@ import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert } from "@/components/feedback";
 import { HealingChart } from "@/components/healing-chart";
+import { ConditionPhotos } from "./condition-photos";
 
 const inputClass =
   "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none";
@@ -125,6 +126,10 @@ export function ConditionsSection({ patientId, conditions, onChanged }: Conditio
 
                 {isOpen && (
                   <div className="mt-3 border-t border-slate-100 pt-3">
+                    <ConditionPhotos
+                      conditionId={condition.id}
+                      canUpload={condition.status === "active"}
+                    />
                     {conditionAssessments.length === 0 ? (
                       <EmptyState message="Nenhuma avaliação registrada." />
                     ) : (

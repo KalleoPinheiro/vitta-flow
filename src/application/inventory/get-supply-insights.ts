@@ -41,11 +41,13 @@ export class GetSupplyInsights {
 
   async execute(now: Date = new Date()): Promise<SupplyInsights> {
     const windowStart = new Date(now.getTime() - CONSUMPTION_WINDOW_DAYS * MS_PER_DAY);
+    // Range [from, to) — +1ms inclui movimentos registrados no mesmo instante.
+    const windowEnd = new Date(now.getTime() + 1);
     const expiryLimit = new Date(now.getTime() + EXPIRY_ALERT_DAYS * MS_PER_DAY);
 
     const [supplies, outflows, expiring] = await Promise.all([
       this.supplies.findAll(),
-      this.movements.getOutflowQtyInRange(windowStart, now),
+      this.movements.getOutflowQtyInRange(windowStart, windowEnd),
       this.batches?.findExpiringBefore(expiryLimit) ?? Promise.resolve([]),
     ]);
 

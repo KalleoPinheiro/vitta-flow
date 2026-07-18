@@ -1,0 +1,44 @@
+import type { NextRequest } from "next/server";
+import { getRepositories } from "@/infrastructure/container";
+import { getRequestSession } from "@/lib/auth/request-session";
+import { fail } from "@/lib/api-response";
+
+type RouteContext = { params: Promise<{ id: string }> };
+
+/**
+ * Foto vista pelo próprio paciente: sessão patient + condição da foto precisa
+ * pertencer ao paciente autenticado. Parceiro nunca acessa fotos (minimização).
+ */
+export async function GET(request: NextRequest, context: RouteContext) {
+  const session = getRequestSession(request);
+  if (!session) {
+    return fail("Não autenticado", 401);
+  }
+  if (session.role !== "patient") {
+    return fail("Rota exclusiva do portal do paciente", 403);
+  }
+
+  const { id } = await context.params;
+  const { conditionPhotos, conditions, patients, photoStorage } = await getRepositories();
+
+  const photo = await conditionPhotos.findById(id);
+  const condition = photo ? await conditions.findById(photo.conditionId) : null;
+  const patient = await patients.findByEmail(session.subject);
+  if (!photo || !condition || !patient || condition.patientId !== patient.id) {
+    return fail("Foto não encontrada", 404);
+  }
+
+  const data = await photoStorage.read(photo.id);
+  if (!data) {
+    return fail("Foto não encontrada", 404);
+  }
+
+  return new Response(new Uint8Array(data), {
+    headers: {
+      "Content-Type": photo.contentType,
+      "Content-Length": String(data.byteLength),
+      "Cache-Control": "private, max-age=3600",
+      "X-Content-Type-Options": "nosniff",
+    },
+  });
+}

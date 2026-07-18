@@ -1,0 +1,54 @@
+import { ConditionPhoto, detectImageType, MAX_PHOTO_BYTES } from "@/domain/clinical/condition-photo";
+import type {
+  ClinicalConditionRepository,
+  ConditionPhotoRepository,
+} from "@/domain/clinical/clinical-repositories";
+import type { PhotoStorage } from "@/application/ports/photo-storage";
+import { NotFoundError, ValidationError } from "@/domain/shared/errors";
+
+export interface AddConditionPhotoInput {
+  conditionId: string;
+  data: Uint8Array;
+  assessmentId?: string | null;
+}
+
+export class AddConditionPhoto {
+  constructor(
+    private readonly photos: ConditionPhotoRepository,
+    private readonly conditions: ClinicalConditionRepository,
+    private readonly storage: PhotoStorage,
+  ) {}
+
+  async execute(input: AddConditionPhotoInput): Promise<ConditionPhoto> {
+    const condition = await this.conditions.findById(input.conditionId);
+    if (!condition) {
+      throw new NotFoundError("Condição", input.conditionId);
+    }
+    if (input.data.byteLength > MAX_PHOTO_BYTES) {
+      throw new ValidationError("Imagem excede o limite de 5 MB");
+    }
+
+    // Tipo real detectado por magic bytes — Content-Type declarado é ignorado.
+    const contentType = detectImageType(input.data);
+    if (!contentType) {
+      throw new ValidationError("Arquivo não é uma imagem JPEG, PNG ou WebP válida");
+    }
+
+    const photo = ConditionPhoto.create({
+      conditionId: input.conditionId,
+      contentType,
+      sizeBytes: input.data.byteLength,
+      assessmentId: input.assessmentId ?? null,
+    });
+
+    await this.storage.write(photo.id, input.data);
+    try {
+      await this.photos.save(photo);
+    } catch (error) {
+      // Falha ao gravar metadados → não deixa arquivo órfão no disco.
+      await this.storage.remove(photo.id).catch(() => undefined);
+      throw error;
+    }
+    return photo;
+  }
+}

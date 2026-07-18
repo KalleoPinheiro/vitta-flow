@@ -135,6 +135,21 @@ export const conditionAssessments = pgTable(
   (table) => [index("idx_condition_assessments_condition").on(table.conditionId)],
 );
 
+export const conditionPhotos = pgTable(
+  "condition_photos",
+  {
+    id: text("id").primaryKey(),
+    conditionId: text("condition_id")
+      .notNull()
+      .references(() => clinicalConditions.id),
+    assessmentId: text("assessment_id"),
+    contentType: text("content_type").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [index("idx_condition_photos_condition").on(table.conditionId)],
+);
+
 export const supplies = pgTable("supplies", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),

@@ -15,10 +15,21 @@ import type {
   AnamnesisRepository,
   ClinicalConditionRepository,
   ConditionAssessmentRepository,
+  ConditionPhotoRepository,
   EvolutionNoteRepository,
 } from "@/domain/clinical/clinical-repositories";
+import {
+  ConditionPhoto,
+  type PhotoContentType,
+} from "@/domain/clinical/condition-photo";
 import type { AppDb } from "./db";
-import { anamneses, clinicalConditions, conditionAssessments, evolutionNotes } from "./schema";
+import {
+  anamneses,
+  clinicalConditions,
+  conditionAssessments,
+  conditionPhotos,
+  evolutionNotes,
+} from "./schema";
 
 export class DrizzleAnamnesisRepository implements AnamnesisRepository {
   constructor(private readonly db: AppDb) {}
@@ -181,5 +192,62 @@ export class DrizzleConditionAssessmentRepository implements ConditionAssessment
     return rows.map((row) =>
       ConditionAssessment.restore({ ...row, exudate: row.exudate as ExudateLevel | null }),
     );
+  }
+}
+
+export class DrizzleConditionPhotoRepository implements ConditionPhotoRepository {
+  constructor(private readonly db: AppDb) {}
+
+  private toEntity(row: typeof conditionPhotos.$inferSelect): ConditionPhoto {
+    return ConditionPhoto.restore({
+      ...row,
+      contentType: row.contentType as PhotoContentType,
+    });
+  }
+
+  async save(photo: ConditionPhoto): Promise<void> {
+    await this.db.insert(conditionPhotos).values({
+      id: photo.id,
+      conditionId: photo.conditionId,
+      assessmentId: photo.assessmentId,
+      contentType: photo.contentType,
+      sizeBytes: photo.sizeBytes,
+      createdAt: photo.createdAt,
+    });
+  }
+
+  async findById(id: string): Promise<ConditionPhoto | null> {
+    const rows = await this.db
+      .select()
+      .from(conditionPhotos)
+      .where(eq(conditionPhotos.id, id))
+      .limit(1);
+    return rows[0] ? this.toEntity(rows[0]) : null;
+  }
+
+  async findByConditionId(conditionId: string): Promise<ConditionPhoto[]> {
+    const rows = await this.db
+      .select()
+      .from(conditionPhotos)
+      .where(eq(conditionPhotos.conditionId, conditionId))
+      .orderBy(desc(conditionPhotos.createdAt), desc(conditionPhotos.id));
+    return rows.map((row) => this.toEntity(row));
+  }
+
+  async findByConditionIds(conditionIds: string[]): Promise<ConditionPhoto[]> {
+    const unique = [...new Set(conditionIds)];
+    if (unique.length === 0) {
+      return [];
+    }
+    const rows = await this.db
+      .select()
+      .from(conditionPhotos)
+      .where(inArray(conditionPhotos.conditionId, unique))
+      .orderBy(desc(conditionPhotos.createdAt), desc(conditionPhotos.id));
+    return rows.map((row) => this.toEntity(row));
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.db.delete(conditionPhotos).where(eq(conditionPhotos.id, id));
   }
 }

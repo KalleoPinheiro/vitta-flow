@@ -64,6 +64,13 @@
       "when": 1784363632320,
       "tag": "0008_supply-batches",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1784363939999,
+      "tag": "0009_condition-photos",
+      "breakpoints": true
     }
   ]
 }

@@ -10,6 +10,7 @@ import type { Supply } from "@/domain/inventory/supply";
 import type { StockMovement } from "@/domain/inventory/stock-movement";
 import type { FollowUp } from "@/domain/followup/follow-up";
 import type { AuditEvent } from "@/domain/audit/audit-event";
+import type { ConditionPhoto } from "@/domain/clinical/condition-photo";
 
 export interface PatientDto {
   id: string;
@@ -348,4 +349,22 @@ export const toAuditEventDto = (event: AuditEvent): AuditEventDto => ({
   patientId: event.patientId,
   detail: event.detail,
   occurredAt: event.occurredAt.toISOString(),
+});
+
+export interface ConditionPhotoDto {
+  id: string;
+  conditionId: string;
+  assessmentId: string | null;
+  contentType: string;
+  sizeBytes: number;
+  createdAt: string;
+}
+
+export const toConditionPhotoDto = (photo: ConditionPhoto): ConditionPhotoDto => ({
+  id: photo.id,
+  conditionId: photo.conditionId,
+  assessmentId: photo.assessmentId,
+  contentType: photo.contentType,
+  sizeBytes: photo.sizeBytes,
+  createdAt: photo.createdAt.toISOString(),
 });

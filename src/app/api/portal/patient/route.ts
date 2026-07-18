@@ -7,6 +7,7 @@ import { recordAudit } from "@/lib/audit";
 import {
   toAssessmentDto,
   toConditionDto,
+  toConditionPhotoDto,
   toFollowUpDto,
   toInvoiceDto,
   toPortalAppointmentDto,
@@ -23,8 +24,15 @@ export async function GET(request: NextRequest) {
   }
 
   return handleRequest(async () => {
-    const { patients, appointments, conditions, assessments, invoices, followUps } =
-      await getRepositories();
+    const {
+      patients,
+      appointments,
+      conditions,
+      assessments,
+      invoices,
+      followUps,
+      conditionPhotos,
+    } = await getRepositories();
     const data = await new GetPatientPortalData(
       patients,
       appointments,
@@ -32,6 +40,7 @@ export async function GET(request: NextRequest) {
       assessments,
       invoices,
       followUps,
+      conditionPhotos,
     ).execute({ email: session.subject });
 
     recordAudit((await getRepositories()).auditEvents, session, {
@@ -43,9 +52,10 @@ export async function GET(request: NextRequest) {
     return {
       patient: toPortalPatientProfileDto(data.patient),
       appointments: data.appointments.map(toPortalAppointmentDto),
-      conditions: data.conditions.map(({ condition, assessments: list }) => ({
+      conditions: data.conditions.map(({ condition, assessments: list, photos }) => ({
         condition: toConditionDto(condition),
         assessments: list.map(toAssessmentDto),
+        photos: (photos ?? []).map(toConditionPhotoDto),
       })),
       invoices: data.invoices.map((i) => toInvoiceDto(i)),
       followUps: data.followUps.map((f) => toFollowUpDto(f)),

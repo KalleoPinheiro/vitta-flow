@@ -1,6 +1,6 @@
 "use client";
 
-import type { AssessmentDto, ConditionDto } from "@/lib/dto";
+import type { AssessmentDto, ConditionDto, ConditionPhotoDto } from "@/lib/dto";
 import {
   CONDITION_KIND_LABELS,
   EXUDATE_LABELS,
@@ -13,10 +13,19 @@ import { HealingChart } from "@/components/healing-chart";
 export interface ConditionWithAssessmentsDto {
   condition: ConditionDto;
   assessments: AssessmentDto[];
+  /** Fotos só chegam ao próprio paciente — parceiro não recebe (minimização LGPD). */
+  photos?: ConditionPhotoDto[];
+  /** Base da URL autorizada para servir as fotos no contexto atual. */
+  photoUrlBase?: string;
 }
 
 /** Linha do tempo de evolução clínica de uma condição (compartilhada entre os portais). */
-export function ConditionProgress({ condition, assessments }: ConditionWithAssessmentsDto) {
+export function ConditionProgress({
+  condition,
+  assessments,
+  photos,
+  photoUrlBase,
+}: ConditionWithAssessmentsDto) {
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-4">
       <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -37,6 +46,7 @@ export function ConditionProgress({ condition, assessments }: ConditionWithAsses
           <HealingChart assessments={assessments} />
         </div>
       )}
+      <PortalPhotoGallery photos={photos} photoUrlBase={photoUrlBase} />
       {assessments.length > 0 && (
         <ul className="flex flex-col gap-2 text-sm">
           {assessments.map((assessment) => (
@@ -49,6 +59,31 @@ export function ConditionProgress({ condition, assessments }: ConditionWithAsses
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+function PortalPhotoGallery({
+  photos,
+  photoUrlBase,
+}: {
+  photos?: ConditionPhotoDto[];
+  photoUrlBase?: string;
+}) {
+  if (!photoUrlBase || !photos || photos.length === 0) {
+    return null;
+  }
+  return (
+    <div className="mb-3 flex flex-wrap gap-2">
+      {photos.map((photo) => (
+        // eslint-disable-next-line @next/next/no-img-element -- rota autorizada dinâmica, sem otimizador
+        <img
+          key={photo.id}
+          src={`${photoUrlBase}/${photo.id}`}
+          alt={`Foto da condição em ${formatDate(photo.createdAt)}`}
+          className="h-24 w-24 rounded border border-slate-200 object-cover"
+        />
+      ))}
     </div>
   );
 }

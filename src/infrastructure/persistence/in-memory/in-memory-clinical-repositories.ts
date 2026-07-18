@@ -2,10 +2,12 @@ import type { Anamnesis } from "@/domain/clinical/anamnesis";
 import type { EvolutionNote } from "@/domain/clinical/evolution-note";
 import type { ClinicalCondition } from "@/domain/clinical/clinical-condition";
 import type { ConditionAssessment } from "@/domain/clinical/condition-assessment";
+import type { ConditionPhoto } from "@/domain/clinical/condition-photo";
 import type {
   AnamnesisRepository,
   ClinicalConditionRepository,
   ConditionAssessmentRepository,
+  ConditionPhotoRepository,
   EvolutionNoteRepository,
 } from "@/domain/clinical/clinical-repositories";
 
@@ -87,5 +89,34 @@ export class InMemoryConditionAssessmentRepository implements ConditionAssessmen
     return [...this.items.values()]
       .filter((a) => ids.has(a.conditionId))
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+}
+
+export class InMemoryConditionPhotoRepository implements ConditionPhotoRepository {
+  private readonly items = new Map<string, ConditionPhoto>();
+
+  async save(photo: ConditionPhoto): Promise<void> {
+    this.items.set(photo.id, photo);
+  }
+
+  async findById(id: string): Promise<ConditionPhoto | null> {
+    return this.items.get(id) ?? null;
+  }
+
+  async findByConditionId(conditionId: string): Promise<ConditionPhoto[]> {
+    return [...this.items.values()]
+      .filter((p) => p.conditionId === conditionId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async findByConditionIds(conditionIds: string[]): Promise<ConditionPhoto[]> {
+    const ids = new Set(conditionIds);
+    return [...this.items.values()]
+      .filter((p) => ids.has(p.conditionId))
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async delete(id: string): Promise<void> {
+    this.items.delete(id);
   }
 }

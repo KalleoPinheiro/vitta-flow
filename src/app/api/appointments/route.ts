@@ -4,6 +4,7 @@ import { getRepositories } from "@/infrastructure/container";
 import { ScheduleAppointment } from "@/application/appointments/schedule-appointment";
 import { ListAppointments } from "@/application/appointments/list-appointments";
 import { handleRequest, fail } from "@/lib/api-response";
+import { scheduleCalendarSync } from "@/lib/calendar-sync";
 import { toAppointmentDto } from "@/lib/dto";
 
 const scheduleSchema = z.object({
@@ -36,8 +37,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   return handleRequest(async () => {
     const body = scheduleSchema.parse(await request.json());
-    const { appointments, patients, calendar } = await getRepositories();
-    const appointment = await new ScheduleAppointment(appointments, patients, calendar).execute({
+    const services = await getRepositories();
+    const appointment = await new ScheduleAppointment(
+      services.appointments,
+      services.patients,
+    ).execute({
       patientId: body.patientId,
       startsAt: new Date(body.startsAt),
       endsAt: new Date(body.endsAt),
@@ -45,6 +49,7 @@ export async function POST(request: NextRequest) {
       priceCents: body.priceCents,
       notes: body.notes ?? null,
     });
+    scheduleCalendarSync(services, (sync) => sync.created(appointment.id));
     return toAppointmentDto(appointment);
   });
 }

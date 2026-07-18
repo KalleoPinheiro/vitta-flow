@@ -5,6 +5,7 @@ import { CreatePatient } from "@/application/patients/create-patient";
 import { ScheduleAppointment } from "@/application/appointments/schedule-appointment";
 import { RescheduleAppointment } from "@/application/appointments/reschedule-appointment";
 import { ChangeAppointmentStatus } from "@/application/appointments/change-appointment-status";
+import { SyncAppointmentCalendar } from "@/application/appointments/sync-appointment-calendar";
 import type {
   CalendarEventInput,
   CalendarGateway,
@@ -51,13 +52,15 @@ describe("Feature: Regras de agendamento (horário comercial, intervalo de 15min
   });
 
   const schedule = (startsAt: string, endsAt: string) =>
-    new ScheduleAppointment(appointmentRepo, patientRepo, calendar).execute({
+    new ScheduleAppointment(appointmentRepo, patientRepo).execute({
       patientId: maria.id,
       startsAt: new Date(startsAt),
       endsAt: new Date(endsAt),
       procedure: "Troca de bolsa",
       priceCents: 25000,
     });
+
+  const sync = () => new SyncAppointmentCalendar(appointmentRepo, patientRepo, calendar);
 
   describe("Cenário: horário comercial obrigatório", () => {
     it("Dado horário antes da abertura, Quando agendar, Então lança ValidationError", async () => {
@@ -88,7 +91,7 @@ describe("Feature: Regras de agendamento (horário comercial, intervalo de 15min
       const appointment = await schedule("2026-07-20T09:00:00Z", "2026-07-20T10:00:00Z");
 
       await expect(
-        new RescheduleAppointment(appointmentRepo, calendar).execute({
+        new RescheduleAppointment(appointmentRepo).execute({
           id: appointment.id,
           startsAt: new Date("2026-07-21T19:00:00Z"),
           endsAt: new Date("2026-07-21T20:00:00Z"),
@@ -135,7 +138,7 @@ describe("Feature: Regras de agendamento (horário comercial, intervalo de 15min
       await schedule("2026-07-20T11:00:00Z", "2026-07-20T12:00:00Z");
 
       await expect(
-        new RescheduleAppointment(appointmentRepo, calendar).execute({
+        new RescheduleAppointment(appointmentRepo).execute({
           id: first.id,
           startsAt: new Date("2026-07-20T12:05:00Z"),
           endsAt: new Date("2026-07-20T13:00:00Z"),
@@ -144,9 +147,10 @@ describe("Feature: Regras de agendamento (horário comercial, intervalo de 15min
     });
   });
 
-  describe("Cenário: sincronização com Google Calendar", () => {
-    it("Dado agendamento criado, Quando agendar, Então cria evento e persiste googleEventId", async () => {
+  describe("Cenário: sincronização com Google Calendar (pós-request)", () => {
+    it("Dado agendamento criado, Quando sincronizar, Então cria evento e persiste googleEventId", async () => {
       const appointment = await schedule("2026-07-20T09:00:00Z", "2026-07-20T10:00:00Z");
+      await sync().created(appointment.id);
 
       expect(calendar.created).toHaveLength(1);
       expect(calendar.created[0].title).toContain("Maria da Silva");
@@ -155,37 +159,52 @@ describe("Feature: Regras de agendamento (horário comercial, intervalo de 15min
       expect(stored?.googleEventId).toBe("gcal-event-1");
     });
 
-    it("Dado falha na criação do evento (null), Quando agendar, Então consulta persiste sem eventId", async () => {
+    it("Dado falha na criação do evento (null), Quando sincronizar, Então consulta persiste sem eventId", async () => {
       calendar.nextEventId = null;
 
       const appointment = await schedule("2026-07-20T09:00:00Z", "2026-07-20T10:00:00Z");
+      await sync().created(appointment.id);
 
       const stored = await appointmentRepo.findById(appointment.id);
       expect(stored?.status).toBe("scheduled");
       expect(stored?.googleEventId).toBeNull();
     });
 
-    it("Dado consulta com evento, Quando remarcar, Então atualiza evento no calendário", async () => {
+    it("Dado sincronização repetida, Quando sincronizar de novo, Então não duplica evento", async () => {
       const appointment = await schedule("2026-07-20T09:00:00Z", "2026-07-20T10:00:00Z");
+      await sync().created(appointment.id);
+      await sync().created(appointment.id);
 
-      await new RescheduleAppointment(appointmentRepo, calendar).execute({
+      expect(calendar.created).toHaveLength(1);
+    });
+
+    it("Dado consulta com evento, Quando remarcar e sincronizar, Então atualiza evento no calendário", async () => {
+      const appointment = await schedule("2026-07-20T09:00:00Z", "2026-07-20T10:00:00Z");
+      await sync().created(appointment.id);
+
+      await new RescheduleAppointment(appointmentRepo).execute({
         id: appointment.id,
         startsAt: new Date("2026-07-21T14:00:00Z"),
         endsAt: new Date("2026-07-21T15:00:00Z"),
       });
+      await sync().rescheduled(appointment.id);
 
       expect(calendar.updated).toHaveLength(1);
       expect(calendar.updated[0].eventId).toBe("gcal-event-1");
       expect(calendar.updated[0].input.startsAt).toEqual(new Date("2026-07-21T14:00:00Z"));
     });
 
-    it("Dado consulta com evento, Quando cancelar, Então remove evento do calendário", async () => {
+    it("Dado consulta com evento, Quando cancelar e sincronizar, Então remove evento do calendário", async () => {
       const appointment = await schedule("2026-07-20T09:00:00Z", "2026-07-20T10:00:00Z");
+      await sync().created(appointment.id);
 
-      await new ChangeAppointmentStatus(appointmentRepo, calendar).execute({
+      const changed = await new ChangeAppointmentStatus(appointmentRepo).execute({
         id: appointment.id,
         action: "cancel",
       });
+      if (changed.googleEventId) {
+        await sync().removed(changed.googleEventId);
+      }
 
       expect(calendar.deleted).toEqual(["gcal-event-1"]);
     });
@@ -193,11 +212,15 @@ describe("Feature: Regras de agendamento (horário comercial, intervalo de 15min
     it("Dado consulta sem evento, Quando cancelar, Então não chama o calendário", async () => {
       calendar.nextEventId = null;
       const appointment = await schedule("2026-07-20T09:00:00Z", "2026-07-20T10:00:00Z");
+      await sync().created(appointment.id);
 
-      await new ChangeAppointmentStatus(appointmentRepo, calendar).execute({
+      const changed = await new ChangeAppointmentStatus(appointmentRepo).execute({
         id: appointment.id,
         action: "cancel",
       });
+      if (changed.googleEventId) {
+        await sync().removed(changed.googleEventId);
+      }
 
       expect(calendar.deleted).toHaveLength(0);
     });

@@ -5,10 +5,6 @@ import { Money } from "@/domain/shared/money";
 import { TimeSlot } from "@/domain/shared/time-slot";
 import { NotFoundError, ValidationError } from "@/domain/shared/errors";
 import { assertSlotAvailable } from "./assert-slot-available";
-import {
-  NullCalendarGateway,
-  type CalendarGateway,
-} from "@/application/ports/calendar-gateway";
 
 export interface ScheduleAppointmentInput {
   patientId: string;
@@ -23,7 +19,6 @@ export class ScheduleAppointment {
   constructor(
     private readonly appointments: AppointmentRepository,
     private readonly patients: PatientRepository,
-    private readonly calendar: CalendarGateway = new NullCalendarGateway(),
   ) {}
 
   async execute(input: ScheduleAppointmentInput): Promise<Appointment> {
@@ -47,18 +42,7 @@ export class ScheduleAppointment {
     });
     await this.appointments.save(appointment);
 
-    const eventId = await this.calendar.createEvent({
-      title: `Consulta: ${patient.fullName}`,
-      description: `${appointment.procedure}\nPaciente: ${patient.fullName} (${patient.phone})`,
-      startsAt: slot.start,
-      endsAt: slot.end,
-    });
-    if (eventId) {
-      const withEvent = appointment.withGoogleEventId(eventId);
-      await this.appointments.save(withEvent);
-      return withEvent;
-    }
-
+    // Sincronização com Google Calendar acontece fora do request (SyncAppointmentCalendar).
     return appointment;
   }
 }

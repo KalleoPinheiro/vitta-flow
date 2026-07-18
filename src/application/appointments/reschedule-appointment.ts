@@ -3,10 +3,6 @@ import type { AppointmentRepository } from "@/domain/scheduling/appointment-repo
 import { TimeSlot } from "@/domain/shared/time-slot";
 import { NotFoundError } from "@/domain/shared/errors";
 import { assertSlotAvailable } from "./assert-slot-available";
-import {
-  NullCalendarGateway,
-  type CalendarGateway,
-} from "@/application/ports/calendar-gateway";
 
 export interface RescheduleAppointmentInput {
   id: string;
@@ -15,10 +11,7 @@ export interface RescheduleAppointmentInput {
 }
 
 export class RescheduleAppointment {
-  constructor(
-    private readonly appointments: AppointmentRepository,
-    private readonly calendar: CalendarGateway = new NullCalendarGateway(),
-  ) {}
+  constructor(private readonly appointments: AppointmentRepository) {}
 
   async execute(input: RescheduleAppointmentInput): Promise<Appointment> {
     const appointment = await this.appointments.findById(input.id);
@@ -32,15 +25,7 @@ export class RescheduleAppointment {
     const rescheduled = appointment.reschedule(slot);
     await this.appointments.save(rescheduled);
 
-    if (rescheduled.googleEventId) {
-      await this.calendar.updateEvent(rescheduled.googleEventId, {
-        title: `Consulta remarcada`,
-        description: rescheduled.procedure,
-        startsAt: slot.start,
-        endsAt: slot.end,
-      });
-    }
-
+    // Sincronização com Google Calendar acontece fora do request (SyncAppointmentCalendar).
     return rescheduled;
   }
 }

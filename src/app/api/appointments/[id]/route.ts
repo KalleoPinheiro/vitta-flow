@@ -1,10 +1,14 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { getRepositories } from "@/infrastructure/container";
-import { ChangeAppointmentStatus } from "@/application/appointments/change-appointment-status";
+import {
+  ACTIONS_REMOVING_EVENT,
+  ChangeAppointmentStatus,
+} from "@/application/appointments/change-appointment-status";
 import { CompleteAppointment } from "@/application/appointments/complete-appointment";
 import { RescheduleAppointment } from "@/application/appointments/reschedule-appointment";
 import { handleRequest } from "@/lib/api-response";
+import { scheduleCalendarSync } from "@/lib/calendar-sync";
 import { toAppointmentDto } from "@/lib/dto";
 
 const actionSchema = z.discriminatedUnion("action", [
@@ -26,7 +30,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = actionSchema.parse(await request.json());
-    const { appointments, invoices, followUps, calendar } = await getRepositories();
+    const services = await getRepositories();
+    const { appointments, invoices, followUps } = services;
 
     if (body.action === "complete") {
       const completed = await new CompleteAppointment(appointments, invoices, followUps).execute({
@@ -36,17 +41,22 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       return toAppointmentDto(completed);
     }
     if (body.action === "reschedule") {
-      const rescheduled = await new RescheduleAppointment(appointments, calendar).execute({
+      const rescheduled = await new RescheduleAppointment(appointments).execute({
         id,
         startsAt: new Date(body.startsAt),
         endsAt: new Date(body.endsAt),
       });
+      scheduleCalendarSync(services, (sync) => sync.rescheduled(rescheduled.id));
       return toAppointmentDto(rescheduled);
     }
-    const changed = await new ChangeAppointmentStatus(appointments, calendar).execute({
+    const changed = await new ChangeAppointmentStatus(appointments).execute({
       id,
       action: body.action,
     });
+    const eventId = changed.googleEventId;
+    if (eventId && ACTIONS_REMOVING_EVENT.includes(body.action)) {
+      scheduleCalendarSync(services, (sync) => sync.removed(eventId));
+    }
     return toAppointmentDto(changed);
   });
 }

@@ -4,6 +4,10 @@ import type { PatientRepository } from "@/domain/patient/patient-repository";
 import { Money } from "@/domain/shared/money";
 import { TimeSlot } from "@/domain/shared/time-slot";
 import { NotFoundError, ValidationError } from "@/domain/shared/errors";
+import {
+  DEFAULT_SCHEDULE_CONFIG,
+  type ScheduleConfigRepository,
+} from "@/domain/scheduling/schedule-config";
 import { assertSlotAvailable } from "./assert-slot-available";
 
 export interface ScheduleAppointmentInput {
@@ -14,12 +18,14 @@ export interface ScheduleAppointmentInput {
   priceCents: number;
   notes?: string | null;
   professionalId?: string | null;
+  procedureId?: string | null;
 }
 
 export class ScheduleAppointment {
   constructor(
     private readonly appointments: AppointmentRepository,
     private readonly patients: PatientRepository,
+    private readonly scheduleConfig?: ScheduleConfigRepository,
   ) {}
 
   async execute(input: ScheduleAppointmentInput): Promise<Appointment> {
@@ -32,7 +38,8 @@ export class ScheduleAppointment {
     }
 
     const slot = TimeSlot.create(input.startsAt, input.endsAt);
-    await assertSlotAvailable(this.appointments, slot);
+    const config = (await this.scheduleConfig?.get()) ?? DEFAULT_SCHEDULE_CONFIG;
+    await assertSlotAvailable(this.appointments, slot, undefined, config);
 
     const appointment = Appointment.create({
       patientId: input.patientId,
@@ -41,6 +48,7 @@ export class ScheduleAppointment {
       price: Money.fromCents(input.priceCents),
       notes: input.notes,
       professionalId: input.professionalId ?? null,
+      procedureId: input.procedureId ?? null,
     });
     await this.appointments.save(appointment);
 

@@ -1,0 +1,134 @@
+import { asc, eq, sql } from "drizzle-orm";
+import { Procedure } from "@/domain/catalog/procedure";
+import type { ProcedureRepository } from "@/domain/catalog/procedure-repository";
+import { UserAccount, type UserAccountRepository } from "@/domain/auth/user-account";
+import {
+  validateScheduleConfig,
+  type ScheduleConfig,
+  type ScheduleConfigRepository,
+} from "@/domain/scheduling/schedule-config";
+import { MAX_ROWS, type AppDb } from "./db";
+import { procedures, scheduleSettings, userAccounts } from "./schema";
+
+export class DrizzleProcedureRepository implements ProcedureRepository {
+  constructor(private readonly db: AppDb) {}
+
+  async save(procedure: Procedure): Promise<void> {
+    const values = {
+      id: procedure.id,
+      name: procedure.name,
+      priceCents: procedure.priceCents,
+      durationMinutes: procedure.durationMinutes,
+      active: procedure.isActive,
+      createdAt: procedure.createdAt,
+    };
+    await this.db
+      .insert(procedures)
+      .values(values)
+      .onConflictDoUpdate({ target: procedures.id, set: values });
+  }
+
+  async findById(id: string): Promise<Procedure | null> {
+    const rows = await this.db.select().from(procedures).where(eq(procedures.id, id)).limit(1);
+    return rows[0] ? Procedure.restore(rows[0]) : null;
+  }
+
+  async findByName(name: string): Promise<Procedure | null> {
+    const rows = await this.db
+      .select()
+      .from(procedures)
+      .where(sql`lower(${procedures.name}) = lower(${name.trim()})`)
+      .limit(1);
+    return rows[0] ? Procedure.restore(rows[0]) : null;
+  }
+
+  async findAll(): Promise<Procedure[]> {
+    const rows = await this.db
+      .select()
+      .from(procedures)
+      .orderBy(asc(procedures.name))
+      .limit(MAX_ROWS);
+    return rows.map((row) => Procedure.restore(row));
+  }
+}
+
+export class DrizzleUserAccountRepository implements UserAccountRepository {
+  constructor(private readonly db: AppDb) {}
+
+  async save(account: UserAccount): Promise<void> {
+    const values = {
+      id: account.id,
+      email: account.email,
+      passwordHash: account.passwordHash,
+      professionalId: account.professionalId,
+      active: account.isActive,
+      createdAt: account.createdAt,
+    };
+    await this.db
+      .insert(userAccounts)
+      .values(values)
+      .onConflictDoUpdate({ target: userAccounts.id, set: values });
+  }
+
+  async findByEmail(email: string): Promise<UserAccount | null> {
+    const rows = await this.db
+      .select()
+      .from(userAccounts)
+      .where(eq(userAccounts.email, email.trim().toLowerCase()))
+      .limit(1);
+    return rows[0] ? UserAccount.restore(rows[0]) : null;
+  }
+
+  async findAll(): Promise<UserAccount[]> {
+    const rows = await this.db
+      .select()
+      .from(userAccounts)
+      .orderBy(asc(userAccounts.email))
+      .limit(MAX_ROWS);
+    return rows.map((row) => UserAccount.restore(row));
+  }
+}
+
+const SETTINGS_ROW_ID = "default";
+
+export class DrizzleScheduleConfigRepository implements ScheduleConfigRepository {
+  constructor(private readonly db: AppDb) {}
+
+  async get(): Promise<ScheduleConfig | null> {
+    const rows = await this.db
+      .select()
+      .from(scheduleSettings)
+      .where(eq(scheduleSettings.id, SETTINGS_ROW_ID))
+      .limit(1);
+    if (!rows[0]) {
+      return null;
+    }
+    try {
+      return validateScheduleConfig({
+        weekdays: JSON.parse(rows[0].weekdays) as number[],
+        startHour: rows[0].startHour,
+        endHour: rows[0].endHour,
+        minGapMinutes: rows[0].minGapMinutes,
+      });
+    } catch {
+      // Configuração corrompida nunca derruba o agendamento — cai no default.
+      return null;
+    }
+  }
+
+  async save(config: ScheduleConfig): Promise<void> {
+    const validated = validateScheduleConfig(config);
+    const values = {
+      id: SETTINGS_ROW_ID,
+      weekdays: JSON.stringify(validated.weekdays),
+      startHour: validated.startHour,
+      endHour: validated.endHour,
+      minGapMinutes: validated.minGapMinutes,
+      updatedAt: new Date(),
+    };
+    await this.db
+      .insert(scheduleSettings)
+      .values(values)
+      .onConflictDoUpdate({ target: scheduleSettings.id, set: values });
+  }
+}

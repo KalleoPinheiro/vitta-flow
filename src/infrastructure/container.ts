@@ -34,6 +34,14 @@ import {
 } from "@/application/ports/messaging-gateway";
 import type { ReminderLogRepository } from "@/domain/messaging/reminder-log";
 import { DrizzleProfessionalRepository } from "./persistence/drizzle/drizzle-professional-repository";
+import {
+  DrizzleProcedureRepository,
+  DrizzleScheduleConfigRepository,
+  DrizzleUserAccountRepository,
+} from "./persistence/drizzle/drizzle-foundation-repositories";
+import type { ProcedureRepository } from "@/domain/catalog/procedure-repository";
+import type { UserAccountRepository } from "@/domain/auth/user-account";
+import type { ScheduleConfigRepository } from "@/domain/scheduling/schedule-config";
 import type { ProfessionalRepository } from "@/domain/professional/professional-repository";
 import type { PhotoStorage } from "@/application/ports/photo-storage";
 import type { AuditEventRepository } from "@/domain/audit/audit-event-repository";
@@ -67,6 +75,9 @@ export interface Services {
   patients: PatientRepository;
   partners: PartnerRepository;
   professionals: ProfessionalRepository;
+  procedures: ProcedureRepository;
+  userAccounts: UserAccountRepository;
+  scheduleConfig: ScheduleConfigRepository;
   googleAccounts: DrizzleGoogleAccountRepository;
   appointments: AppointmentRepository;
   invoices: InvoiceRepository;
@@ -150,6 +161,9 @@ export async function getRepositories(): Promise<Services> {
     patients: new DrizzlePatientRepository(db),
     partners: new DrizzlePartnerRepository(db),
     professionals: new DrizzleProfessionalRepository(db),
+    procedures: new DrizzleProcedureRepository(db),
+    userAccounts: new DrizzleUserAccountRepository(db),
+    scheduleConfig: new DrizzleScheduleConfigRepository(db),
     googleAccounts: new DrizzleGoogleAccountRepository(db),
     appointments: new DrizzleAppointmentRepository(db),
     invoices: new DrizzleInvoiceRepository(db),

@@ -38,11 +38,18 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = evolutionSchema.parse(await request.json());
-    const { evolutions, patients, auditEvents } = await getRepositories();
+    const { evolutions, patients, auditEvents, userAccounts } = await getRepositories();
+    const session = getRequestSession(request);
+    // Autoria automática: conta individual logada define o profissional autor.
+    let professionalId = body.professionalId ?? null;
+    if (!professionalId && session?.subject && session.subject !== "local") {
+      const account = await userAccounts.findByEmail(session.subject);
+      professionalId = account?.professionalId ?? null;
+    }
     const note = await new AddEvolutionNote(evolutions, patients).execute({
       patientId: id,
       appointmentId: body.appointmentId ?? null,
-      professionalId: body.professionalId ?? null,
+      professionalId,
       subjective: body.subjective,
       objective: body.objective,
       assessment: body.assessment,

@@ -43,6 +43,7 @@ const toAppointment = (row: AppointmentRow): Appointment =>
     status: row.status as AppointmentStatus,
     googleEventId: row.googleEventId,
     professionalId: row.professionalId,
+    procedureId: row.procedureId,
     createdAt: row.createdAt,
   });
 
@@ -61,6 +62,7 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
       status: appointment.status,
       googleEventId: appointment.googleEventId,
       professionalId: appointment.professionalId,
+      procedureId: appointment.procedureId,
       createdAt: appointment.createdAt,
     };
     try {

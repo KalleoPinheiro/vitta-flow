@@ -1,21 +1,19 @@
 import { ValidationError } from "../shared/errors";
 import type { TimeSlot } from "../shared/time-slot";
+import {
+  DEFAULT_SCHEDULE_CONFIG,
+  describeSchedule,
+  type ScheduleConfig,
+} from "./schedule-config";
 
-const MONDAY = 1;
-const FRIDAY = 5;
-
+/** Compatibilidade com telas que exibem a grade padrão. */
 export const BUSINESS_HOURS = {
-  startHour: 8,
-  endHour: 18,
+  startHour: DEFAULT_SCHEDULE_CONFIG.startHour,
+  endHour: DEFAULT_SCHEDULE_CONFIG.endHour,
   weekDays: "segunda a sexta",
 } as const;
 
-export const MIN_GAP_MINUTES = 15;
-
-const isBusinessDay = (date: Date): boolean => {
-  const weekday = date.getDay();
-  return weekday >= MONDAY && weekday <= FRIDAY;
-};
+export const MIN_GAP_MINUTES = DEFAULT_SCHEDULE_CONFIG.minGapMinutes;
 
 const isSameLocalDay = (a: Date, b: Date): boolean =>
   a.getFullYear() === b.getFullYear() &&
@@ -24,19 +22,21 @@ const isSameLocalDay = (a: Date, b: Date): boolean =>
 
 const minutesOfDay = (date: Date): number => date.getHours() * 60 + date.getMinutes();
 
-export function assertWithinBusinessHours(slot: TimeSlot): void {
-  const message =
-    `Atendimento somente em horário comercial: ${BUSINESS_HOURS.weekDays}, ` +
-    `das ${String(BUSINESS_HOURS.startHour).padStart(2, "0")}:00 às ${BUSINESS_HOURS.endHour}:00`;
+/** Valida o slot contra a grade configurada (default = comportamento histórico). */
+export function assertWithinBusinessHours(
+  slot: TimeSlot,
+  config: ScheduleConfig = DEFAULT_SCHEDULE_CONFIG,
+): void {
+  const message = `Atendimento somente em: ${describeSchedule(config)}`;
 
   if (!isSameLocalDay(slot.start, slot.end)) {
     throw new ValidationError(message);
   }
-  if (!isBusinessDay(slot.start)) {
+  if (!config.weekdays.includes(slot.start.getDay())) {
     throw new ValidationError(message);
   }
-  const opensAt = BUSINESS_HOURS.startHour * 60;
-  const closesAt = BUSINESS_HOURS.endHour * 60;
+  const opensAt = config.startHour * 60;
+  const closesAt = config.endHour * 60;
   if (minutesOfDay(slot.start) < opensAt || minutesOfDay(slot.end) > closesAt) {
     throw new ValidationError(message);
   }

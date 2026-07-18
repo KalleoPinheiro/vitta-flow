@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -25,6 +26,42 @@ export const professionals = pgTable("professionals", {
   registry: text("registry"),
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+});
+
+export const procedures = pgTable(
+  "procedures",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    priceCents: integer("price_cents").notNull(),
+    durationMinutes: integer("duration_minutes").notNull(),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [
+    // Unicidade case-insensitive do catálogo.
+    uniqueIndex("uq_procedures_name").on(sql`lower(${table.name})`),
+  ],
+);
+
+export const userAccounts = pgTable("user_accounts", {
+  id: text("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  // Formato scrypt$custo$salt$hash — nunca a senha em claro.
+  passwordHash: text("password_hash").notNull(),
+  professionalId: text("professional_id").references(() => professionals.id),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+});
+
+export const scheduleSettings = pgTable("schedule_settings", {
+  // Linha única ("default") — grade da clínica.
+  id: text("id").primaryKey(),
+  weekdays: text("weekdays").notNull(),
+  startHour: integer("start_hour").notNull(),
+  endHour: integer("end_hour").notNull(),
+  minGapMinutes: integer("min_gap_minutes").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull(),
 });
 
 export const patients = pgTable(
@@ -69,6 +106,8 @@ export const appointments = pgTable(
     googleEventId: text("google_event_id"),
     // Profissional responsável (F9) — nullable, retrocompatível.
     professionalId: text("professional_id").references(() => professionals.id),
+    // Procedimento do catálogo (O1.1) — nullable, histórico intacto.
+    procedureId: text("procedure_id").references(() => procedures.id),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
   },
   (table) => [

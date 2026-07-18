@@ -8,9 +8,11 @@ const NAV_ITEMS = [
   { href: "/parceiros", label: "Parceiros" },
   { href: "/profissionais", label: "Profissionais" },
   { href: "/faturamento", label: "Faturamento" },
+  { href: "/procedimentos", label: "Procedimentos" },
   { href: "/materiais", label: "Materiais" },
   { href: "/relatorios", label: "Relatórios" },
   { href: "/auditoria", label: "Auditoria" },
+  { href: "/configuracoes", label: "Configurações" },
 ];
 
 export default function StaffLayout({ children }: { children: React.ReactNode }) {

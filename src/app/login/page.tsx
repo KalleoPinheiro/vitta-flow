@@ -100,6 +100,7 @@ function GoogleAnchor() {
 
 function PasswordForm() {
   const router = useRouter();
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -111,7 +112,7 @@ function PasswordForm() {
     try {
       await apiFetch("/api/auth/login", {
         method: "POST",
-        body: JSON.stringify({ password }),
+        body: JSON.stringify(email ? { email, password } : { password }),
       });
       router.push("/");
       router.refresh();
@@ -125,6 +126,16 @@ function PasswordForm() {
     <form onSubmit={handleSubmit}>
       {error && <ErrorAlert message={error} />}
       <label className="text-sm font-medium">
+        Email (contas individuais — vazio para senha da clínica)
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="seu@email.com"
+          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none"
+        />
+      </label>
+      <label className="mt-3 block text-sm font-medium">
         Senha
         <input
           required

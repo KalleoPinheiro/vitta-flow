@@ -12,6 +12,8 @@ import type { FollowUp } from "@/domain/followup/follow-up";
 import type { AuditEvent } from "@/domain/audit/audit-event";
 import type { ConditionPhoto } from "@/domain/clinical/condition-photo";
 import type { Professional } from "@/domain/professional/professional";
+import type { Procedure as CatalogProcedure } from "@/domain/catalog/procedure";
+import type { UserAccount } from "@/domain/auth/user-account";
 
 export interface PatientDto {
   id: string;
@@ -386,4 +388,35 @@ export const toProfessionalDto = (professional: Professional): ProfessionalDto =
   fullName: professional.fullName,
   registry: professional.registry,
   active: professional.isActive,
+});
+
+export interface ProcedureDto {
+  id: string;
+  name: string;
+  priceCents: number;
+  durationMinutes: number;
+  active: boolean;
+}
+
+export const toProcedureDto = (procedure: CatalogProcedure): ProcedureDto => ({
+  id: procedure.id,
+  name: procedure.name,
+  priceCents: procedure.priceCents,
+  durationMinutes: procedure.durationMinutes,
+  active: procedure.isActive,
+});
+
+/** Conta de acesso — nunca expõe o hash de senha. */
+export interface UserAccountDto {
+  id: string;
+  email: string;
+  professionalId: string | null;
+  active: boolean;
+}
+
+export const toUserAccountDto = (account: UserAccount): UserAccountDto => ({
+  id: account.id,
+  email: account.email,
+  professionalId: account.professionalId,
+  active: account.isActive,
 });

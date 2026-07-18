@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { apiFetch } from "@/lib/client";
 import type {
   FollowUpDto,
   InvoiceDto,
@@ -30,10 +32,23 @@ interface PatientPortalDto {
 const PAGE_LOAD_MS = Date.now();
 
 export function PatientPortalView() {
-  const { data, error } = useApiQuery<PatientPortalDto>("/api/portal/patient");
+  const { data, error, refresh } = useApiQuery<PatientPortalDto>("/api/portal/patient");
+  const [confirmError, setConfirmError] = useState<string | null>(null);
 
   if (error) return <ErrorAlert message={error} />;
   if (!data) return <LoadingIndicator />;
+
+  const confirmAppointment = async (appointment: PortalAppointmentDto) => {
+    try {
+      await apiFetch(`/api/portal/patient/appointments/${appointment.id}/confirm`, {
+        method: "POST",
+      });
+      setConfirmError(null);
+      refresh();
+    } catch (err) {
+      setConfirmError(err instanceof Error ? err.message : "Erro ao confirmar presença");
+    }
+  };
 
   const upcoming = data.appointments.filter(
     (a) =>
@@ -50,10 +65,14 @@ export function PatientPortalView() {
       </div>
 
       <Section title="Próximas consultas">
+        {confirmError && <ErrorAlert message={confirmError} />}
         {upcoming.length === 0 ? (
           <EmptyState message="Nenhuma consulta agendada. Entre em contato com a clínica para agendar." />
         ) : (
-          <AppointmentList appointments={upcoming} />
+          <AppointmentList
+            appointments={upcoming}
+            onConfirm={(appointment) => void confirmAppointment(appointment)}
+          />
         )}
       </Section>
 
@@ -123,7 +142,12 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function AppointmentList({ appointments }: { appointments: PortalAppointmentDto[] }) {
+interface AppointmentListProps {
+  appointments: PortalAppointmentDto[];
+  onConfirm?: (appointment: PortalAppointmentDto) => void;
+}
+
+function AppointmentList({ appointments, onConfirm }: AppointmentListProps) {
   return (
     <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white text-sm">
       {appointments.map((appointment) => (
@@ -132,6 +156,15 @@ function AppointmentList({ appointments }: { appointments: PortalAppointmentDto[
             <p className="font-medium">{formatDateTime(appointment.startsAt)}</p>
             <p className="truncate text-slate-500">{appointment.procedure}</p>
           </div>
+          {onConfirm && appointment.status === "scheduled" && (
+            <button
+              type="button"
+              onClick={() => onConfirm(appointment)}
+              className="rounded-lg bg-teal-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-teal-800"
+            >
+              Confirmar presença
+            </button>
+          )}
           <StatusBadge
             status={appointment.status}
             label={APPOINTMENT_STATUS_LABELS[appointment.status] ?? appointment.status}

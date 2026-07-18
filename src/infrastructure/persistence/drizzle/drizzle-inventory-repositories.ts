@@ -1,7 +1,8 @@
-import { and, asc, desc, eq, lt, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lt, sql, type SQL } from "drizzle-orm";
 import { Supply } from "@/domain/inventory/supply";
 import { StockMovement, type MovementType } from "@/domain/inventory/stock-movement";
 import type {
+  OutflowCostByAppointment,
   StockMovementRepository,
   SupplyRepository,
 } from "@/domain/inventory/inventory-repositories";
@@ -58,6 +59,8 @@ export class DrizzleStockMovementRepository implements StockMovementRepository {
       type: movement.type,
       quantity: movement.quantity,
       reason: movement.reason,
+      appointmentId: movement.appointmentId,
+      unitPriceCents: movement.unitPriceCents,
       createdAt: movement.createdAt,
     });
   }
@@ -69,6 +72,27 @@ export class DrizzleStockMovementRepository implements StockMovementRepository {
       .where(eq(stockMovements.supplyId, supplyId))
       .orderBy(desc(stockMovements.createdAt), desc(stockMovements.id));
     return rows.map((row) => StockMovement.restore({ ...row, type: row.type as MovementType }));
+  }
+
+  async getOutflowCostInRange(from: Date, to: Date): Promise<OutflowCostByAppointment[]> {
+    const rows = await this.db
+      .select({
+        appointmentId: stockMovements.appointmentId,
+        totalCents: sql<number>`coalesce(sum(${stockMovements.quantity} * ${stockMovements.unitPriceCents}), 0)`,
+      })
+      .from(stockMovements)
+      .where(
+        and(
+          eq(stockMovements.type, "out"),
+          gte(stockMovements.createdAt, from),
+          lt(stockMovements.createdAt, to),
+        ),
+      )
+      .groupBy(stockMovements.appointmentId);
+    return rows.map((row) => ({
+      appointmentId: row.appointmentId,
+      totalCents: Number(row.totalCents),
+    }));
   }
 }
 

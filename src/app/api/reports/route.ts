@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const from = new Date(year, monthIndex, 1);
     const to = new Date(year, monthIndex + 1, 1);
 
-    const { appointments, invoices } = await getRepositories();
-    return new GetMonthlyReport(appointments, invoices).execute({ from, to });
+    const { appointments, invoices, stockMovements } = await getRepositories();
+    return new GetMonthlyReport(appointments, invoices, stockMovements).execute({ from, to });
   });
 }

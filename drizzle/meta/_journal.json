@@ -43,6 +43,13 @@
       "when": 1784347248033,
       "tag": "0005_performance-indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784350469464,
+      "tag": "0006_stock-movement-cost",
+      "breakpoints": true
     }
   ]
 }

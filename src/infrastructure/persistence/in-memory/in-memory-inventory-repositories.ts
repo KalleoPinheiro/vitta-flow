@@ -1,6 +1,7 @@
 import type { Supply } from "@/domain/inventory/supply";
 import type { StockMovement } from "@/domain/inventory/stock-movement";
 import type {
+  OutflowCostByAppointment,
   StockMovementRepository,
   SupplyRepository,
 } from "@/domain/inventory/inventory-repositories";
@@ -37,6 +38,20 @@ export class InMemoryStockMovementRepository implements StockMovementRepository 
     return [...this.items.values()]
       .filter((m) => m.supplyId === supplyId)
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async getOutflowCostInRange(from: Date, to: Date): Promise<OutflowCostByAppointment[]> {
+    const totals = new Map<string | null, number>();
+    for (const movement of this.items.values()) {
+      const at = movement.createdAt.getTime();
+      if (movement.type !== "out" || at < from.getTime() || at >= to.getTime()) continue;
+      const cost = movement.totalCostCents ?? 0;
+      totals.set(movement.appointmentId, (totals.get(movement.appointmentId) ?? 0) + cost);
+    }
+    return [...totals.entries()].map(([appointmentId, totalCents]) => ({
+      appointmentId,
+      totalCents,
+    }));
   }
 }
 

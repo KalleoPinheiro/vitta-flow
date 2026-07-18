@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { apiFetch } from "@/lib/client";
-import type { StockMovementDto, SupplyDto } from "@/lib/dto";
+import type { AppointmentDto, StockMovementDto, SupplyDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import { Modal } from "@/components/modal";
@@ -294,12 +294,25 @@ function SupplyForm({ initial, onSaved }: { initial?: SupplyDto; onSaved: () => 
   );
 }
 
+const todayRange = () => {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  return { from: start.toISOString(), to: end.toISOString() };
+};
+
 function MovementForm({ supply, onSaved }: { supply: SupplyDto; onSaved: () => void }) {
   const [type, setType] = useState<"in" | "out">("in");
   const [quantity, setQuantity] = useState("");
   const [reason, setReason] = useState("");
+  const [appointmentId, setAppointmentId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const [{ from, to }] = useState(todayRange);
+  const { data: todayAppointments } = useApiQuery<AppointmentDto[]>(
+    `/api/appointments?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+  );
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -308,7 +321,12 @@ function MovementForm({ supply, onSaved }: { supply: SupplyDto; onSaved: () => v
     try {
       await apiFetch<SupplyDto>(`/api/supplies/${supply.id}/movements`, {
         method: "POST",
-        body: JSON.stringify({ type, quantity: Number(quantity), reason }),
+        body: JSON.stringify({
+          type,
+          quantity: Number(quantity),
+          reason,
+          appointmentId: type === "out" && appointmentId ? appointmentId : null,
+        }),
       });
       onSaved();
     } catch (err) {
@@ -358,6 +376,30 @@ function MovementForm({ supply, onSaved }: { supply: SupplyDto; onSaved: () => v
           className={`mt-1 ${inputClass}`}
         />
       </label>
+      {type === "out" && (
+        <label className="text-sm font-medium">
+          Consulta atendida (custo por atendimento)
+          <select
+            value={appointmentId}
+            onChange={(e) => setAppointmentId(e.target.value)}
+            className={`mt-1 ${inputClass}`}
+          >
+            <option value="">— sem vínculo —</option>
+            {(todayAppointments ?? []).map((appointment) => (
+              <option key={appointment.id} value={appointment.id}>
+                {new Date(appointment.startsAt).toLocaleTimeString("pt-BR", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}{" "}
+                — {appointment.patientName ?? "Paciente"} ({appointment.procedure})
+              </option>
+            ))}
+          </select>
+          <span className="mt-1 block text-xs font-normal text-slate-400">
+            Vincular a saída à consulta alimenta a margem por procedimento no relatório.
+          </span>
+        </label>
+      )}
       <button
         type="submit"
         disabled={saving}

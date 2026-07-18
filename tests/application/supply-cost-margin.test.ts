@@ -1,0 +1,135 @@
+import { describe, it, expect, beforeEach } from "vitest";
+import { InMemoryPatientRepository } from "@/infrastructure/persistence/in-memory/in-memory-patient-repository";
+import { InMemoryAppointmentRepository } from "@/infrastructure/persistence/in-memory/in-memory-appointment-repository";
+import { InMemoryInvoiceRepository } from "@/infrastructure/persistence/in-memory/in-memory-invoice-repository";
+import {
+  InMemorySupplyRepository,
+  InMemoryStockMovementRepository,
+} from "@/infrastructure/persistence/in-memory/in-memory-inventory-repositories";
+import { CreatePatient } from "@/application/patients/create-patient";
+import { ScheduleAppointment } from "@/application/appointments/schedule-appointment";
+import { CompleteAppointment } from "@/application/appointments/complete-appointment";
+import { CreateSupply } from "@/application/inventory/create-supply";
+import { RegisterStockMovement } from "@/application/inventory/register-stock-movement";
+import { GetMonthlyReport } from "@/application/reports/get-monthly-report";
+import { NotFoundError } from "@/domain/shared/errors";
+import type { Patient } from "@/domain/patient/patient";
+import type { Supply } from "@/domain/inventory/supply";
+
+// 2026-07-20 é segunda-feira; horários em UTC (testes rodam com TZ=UTC).
+describe("Feature: Custo de insumos por atendimento e margem por procedimento", () => {
+  let patientRepo: InMemoryPatientRepository;
+  let appointmentRepo: InMemoryAppointmentRepository;
+  let invoiceRepo: InMemoryInvoiceRepository;
+  let supplyRepo: InMemorySupplyRepository;
+  let movementRepo: InMemoryStockMovementRepository;
+  let maria: Patient;
+  let bolsa: Supply;
+
+  beforeEach(async () => {
+    patientRepo = new InMemoryPatientRepository();
+    appointmentRepo = new InMemoryAppointmentRepository();
+    invoiceRepo = new InMemoryInvoiceRepository();
+    supplyRepo = new InMemorySupplyRepository();
+    movementRepo = new InMemoryStockMovementRepository();
+    maria = await new CreatePatient(patientRepo).execute({
+      fullName: "Maria da Silva",
+      email: "maria@example.com",
+      phone: "11999990000",
+    });
+    bolsa = await new CreateSupply(supplyRepo).execute({
+      name: "Bolsa colostomia",
+      unit: "un",
+      minQty: 5,
+      priceCents: 4000,
+    });
+    await new RegisterStockMovement(supplyRepo, movementRepo).execute({
+      supplyId: bolsa.id,
+      type: "in",
+      quantity: 10,
+      reason: "Compra inicial",
+    });
+  });
+
+  const scheduleAndComplete = async () => {
+    const appointment = await new ScheduleAppointment(appointmentRepo, patientRepo).execute({
+      patientId: maria.id,
+      startsAt: new Date("2026-07-20T09:00:00Z"),
+      endsAt: new Date("2026-07-20T10:00:00Z"),
+      procedure: "Troca de bolsa",
+      priceCents: 25000,
+    });
+    await new CompleteAppointment(appointmentRepo, invoiceRepo).execute({ id: appointment.id });
+    return appointment;
+  };
+
+  it("Dado saída vinculada à consulta, Quando gerar relatório, Então margem = receita − insumos", async () => {
+    const appointment = await scheduleAndComplete();
+    await new RegisterStockMovement(supplyRepo, movementRepo, appointmentRepo).execute({
+      supplyId: bolsa.id,
+      type: "out",
+      quantity: 2,
+      reason: "Uso em atendimento",
+      appointmentId: appointment.id,
+    });
+
+    const report = await new GetMonthlyReport(appointmentRepo, invoiceRepo, movementRepo).execute({
+      from: new Date("2026-07-01T00:00:00Z"),
+      to: new Date("2026-08-01T00:00:00Z"),
+    });
+
+    const row = report.revenueByProcedure.find((r) => r.procedure === "Troca de bolsa");
+    expect(row?.totalCents).toBe(25000);
+    expect(row?.supplyCostCents).toBe(8000);
+    expect(row?.marginCents).toBe(17000);
+    expect(report.unattributedSupplyCostCents).toBe(0);
+  });
+
+  it("Dado saída sem vínculo, Quando gerar relatório, Então entra como custo não atribuído", async () => {
+    await scheduleAndComplete();
+    await new RegisterStockMovement(supplyRepo, movementRepo).execute({
+      supplyId: bolsa.id,
+      type: "out",
+      quantity: 1,
+      reason: "Perda por validade",
+    });
+
+    const report = await new GetMonthlyReport(appointmentRepo, invoiceRepo, movementRepo).execute({
+      from: new Date("2026-07-01T00:00:00Z"),
+      to: new Date("2026-08-01T00:00:00Z"),
+    });
+
+    const row = report.revenueByProcedure.find((r) => r.procedure === "Troca de bolsa");
+    expect(row?.supplyCostCents).toBe(0);
+    expect(report.unattributedSupplyCostCents).toBe(4000);
+    expect(report.totalSupplyCostCents).toBe(4000);
+  });
+
+  it("Dado preço do insumo reajustado depois da saída, Quando gerar relatório, Então custo histórico não muda", async () => {
+    const appointment = await scheduleAndComplete();
+    await new RegisterStockMovement(supplyRepo, movementRepo, appointmentRepo).execute({
+      supplyId: bolsa.id,
+      type: "out",
+      quantity: 1,
+      reason: "Uso em atendimento",
+      appointmentId: appointment.id,
+    });
+
+    const movements = await movementRepo.findBySupplyId(bolsa.id);
+    const outflow = movements.find((m) => m.type === "out");
+    expect(outflow?.unitPriceCents).toBe(4000);
+    expect(outflow?.totalCostCents).toBe(4000);
+  });
+
+  it("Dado consulta inexistente no vínculo, Quando registrar saída, Então NotFound", async () => {
+    await expect(
+      new RegisterStockMovement(supplyRepo, movementRepo, appointmentRepo).execute({
+        supplyId: bolsa.id,
+        type: "out",
+        quantity: 1,
+        reason: "Uso em atendimento",
+        appointmentId: "ghost",
+      }),
+    ).rejects.toThrow(NotFoundError);
+  });
+});

@@ -20,6 +20,7 @@ export interface FindByPatientOptions {
 export interface AppointmentRepository {
   save(appointment: Appointment): Promise<void>;
   findById(id: string): Promise<Appointment | null>;
+  findByIds(ids: string[]): Promise<Appointment[]>;
   findByPatientId(patientId: string, options?: FindByPatientOptions): Promise<Appointment[]>;
   /** Busca em lote — evita N+1 ao montar dados de vários pacientes. */
   findByPatientIds(patientIds: string[], options?: FindByPatientOptions): Promise<Appointment[]>;

@@ -235,8 +235,20 @@ describe("Feature: Relatório gerencial mensal", () => {
     // no-show sobre não-canceladas: 1/4
     expect(report.noShowRate).toBeCloseTo(0.25);
     expect(report.revenueByProcedure).toEqual([
-      { procedure: "Troca de bolsa", count: 2, totalCents: 50000 },
-      { procedure: "Curativo", count: 1, totalCents: 15000 },
+      {
+        procedure: "Troca de bolsa",
+        count: 2,
+        totalCents: 50000,
+        supplyCostCents: 0,
+        marginCents: 50000,
+      },
+      {
+        procedure: "Curativo",
+        count: 1,
+        totalCents: 15000,
+        supplyCostCents: 0,
+        marginCents: 15000,
+      },
     ]);
     expect(report.billing.pendingCents).toBe(65000);
   });

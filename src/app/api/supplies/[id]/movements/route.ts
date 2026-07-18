@@ -10,6 +10,7 @@ const movementSchema = z.object({
   type: z.enum(MOVEMENT_TYPES),
   quantity: z.number().int().positive().max(1_000_000),
   reason: z.string().min(1).max(500),
+  appointmentId: z.string().max(100).nullish(),
 });
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -27,10 +28,17 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = movementSchema.parse(await request.json());
-    const { supplies, stockMovements } = await getRepositories();
-    const supply = await new RegisterStockMovement(supplies, stockMovements).execute({
+    const { supplies, stockMovements, appointments } = await getRepositories();
+    const supply = await new RegisterStockMovement(
+      supplies,
+      stockMovements,
+      appointments,
+    ).execute({
       supplyId: id,
-      ...body,
+      type: body.type,
+      quantity: body.quantity,
+      reason: body.reason,
+      appointmentId: body.appointmentId ?? null,
     });
     return toSupplyDto(supply);
   });

@@ -57,30 +57,53 @@ export default function ReportsPage() {
             </section>
 
             <section className="rounded-xl border border-slate-200 bg-white p-5">
-              <h2 className="mb-3 text-lg font-semibold">Receita por procedimento (concluídas)</h2>
+              <h2 className="mb-3 text-lg font-semibold">
+                Receita e margem por procedimento (concluídas)
+              </h2>
               {report.revenueByProcedure.length === 0 ? (
                 <EmptyState message="Nenhuma consulta concluída no mês." />
               ) : (
-                <table className="w-full text-left text-sm">
-                  <thead className="text-xs uppercase text-slate-500">
-                    <tr>
-                      <th className="py-2">Procedimento</th>
-                      <th className="py-2 text-right">Qtde</th>
-                      <th className="py-2 text-right">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {report.revenueByProcedure.map((row) => (
-                      <tr key={row.procedure}>
-                        <td className="py-2">{row.procedure}</td>
-                        <td className="py-2 text-right">{row.count}</td>
-                        <td className="py-2 text-right font-medium">
-                          {formatCurrency(row.totalCents)}
-                        </td>
+                <>
+                  <table className="w-full text-left text-sm">
+                    <thead className="text-xs uppercase text-slate-500">
+                      <tr>
+                        <th className="py-2">Procedimento</th>
+                        <th className="py-2 text-right">Qtde</th>
+                        <th className="py-2 text-right">Receita</th>
+                        <th className="py-2 text-right">Insumos</th>
+                        <th className="py-2 text-right">Margem</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {report.revenueByProcedure.map((row) => (
+                        <tr key={row.procedure}>
+                          <td className="py-2">{row.procedure}</td>
+                          <td className="py-2 text-right">{row.count}</td>
+                          <td className="py-2 text-right font-medium">
+                            {formatCurrency(row.totalCents)}
+                          </td>
+                          <td className="py-2 text-right text-slate-500">
+                            {formatCurrency(row.supplyCostCents)}
+                          </td>
+                          <td
+                            className={`py-2 text-right font-medium ${
+                              row.marginCents >= 0 ? "text-emerald-700" : "text-red-700"
+                            }`}
+                          >
+                            {formatCurrency(row.marginCents)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {report.unattributedSupplyCostCents > 0 && (
+                    <p className="mt-3 text-xs text-amber-600">
+                      Custo de insumos não vinculado a consulta no mês:{" "}
+                      <strong>{formatCurrency(report.unattributedSupplyCostCents)}</strong> —
+                      vincule as saídas de atendimento à consulta para margem completa.
+                    </p>
+                  )}
+                </>
               )}
             </section>
           </div>

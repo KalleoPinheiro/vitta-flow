@@ -9,6 +9,10 @@ export interface StockMovementProps {
   type: MovementType;
   quantity: number;
   reason: string;
+  /** Consulta atendida com este material (custo por atendimento). */
+  appointmentId?: string | null;
+  /** Preço unitário congelado no momento da saída — histórico imune a reajustes. */
+  unitPriceCents?: number | null;
 }
 
 export interface StockMovementState extends StockMovementProps {
@@ -27,11 +31,16 @@ export class StockMovement {
     if (reason.length === 0) {
       throw new ValidationError("Motivo da movimentação é obrigatório");
     }
+    if (props.unitPriceCents != null && props.unitPriceCents < 0) {
+      throw new ValidationError("Preço unitário não pode ser negativo");
+    }
     return new StockMovement({
       supplyId: props.supplyId,
       type: props.type,
       quantity: props.quantity,
       reason,
+      appointmentId: props.appointmentId ?? null,
+      unitPriceCents: props.unitPriceCents ?? null,
       id: newId(),
       createdAt: new Date(),
     });
@@ -59,6 +68,19 @@ export class StockMovement {
 
   get reason(): string {
     return this.state.reason;
+  }
+
+  get appointmentId(): string | null {
+    return this.state.appointmentId ?? null;
+  }
+
+  get unitPriceCents(): number | null {
+    return this.state.unitPriceCents ?? null;
+  }
+
+  /** Custo total do movimento quando o preço foi congelado na saída. */
+  get totalCostCents(): number | null {
+    return this.unitPriceCents != null ? this.unitPriceCents * this.quantity : null;
   }
 
   get createdAt(): Date {

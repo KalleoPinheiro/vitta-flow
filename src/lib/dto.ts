@@ -269,6 +269,8 @@ export interface StockMovementDto {
   type: string;
   quantity: number;
   reason: string;
+  appointmentId: string | null;
+  unitPriceCents: number | null;
   createdAt: string;
 }
 
@@ -278,6 +280,8 @@ export const toStockMovementDto = (movement: StockMovement): StockMovementDto =>
   type: movement.type,
   quantity: movement.quantity,
   reason: movement.reason,
+  appointmentId: movement.appointmentId,
+  unitPriceCents: movement.unitPriceCents,
   createdAt: movement.createdAt.toISOString(),
 });
 

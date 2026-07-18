@@ -85,6 +85,18 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
     return rows[0] ? toAppointment(rows[0]) : null;
   }
 
+  async findByIds(ids: string[]): Promise<Appointment[]> {
+    const unique = [...new Set(ids)];
+    if (unique.length === 0) {
+      return [];
+    }
+    const rows = await this.db
+      .select()
+      .from(appointments)
+      .where(inArray(appointments.id, unique));
+    return rows.map(toAppointment);
+  }
+
   private patientConditions(base: SQL, options?: FindByPatientOptions): SQL | undefined {
     return options?.endsAfter ? and(base, gte(appointments.endsAt, options.endsAfter)) : base;
   }

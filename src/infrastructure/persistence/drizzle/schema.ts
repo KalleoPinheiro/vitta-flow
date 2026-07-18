@@ -156,9 +156,17 @@ export const stockMovements = pgTable(
     type: text("type").notNull(),
     quantity: integer("quantity").notNull(),
     reason: text("reason").notNull(),
+    // Consulta atendida com este material (custo por atendimento).
+    appointmentId: text("appointment_id").references(() => appointments.id),
+    // Preço unitário congelado na saída — histórico imune a reajustes.
+    unitPriceCents: integer("unit_price_cents"),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
   },
-  (table) => [index("idx_stock_movements_supply").on(table.supplyId)],
+  (table) => [
+    index("idx_stock_movements_supply").on(table.supplyId),
+    index("idx_stock_movements_appointment").on(table.appointmentId),
+    index("idx_stock_movements_created_at").on(table.createdAt),
+  ],
 );
 
 export const followUps = pgTable(

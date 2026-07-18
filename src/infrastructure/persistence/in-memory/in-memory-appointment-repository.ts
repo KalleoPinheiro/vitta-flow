@@ -22,6 +22,14 @@ export class InMemoryAppointmentRepository implements AppointmentRepository {
     return this.appointments.get(id) ?? null;
   }
 
+  async findByIds(ids: string[]): Promise<Appointment[]> {
+    const unique = [...new Set(ids)];
+    return unique.flatMap((id) => {
+      const appointment = this.appointments.get(id);
+      return appointment ? [appointment] : [];
+    });
+  }
+
   private matchesPatientOptions(appointment: Appointment, options?: FindByPatientOptions) {
     return !options?.endsAfter || appointment.slot.end.getTime() >= options.endsAfter.getTime();
   }

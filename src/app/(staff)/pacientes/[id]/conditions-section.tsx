@@ -13,6 +13,7 @@ import {
 import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert } from "@/components/feedback";
+import { HealingChart } from "@/components/healing-chart";
 
 const inputClass =
   "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none";
@@ -128,6 +129,9 @@ export function ConditionsSection({ patientId, conditions, onChanged }: Conditio
                       <EmptyState message="Nenhuma avaliação registrada." />
                     ) : (
                       <div className="overflow-x-auto">
+                        <div className="mb-3">
+                          <HealingChart assessments={conditionAssessments} />
+                        </div>
                         <table className="w-full text-left text-xs">
                           <thead className="text-slate-500">
                             <tr>

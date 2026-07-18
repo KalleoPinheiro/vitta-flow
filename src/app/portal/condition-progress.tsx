@@ -8,6 +8,7 @@ import {
   formatDate,
 } from "@/lib/format";
 import { StatusBadge } from "@/components/status-badge";
+import { HealingChart } from "@/components/healing-chart";
 
 export interface ConditionWithAssessmentsDto {
   condition: ConditionDto;
@@ -32,6 +33,11 @@ export function ConditionProgress({ condition, assessments }: ConditionWithAsses
       {assessments.length === 0 ? (
         <p className="text-sm text-slate-500">Nenhuma avaliação registrada ainda.</p>
       ) : (
+        <div className="mb-3">
+          <HealingChart assessments={assessments} />
+        </div>
+      )}
+      {assessments.length > 0 && (
         <ul className="flex flex-col gap-2 text-sm">
           {assessments.map((assessment) => (
             <li key={assessment.id} className="rounded bg-slate-50 px-3 py-2">

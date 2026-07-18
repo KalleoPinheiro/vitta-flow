@@ -45,3 +45,6 @@ next-env.d.ts
 
 # .env.example é modelo, deve ser versionado
 !.env.example
+
+# Fotos de evolução (dados sensíveis de pacientes — nunca versionar)
+uploads/

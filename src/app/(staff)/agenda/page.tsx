@@ -79,6 +79,7 @@ export default function AgendaPage() {
         priceCents: Math.round(Number(values.price) * 100),
         notes: values.notes || null,
         professionalId: values.professionalId || null,
+        procedureId: values.procedureId || null,
       }),
     });
     setCreatingFor(null);

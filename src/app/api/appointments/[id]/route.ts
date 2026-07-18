@@ -54,7 +54,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       return toAppointmentDto(completed);
     }
     if (body.action === "reschedule") {
-      const rescheduled = await new RescheduleAppointment(appointments).execute({
+      const rescheduled = await new RescheduleAppointment(
+        appointments,
+        services.scheduleConfig,
+      ).execute({
         id,
         startsAt: new Date(body.startsAt),
         endsAt: new Date(body.endsAt),

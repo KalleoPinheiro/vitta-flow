@@ -11,6 +11,8 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    // Testes de API migram o PGlite completo no primeiro caso — precisa de folga.
+    testTimeout: 20_000,
     env: {
       TZ: "UTC",
     },

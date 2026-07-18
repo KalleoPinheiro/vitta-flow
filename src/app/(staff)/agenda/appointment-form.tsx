@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { PatientDto, ProfessionalDto } from "@/lib/dto";
+import type { PatientDto, ProcedureDto, ProfessionalDto } from "@/lib/dto";
+import { useApiQuery } from "@/lib/use-api-query";
 import { BUSINESS_HOURS, MIN_GAP_MINUTES } from "@/domain/scheduling/business-hours";
 import { ErrorAlert } from "@/components/feedback";
 import { dayKey } from "./calendar-grid";
@@ -15,6 +16,7 @@ export interface AppointmentFormValues {
   price: string;
   notes: string;
   professionalId: string;
+  procedureId: string;
 }
 
 interface AppointmentFormProps {
@@ -44,11 +46,26 @@ export function AppointmentForm({
     price: "",
     notes: "",
     professionalId: "",
+    procedureId: "",
   });
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const activePatients = patients.filter((p) => p.active);
+  const { data: catalog } = useApiQuery<ProcedureDto[]>("/api/procedures");
+  const activeCatalog = (catalog ?? []).filter((p) => p.active);
+
+  // Selecionar do catálogo preenche nome, preço e duração (editáveis depois).
+  const applyCatalogProcedure = (procedureId: string) => {
+    const selected = activeCatalog.find((p) => p.id === procedureId);
+    setValues((prev) => ({
+      ...prev,
+      procedureId,
+      procedure: selected ? selected.name : prev.procedure,
+      price: selected ? String(selected.priceCents / 100) : prev.price,
+      durationMinutes: selected ? selected.durationMinutes : prev.durationMinutes,
+    }));
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -142,6 +159,24 @@ export function AppointmentForm({
           </select>
         </label>
       </div>
+      {activeCatalog.length > 0 && (
+        <label className="text-sm font-medium">
+          Procedimento do catálogo
+          <select
+            value={values.procedureId}
+            onChange={(e) => applyCatalogProcedure(e.target.value)}
+            className={`mt-1 ${inputClass}`}
+          >
+            <option value="">— escolher do catálogo —</option>
+            {activeCatalog.map((procedure) => (
+              <option key={procedure.id} value={procedure.id}>
+                {procedure.name} ({procedure.durationMinutes} min)
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
       <label className="text-sm font-medium">
         Procedimento *
         <input

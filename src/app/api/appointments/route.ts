@@ -15,6 +15,7 @@ const scheduleSchema = z.object({
   priceCents: z.number().int().nonnegative().max(1_000_000_000),
   notes: z.string().max(5000).nullish(),
   professionalId: z.string().max(100).nullish(),
+  procedureId: z.string().max(100).nullish(),
 });
 
 export async function GET(request: NextRequest) {
@@ -44,6 +45,7 @@ export async function POST(request: NextRequest) {
     const appointment = await new ScheduleAppointment(
       services.appointments,
       services.patients,
+      services.scheduleConfig,
     ).execute({
       patientId: body.patientId,
       startsAt: new Date(body.startsAt),
@@ -52,6 +54,7 @@ export async function POST(request: NextRequest) {
       priceCents: body.priceCents,
       notes: body.notes ?? null,
       professionalId: body.professionalId ?? null,
+      procedureId: body.procedureId ?? null,
     });
     scheduleCalendarSync(services, (sync) => sync.created(appointment.id));
     return toAppointmentDto(appointment);

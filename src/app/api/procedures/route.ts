@@ -1,0 +1,37 @@
+import type { NextRequest } from "next/server";
+import { z } from "zod";
+import { getRepositories } from "@/infrastructure/container";
+import { Procedure } from "@/domain/catalog/procedure";
+import { ValidationError } from "@/domain/shared/errors";
+import { handleRequest } from "@/lib/api-response";
+import { toProcedureDto } from "@/lib/dto";
+
+const procedureSchema = z.object({
+  name: z.string().min(1).max(200),
+  priceCents: z.number().int().min(0).max(1_000_000_000),
+  durationMinutes: z.number().int().min(1).max(480),
+});
+
+export async function GET() {
+  return handleRequest(async () => {
+    const { procedures } = await getRepositories();
+    const result = await procedures.findAll();
+    return result.map(toProcedureDto);
+  });
+}
+
+export async function POST(request: NextRequest) {
+  return handleRequest(async () => {
+    const body = procedureSchema.parse(await request.json());
+    const { procedures } = await getRepositories();
+
+    const existing = await procedures.findByName(body.name);
+    if (existing) {
+      throw new ValidationError(`Já existe procedimento com o nome "${existing.name}"`);
+    }
+
+    const procedure = Procedure.create(body);
+    await procedures.save(procedure);
+    return toProcedureDto(procedure);
+  });
+}

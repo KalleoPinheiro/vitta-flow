@@ -11,6 +11,20 @@ import type {
 import { NotFoundError } from "@/domain/shared/errors";
 import type { ConditionWithAssessments } from "./get-patient-portal-data";
 
+function groupBy<T>(items: T[], keyOf: (item: T) => string): Map<string, T[]> {
+  const groups = new Map<string, T[]>();
+  for (const item of items) {
+    const key = keyOf(item);
+    const group = groups.get(key);
+    if (group) {
+      group.push(item);
+    } else {
+      groups.set(key, [item]);
+    }
+  }
+  return groups;
+}
+
 export interface ReferredPatientData {
   patient: Patient;
   appointments: Appointment[];
@@ -42,21 +56,29 @@ export class GetPartnerPortalData {
     }
 
     const referred = await this.patients.findByReferrer(partner.id);
-    const referredPatients = await Promise.all(
-      referred.map(async (patient) => {
-        const [appointments, conditions] = await Promise.all([
-          this.appointments.findByPatientId(patient.id),
-          this.conditions.findByPatientId(patient.id),
-        ]);
-        const conditionsWithAssessments = await Promise.all(
-          conditions.map(async (condition) => ({
-            condition,
-            assessments: await this.assessments.findByConditionId(condition.id),
-          })),
-        );
-        return { patient, appointments, conditions: conditionsWithAssessments };
-      }),
+    const patientIds = referred.map((p) => p.id);
+
+    // Três queries em lote no total, independentemente do nº de pacientes (sem N+1).
+    const [allAppointments, allConditions] = await Promise.all([
+      this.appointments.findByPatientIds(patientIds),
+      this.conditions.findByPatientIds(patientIds),
+    ]);
+    const allAssessments = await this.assessments.findByConditionIds(
+      allConditions.map((c) => c.id),
     );
+
+    const appointmentsByPatient = groupBy(allAppointments, (a) => a.patientId);
+    const conditionsByPatient = groupBy(allConditions, (c) => c.patientId);
+    const assessmentsByCondition = groupBy(allAssessments, (a) => a.conditionId);
+
+    const referredPatients = referred.map((patient) => ({
+      patient,
+      appointments: appointmentsByPatient.get(patient.id) ?? [],
+      conditions: (conditionsByPatient.get(patient.id) ?? []).map((condition) => ({
+        condition,
+        assessments: assessmentsByCondition.get(condition.id) ?? [],
+      })),
+    }));
 
     return { partner, referredPatients };
   }

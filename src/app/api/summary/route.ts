@@ -21,23 +21,27 @@ export async function GET(request: NextRequest) {
     const from = new Date(year, monthIndex, 1);
     const to = new Date(year, monthIndex + 1, 1);
 
-    const { appointments, patients, invoices } = await getRepositories();
-    const billing = await new GetBillingSummary(invoices).execute({ from, to });
-    const monthAppointments = await new ListAppointments(appointments, patients).execute({
-      from,
-      to,
-    });
-
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-    const todayAppointments = await new ListAppointments(appointments, patients).execute({
-      from: startOfToday,
-      to: endOfToday,
-    });
+
+    const { appointments, patients, invoices } = await getRepositories();
+    const [billing, monthStats, todayAppointments] = await Promise.all([
+      new GetBillingSummary(invoices).execute({ from, to }),
+      appointments.getStatsInRange(from, to),
+      new ListAppointments(appointments, patients).execute({
+        from: startOfToday,
+        to: endOfToday,
+      }),
+    ]);
+
+    const appointmentsInMonth = Object.values(monthStats.byStatus).reduce(
+      (sum, count) => sum + count,
+      0,
+    );
 
     return {
       billing,
-      appointmentsInMonth: monthAppointments.length,
+      appointmentsInMonth,
       today: todayAppointments.map(({ appointment, patientName }) =>
         toAppointmentDto(appointment, patientName),
       ),

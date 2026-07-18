@@ -46,27 +46,37 @@ export class GetPatientPortalData {
       throw new NotFoundError("Paciente", input.email);
     }
 
+    const cutoff = new Date();
+    cutoff.setMonth(cutoff.getMonth() - HISTORY_MONTHS);
+
     const [appointments, conditions, invoices, followUps] = await Promise.all([
-      this.appointments.findByPatientId(patient.id),
+      this.appointments.findByPatientId(patient.id, { endsAfter: cutoff }),
       this.conditions.findByPatientId(patient.id),
       this.invoices.findAll({ patientId: patient.id }),
       this.followUps.findAll({ patientId: patient.id, status: "pending" }),
     ]);
 
-    const conditionsWithAssessments = await Promise.all(
-      conditions.map(async (condition) => ({
-        condition,
-        assessments: await this.assessments.findByConditionId(condition.id),
-      })),
+    // Uma query em lote para todas as avaliações (sem N+1 por condição).
+    const allAssessments = await this.assessments.findByConditionIds(
+      conditions.map((c) => c.id),
     );
-
-    const cutoff = new Date();
-    cutoff.setMonth(cutoff.getMonth() - HISTORY_MONTHS);
+    const assessmentsByCondition = new Map<string, typeof allAssessments>();
+    for (const assessment of allAssessments) {
+      const group = assessmentsByCondition.get(assessment.conditionId);
+      if (group) {
+        group.push(assessment);
+      } else {
+        assessmentsByCondition.set(assessment.conditionId, [assessment]);
+      }
+    }
 
     return {
       patient,
-      appointments: appointments.filter((a) => a.slot.end.getTime() >= cutoff.getTime()),
-      conditions: conditionsWithAssessments,
+      appointments,
+      conditions: conditions.map((condition) => ({
+        condition,
+        assessments: assessmentsByCondition.get(condition.id) ?? [],
+      })),
       invoices,
       followUps,
     };

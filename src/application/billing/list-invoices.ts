@@ -13,8 +13,11 @@ export class ListInvoices {
     private readonly patients: PatientRepository,
   ) {}
 
-  async execute(filter: InvoiceFilter = {}): Promise<InvoiceWithPatient[]> {
-    const invoices = await this.invoices.findAll(filter);
+  async execute(
+    filter: InvoiceFilter = {},
+    page: { limit?: number; offset?: number } = {},
+  ): Promise<InvoiceWithPatient[]> {
+    const invoices = await this.invoices.findAll(filter, page);
     const patients = await this.patients.findByIds(invoices.map((i) => i.patientId));
     const namesById = new Map(patients.map((p) => [p.id, p.fullName]));
 

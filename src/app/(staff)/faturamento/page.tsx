@@ -4,6 +4,7 @@ import { useState } from "react";
 import { apiFetch } from "@/lib/client";
 import type { InvoiceDto, PatientDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
+import { usePagedQuery } from "@/lib/use-paged-query";
 import {
   INVOICE_STATUS_LABELS,
   PAYMENT_METHOD_LABELS,
@@ -12,7 +13,9 @@ import {
 } from "@/lib/format";
 import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
-import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
+import { ErrorAlert } from "@/components/feedback";
+import { LoadMoreButton } from "@/components/load-more-button";
+import { PagedList } from "@/components/paged-list";
 import { InvoiceForm, type InvoiceFormValues } from "./invoice-form";
 
 const STATUS_FILTERS = [
@@ -22,6 +25,77 @@ const STATUS_FILTERS = [
   { value: "cancelled", label: "Canceladas" },
 ];
 
+const PAGE_SIZE = 100;
+
+interface InvoicesTableProps {
+  invoices: InvoiceDto[];
+  onPay: (invoice: InvoiceDto) => void;
+  onCancel: (invoice: InvoiceDto) => void;
+}
+
+function InvoicesTable({ invoices, onPay, onCancel }: InvoicesTableProps) {
+  return (
+    <table className="w-full text-left text-sm">
+      <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
+        <tr>
+          <th className="px-4 py-3">Emissão</th>
+          <th className="px-4 py-3">Paciente</th>
+          <th className="px-4 py-3">Descrição</th>
+          <th className="px-4 py-3">Valor</th>
+          <th className="px-4 py-3">Status</th>
+          <th className="px-4 py-3">Pagamento</th>
+          <th className="px-4 py-3 text-right">Ações</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-slate-100">
+        {invoices.map((invoice) => (
+          <tr key={invoice.id}>
+            <td className="px-4 py-3 text-slate-600">{formatDate(invoice.issuedAt)}</td>
+            <td className="px-4 py-3 font-medium">{invoice.patientName}</td>
+            <td className="max-w-56 truncate px-4 py-3 text-slate-600">
+              {invoice.description}
+            </td>
+            <td className="px-4 py-3 font-medium">{formatCurrency(invoice.amountCents)}</td>
+            <td className="px-4 py-3">
+              <StatusBadge
+                status={invoice.status}
+                label={INVOICE_STATUS_LABELS[invoice.status] ?? invoice.status}
+              />
+            </td>
+            <td className="px-4 py-3 text-slate-600">
+              {invoice.paymentMethod
+                ? `${PAYMENT_METHOD_LABELS[invoice.paymentMethod] ?? invoice.paymentMethod}${
+                    invoice.paidAt ? ` em ${formatDate(invoice.paidAt)}` : ""
+                  }`
+                : "—"}
+            </td>
+            <td className="px-4 py-3 text-right">
+              {invoice.status === "pending" && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => onPay(invoice)}
+                    className="mr-2 font-medium text-emerald-700 hover:underline"
+                  >
+                    Receber
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onCancel(invoice)}
+                    className="font-medium text-red-700 hover:underline"
+                  >
+                    Cancelar
+                  </button>
+                </>
+              )}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
 export default function BillingPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
@@ -29,10 +103,16 @@ export default function BillingPage() {
   const [paying, setPaying] = useState<InvoiceDto | null>(null);
 
   const {
-    data: invoices,
+    items: invoices,
+    hasMore,
     error: loadError,
     refresh,
-  } = useApiQuery<InvoiceDto[]>(`/api/invoices${statusFilter ? `?status=${statusFilter}` : ""}`);
+    loadMore,
+  } = usePagedQuery<InvoiceDto>(
+    `/api/invoices${statusFilter ? `?status=${statusFilter}` : ""}`,
+    PAGE_SIZE,
+  );
+
   const { data: patients } = useApiQuery<PatientDto[]>("/api/patients");
   const error = actionError ?? loadError;
 
@@ -129,71 +209,20 @@ export default function BillingPage() {
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-        {!invoices ? (
-          <LoadingIndicator />
-        ) : invoices.length === 0 ? (
-          <EmptyState message="Nenhuma fatura encontrada." />
-        ) : (
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
-              <tr>
-                <th className="px-4 py-3">Emissão</th>
-                <th className="px-4 py-3">Paciente</th>
-                <th className="px-4 py-3">Descrição</th>
-                <th className="px-4 py-3">Valor</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Pagamento</th>
-                <th className="px-4 py-3 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {invoices.map((invoice) => (
-                <tr key={invoice.id}>
-                  <td className="px-4 py-3 text-slate-600">{formatDate(invoice.issuedAt)}</td>
-                  <td className="px-4 py-3 font-medium">{invoice.patientName}</td>
-                  <td className="max-w-56 truncate px-4 py-3 text-slate-600">
-                    {invoice.description}
-                  </td>
-                  <td className="px-4 py-3 font-medium">{formatCurrency(invoice.amountCents)}</td>
-                  <td className="px-4 py-3">
-                    <StatusBadge
-                      status={invoice.status}
-                      label={INVOICE_STATUS_LABELS[invoice.status] ?? invoice.status}
-                    />
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">
-                    {invoice.paymentMethod
-                      ? `${PAYMENT_METHOD_LABELS[invoice.paymentMethod] ?? invoice.paymentMethod}${
-                          invoice.paidAt ? ` em ${formatDate(invoice.paidAt)}` : ""
-                        }`
-                      : "—"}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {invoice.status === "pending" && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => setPaying(invoice)}
-                          className="mr-2 font-medium text-emerald-700 hover:underline"
-                        >
-                          Receber
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void handleCancel(invoice)}
-                          className="font-medium text-red-700 hover:underline"
-                        >
-                          Cancelar
-                        </button>
-                      </>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <PagedList
+          items={invoices}
+          emptyMessage="Nenhuma fatura encontrada."
+          render={(list) => (
+            <InvoicesTable
+              invoices={list}
+              onPay={setPaying}
+              onCancel={(invoice) => void handleCancel(invoice)}
+            />
+          )}
+        />
       </div>
+
+      <LoadMoreButton visible={Boolean(invoices) && hasMore} onClick={loadMore} />
 
       {creating && (
         <Modal title="Nova fatura" onClose={() => setCreating(false)}>

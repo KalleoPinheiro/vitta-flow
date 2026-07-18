@@ -6,6 +6,11 @@ import { ListPatients } from "@/application/patients/list-patients";
 import { handleRequest } from "@/lib/api-response";
 import { toPatientDto } from "@/lib/dto";
 
+const paginationSchema = z.object({
+  limit: z.coerce.number().int().min(1).max(500).default(100),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
 const createPatientSchema = z.object({
   fullName: z.string().min(1).max(200),
   email: z.string().min(1).max(200),
@@ -17,9 +22,14 @@ const createPatientSchema = z.object({
 
 export async function GET(request: NextRequest) {
   return handleRequest(async () => {
-    const search = request.nextUrl.searchParams.get("search") ?? undefined;
+    const params = request.nextUrl.searchParams;
+    const search = params.get("search") ?? undefined;
+    const { limit, offset } = paginationSchema.parse({
+      limit: params.get("limit") ?? undefined,
+      offset: params.get("offset") ?? undefined,
+    });
     const { patients } = await getRepositories();
-    const result = await new ListPatients(patients).execute({ search });
+    const result = await new ListPatients(patients).execute({ search, limit, offset });
     return result.map((p) => toPatientDto(p));
   });
 }

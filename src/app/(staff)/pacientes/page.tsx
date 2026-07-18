@@ -1,36 +1,109 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/client";
 import type { PartnerDto, PatientDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
+import { usePagedQuery } from "@/lib/use-paged-query";
 import { formatDate } from "@/lib/format";
 import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
-import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
+import { ErrorAlert } from "@/components/feedback";
+import { LoadMoreButton } from "@/components/load-more-button";
+import { PagedList } from "@/components/paged-list";
 import { PatientForm, type PatientFormValues } from "./patient-form";
 
+const PAGE_SIZE = 100;
+
+const SEARCH_DEBOUNCE_MS = 300;
+
+interface PatientsTableProps {
+  patients: PatientDto[];
+  onEdit: (patient: PatientDto) => void;
+  onToggleActive: (patient: PatientDto) => void;
+}
+
+function PatientsTable({ patients, onEdit, onToggleActive }: PatientsTableProps) {
+  return (
+    <table className="w-full text-left text-sm">
+      <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
+        <tr>
+          <th className="px-4 py-3">Nome</th>
+          <th className="px-4 py-3">Contato</th>
+          <th className="px-4 py-3">Nascimento</th>
+          <th className="px-4 py-3">Situação</th>
+          <th className="px-4 py-3 text-right">Ações</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-slate-100">
+        {patients.map((patient) => (
+          <tr key={patient.id} className={patient.active ? "" : "opacity-50"}>
+            <td className="px-4 py-3 font-medium">{patient.fullName}</td>
+            <td className="px-4 py-3 text-slate-600">
+              <div>{patient.email}</div>
+              <div className="text-xs text-slate-400">{patient.phone}</div>
+            </td>
+            <td className="px-4 py-3 text-slate-600">
+              {patient.birthDate ? formatDate(patient.birthDate) : "—"}
+            </td>
+            <td className="px-4 py-3">
+              <StatusBadge
+                status={patient.active ? "confirmed" : "cancelled"}
+                label={patient.active ? "Ativo" : "Inativo"}
+              />
+            </td>
+            <td className="px-4 py-3 text-right">
+              <a
+                href={`/pacientes/${patient.id}`}
+                className="mr-2 font-medium text-teal-700 hover:underline"
+              >
+                Prontuário
+              </a>
+              <button
+                type="button"
+                onClick={() => onEdit(patient)}
+                className="mr-2 font-medium text-teal-700 hover:underline"
+              >
+                Editar
+              </button>
+              <button
+                type="button"
+                onClick={() => onToggleActive(patient)}
+                className="font-medium text-slate-500 hover:underline"
+              >
+                {patient.active ? "Desativar" : "Reativar"}
+              </button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
 export default function PatientsPage() {
-  const [patients, setPatients] = useState<PatientDto[] | null>(null);
   const [search, setSearch] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [actionError, setActionError] = useState<string | null>(null);
   const [editing, setEditing] = useState<PatientDto | "new" | null>(null);
   const { data: partners } = useApiQuery<PartnerDto[]>("/api/partners");
 
-  const load = useCallback(async (term: string) => {
-    try {
-      const query = term ? `?search=${encodeURIComponent(term)}` : "";
-      setPatients(await apiFetch<PatientDto[]>(`/api/patients${query}`));
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao carregar pacientes");
-    }
-  }, []);
-
   useEffect(() => {
-    const handle = setTimeout(() => void load(search), 300);
+    const handle = setTimeout(() => setDebouncedSearch(search), SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(handle);
-  }, [search, load]);
+  }, [search]);
+
+  const {
+    items: patients,
+    hasMore,
+    error: loadError,
+    refresh,
+    loadMore,
+  } = usePagedQuery<PatientDto>(
+    `/api/patients${debouncedSearch ? `?search=${encodeURIComponent(debouncedSearch)}` : ""}`,
+    PAGE_SIZE,
+  );
+  const error = actionError ?? loadError;
 
   const handleSubmit = async (values: PatientFormValues) => {
     const payload = {
@@ -53,7 +126,7 @@ export default function PatientsPage() {
       });
     }
     setEditing(null);
-    await load(search);
+    refresh();
   };
 
   const toggleActive = async (patient: PatientDto) => {
@@ -62,9 +135,10 @@ export default function PatientsPage() {
         method: "PATCH",
         body: JSON.stringify({ active: !patient.active }),
       });
-      await load(search);
+      setActionError(null);
+      refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao atualizar paciente");
+      setActionError(err instanceof Error ? err.message : "Erro ao atualizar paciente");
     }
   };
 
@@ -92,66 +166,20 @@ export default function PatientsPage() {
       />
 
       <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-        {!patients ? (
-          <LoadingIndicator />
-        ) : patients.length === 0 ? (
-          <EmptyState message="Nenhum paciente encontrado." />
-        ) : (
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
-              <tr>
-                <th className="px-4 py-3">Nome</th>
-                <th className="px-4 py-3">Contato</th>
-                <th className="px-4 py-3">Nascimento</th>
-                <th className="px-4 py-3">Situação</th>
-                <th className="px-4 py-3 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {patients.map((patient) => (
-                <tr key={patient.id} className={patient.active ? "" : "opacity-50"}>
-                  <td className="px-4 py-3 font-medium">{patient.fullName}</td>
-                  <td className="px-4 py-3 text-slate-600">
-                    <div>{patient.email}</div>
-                    <div className="text-xs text-slate-400">{patient.phone}</div>
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">
-                    {patient.birthDate ? formatDate(patient.birthDate) : "—"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge
-                      status={patient.active ? "confirmed" : "cancelled"}
-                      label={patient.active ? "Ativo" : "Inativo"}
-                    />
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <a
-                      href={`/pacientes/${patient.id}`}
-                      className="mr-2 font-medium text-teal-700 hover:underline"
-                    >
-                      Prontuário
-                    </a>
-                    <button
-                      type="button"
-                      onClick={() => setEditing(patient)}
-                      className="mr-2 font-medium text-teal-700 hover:underline"
-                    >
-                      Editar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void toggleActive(patient)}
-                      className="font-medium text-slate-500 hover:underline"
-                    >
-                      {patient.active ? "Desativar" : "Reativar"}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <PagedList
+          items={patients}
+          emptyMessage="Nenhum paciente encontrado."
+          render={(list) => (
+            <PatientsTable
+              patients={list}
+              onEdit={setEditing}
+              onToggleActive={(patient) => void toggleActive(patient)}
+            />
+          )}
+        />
       </div>
+
+      <LoadMoreButton visible={Boolean(patients) && hasMore} onClick={loadMore} />
 
       {editing && (
         <Modal

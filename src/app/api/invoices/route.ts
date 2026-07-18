@@ -17,6 +17,11 @@ const createInvoiceSchema = z.object({
 
 const statusSchema = z.enum(INVOICE_STATUSES).optional();
 
+const paginationSchema = z.object({
+  limit: z.coerce.number().int().min(1).max(500).default(100),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
 export async function GET(request: NextRequest) {
   return handleRequest(async () => {
     const params = request.nextUrl.searchParams;
@@ -25,13 +30,21 @@ export async function GET(request: NextRequest) {
     const to = params.get("to");
     const patientId = params.get("patientId") ?? undefined;
 
-    const { invoices, patients } = await getRepositories();
-    const result = await new ListInvoices(invoices, patients).execute({
-      status,
-      patientId,
-      from: from ? new Date(from) : undefined,
-      to: to ? new Date(to) : undefined,
+    const { limit, offset } = paginationSchema.parse({
+      limit: params.get("limit") ?? undefined,
+      offset: params.get("offset") ?? undefined,
     });
+
+    const { invoices, patients } = await getRepositories();
+    const result = await new ListInvoices(invoices, patients).execute(
+      {
+        status,
+        patientId,
+        from: from ? new Date(from) : undefined,
+        to: to ? new Date(to) : undefined,
+      },
+      { limit, offset },
+    );
     return result.map(({ invoice, patientName }) => toInvoiceDto(invoice, patientName));
   });
 }

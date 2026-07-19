@@ -6,11 +6,23 @@ export type PhotoContentType = (typeof PHOTO_CONTENT_TYPES)[number];
 
 export const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
+/** Origem da foto: equipe (prontuário) ou paciente (monitoramento remoto). */
+export const PHOTO_ORIGINS = ["staff", "patient"] as const;
+export type PhotoOrigin = (typeof PHOTO_ORIGINS)[number];
+
+/** Triagem de foto enviada pelo paciente. */
+export const TRIAGE_STATUSES = ["pending", "reviewed", "escalated"] as const;
+export type TriageStatus = (typeof TRIAGE_STATUSES)[number];
+
 export interface ConditionPhotoProps {
   conditionId: string;
   contentType: PhotoContentType;
   sizeBytes: number;
   assessmentId?: string | null;
+  origin?: PhotoOrigin;
+  /** Observação do paciente no envio remoto. */
+  patientNote?: string | null;
+  triageStatus?: TriageStatus | null;
 }
 
 export interface ConditionPhotoState extends ConditionPhotoProps {
@@ -32,11 +44,16 @@ export class ConditionPhoto {
     if (props.sizeBytes > MAX_PHOTO_BYTES) {
       throw new ValidationError("Imagem excede o limite de 5 MB");
     }
+    const origin = props.origin ?? "staff";
     return new ConditionPhoto({
       conditionId: props.conditionId,
       contentType: props.contentType,
       sizeBytes: props.sizeBytes,
       assessmentId: props.assessmentId ?? null,
+      origin,
+      patientNote: props.patientNote?.trim() || null,
+      // Foto do paciente nasce pendente de triagem; foto da equipe não entra na fila.
+      triageStatus: origin === "patient" ? "pending" : null,
       id: newId(),
       createdAt: new Date(),
     });
@@ -64,6 +81,26 @@ export class ConditionPhoto {
 
   get sizeBytes(): number {
     return this.state.sizeBytes;
+  }
+
+  get origin(): PhotoOrigin {
+    return this.state.origin ?? "staff";
+  }
+
+  get patientNote(): string | null {
+    return this.state.patientNote ?? null;
+  }
+
+  get triageStatus(): TriageStatus | null {
+    return this.state.triageStatus ?? null;
+  }
+
+  /** Triagem: avaliada (manter plano) ou escalada (antecipar retorno). */
+  withTriage(status: Exclude<TriageStatus, "pending">): ConditionPhoto {
+    if (this.origin !== "patient") {
+      throw new ValidationError("Só fotos enviadas pelo paciente passam por triagem");
+    }
+    return new ConditionPhoto({ ...this.state, triageStatus: status });
   }
 
   get createdAt(): Date {

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import type { AppointmentDto, FollowUpDto, SupplyDto } from "@/lib/dto";
 import type { BillingSummary } from "@/application/billing/get-billing-summary";
@@ -93,6 +94,7 @@ export default function DashboardPage() {
 
         <div className="flex flex-col gap-6">
           <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <TriageQueue />
             <h2 className="mb-4 text-lg font-semibold">Retornos pendentes</h2>
             {!followUps || followUps.length === 0 ? (
               <EmptyState message="Nenhum retorno pendente." />
@@ -169,6 +171,80 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+interface TriagePhotoDto {
+  id: string;
+  conditionTitle: string;
+  patientId: string | null;
+  patientName: string;
+  patientNote: string | null;
+  createdAt: string;
+}
+
+/** Fila de triagem (O4.2): fotos enviadas por pacientes entre consultas. */
+function TriageQueue() {
+  const { data: queue, refresh } = useApiQuery<TriagePhotoDto[]>("/api/photos/triage");
+  const [error, setError] = useState<string | null>(null);
+
+  const triage = async (photo: TriagePhotoDto, decision: "reviewed" | "escalated") => {
+    try {
+      await apiFetch(`/api/photos/${photo.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ triage: decision }),
+      });
+      setError(null);
+      refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro na triagem");
+    }
+  };
+
+  if (!queue || queue.length === 0) {
+    return null;
+  }
+  return (
+    <div className="mb-6 rounded-lg border border-violet-200 bg-violet-50 p-4">
+      <h3 className="mb-2 text-sm font-bold text-violet-900">
+        📷 Fotos de pacientes aguardando triagem ({queue.length})
+      </h3>
+      {error && <ErrorAlert message={error} />}
+      <ul className="flex flex-col gap-2">
+        {queue.map((photo) => (
+          <li key={photo.id} className="flex flex-wrap items-center gap-2 text-sm">
+            {/* eslint-disable-next-line @next/next/no-img-element -- rota autorizada dinâmica */}
+            <img
+              src={`/api/photos/${photo.id}`}
+              alt={`Foto de ${photo.patientName}`}
+              className="h-12 w-12 rounded border border-slate-200 object-cover"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-medium">
+                {photo.patientName} — {photo.conditionTitle}
+              </p>
+              <p className="truncate text-xs text-slate-500">
+                {photo.patientNote ?? "sem observação"} · {formatDate(photo.createdAt)}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void triage(photo, "reviewed")}
+              className="font-medium text-emerald-700 hover:underline"
+            >
+              Ok, manter plano
+            </button>
+            <button
+              type="button"
+              onClick={() => void triage(photo, "escalated")}
+              className="font-medium text-red-700 hover:underline"
+            >
+              Antecipar retorno
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

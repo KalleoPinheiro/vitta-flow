@@ -4,6 +4,10 @@ import type { ClinicalCondition } from "@/domain/clinical/clinical-condition";
 import type { ConditionAssessment } from "@/domain/clinical/condition-assessment";
 import type { ConditionPhoto } from "@/domain/clinical/condition-photo";
 import type {
+  ConsentRecord,
+  ConsentRecordRepository,
+} from "@/domain/consent/consent-record";
+import type {
   AnamnesisRepository,
   ClinicalConditionRepository,
   ConditionAssessmentRepository,
@@ -116,7 +120,27 @@ export class InMemoryConditionPhotoRepository implements ConditionPhotoRepositor
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
+  async findPendingTriage(): Promise<ConditionPhoto[]> {
+    return [...this.items.values()]
+      .filter((p) => p.triageStatus === "pending")
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
   async delete(id: string): Promise<void> {
     this.items.delete(id);
+  }
+}
+
+export class InMemoryConsentRecordRepository implements ConsentRecordRepository {
+  private readonly items: ConsentRecord[] = [];
+
+  async save(record: ConsentRecord): Promise<void> {
+    this.items.push(record);
+  }
+
+  async findByPatientId(patientId: string): Promise<ConsentRecord[]> {
+    return this.items
+      .filter((r) => r.patientId === patientId)
+      .sort((a, b) => b.acceptedAt.getTime() - a.acceptedAt.getTime());
   }
 }

@@ -19,6 +19,7 @@ import {
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import { ConditionProgress, type ConditionWithAssessmentsDto } from "./condition-progress";
+import { ConsentCard, PatientPhotoUpload } from "./consent-card";
 
 interface PatientPortalDto {
   patient: PortalPatientProfileDto;
@@ -64,6 +65,8 @@ export function PatientPortalView() {
         <p className="text-sm text-slate-500">Acompanhe aqui suas consultas e sua evolução clínica.</p>
       </div>
 
+      <ConsentCard />
+
       <Section title="Próximas consultas">
         {confirmError && <ErrorAlert message={confirmError} />}
         {upcoming.length === 0 ? (
@@ -94,11 +97,12 @@ export function PatientPortalView() {
         ) : (
           <div className="flex flex-col gap-3">
             {data.conditions.map((entry) => (
-              <ConditionProgress
-                key={entry.condition.id}
-                {...entry}
-                photoUrlBase="/api/portal/patient/photos"
-              />
+              <div key={entry.condition.id}>
+                <ConditionProgress {...entry} photoUrlBase="/api/portal/patient/photos" />
+                {entry.condition.status === "active" && (
+                  <PatientPhotoUpload conditionId={entry.condition.id} onSent={refresh} />
+                )}
+              </div>
             ))}
           </div>
         )}

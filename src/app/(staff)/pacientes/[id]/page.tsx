@@ -47,12 +47,20 @@ function PatientHeader({ patient }: { patient: PatientDto }) {
         {patient.phone} · {patient.email}
         {patient.birthDate ? ` · nasc. ${formatDate(patient.birthDate)}` : ""}
       </span>
-      <a
-        href={`/documentos/consentimento/${patient.id}`}
-        className="ml-auto text-sm font-medium text-teal-700 hover:underline"
-      >
-        Termo de consentimento
-      </a>
+      <span className="ml-auto flex gap-3 text-sm font-medium">
+        <a href={`/documentos/consentimento/${patient.id}`} className="text-teal-700 hover:underline">
+          Termo de consentimento
+        </a>
+        <a
+          href={`/api/patients/${patient.id}/export`}
+          target="_blank"
+          rel="noreferrer"
+          className="text-slate-500 hover:underline"
+          title="Exportação completa dos dados do titular (LGPD art. 18)"
+        >
+          Exportar dados (LGPD)
+        </a>
+      </span>
     </div>
   );
 }

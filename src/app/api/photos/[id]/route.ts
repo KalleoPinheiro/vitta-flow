@@ -1,6 +1,9 @@
 import type { NextRequest } from "next/server";
+import { z } from "zod";
 import { getRepositories } from "@/infrastructure/container";
 import { DeleteConditionPhoto } from "@/application/clinical/delete-condition-photo";
+import { FollowUp } from "@/domain/followup/follow-up";
+import { NotFoundError } from "@/domain/shared/errors";
 import { handleRequest, fail } from "@/lib/api-response";
 import { getRequestSession } from "@/lib/auth/request-session";
 import { recordAudit } from "@/lib/audit";
@@ -45,5 +48,48 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       detail: "correção de upload",
     });
     return { deleted: true };
+  });
+}
+
+const triageSchema = z.object({ triage: z.enum(["reviewed", "escalated"]) });
+
+/**
+ * Triagem da foto do paciente (O4.2): "reviewed" mantém o plano;
+ * "escalated" antecipa o retorno criando follow-up com vencimento imediato.
+ */
+export async function PATCH(request: NextRequest, context: RouteContext) {
+  return handleRequest(async () => {
+    const { id } = await context.params;
+    const body = triageSchema.parse(await request.json());
+    const { conditionPhotos, conditions, followUps, auditEvents } = await getRepositories();
+
+    const photo = await conditionPhotos.findById(id);
+    if (!photo) {
+      throw new NotFoundError("Foto", id);
+    }
+    const condition = await conditions.findById(photo.conditionId);
+
+    const triaged = photo.withTriage(body.triage);
+    await conditionPhotos.save(triaged);
+
+    if (body.triage === "escalated" && condition) {
+      await followUps.save(
+        FollowUp.create({
+          patientId: condition.patientId,
+          appointmentId: null,
+          dueDate: new Date(),
+          reason: `Retorno antecipado: foto de ${condition.title} sinaliza atenção`,
+        }),
+      );
+    }
+
+    recordAudit(auditEvents, getRequestSession(request), {
+      action: "update",
+      resourceType: "photo",
+      resourceId: id,
+      patientId: condition?.patientId ?? null,
+      detail: `triagem: ${body.triage}`,
+    });
+    return { id, triageStatus: triaged.triageStatus };
   });
 }

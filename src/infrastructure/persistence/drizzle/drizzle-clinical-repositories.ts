@@ -21,13 +21,20 @@ import type {
 import {
   ConditionPhoto,
   type PhotoContentType,
+  type PhotoOrigin,
+  type TriageStatus,
 } from "@/domain/clinical/condition-photo";
+import {
+  ConsentRecord,
+  type ConsentRecordRepository,
+} from "@/domain/consent/consent-record";
 import type { AppDb } from "./db";
 import {
   anamneses,
   clinicalConditions,
   conditionAssessments,
   conditionPhotos,
+  consentRecords,
   evolutionNotes,
 } from "./schema";
 
@@ -213,18 +220,37 @@ export class DrizzleConditionPhotoRepository implements ConditionPhotoRepository
     return ConditionPhoto.restore({
       ...row,
       contentType: row.contentType as PhotoContentType,
+      origin: row.origin as PhotoOrigin,
+      triageStatus: row.triageStatus as TriageStatus | null,
     });
   }
 
   async save(photo: ConditionPhoto): Promise<void> {
-    await this.db.insert(conditionPhotos).values({
+    const values = {
       id: photo.id,
       conditionId: photo.conditionId,
       assessmentId: photo.assessmentId,
       contentType: photo.contentType,
       sizeBytes: photo.sizeBytes,
+      origin: photo.origin,
+      patientNote: photo.patientNote,
+      triageStatus: photo.triageStatus,
       createdAt: photo.createdAt,
-    });
+    };
+    // Upsert: triagem atualiza o registro existente.
+    await this.db
+      .insert(conditionPhotos)
+      .values(values)
+      .onConflictDoUpdate({ target: conditionPhotos.id, set: values });
+  }
+
+  async findPendingTriage(): Promise<ConditionPhoto[]> {
+    const rows = await this.db
+      .select()
+      .from(conditionPhotos)
+      .where(eq(conditionPhotos.triageStatus, "pending"))
+      .orderBy(desc(conditionPhotos.createdAt));
+    return rows.map((row) => this.toEntity(row));
   }
 
   async findById(id: string): Promise<ConditionPhoto | null> {
@@ -260,5 +286,28 @@ export class DrizzleConditionPhotoRepository implements ConditionPhotoRepository
 
   async delete(id: string): Promise<void> {
     await this.db.delete(conditionPhotos).where(eq(conditionPhotos.id, id));
+  }
+}
+
+export class DrizzleConsentRecordRepository implements ConsentRecordRepository {
+  constructor(private readonly db: AppDb) {}
+
+  async save(record: ConsentRecord): Promise<void> {
+    await this.db.insert(consentRecords).values({
+      id: record.id,
+      patientId: record.patientId,
+      textHash: record.textHash,
+      ipAddress: record.ipAddress,
+      acceptedAt: record.acceptedAt,
+    });
+  }
+
+  async findByPatientId(patientId: string): Promise<ConsentRecord[]> {
+    const rows = await this.db
+      .select()
+      .from(consentRecords)
+      .where(eq(consentRecords.patientId, patientId))
+      .orderBy(desc(consentRecords.acceptedAt));
+    return rows.map((row) => ConsentRecord.restore(row));
   }
 }

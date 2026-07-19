@@ -107,6 +107,36 @@ export default function ReportsPage() {
               )}
             </section>
           </div>
+
+          {report.productionByProfessional.length > 0 && (
+            <section className="rounded-xl border border-slate-200 bg-white p-5">
+              <h2 className="mb-3 text-lg font-semibold">Produção por profissional</h2>
+              <table className="w-full text-left text-sm">
+                <thead className="text-xs uppercase text-slate-500">
+                  <tr>
+                    <th className="py-2">Profissional</th>
+                    <th className="py-2 text-right">Concluídas</th>
+                    <th className="py-2 text-right">Receita</th>
+                    <th className="py-2 text-right">Repasse</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {report.productionByProfessional.map((row) => (
+                    <tr key={row.professionalId ?? "none"}>
+                      <td className="py-2">{row.professionalName}</td>
+                      <td className="py-2 text-right">{row.count}</td>
+                      <td className="py-2 text-right font-medium">
+                        {formatCurrency(row.totalCents)}
+                      </td>
+                      <td className="py-2 text-right text-slate-600">
+                        {row.commissionCents != null ? formatCurrency(row.commissionCents) : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )}
         </div>
       )}
     </div>

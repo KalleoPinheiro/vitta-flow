@@ -8,6 +8,7 @@ import { toProfessionalDto } from "@/lib/dto";
 const updateSchema = z.object({
   fullName: z.string().min(1).max(200).optional(),
   registry: z.string().max(100).nullish(),
+  commissionPct: z.number().int().min(0).max(100).nullish(),
   active: z.boolean().optional(),
 });
 
@@ -27,6 +28,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     let updated = existing.update({
       fullName: body.fullName,
       registry: body.registry !== undefined ? body.registry : undefined,
+      commissionPct: body.commissionPct !== undefined ? body.commissionPct : undefined,
     });
     if (body.active === true) updated = updated.reactivate();
     if (body.active === false) updated = updated.deactivate();

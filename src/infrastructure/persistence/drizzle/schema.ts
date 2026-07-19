@@ -24,6 +24,8 @@ export const professionals = pgTable("professionals", {
   id: text("id").primaryKey(),
   fullName: text("full_name").notNull(),
   registry: text("registry"),
+  // Repasse (O3.4): % da receita das consultas concluídas do profissional.
+  commissionPct: integer("commission_pct"),
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
 });
@@ -336,6 +338,40 @@ export const auditEvents = pgTable(
   (table) => [
     index("idx_audit_events_patient").on(table.patientId),
     index("idx_audit_events_occurred_at").on(table.occurredAt),
+  ],
+);
+
+export const sessionPackages = pgTable(
+  "session_packages",
+  {
+    id: text("id").primaryKey(),
+    patientId: text("patient_id")
+      .notNull()
+      .references(() => patients.id),
+    procedureId: text("procedure_id")
+      .notNull()
+      .references(() => procedures.id),
+    totalSessions: integer("total_sessions").notNull(),
+    usedSessions: integer("used_sessions").notNull().default(0),
+    priceCents: integer("price_cents").notNull(),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [index("idx_session_packages_patient").on(table.patientId)],
+);
+
+export const packageConsumptions = pgTable(
+  "package_consumptions",
+  {
+    packageId: text("package_id")
+      .notNull()
+      .references(() => sessionPackages.id),
+    appointmentId: text("appointment_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [
+    // Uma consulta consome no máximo uma sessão (idempotência da conclusão reparadora).
+    uniqueIndex("uq_package_consumption_appointment").on(table.appointmentId),
   ],
 );
 

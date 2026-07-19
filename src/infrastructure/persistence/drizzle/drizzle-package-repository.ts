@@ -1,0 +1,82 @@
+import { and, asc, desc, eq, gt, sql } from "drizzle-orm";
+import {
+  SessionPackage,
+  type SessionPackageRepository,
+} from "@/domain/billing/package";
+import type { AppDb } from "./db";
+import { packageConsumptions, sessionPackages } from "./schema";
+
+export class DrizzleSessionPackageRepository implements SessionPackageRepository {
+  constructor(private readonly db: AppDb) {}
+
+  async save(pkg: SessionPackage): Promise<void> {
+    const values = {
+      id: pkg.id,
+      patientId: pkg.patientId,
+      procedureId: pkg.procedureId,
+      totalSessions: pkg.totalSessions,
+      usedSessions: pkg.usedSessions,
+      priceCents: pkg.priceCents,
+      active: pkg.isActive,
+      createdAt: pkg.createdAt,
+    };
+    await this.db
+      .insert(sessionPackages)
+      .values(values)
+      .onConflictDoUpdate({ target: sessionPackages.id, set: values });
+  }
+
+  async findById(id: string): Promise<SessionPackage | null> {
+    const rows = await this.db
+      .select()
+      .from(sessionPackages)
+      .where(eq(sessionPackages.id, id))
+      .limit(1);
+    return rows[0] ? SessionPackage.restore(rows[0]) : null;
+  }
+
+  async findByPatientId(patientId: string): Promise<SessionPackage[]> {
+    const rows = await this.db
+      .select()
+      .from(sessionPackages)
+      .where(eq(sessionPackages.patientId, patientId))
+      .orderBy(desc(sessionPackages.createdAt));
+    return rows.map((row) => SessionPackage.restore(row));
+  }
+
+  async findUsable(patientId: string, procedureId: string): Promise<SessionPackage | null> {
+    const rows = await this.db
+      .select()
+      .from(sessionPackages)
+      .where(
+        and(
+          eq(sessionPackages.patientId, patientId),
+          eq(sessionPackages.procedureId, procedureId),
+          eq(sessionPackages.active, true),
+          gt(
+            sql`${sessionPackages.totalSessions} - ${sessionPackages.usedSessions}`,
+            0,
+          ),
+        ),
+      )
+      .orderBy(asc(sessionPackages.createdAt))
+      .limit(1);
+    return rows[0] ? SessionPackage.restore(rows[0]) : null;
+  }
+
+  async recordConsumption(packageId: string, appointmentId: string): Promise<void> {
+    await this.db
+      .insert(packageConsumptions)
+      .values({ packageId, appointmentId, createdAt: new Date() })
+      .onConflictDoNothing();
+  }
+
+  async wasConsumedBy(appointmentId: string): Promise<boolean> {
+    const rows = await this.db
+      .select({ packageId: packageConsumptions.packageId })
+      .from(packageConsumptions)
+      .where(eq(packageConsumptions.appointmentId, appointmentId))
+      .limit(1);
+    return rows.length > 0;
+  }
+}

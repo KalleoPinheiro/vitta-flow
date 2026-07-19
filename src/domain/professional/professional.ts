@@ -5,6 +5,8 @@ export interface ProfessionalProps {
   fullName: string;
   /** Registro profissional (ex.: COREN-SP 123456). */
   registry?: string | null;
+  /** Percentual de repasse sobre a receita das consultas concluídas (0–100). */
+  commissionPct?: number | null;
 }
 
 export interface ProfessionalState extends ProfessionalProps {
@@ -35,13 +37,19 @@ export class Professional {
     if (fullName.length === 0) {
       throw new ValidationError("Nome do profissional é obrigatório");
     }
-    return { fullName, registry: props.registry?.trim() || null };
+    const pct = props.commissionPct ?? null;
+    if (pct != null && (!Number.isInteger(pct) || pct < 0 || pct > 100)) {
+      throw new ValidationError("Repasse deve ser um percentual inteiro de 0 a 100");
+    }
+    return { fullName, registry: props.registry?.trim() || null, commissionPct: pct };
   }
 
   update(changes: Partial<ProfessionalProps>): Professional {
     const validated = Professional.validate({
       fullName: changes.fullName ?? this.state.fullName,
       registry: changes.registry !== undefined ? changes.registry : this.state.registry,
+      commissionPct:
+        changes.commissionPct !== undefined ? changes.commissionPct : this.state.commissionPct,
     });
     return new Professional({ ...this.state, ...validated });
   }
@@ -64,6 +72,10 @@ export class Professional {
 
   get registry(): string | null {
     return this.state.registry ?? null;
+  }
+
+  get commissionPct(): number | null {
+    return this.state.commissionPct ?? null;
   }
 
   get isActive(): boolean {

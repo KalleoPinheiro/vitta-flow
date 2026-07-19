@@ -29,7 +29,20 @@ export interface AppointmentRepository {
     end: Date,
     options?: { professionalId?: string },
   ): Promise<Appointment[]>;
-  findConflicting(slot: TimeSlot, excludeId?: string): Promise<Appointment[]>;
+  /**
+   * Conflitos de horário: mesmo profissional, ou quando um dos lados não tem
+   * profissional atribuído (regra global preservada para dados sem atribuição).
+   */
+  findConflicting(
+    slot: TimeSlot,
+    excludeId?: string,
+    professionalId?: string | null,
+  ): Promise<Appointment[]>;
   /** Agregação no banco — contagens e receita corretas independentemente do volume. */
   getStatsInRange(start: Date, end: Date): Promise<AppointmentRangeStats>;
+  /** Produção (concluídas) por profissional no período — null = sem atribuição. */
+  getProductionInRange(
+    start: Date,
+    end: Date,
+  ): Promise<Array<{ professionalId: string | null; count: number; totalCents: number }>>;
 }

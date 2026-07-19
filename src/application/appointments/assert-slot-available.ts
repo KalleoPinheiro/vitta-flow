@@ -16,11 +16,13 @@ export async function assertSlotAvailable(
   slot: TimeSlot,
   excludeId?: string,
   config: ScheduleConfig = DEFAULT_SCHEDULE_CONFIG,
+  professionalId?: string | null,
 ): Promise<void> {
   assertWithinBusinessHours(slot, config);
   const conflicts = await appointments.findConflicting(
     slot.expand(config.minGapMinutes),
     excludeId,
+    professionalId,
   );
   if (conflicts.length > 0) {
     throw new SchedulingConflictError(

@@ -28,7 +28,13 @@ export class RescheduleAppointment {
 
     const slot = TimeSlot.create(input.startsAt, input.endsAt);
     const config = (await this.scheduleConfig?.get()) ?? DEFAULT_SCHEDULE_CONFIG;
-    await assertSlotAvailable(this.appointments, slot, appointment.id, config);
+    await assertSlotAvailable(
+      this.appointments,
+      slot,
+      appointment.id,
+      config,
+      appointment.professionalId,
+    );
 
     const rescheduled = appointment.reschedule(slot);
     await this.appointments.save(rescheduled);

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, beforeEach } from "vitest";
 import path from "node:path";
 import { PGlite } from "@electric-sql/pglite";
 import { pg_trgm } from "@electric-sql/pglite/contrib/pg_trgm";
+import { btree_gist } from "@electric-sql/pglite/contrib/btree_gist";
 import { drizzle, type PgliteDatabase } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import * as schema from "@/infrastructure/persistence/drizzle/schema";
@@ -26,7 +27,7 @@ describe("Feature: Persistência PostgreSQL (Drizzle)", () => {
   let invoiceRepo: DrizzleInvoiceRepository;
 
   beforeAll(async () => {
-    const client = new PGlite({ extensions: { pg_trgm } });
+    const client = new PGlite({ extensions: { pg_trgm, btree_gist } });
     db = drizzle(client, { schema });
     await migrate(db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
     const appDb = db as unknown as AppDb;

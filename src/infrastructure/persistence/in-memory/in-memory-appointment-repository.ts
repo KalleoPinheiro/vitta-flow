@@ -102,9 +102,41 @@ export class InMemoryAppointmentRepository implements AppointmentRepository {
       .sort((a, b) => a.slot.start.getTime() - b.slot.start.getTime());
   }
 
-  async findConflicting(slot: TimeSlot, excludeId?: string): Promise<Appointment[]> {
-    return [...this.appointments.values()].filter(
-      (a) => a.id !== excludeId && a.isActive && a.slot.overlaps(slot),
-    );
+  async getProductionInRange(
+    start: Date,
+    end: Date,
+  ): Promise<Array<{ professionalId: string | null; count: number; totalCents: number }>> {
+    const totals = new Map<string | null, { count: number; totalCents: number }>();
+    for (const a of this.appointments.values()) {
+      const inRange =
+        a.slot.start.getTime() < end.getTime() && a.slot.end.getTime() > start.getTime();
+      if (!inRange || a.status !== "completed") continue;
+      const current = totals.get(a.professionalId) ?? { count: 0, totalCents: 0 };
+      totals.set(a.professionalId, {
+        count: current.count + 1,
+        totalCents: current.totalCents + a.price.cents,
+      });
+    }
+    return [...totals.entries()].map(([professionalId, agg]) => ({
+      professionalId,
+      ...agg,
+    }));
+  }
+
+  async findConflicting(
+    slot: TimeSlot,
+    excludeId?: string,
+    professionalId?: string | null,
+  ): Promise<Appointment[]> {
+    return [...this.appointments.values()].filter((a) => {
+      if (a.id === excludeId || !a.isActive || !a.slot.overlaps(slot)) {
+        return false;
+      }
+      // Profissionais distintos e ambos definidos → sem conflito.
+      if (professionalId && a.professionalId && a.professionalId !== professionalId) {
+        return false;
+      }
+      return true;
+    });
   }
 }

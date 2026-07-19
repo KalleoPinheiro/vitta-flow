@@ -38,6 +38,25 @@ function ProfessionalFilter({
   );
 }
 
+function AgendaNotices({
+  error,
+  seriesNotice,
+}: {
+  error: string | null;
+  seriesNotice: string | null;
+}) {
+  return (
+    <>
+      {error && <ErrorAlert message={error} />}
+      {seriesNotice && (
+        <p className="mb-4 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900">
+          {seriesNotice}
+        </p>
+      )}
+    </>
+  );
+}
+
 const monthLabel = (date: Date): string =>
   date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 
@@ -85,23 +104,44 @@ export default function AgendaPage() {
   const changeMonth = (delta: number) =>
     setMonthDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
 
+  const [seriesNotice, setSeriesNotice] = useState<string | null>(null);
+
   const handleCreate = async (values: AppointmentFormValues) => {
     const startsAt = new Date(`${values.date}T${values.startTime}:00`);
     const endsAt = new Date(startsAt.getTime() + values.durationMinutes * 60_000);
-    await apiFetch<AppointmentDto>("/api/appointments", {
-      method: "POST",
-      body: JSON.stringify({
-        patientId: values.patientId,
-        startsAt: startsAt.toISOString(),
-        endsAt: endsAt.toISOString(),
-        procedure: values.procedure,
-        priceCents: Math.round(Number(values.price) * 100),
-        notes: values.notes || null,
-        professionalId: values.professionalId || null,
-        procedureId: values.procedureId || null,
-        followUpId: recall?.followUpId ?? null,
-      }),
-    });
+    const payload = {
+      patientId: values.patientId,
+      startsAt: startsAt.toISOString(),
+      endsAt: endsAt.toISOString(),
+      procedure: values.procedure,
+      priceCents: Math.round(Number(values.price) * 100),
+      notes: values.notes || null,
+      professionalId: values.professionalId || null,
+      procedureId: values.procedureId || null,
+    };
+    if (values.occurrences > 1) {
+      const result = await apiFetch<{
+        created: AppointmentDto[];
+        skipped: Array<{ startsAt: string; reason: string }>;
+      }>("/api/appointments/recurring", {
+        method: "POST",
+        body: JSON.stringify({ ...payload, occurrences: values.occurrences }),
+      });
+      setSeriesNotice(
+        result.skipped.length > 0
+          ? `Série criada: ${result.created.length} sessão(ões); ${result.skipped.length} pulada(s) — ` +
+              result.skipped
+                .map((s) => new Date(s.startsAt).toLocaleDateString("pt-BR"))
+                .join(", ")
+          : `Série criada: ${result.created.length} sessões.`,
+      );
+    } else {
+      await apiFetch<AppointmentDto>("/api/appointments", {
+        method: "POST",
+        body: JSON.stringify({ ...payload, followUpId: recall?.followUpId ?? null }),
+      });
+      setSeriesNotice(null);
+    }
     setCreatingFor(null);
     refresh();
   };
@@ -148,7 +188,7 @@ export default function AgendaPage() {
         </button>
       </div>
 
-      {error && <ErrorAlert message={error} />}
+      <AgendaNotices error={error} seriesNotice={seriesNotice} />
 
       <div className="mb-4 flex items-center gap-3">
         <button

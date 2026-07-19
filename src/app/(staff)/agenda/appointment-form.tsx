@@ -17,6 +17,8 @@ export interface AppointmentFormValues {
   notes: string;
   professionalId: string;
   procedureId: string;
+  /** 1 = consulta única; >1 = série semanal com N ocorrências. */
+  occurrences: number;
 }
 
 interface AppointmentFormProps {
@@ -51,6 +53,7 @@ export function AppointmentForm({
     notes: "",
     professionalId: "",
     procedureId: "",
+    occurrences: 1,
   });
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -104,6 +107,23 @@ export function AppointmentForm({
           {activePatients.map((patient) => (
             <option key={patient.id} value={patient.id}>
               {patient.fullName}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="text-sm font-medium">
+        Repetição
+        <select
+          value={values.occurrences}
+          onChange={(e) =>
+            setValues((prev) => ({ ...prev, occurrences: Number(e.target.value) }))
+          }
+          className={`mt-1 ${inputClass}`}
+        >
+          <option value={1}>Consulta única</option>
+          {[4, 6, 8, 10, 12].map((n) => (
+            <option key={n} value={n}>
+              Semanal — {n} sessões
             </option>
           ))}
         </select>

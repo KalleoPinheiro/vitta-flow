@@ -39,7 +39,13 @@ export class ScheduleAppointment {
 
     const slot = TimeSlot.create(input.startsAt, input.endsAt);
     const config = (await this.scheduleConfig?.get()) ?? DEFAULT_SCHEDULE_CONFIG;
-    await assertSlotAvailable(this.appointments, slot, undefined, config);
+    await assertSlotAvailable(
+      this.appointments,
+      slot,
+      undefined,
+      config,
+      input.professionalId ?? null,
+    );
 
     const appointment = Appointment.create({
       patientId: input.patientId,

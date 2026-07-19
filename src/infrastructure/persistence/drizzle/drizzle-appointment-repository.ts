@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, gte, inArray, lt, ne, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, ne, or, sql, type SQL } from "drizzle-orm";
 import {
   Appointment,
   APPOINTMENT_STATUSES,
@@ -193,14 +193,55 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
     };
   }
 
-  async findConflicting(slot: TimeSlot, excludeId?: string): Promise<Appointment[]> {
-    const conditions = [
+  async getProductionInRange(
+    start: Date,
+    end: Date,
+  ): Promise<Array<{ professionalId: string | null; count: number; totalCents: number }>> {
+    const rows = await this.db
+      .select({
+        professionalId: appointments.professionalId,
+        count: sql<number>`count(*)::int`,
+        totalCents: sql<number>`coalesce(sum(${appointments.priceCents}), 0)`,
+      })
+      .from(appointments)
+      .where(
+        and(
+          lt(appointments.startsAt, end),
+          gt(appointments.endsAt, start),
+          eq(appointments.status, "completed"),
+        ),
+      )
+      .groupBy(appointments.professionalId);
+    return rows.map((row) => ({
+      professionalId: row.professionalId,
+      count: Number(row.count),
+      totalCents: Number(row.totalCents),
+    }));
+  }
+
+  async findConflicting(
+    slot: TimeSlot,
+    excludeId?: string,
+    professionalId?: string | null,
+  ): Promise<Appointment[]> {
+    const conditions: SQL[] = [
       inArray(appointments.status, ACTIVE_STATUSES),
       lt(appointments.startsAt, slot.end),
       gt(appointments.endsAt, slot.start),
     ];
     if (excludeId) {
       conditions.push(ne(appointments.id, excludeId));
+    }
+    // Profissional definido: conflita com o mesmo profissional ou com consultas
+    // sem atribuição. Sem profissional: conflita com tudo (comportamento global).
+    if (professionalId) {
+      const scoped = or(
+        eq(appointments.professionalId, professionalId),
+        isNull(appointments.professionalId),
+      );
+      if (scoped) {
+        conditions.push(scoped);
+      }
     }
     const rows = await this.db
       .select()

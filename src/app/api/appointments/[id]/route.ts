@@ -49,7 +49,12 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const { appointments, invoices, followUps } = services;
 
     if (body.action === "complete") {
-      const completed = await new CompleteAppointment(appointments, invoices, followUps).execute({
+      const completed = await new CompleteAppointment(
+        appointments,
+        invoices,
+        followUps,
+        services.sessionPackages,
+      ).execute({
         id,
         followUpInDays: body.followUpInDays ?? null,
       });

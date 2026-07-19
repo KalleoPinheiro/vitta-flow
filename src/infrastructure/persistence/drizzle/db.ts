@@ -14,9 +14,10 @@ const globalForDb = globalThis as unknown as { vittaDbPromise?: Promise<AppDb> }
 async function createPgliteDb(): Promise<AppDb> {
   const { PGlite } = await import("@electric-sql/pglite");
   const { pg_trgm } = await import("@electric-sql/pglite/contrib/pg_trgm");
+  const { btree_gist } = await import("@electric-sql/pglite/contrib/btree_gist");
   const { drizzle } = await import("drizzle-orm/pglite");
   const { migrate } = await import("drizzle-orm/pglite/migrator");
-  const client = new PGlite({ extensions: { pg_trgm } });
+  const client = new PGlite({ extensions: { pg_trgm, btree_gist } });
   const db = drizzle(client, { schema });
   await migrate(db, { migrationsFolder: MIGRATIONS_FOLDER });
   return db as unknown as AppDb;

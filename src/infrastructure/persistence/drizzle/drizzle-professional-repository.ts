@@ -12,6 +12,7 @@ export class DrizzleProfessionalRepository implements ProfessionalRepository {
       id: professional.id,
       fullName: professional.fullName,
       registry: professional.registry,
+      commissionPct: professional.commissionPct,
       active: professional.isActive,
       createdAt: professional.createdAt,
     };

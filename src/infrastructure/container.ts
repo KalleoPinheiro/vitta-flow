@@ -41,6 +41,8 @@ import {
   DrizzleUserAccountRepository,
 } from "./persistence/drizzle/drizzle-foundation-repositories";
 import type { ProcedureKitRepository } from "@/domain/catalog/procedure-kit";
+import { DrizzleSessionPackageRepository } from "./persistence/drizzle/drizzle-package-repository";
+import type { SessionPackageRepository } from "@/domain/billing/package";
 import type { ProcedureRepository } from "@/domain/catalog/procedure-repository";
 import type { UserAccountRepository } from "@/domain/auth/user-account";
 import type { ScheduleConfigRepository } from "@/domain/scheduling/schedule-config";
@@ -79,6 +81,7 @@ export interface Services {
   professionals: ProfessionalRepository;
   procedures: ProcedureRepository;
   procedureKits: ProcedureKitRepository;
+  sessionPackages: SessionPackageRepository;
   userAccounts: UserAccountRepository;
   scheduleConfig: ScheduleConfigRepository;
   googleAccounts: DrizzleGoogleAccountRepository;
@@ -166,6 +169,7 @@ export async function getRepositories(): Promise<Services> {
     professionals: new DrizzleProfessionalRepository(db),
     procedures: new DrizzleProcedureRepository(db),
     procedureKits: new DrizzleProcedureKitRepository(db),
+    sessionPackages: new DrizzleSessionPackageRepository(db),
     userAccounts: new DrizzleUserAccountRepository(db),
     scheduleConfig: new DrizzleScheduleConfigRepository(db),
     googleAccounts: new DrizzleGoogleAccountRepository(db),

@@ -4,6 +4,7 @@ import type { InvoiceRepository } from "@/domain/billing/invoice-repository";
 import { Invoice } from "@/domain/billing/invoice";
 import { FollowUp } from "@/domain/followup/follow-up";
 import type { FollowUpRepository } from "@/domain/followup/follow-up-repository";
+import type { SessionPackageRepository } from "@/domain/billing/package";
 import { NotFoundError } from "@/domain/shared/errors";
 
 const MS_PER_DAY = 86_400_000;
@@ -18,6 +19,7 @@ export class CompleteAppointment {
     private readonly appointments: AppointmentRepository,
     private readonly invoices: InvoiceRepository,
     private readonly followUps?: FollowUpRepository,
+    private readonly packages?: SessionPackageRepository,
   ) {}
 
   /**
@@ -38,8 +40,13 @@ export class CompleteAppointment {
       await this.appointments.save(completed);
     }
 
+    // Pacote de sessões (O3.3): consome saldo em vez de faturar a consulta.
+    // Consumo registrado por consulta (unique) → conclusão reparadora não
+    // consome duas vezes nem fatura consulta já coberta por pacote.
+    const coveredByPackage = await this.consumePackageIfAvailable(completed);
+
     const existingInvoice = await this.invoices.findByAppointmentId(completed.id);
-    if (!existingInvoice) {
+    if (!existingInvoice && !coveredByPackage) {
       const invoice = Invoice.create({
         patientId: completed.patientId,
         appointmentId: completed.id,
@@ -61,5 +68,21 @@ export class CompleteAppointment {
     }
 
     return completed;
+  }
+
+  private async consumePackageIfAvailable(completed: Appointment): Promise<boolean> {
+    if (!this.packages || !completed.procedureId) {
+      return false;
+    }
+    if (await this.packages.wasConsumedBy(completed.id)) {
+      return true;
+    }
+    const pkg = await this.packages.findUsable(completed.patientId, completed.procedureId);
+    if (!pkg) {
+      return false;
+    }
+    await this.packages.save(pkg.consumeSession());
+    await this.packages.recordConsumption(pkg.id, completed.id);
+    return true;
   }
 }

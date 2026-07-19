@@ -4,6 +4,7 @@ import type {
 } from "@/domain/scheduling/appointment-repository";
 import type { InvoiceRepository } from "@/domain/billing/invoice-repository";
 import type { StockMovementRepository } from "@/domain/inventory/inventory-repositories";
+import type { ProfessionalRepository } from "@/domain/professional/professional-repository";
 import type { AppointmentStatus } from "@/domain/scheduling/appointment";
 import {
   GetBillingSummary,
@@ -17,6 +18,15 @@ export interface ProcedureMargin extends ProcedureRevenue {
   marginCents: number;
 }
 
+export interface ProfessionalProduction {
+  professionalId: string | null;
+  professionalName: string;
+  count: number;
+  totalCents: number;
+  /** Repasse = receita × commissionPct; null quando o profissional não tem %. */
+  commissionCents: number | null;
+}
+
 export interface MonthlyReport {
   totalAppointments: number;
   byStatus: Record<AppointmentStatus, number>;
@@ -25,6 +35,7 @@ export interface MonthlyReport {
   /** Saídas de material do período sem vínculo com consulta. */
   unattributedSupplyCostCents: number;
   totalSupplyCostCents: number;
+  productionByProfessional: ProfessionalProduction[];
   billing: BillingSummary;
 }
 
@@ -38,13 +49,15 @@ export class GetMonthlyReport {
     private readonly appointments: AppointmentRepository,
     private readonly invoices: InvoiceRepository,
     private readonly stockMovements?: StockMovementRepository,
+    private readonly professionals?: ProfessionalRepository,
   ) {}
 
   async execute(input: MonthlyReportInput): Promise<MonthlyReport> {
-    const [stats, billing, outflowCosts] = await Promise.all([
+    const [stats, billing, outflowCosts, production] = await Promise.all([
       this.appointments.getStatsInRange(input.from, input.to),
       new GetBillingSummary(this.invoices).execute(input),
       this.stockMovements?.getOutflowCostInRange(input.from, input.to) ?? Promise.resolve([]),
+      this.appointments.getProductionInRange(input.from, input.to),
     ]);
 
     const { byStatus, revenueByProcedure } = stats;
@@ -90,7 +103,32 @@ export class GetMonthlyReport {
       }),
       unattributedSupplyCostCents,
       totalSupplyCostCents,
+      productionByProfessional: await this.buildProduction(production),
       billing,
     };
+  }
+
+  private async buildProduction(
+    production: Array<{ professionalId: string | null; count: number; totalCents: number }>,
+  ): Promise<ProfessionalProduction[]> {
+    const ids = production
+      .map((p) => p.professionalId)
+      .filter((id): id is string => id != null);
+    const professionals = (await this.professionals?.findByIds(ids)) ?? [];
+    const byId = new Map(professionals.map((p) => [p.id, p]));
+
+    return production
+      .map((entry) => {
+        const professional = entry.professionalId ? byId.get(entry.professionalId) : undefined;
+        const pct = professional?.commissionPct ?? null;
+        return {
+          professionalId: entry.professionalId,
+          professionalName: professional?.fullName ?? "Sem atribuição",
+          count: entry.count,
+          totalCents: entry.totalCents,
+          commissionCents: pct != null ? Math.round((entry.totalCents * pct) / 100) : null,
+        };
+      })
+      .sort((a, b) => b.totalCents - a.totalCents);
   }
 }

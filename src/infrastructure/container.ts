@@ -7,8 +7,10 @@ import {
   DrizzleClinicalConditionRepository,
   DrizzleConditionAssessmentRepository,
   DrizzleConditionPhotoRepository,
+  DrizzleConsentRecordRepository,
   DrizzleEvolutionNoteRepository,
 } from "./persistence/drizzle/drizzle-clinical-repositories";
+import type { ConsentRecordRepository } from "@/domain/consent/consent-record";
 import {
   DrizzleFollowUpRepository,
   DrizzleStockMovementRepository,
@@ -92,6 +94,7 @@ export interface Services {
   conditions: ClinicalConditionRepository;
   assessments: ConditionAssessmentRepository;
   conditionPhotos: ConditionPhotoRepository;
+  consentRecords: ConsentRecordRepository;
   photoStorage: PhotoStorage;
   supplies: SupplyRepository;
   stockMovements: StockMovementRepository;
@@ -180,6 +183,7 @@ export async function getRepositories(): Promise<Services> {
     conditions: new DrizzleClinicalConditionRepository(db),
     assessments: new DrizzleConditionAssessmentRepository(db),
     conditionPhotos: new DrizzleConditionPhotoRepository(db),
+    consentRecords: new DrizzleConsentRecordRepository(db),
     photoStorage: new LocalPhotoStorage(),
     supplies: new DrizzleSupplyRepository(db),
     stockMovements: new DrizzleStockMovementRepository(db),

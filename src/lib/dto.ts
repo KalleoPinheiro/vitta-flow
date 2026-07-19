@@ -370,6 +370,9 @@ export interface ConditionPhotoDto {
   assessmentId: string | null;
   contentType: string;
   sizeBytes: number;
+  origin: string;
+  patientNote: string | null;
+  triageStatus: string | null;
   createdAt: string;
 }
 
@@ -379,6 +382,9 @@ export const toConditionPhotoDto = (photo: ConditionPhoto): ConditionPhotoDto =>
   assessmentId: photo.assessmentId,
   contentType: photo.contentType,
   sizeBytes: photo.sizeBytes,
+  origin: photo.origin,
+  patientNote: photo.patientNote,
+  triageStatus: photo.triageStatus,
   createdAt: photo.createdAt.toISOString(),
 });
 

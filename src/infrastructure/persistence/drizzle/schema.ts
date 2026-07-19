@@ -230,9 +230,30 @@ export const conditionPhotos = pgTable(
     assessmentId: text("assessment_id"),
     contentType: text("content_type").notNull(),
     sizeBytes: integer("size_bytes").notNull(),
+    // Monitoramento remoto (O4.2): origem, observação do paciente e triagem.
+    origin: text("origin").notNull().default("staff"),
+    patientNote: text("patient_note"),
+    triageStatus: text("triage_status"),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
   },
-  (table) => [index("idx_condition_photos_condition").on(table.conditionId)],
+  (table) => [
+    index("idx_condition_photos_condition").on(table.conditionId),
+    index("idx_condition_photos_triage").on(table.triageStatus),
+  ],
+);
+
+export const consentRecords = pgTable(
+  "consent_records",
+  {
+    id: text("id").primaryKey(),
+    patientId: text("patient_id")
+      .notNull()
+      .references(() => patients.id),
+    textHash: text("text_hash").notNull(),
+    ipAddress: text("ip_address"),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [index("idx_consent_records_patient").on(table.patientId)],
 );
 
 export const supplies = pgTable("supplies", {

@@ -1,4 +1,9 @@
-import { ConditionPhoto, detectImageType, MAX_PHOTO_BYTES } from "@/domain/clinical/condition-photo";
+import {
+  ConditionPhoto,
+  detectImageType,
+  MAX_PHOTO_BYTES,
+  type PhotoOrigin,
+} from "@/domain/clinical/condition-photo";
 import type {
   ClinicalConditionRepository,
   ConditionPhotoRepository,
@@ -10,6 +15,8 @@ export interface AddConditionPhotoInput {
   conditionId: string;
   data: Uint8Array;
   assessmentId?: string | null;
+  origin?: PhotoOrigin;
+  patientNote?: string | null;
 }
 
 export class AddConditionPhoto {
@@ -39,6 +46,8 @@ export class AddConditionPhoto {
       contentType,
       sizeBytes: input.data.byteLength,
       assessmentId: input.assessmentId ?? null,
+      origin: input.origin ?? "staff",
+      patientNote: input.patientNote ?? null,
     });
 
     await this.storage.write(photo.id, input.data);

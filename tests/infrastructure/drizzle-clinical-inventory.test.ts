@@ -12,11 +12,14 @@ import {
   DrizzleAnamnesisRepository,
   DrizzleClinicalConditionRepository,
   DrizzleConditionAssessmentRepository,
+  DrizzleConditionPhotoRepository,
+  DrizzleConsentRecordRepository,
   DrizzleEvolutionNoteRepository,
 } from "@/infrastructure/persistence/drizzle/drizzle-clinical-repositories";
 import {
   DrizzleFollowUpRepository,
   DrizzleStockMovementRepository,
+  DrizzleSupplyBatchRepository,
   DrizzleSupplyRepository,
 } from "@/infrastructure/persistence/drizzle/drizzle-inventory-repositories";
 import { Patient } from "@/domain/patient/patient";
@@ -24,8 +27,11 @@ import { Anamnesis } from "@/domain/clinical/anamnesis";
 import { EvolutionNote } from "@/domain/clinical/evolution-note";
 import { ClinicalCondition } from "@/domain/clinical/clinical-condition";
 import { ConditionAssessment } from "@/domain/clinical/condition-assessment";
+import { ConditionPhoto } from "@/domain/clinical/condition-photo";
+import { ConsentRecord } from "@/domain/consent/consent-record";
 import { Supply } from "@/domain/inventory/supply";
 import { StockMovement } from "@/domain/inventory/stock-movement";
+import { SupplyBatch } from "@/domain/inventory/supply-batch";
 import { FollowUp } from "@/domain/followup/follow-up";
 import { DrizzleGoogleAccountRepository } from "@/infrastructure/persistence/drizzle/drizzle-google-account-repository";
 import { DrizzlePartnerRepository } from "@/infrastructure/persistence/drizzle/drizzle-partner-repository";
@@ -47,11 +53,14 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
   beforeEach(async () => {
     await db.delete(schema.googleAccounts);
     await db.update(schema.patients).set({ referredByPartnerId: null });
+    await db.delete(schema.consentRecords);
+    await db.delete(schema.conditionPhotos);
     await db.delete(schema.conditionAssessments);
     await db.delete(schema.clinicalConditions);
     await db.delete(schema.evolutionNotes);
     await db.delete(schema.anamneses);
     await db.delete(schema.stockMovements);
+    await db.delete(schema.supplyBatches);
     await db.delete(schema.supplies);
     await db.delete(schema.followUps);
     await db.delete(schema.patients);
@@ -208,5 +217,145 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
     expect(await repo.findAll({ status: "pending" })).toHaveLength(1);
     expect(await repo.findAll({ dueBefore: new Date("2026-08-01T00:00:00Z") })).toHaveLength(1);
     expect((await repo.findById(done.id))?.status).toBe("done");
+  });
+
+  it("Dado condições de vários pacientes, Quando buscar em lote, Então filtra e trata lista vazia", async () => {
+    const conditionRepo = new DrizzleClinicalConditionRepository(appDb);
+    const condition = ClinicalCondition.create({
+      patientId: patient.id,
+      kind: "wound",
+      title: "Ferida operatória",
+      startedAt: new Date("2026-02-01T00:00:00Z"),
+    });
+    await conditionRepo.save(condition);
+
+    expect(await conditionRepo.findByPatientIds([])).toEqual([]);
+    const byPatients = await conditionRepo.findByPatientIds([patient.id, patient.id]);
+    expect(byPatients).toHaveLength(1);
+    expect(byPatients[0].id).toBe(condition.id);
+  });
+
+  it("Dado fotos de condição, Quando salvar, triar e buscar, Então fluxo completo preservado", async () => {
+    const conditionRepo = new DrizzleClinicalConditionRepository(appDb);
+    const photoRepo = new DrizzleConditionPhotoRepository(appDb);
+    const condition = ClinicalCondition.create({
+      patientId: patient.id,
+      kind: "wound",
+      title: "Ferida operatória",
+      startedAt: new Date("2026-02-01T00:00:00Z"),
+    });
+    await conditionRepo.save(condition);
+
+    const staffPhoto = ConditionPhoto.create({
+      conditionId: condition.id,
+      contentType: "image/png",
+      sizeBytes: 2048,
+      origin: "staff",
+    });
+    const patientPhoto = ConditionPhoto.create({
+      conditionId: condition.id,
+      contentType: "image/jpeg",
+      sizeBytes: 4096,
+      origin: "patient",
+      patientNote: "Está vermelho",
+    });
+    await photoRepo.save(staffPhoto);
+    await photoRepo.save(patientPhoto);
+
+    expect(staffPhoto.triageStatus).toBeNull();
+    expect(await photoRepo.findById(staffPhoto.id)).not.toBeNull();
+    expect(await photoRepo.findById("id-inexistente")).toBeNull();
+
+    const pending = await photoRepo.findPendingTriage();
+    expect(pending).toHaveLength(1);
+    expect(pending[0].id).toBe(patientPhoto.id);
+
+    await photoRepo.save(patientPhoto.withTriage("escalated"));
+    expect((await photoRepo.findById(patientPhoto.id))?.triageStatus).toBe("escalated");
+    expect(await photoRepo.findPendingTriage()).toHaveLength(0);
+
+    expect(await photoRepo.findByConditionId(condition.id)).toHaveLength(2);
+    expect(await photoRepo.findByConditionIds([])).toEqual([]);
+    expect(await photoRepo.findByConditionIds([condition.id])).toHaveLength(2);
+
+    await photoRepo.delete(staffPhoto.id);
+    expect(await photoRepo.findByConditionId(condition.id)).toHaveLength(1);
+  });
+
+  it("Dado aceites de termo, Quando salvar e listar, Então retorna em ordem cronológica reversa", async () => {
+    const repo = new DrizzleConsentRecordRepository(appDb);
+    const first = ConsentRecord.create({
+      patientId: patient.id,
+      consentText: "Termo v1",
+      ipAddress: "10.0.0.1",
+    });
+    const second = ConsentRecord.create({
+      patientId: patient.id,
+      consentText: "Termo v2",
+    });
+    await repo.save(first);
+    await repo.save(second);
+
+    const records = await repo.findByPatientId(patient.id);
+    expect(records).toHaveLength(2);
+    expect(records.map((r) => r.id)).toContain(first.id);
+    expect(records.map((r) => r.id)).toContain(second.id);
+    expect(records.find((r) => r.id === first.id)?.ipAddress).toBe("10.0.0.1");
+  });
+
+  it("Dado lotes de insumo, Quando salvar e consultar, Então filtra ativos e a vencer", async () => {
+    const supplyRepo = new DrizzleSupplyRepository(appDb);
+    const batchRepo = new DrizzleSupplyBatchRepository(appDb);
+    const supply = Supply.create({ name: "Bolsa 45mm", unit: "un", minQty: 5, priceCents: 2500 });
+    await supplyRepo.save(supply);
+
+    const expiring = SupplyBatch.create({
+      supplyId: supply.id,
+      quantity: 10,
+      label: "Lote A",
+      expiresAt: new Date("2026-08-01T00:00:00Z"),
+    });
+    const farFuture = SupplyBatch.create({
+      supplyId: supply.id,
+      quantity: 20,
+      expiresAt: new Date("2027-01-01T00:00:00Z"),
+    });
+    await batchRepo.save(expiring);
+    await batchRepo.save(farFuture);
+
+    const active = await batchRepo.findActiveBySupplyId(supply.id);
+    expect(active).toHaveLength(2);
+
+    const { batch: depleted } = expiring.consume(10);
+    await batchRepo.save(depleted);
+    expect(await batchRepo.findActiveBySupplyId(supply.id)).toHaveLength(1);
+
+    const expiringSoon = await batchRepo.findExpiringBefore(new Date("2026-09-01T00:00:00Z"));
+    expect(expiringSoon.map((b) => b.id)).not.toContain(depleted.id);
+  });
+
+  it("Dado movimentações de estoque, Quando consultar por consulta e agregados no período, Então retorna esperado", async () => {
+    const supplyRepo = new DrizzleSupplyRepository(appDb);
+    const movementRepo = new DrizzleStockMovementRepository(appDb);
+    const supply = Supply.create({ name: "Gaze estéril", unit: "un", minQty: 5, priceCents: 500 });
+    await supplyRepo.save(supply.registerEntry(100));
+
+    const outflow = StockMovement.create({
+      supplyId: supply.id,
+      type: "out",
+      quantity: 3,
+      reason: "Consumo em atendimento",
+      unitPriceCents: 500,
+    });
+    await movementRepo.save(outflow);
+    expect(await movementRepo.findByAppointmentId("appt-inexistente")).toEqual([]);
+
+    const from = new Date(Date.now() - 3_600_000);
+    const to = new Date(Date.now() + 3_600_000);
+    const cost = await movementRepo.getOutflowCostInRange(from, to);
+    expect(cost).toEqual([{ appointmentId: null, totalCents: 1500 }]);
+
+    const qty = await movementRepo.getOutflowQtyInRange(from, to);
+    expect(qty).toEqual([{ supplyId: supply.id, totalQty: 3 }]);
   });
 });

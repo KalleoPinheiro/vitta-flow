@@ -159,7 +159,7 @@ describe("Feature: Faturamento", () => {
 
       render(<BillingPage />);
 
-      expect(await screen.findByText("Erro")).toBeInTheDocument();
+      expect(await screen.findByRole("alert")).toBeInTheDocument();
     });
 
     it("Dado fatura com status desconhecido, Quando renderizada, Então exibe o status bruto como rótulo", async () => {

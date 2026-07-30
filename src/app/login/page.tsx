@@ -26,9 +26,13 @@ function LoginCard() {
 
   return (
     <div className="flex min-h-[70vh] items-center justify-center">
-      <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 className="text-xl font-bold text-teal-700">VittaFlow</h1>
-        <p className="mb-6 mt-1 text-sm text-slate-500">Acesso restrito à equipe da clínica</p>
+      {/* sv-gradient-border é a assinatura visual do Still Void — nunca trocada
+          por box-shadow, e cards do sistema não têm sombra. */}
+      <div className="sv-gradient-border w-full max-w-sm p-8">
+        <h1 className="sv-display text-xl font-bold">VittaFlow</h1>
+        <p className="mb-6 mt-1 text-sm text-ink-3">
+          Acesso restrito à equipe da clínica
+        </p>
         {oauthError && <ErrorAlert message={oauthError} />}
         {providers && <ProviderButtons providers={providers} />}
       </div>

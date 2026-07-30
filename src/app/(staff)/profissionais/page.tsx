@@ -34,7 +34,7 @@ export default function ProfessionalsPage() {
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Profissionais</h1>
+        <h1 className="sv-display text-2xl font-bold">Profissionais</h1>
         <button
           type="button"
           onClick={() => setEditing("new")}

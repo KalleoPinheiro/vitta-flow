@@ -161,7 +161,7 @@ describe("Feature: Materiais e estoque", () => {
 
       render(<SuppliesPage />);
 
-      expect(await screen.findByText("Erro")).toBeInTheDocument();
+      expect(await screen.findByRole("alert")).toBeInTheDocument();
     });
 
     it("Dado insumos ativos e inativos, Quando a página carrega, Então lista dados e aplica opacidade ao inativo", async () => {
@@ -688,7 +688,7 @@ describe("Feature: Materiais e estoque", () => {
 
       fireEvent.click(screen.getByText("Histórico"));
 
-      expect(await screen.findByText("Erro")).toBeInTheDocument();
+      expect(await screen.findByRole("alert")).toBeInTheDocument();
     });
 
     it("Dado modal de histórico aberto, Quando fechar pelo botão Fechar, Então oculta a listagem", async () => {

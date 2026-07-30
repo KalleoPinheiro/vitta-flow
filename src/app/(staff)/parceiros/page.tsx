@@ -32,7 +32,7 @@ export default function PartnersPage() {
   return (
     <div>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Médicos parceiros</h1>
+        <h1 className="sv-display text-2xl font-bold">Médicos parceiros</h1>
         <button
           type="button"
           onClick={() => setEditing("new")}

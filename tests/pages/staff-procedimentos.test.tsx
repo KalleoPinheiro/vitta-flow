@@ -140,7 +140,7 @@ describe("Feature: Catálogo de procedimentos", () => {
 
       render(<ProceduresPage />);
 
-      expect(await screen.findByText("Erro")).toBeInTheDocument();
+      expect(await screen.findByRole("alert")).toBeInTheDocument();
     });
 
     it("Dado procedimentos ativos e inativos, Quando a página carrega, Então lista com preço, duração e situação", async () => {

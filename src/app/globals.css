@@ -1,63 +1,82 @@
-@import "@quiet-tech/ui/theme.css";
 @import "tailwindcss";
+@import "@still-void/ui/theme.css";
+@import "@still-void/ui/style.css" layer(components);
 
-/* Sobrescreve as fontes do pacote (que dependem de um @import remoto ao
-   Google Fonts bloqueado pela CSP) pelas fontes self-hosted via next/font.
-   Precisa vir depois do @import acima para vencer o :root do pacote —
-   mesma especificidade, ordem de fonte decide. */
+/* O theme.css entra sem layer (só define custom properties) e o style.css entra
+   em layer(components) de propósito: CSS sem layer vence CSS em layer, então um
+   .sv-pill fora de layer ganharia de qualquer utilitário Tailwind aplicado no
+   mesmo elemento. Em layer(components) a ordem volta a ser
+   base → components → utilities, e os utilitários seguem sobrescrevendo. */
+
+/* Sobrescreve as fontes do pacote pelas self-hosted via next/font. O Still Void
+   deliberadamente não faz @import de fontes remotas (seria render-blocking), e a
+   CSP do app (font-src 'self') bloquearia o Google Fonts de qualquer forma.
+   Precisa vir depois do @import acima para vencer o :root do pacote — mesma
+   especificidade, ordem de fonte decide. */
 :root {
-  --qt-font-display: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
-  --qt-font-body: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
-  --qt-font-mono: var(--font-jetbrains-mono), ui-monospace, "SF Mono", monospace;
+  --sv-font-display: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
+  --sv-font-body: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --sv-font-mono: var(--font-jetbrains-mono), ui-monospace, "SF Mono", monospace;
 }
 
 @theme {
-  /* --- bridge semântico: tokens quiet-tech → utilitários Tailwind --- */
-  --color-accent: var(--qt-accent);
-  --color-bg: var(--qt-bg);
-  --color-surface: var(--qt-surface);
-  --color-ink: var(--qt-text);
-  --color-ink-2: var(--qt-text-2);
-  --color-border: var(--qt-border);
+  /* --- bridge semântico: tokens still-void → utilitários Tailwind --- */
+  --color-accent: var(--sv-accent);
+  --color-accent-ink: var(--sv-accent-ink);
+  --color-bg: var(--sv-bg);
+  --color-surface: var(--sv-surface);
+  --color-ink: var(--sv-text);
+  --color-ink-2: var(--sv-text-2);
+  --color-ink-3: var(--sv-text-3);
+  --color-border: var(--sv-border);
+  --color-border-strong: var(--sv-border-strong);
 
-  --font-sans: var(--qt-font-body); /* Manrope */
-  --font-display: var(--qt-font-display); /* Sora */
-  --font-mono: var(--qt-font-mono); /* JetBrains Mono */
+  /* Estados semânticos são fixos no Still Void, independentes do accent do site:
+     um "pago" verde nunca colide com a cor da marca. Sempre a variante -ink,
+     porque no app essas cores pintam texto e selo, não superfície decorativa. */
+  --color-danger: var(--sv-danger-ink);
+  --color-success: var(--sv-success-ink);
+  --color-warning: var(--sv-warning-ink);
+  --color-info: var(--sv-info-ink);
 
-  --radius-sm: var(--qt-radius-sm);
-  --radius-md: var(--qt-radius-md);
-  --radius-lg: var(--qt-radius-lg);
-  --radius-xl: var(--qt-radius-xl);
+  --font-sans: var(--sv-font-body); /* Manrope */
+  --font-display: var(--sv-font-display); /* Sora */
+  --font-mono: var(--sv-font-mono); /* JetBrains Mono */
 
-  --spacing-4: var(--qt-space-4);
+  --radius-sm: var(--sv-radius-sm);
+  --radius-md: var(--sv-radius-md);
+  --radius-lg: var(--sv-radius-lg);
+  --radius-xl: var(--sv-radius-xl);
+
+  --spacing-4: var(--sv-space-4);
 
   /* --- override das escalas teal e slate já usadas nos componentes,
-     recolorindo o app inteiro sem editar cada arquivo --- */
-  --color-teal-50: color-mix(in oklab, var(--qt-accent) 10%, white);
-  --color-teal-100: color-mix(in oklab, var(--qt-accent) 18%, white);
-  --color-teal-200: color-mix(in oklab, var(--qt-accent) 32%, white);
-  --color-teal-300: color-mix(in oklab, var(--qt-accent) 50%, white);
-  --color-teal-400: color-mix(in oklab, var(--qt-accent) 75%, white);
-  --color-teal-500: var(--qt-accent);
-  --color-teal-600: color-mix(in oklab, var(--qt-accent) 85%, black);
-  --color-teal-700: color-mix(in oklab, var(--qt-accent) 72%, black);
-  --color-teal-800: color-mix(in oklab, var(--qt-accent) 58%, black);
-  --color-teal-900: color-mix(in oklab, var(--qt-accent) 45%, black);
+     recolorindo o app inteiro sem editar cada arquivo ---
 
-  --color-slate-50: var(--qt-bg);
-  --color-slate-100: var(--qt-surface-2);
-  --color-slate-200: color-mix(in oklab, var(--qt-text-3) 22%, var(--qt-bg));
-  --color-slate-300: color-mix(in oklab, var(--qt-text-3) 40%, var(--qt-bg));
-  --color-slate-400: var(--qt-text-3);
-  --color-slate-500: var(--qt-text-3);
-  --color-slate-600: var(--qt-text-2);
-  --color-slate-700: color-mix(in oklab, var(--qt-text) 78%, var(--qt-text-2));
-  --color-slate-800: color-mix(in oklab, var(--qt-text) 90%, var(--qt-text-2));
-  --color-slate-900: var(--qt-text);
-}
+     O Still Void separa o accent de superfície (--sv-accent) do accent de texto
+     (--sv-accent-ink, escurecido no tema claro justamente para bater 4.5:1).
+     Os degraus claros (50–500) são preenchimento/borda decorativa e derivam do
+     accent; os escuros (600–900) pintam texto (text-teal-700, 28 usos) e fundo
+     de botão com texto branco (bg-teal-700, 36 usos) e derivam do ink. */
+  --color-teal-50: color-mix(in oklab, var(--sv-accent) 10%, white);
+  --color-teal-100: color-mix(in oklab, var(--sv-accent) 18%, white);
+  --color-teal-200: color-mix(in oklab, var(--sv-accent) 32%, white);
+  --color-teal-300: color-mix(in oklab, var(--sv-accent) 50%, white);
+  --color-teal-400: color-mix(in oklab, var(--sv-accent) 75%, white);
+  --color-teal-500: var(--sv-accent);
+  --color-teal-600: color-mix(in oklab, var(--sv-accent-ink) 94%, white);
+  --color-teal-700: var(--sv-accent-ink);
+  --color-teal-800: color-mix(in oklab, var(--sv-accent-ink) 88%, black);
+  --color-teal-900: color-mix(in oklab, var(--sv-accent-ink) 76%, black);
 
-body {
-  background: var(--qt-bg);
-  color: var(--qt-text);
-  font-family: var(--qt-font-body);
+  --color-slate-50: var(--sv-bg);
+  --color-slate-100: var(--sv-surface-2);
+  --color-slate-200: color-mix(in oklab, var(--sv-text-3) 22%, var(--sv-bg));
+  --color-slate-300: color-mix(in oklab, var(--sv-text-3) 40%, var(--sv-bg));
+  --color-slate-400: var(--sv-text-3);
+  --color-slate-500: var(--sv-text-3);
+  --color-slate-600: var(--sv-text-2);
+  --color-slate-700: color-mix(in oklab, var(--sv-text) 78%, var(--sv-text-2));
+  --color-slate-800: color-mix(in oklab, var(--sv-text) 90%, var(--sv-text-2));
+  --color-slate-900: var(--sv-text);
 }

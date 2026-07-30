@@ -12,17 +12,20 @@ describe("Feature: Componentes de feedback", () => {
     it("Dado uma mensagem, Quando renderizar ErrorAlert, Então exibe a mensagem com estilo de erro", () => {
       render(<ErrorAlert message="Falha ao salvar paciente" />);
 
-      const alert = screen.getByText("Falha ao salvar paciente");
-      expect(alert).toBeInTheDocument();
-      expect(alert).toHaveClass("text-red-800");
+      expect(screen.getByText("Falha ao salvar paciente")).toBeInTheDocument();
+
+      const alert = screen.getByRole("alert");
+      expect(alert).toHaveClass("sv-callout");
+      expect(alert.style.getPropertyValue("--sv-callout-color")).toBe("var(--sv-danger-ink)");
     });
   });
 
   describe("Cenário: indicador de carregamento", () => {
     it("Dado nenhuma prop, Quando renderizar LoadingIndicator, Então exibe texto de carregamento", () => {
-      render(<LoadingIndicator />);
+      const { container } = render(<LoadingIndicator />);
 
       expect(screen.getByText("Carregando…")).toBeInTheDocument();
+      expect(container.querySelector(".sv-card-skeleton")).toBeInTheDocument();
     });
   });
 

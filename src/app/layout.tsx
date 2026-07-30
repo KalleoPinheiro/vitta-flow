@@ -37,7 +37,9 @@ export default function RootLayout({
       data-accent="violet"
       className={`${sora.variable} ${manrope.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-screen">{children}</body>
+      {/* sv-body é o seletor base do Still Void: background, cor, família,
+          escala tipográfica e antialiasing vêm todos do design system. */}
+      <body className="sv-body min-h-screen">{children}</body>
     </html>
   );
 }

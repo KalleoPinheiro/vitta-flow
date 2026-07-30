@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Hero } from "@still-void/ui/react";
 import type { PartnerDto, PortalAppointmentDto, ReferredPatientSummaryDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import { APPOINTMENT_STATUS_LABELS, formatDateTime } from "@/lib/format";
@@ -28,13 +29,14 @@ export function PartnerPortalView() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold">{data.partner.fullName}</h1>
-        <p className="text-sm text-slate-500">
-          {data.partner.crm ?? ""} {data.partner.specialty ? `· ${data.partner.specialty}` : ""} —
-          acompanhamento dos pacientes que você indicou.
-        </p>
-      </div>
+      <Hero
+        className="pt-0 pb-2"
+        eyebrow="Portal do parceiro"
+        title={data.partner.fullName}
+        description={`${data.partner.crm ?? ""} ${
+          data.partner.specialty ? `· ${data.partner.specialty}` : ""
+        } — acompanhamento dos pacientes que você indicou.`}
+      />
 
       {data.referredPatients.length === 0 ? (
         <EmptyState message="Nenhum paciente indicado por você até o momento." />

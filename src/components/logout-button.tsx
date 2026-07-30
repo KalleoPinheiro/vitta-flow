@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { headerClasses } from "@still-void/ui";
 
 export function LogoutButton() {
   const router = useRouter();
@@ -15,7 +16,7 @@ export function LogoutButton() {
     <button
       type="button"
       onClick={() => void handleLogout()}
-      className="rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-500 transition hover:bg-red-50 hover:text-red-700"
+      className={`${headerClasses.link} self-start`}
     >
       Sair
     </button>

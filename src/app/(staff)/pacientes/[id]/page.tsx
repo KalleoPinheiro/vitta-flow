@@ -38,7 +38,7 @@ interface TabButtonProps {
 function PatientHeader({ patient }: { patient: PatientDto }) {
   return (
     <div className="mb-6 flex flex-wrap items-center gap-3">
-      <h1 className="text-2xl font-bold">{patient.fullName}</h1>
+      <h1 className="sv-display text-2xl font-bold">{patient.fullName}</h1>
       <StatusBadge
         status={patient.active ? "confirmed" : "cancelled"}
         label={patient.active ? "Ativo" : "Inativo"}

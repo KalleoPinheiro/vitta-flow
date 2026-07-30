@@ -1,0 +1,525 @@
+import { describe, it, expect, beforeAll } from "vitest";
+import { NextRequest } from "next/server";
+
+process.env.VITTA_DB_DRIVER = "pglite";
+
+const jsonRequest = (url: string, method: string, body?: unknown) =>
+  new NextRequest(`http://localhost${url}`, {
+    method,
+    body: body === undefined ? undefined : JSON.stringify(body),
+    headers: { "Content-Type": "application/json" },
+  });
+
+const PNG_BYTES = new Uint8Array([
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+]);
+
+const NOT_IMAGE_BYTES = new Uint8Array([0x00, 0x01, 0x02, 0x03, 0x04, 0x05]);
+
+const photoUploadRequest = (conditionId: string, formData: FormData) =>
+  new NextRequest(`http://localhost/api/conditions/${conditionId}/photos`, {
+    method: "POST",
+    body: formData,
+  });
+
+interface Envelope<T> {
+  success: boolean;
+  data: T;
+  error: string | null;
+}
+
+describe("Feature: Rotas clínicas (condições, avaliações, fotos, anamnese, evolução)", () => {
+  let patientsRoute: typeof import("@/app/api/patients/route");
+  let anamnesisRoute: typeof import("@/app/api/patients/[id]/anamnesis/route");
+  let patientConditionsRoute: typeof import("@/app/api/patients/[id]/conditions/route");
+  let evolutionsRoute: typeof import("@/app/api/patients/[id]/evolutions/route");
+  let conditionByIdRoute: typeof import("@/app/api/conditions/[id]/route");
+  let assessmentsRoute: typeof import("@/app/api/conditions/[id]/assessments/route");
+  let photosRoute: typeof import("@/app/api/conditions/[id]/photos/route");
+
+  let patientId: string;
+  let conditionAId: string;
+  let conditionBId: string;
+
+  beforeAll(async () => {
+    patientsRoute = await import("@/app/api/patients/route");
+    anamnesisRoute = await import("@/app/api/patients/[id]/anamnesis/route");
+    patientConditionsRoute = await import("@/app/api/patients/[id]/conditions/route");
+    evolutionsRoute = await import("@/app/api/patients/[id]/evolutions/route");
+    conditionByIdRoute = await import("@/app/api/conditions/[id]/route");
+    assessmentsRoute = await import("@/app/api/conditions/[id]/assessments/route");
+    photosRoute = await import("@/app/api/conditions/[id]/photos/route");
+  });
+
+  const context = (id: string) => ({ params: Promise.resolve({ id }) });
+
+  it("Dado dados válidos, Quando POST /api/patients, Então cria paciente para os testes clínicos", async () => {
+    const response = await patientsRoute.POST(
+      jsonRequest("/api/patients", "POST", {
+        fullName: "João Pereira",
+        email: "joao.pereira@example.com",
+        phone: "11977776666",
+      }),
+    );
+    const body = (await response.json()) as Envelope<{ id: string }>;
+
+    expect(response.status).toBe(200);
+    patientId = body.data.id;
+  });
+
+  describe("Anamnese", () => {
+    it("Dado paciente sem anamnese, Quando GET /api/patients/:id/anamnesis, Então retorna data null", async () => {
+      const response = await anamnesisRoute.GET(
+        jsonRequest(`/api/patients/${patientId}/anamnesis`, "GET"),
+        context(patientId),
+      );
+      const body = (await response.json()) as Envelope<null>;
+
+      expect(response.status).toBe(200);
+      expect(body.data).toBeNull();
+    });
+
+    it("Dado dados válidos, Quando PUT /api/patients/:id/anamnesis, Então cria anamnese", async () => {
+      const response = await anamnesisRoute.PUT(
+        jsonRequest(`/api/patients/${patientId}/anamnesis`, "PUT", {
+          comorbidities: "Diabetes tipo 2",
+          allergies: "Nenhuma conhecida",
+          medications: "Metformina",
+          surgicalHistory: "Apendicectomia (2010)",
+          notes: "Paciente colaborativo",
+        }),
+        context(patientId),
+      );
+      const body = (await response.json()) as Envelope<{
+        patientId: string;
+        comorbidities: string;
+      }>;
+
+      expect(response.status).toBe(200);
+      expect(body.data.patientId).toBe(patientId);
+      expect(body.data.comorbidities).toBe("Diabetes tipo 2");
+    });
+
+    it("Dado anamnese existente, Quando PUT novamente, Então atualiza (upsert)", async () => {
+      const response = await anamnesisRoute.PUT(
+        jsonRequest(`/api/patients/${patientId}/anamnesis`, "PUT", {
+          comorbidities: "Diabetes tipo 2 controlada",
+        }),
+        context(patientId),
+      );
+      const body = (await response.json()) as Envelope<{ comorbidities: string }>;
+
+      expect(response.status).toBe(200);
+      expect(body.data.comorbidities).toBe("Diabetes tipo 2 controlada");
+
+      const getResponse = await anamnesisRoute.GET(
+        jsonRequest(`/api/patients/${patientId}/anamnesis`, "GET"),
+        context(patientId),
+      );
+      const getBody = (await getResponse.json()) as Envelope<{ comorbidities: string }>;
+
+      expect(getBody.data.comorbidities).toBe("Diabetes tipo 2 controlada");
+    });
+
+    it("Dado paciente inexistente, Quando PUT /api/patients/:id/anamnesis, Então retorna 404", async () => {
+      const response = await anamnesisRoute.PUT(
+        jsonRequest("/api/patients/ghost/anamnesis", "PUT", { comorbidities: "x" }),
+        context("ghost"),
+      );
+
+      expect(response.status).toBe(404);
+    });
+  });
+
+  describe("Condições clínicas", () => {
+    it("Dado dados válidos, Quando POST /api/patients/:id/conditions, Então cria condição de ferida", async () => {
+      const response = await patientConditionsRoute.POST(
+        jsonRequest(`/api/patients/${patientId}/conditions`, "POST", {
+          kind: "wound",
+          title: "Ferida sacral",
+          notes: "Estágio 2",
+        }),
+        context(patientId),
+      );
+      const body = (await response.json()) as Envelope<{
+        id: string;
+        patientId: string;
+        kind: string;
+        status: string;
+      }>;
+
+      expect(response.status).toBe(200);
+      expect(body.data.kind).toBe("wound");
+      expect(body.data.status).toBe("active");
+      conditionAId = body.data.id;
+    });
+
+    it("Dado dados válidos, Quando POST /api/patients/:id/conditions, Então cria condição de estomia", async () => {
+      const response = await patientConditionsRoute.POST(
+        jsonRequest(`/api/patients/${patientId}/conditions`, "POST", {
+          kind: "stoma",
+          title: "Colostomia definitiva",
+          stomaType: "colostomia",
+        }),
+        context(patientId),
+      );
+      const body = (await response.json()) as Envelope<{ id: string; stomaType: string }>;
+
+      expect(response.status).toBe(200);
+      expect(body.data.stomaType).toBe("colostomia");
+      conditionBId = body.data.id;
+    });
+
+    it("Dado kind inválido, Quando POST /api/patients/:id/conditions, Então retorna 400", async () => {
+      const response = await patientConditionsRoute.POST(
+        jsonRequest(`/api/patients/${patientId}/conditions`, "POST", {
+          kind: "invalid-kind",
+          title: "Condição inválida",
+        }),
+        context(patientId),
+      );
+      const body = (await response.json()) as Envelope<null>;
+
+      expect(response.status).toBe(400);
+      expect(body.error).toContain("Dados inválidos");
+    });
+
+    it("Dado paciente inexistente, Quando POST /api/patients/:id/conditions, Então retorna 404", async () => {
+      const response = await patientConditionsRoute.POST(
+        jsonRequest("/api/patients/ghost/conditions", "POST", {
+          kind: "wound",
+          title: "Ferida",
+        }),
+        context("ghost"),
+      );
+
+      expect(response.status).toBe(404);
+    });
+
+    it("Dado paciente com condições, Quando GET /api/patients/:id/conditions, Então lista ambas", async () => {
+      const response = await patientConditionsRoute.GET(
+        jsonRequest(`/api/patients/${patientId}/conditions`, "GET"),
+        context(patientId),
+      );
+      const body = (await response.json()) as Envelope<Array<{ id: string }>>;
+
+      expect(body.data).toHaveLength(2);
+    });
+
+    it("Dado condição existente, Quando GET /api/conditions/:id, Então retorna a condição", async () => {
+      const response = await conditionByIdRoute.GET(
+        jsonRequest(`/api/conditions/${conditionAId}`, "GET"),
+        context(conditionAId),
+      );
+      const body = (await response.json()) as Envelope<{ id: string; title: string }>;
+
+      expect(response.status).toBe(200);
+      expect(body.data.id).toBe(conditionAId);
+      expect(body.data.title).toBe("Ferida sacral");
+    });
+
+    it("Dado condição inexistente, Quando GET /api/conditions/:id, Então retorna 200 com data null", async () => {
+      const response = await conditionByIdRoute.GET(
+        jsonRequest("/api/conditions/ghost", "GET"),
+        context("ghost"),
+      );
+      const body = (await response.json()) as Envelope<null>;
+
+      expect(response.status).toBe(200);
+      expect(body.data).toBeNull();
+    });
+
+    it("Dado action inválida, Quando PATCH /api/conditions/:id, Então retorna 400", async () => {
+      const response = await conditionByIdRoute.PATCH(
+        jsonRequest(`/api/conditions/${conditionAId}`, "PATCH", { action: "close" }),
+        context(conditionAId),
+      );
+
+      expect(response.status).toBe(400);
+    });
+
+    it("Dado condição inexistente, Quando PATCH resolve, Então retorna 404", async () => {
+      const response = await conditionByIdRoute.PATCH(
+        jsonRequest("/api/conditions/ghost", "PATCH", { action: "resolve" }),
+        context("ghost"),
+      );
+
+      expect(response.status).toBe(404);
+    });
+
+    it("Dado condição ativa, Quando PATCH resolve, Então resolve a condição", async () => {
+      const response = await conditionByIdRoute.PATCH(
+        jsonRequest(`/api/conditions/${conditionAId}`, "PATCH", { action: "resolve" }),
+        context(conditionAId),
+      );
+      const body = (await response.json()) as Envelope<{ status: string }>;
+
+      expect(response.status).toBe(200);
+      expect(body.data.status).toBe("resolved");
+    });
+
+    it("Dado condição já resolvida, Quando PATCH resolve novamente, Então retorna 409", async () => {
+      const response = await conditionByIdRoute.PATCH(
+        jsonRequest(`/api/conditions/${conditionAId}`, "PATCH", { action: "resolve" }),
+        context(conditionAId),
+      );
+
+      expect(response.status).toBe(409);
+    });
+  });
+
+  describe("Avaliações de condição", () => {
+    it("Dado dados válidos, Quando POST /api/conditions/:id/assessments, Então cria avaliação", async () => {
+      const response = await assessmentsRoute.POST(
+        jsonRequest(`/api/conditions/${conditionBId}/assessments`, "POST", {
+          lengthMm: 20,
+          widthMm: 10,
+          depthMm: 5,
+          exudate: "moderate",
+          painScale: 4,
+          notes: "Evolução favorável",
+        }),
+        context(conditionBId),
+      );
+      const body = (await response.json()) as Envelope<{
+        id: string;
+        conditionId: string;
+        exudate: string;
+        painScale: number;
+        areaMm2: number | null;
+      }>;
+
+      expect(response.status).toBe(200);
+      expect(body.data.conditionId).toBe(conditionBId);
+      expect(body.data.exudate).toBe("moderate");
+      expect(body.data.painScale).toBe(4);
+      expect(body.data.areaMm2).toBe(200);
+    });
+
+    it("Dado painScale fora do intervalo, Quando POST assessments, Então retorna 400", async () => {
+      const response = await assessmentsRoute.POST(
+        jsonRequest(`/api/conditions/${conditionBId}/assessments`, "POST", {
+          painScale: 99,
+        }),
+        context(conditionBId),
+      );
+      const body = (await response.json()) as Envelope<null>;
+
+      expect(response.status).toBe(400);
+      expect(body.error).toContain("Dados inválidos");
+    });
+
+    it("Dado condição inexistente, Quando POST assessments, Então retorna 404", async () => {
+      const response = await assessmentsRoute.POST(
+        jsonRequest("/api/conditions/ghost/assessments", "POST", { painScale: 3 }),
+        context("ghost"),
+      );
+
+      expect(response.status).toBe(404);
+    });
+
+    it("Dado condição inexistente, Quando GET /api/conditions/:id/assessments, Então lista vazia sem erro", async () => {
+      const response = await assessmentsRoute.GET(
+        jsonRequest("/api/conditions/ghost/assessments", "GET"),
+        context("ghost"),
+      );
+      const body = (await response.json()) as Envelope<Array<unknown>>;
+
+      expect(response.status).toBe(200);
+      expect(body.data).toEqual([]);
+    });
+
+    it("Dado condição com avaliação, Quando GET /api/conditions/:id/assessments, Então retorna a lista", async () => {
+      const response = await assessmentsRoute.GET(
+        jsonRequest(`/api/conditions/${conditionBId}/assessments`, "GET"),
+        context(conditionBId),
+      );
+      const body = (await response.json()) as Envelope<Array<{ conditionId: string }>>;
+
+      expect(body.data).toHaveLength(1);
+      expect(body.data[0].conditionId).toBe(conditionBId);
+    });
+  });
+
+  describe("Fotos de condição", () => {
+    it("Dado arquivo que não é imagem, Quando POST /api/conditions/:id/photos, Então retorna 400", async () => {
+      const formData = new FormData();
+      formData.set(
+        "file",
+        new File([NOT_IMAGE_BYTES], "arquivo.txt", { type: "text/plain" }),
+      );
+
+      const response = await photosRoute.POST(
+        photoUploadRequest(conditionBId, formData),
+        context(conditionBId),
+      );
+      const body = (await response.json()) as Envelope<null>;
+
+      expect(response.status).toBe(400);
+      expect(body.error).toContain("Arquivo não é uma imagem");
+    });
+
+    it("Dado campo file ausente, Quando POST /api/conditions/:id/photos, Então retorna 400 direto", async () => {
+      const formData = new FormData();
+
+      const response = await photosRoute.POST(
+        photoUploadRequest(conditionBId, formData),
+        context(conditionBId),
+      );
+
+      expect(response.status).toBe(400);
+    });
+
+    it("Dado condição inexistente, Quando POST /api/conditions/:id/photos com imagem válida, Então retorna 404", async () => {
+      const formData = new FormData();
+      formData.set("file", new File([PNG_BYTES], "ferida.png", { type: "image/png" }));
+
+      const response = await photosRoute.POST(
+        photoUploadRequest("ghost", formData),
+        context("ghost"),
+      );
+
+      expect(response.status).toBe(404);
+    });
+
+    it("Dado imagem PNG válida, Quando POST /api/conditions/:id/photos, Então salva a foto", async () => {
+      const formData = new FormData();
+      formData.set("file", new File([PNG_BYTES], "ferida.png", { type: "image/png" }));
+
+      const response = await photosRoute.POST(
+        photoUploadRequest(conditionBId, formData),
+        context(conditionBId),
+      );
+      const body = (await response.json()) as Envelope<{
+        conditionId: string;
+        contentType: string;
+      }>;
+
+      expect(response.status).toBe(200);
+      expect(body.data.conditionId).toBe(conditionBId);
+      expect(body.data.contentType).toBe("image/png");
+    });
+
+    it("Dado condição com foto, Quando GET /api/conditions/:id/photos, Então lista a foto", async () => {
+      const response = await photosRoute.GET(
+        jsonRequest(`/api/conditions/${conditionBId}/photos`, "GET"),
+        context(conditionBId),
+      );
+      const body = (await response.json()) as Envelope<Array<{ conditionId: string }>>;
+
+      expect(body.data).toHaveLength(1);
+      expect(body.data[0].conditionId).toBe(conditionBId);
+    });
+
+    it("Dado condição B ativa, Quando PATCH resolve, Então resolve a condição B", async () => {
+      const response = await conditionByIdRoute.PATCH(
+        jsonRequest(`/api/conditions/${conditionBId}`, "PATCH", { action: "resolve" }),
+        context(conditionBId),
+      );
+      const body = (await response.json()) as Envelope<{ status: string }>;
+
+      expect(response.status).toBe(200);
+      expect(body.data.status).toBe("resolved");
+    });
+
+    it("Dado condição resolvida, Quando POST assessments, Então retorna 400 de regra de negócio", async () => {
+      const response = await assessmentsRoute.POST(
+        jsonRequest(`/api/conditions/${conditionBId}/assessments`, "POST", {
+          painScale: 2,
+        }),
+        context(conditionBId),
+      );
+      const body = (await response.json()) as Envelope<null>;
+
+      expect(response.status).toBe(400);
+      expect(body.error).toContain("já resolvida");
+    });
+  });
+
+  describe("Notas de evolução", () => {
+    it("Dado paciente sem evoluções, Quando GET /api/patients/:id/evolutions, Então retorna lista vazia", async () => {
+      const response = await evolutionsRoute.GET(
+        jsonRequest(`/api/patients/${patientId}/evolutions`, "GET"),
+        context(patientId),
+      );
+      const body = (await response.json()) as Envelope<Array<unknown>>;
+
+      expect(response.status).toBe(200);
+      expect(body.data).toEqual([]);
+    });
+
+    it("Dado dados válidos, Quando POST /api/patients/:id/evolutions, Então cria nota de evolução", async () => {
+      const response = await evolutionsRoute.POST(
+        jsonRequest(`/api/patients/${patientId}/evolutions`, "POST", {
+          subjective: "Paciente relata melhora da dor",
+          objective: "Ferida com bordas limpas",
+          assessment: "Evolução favorável",
+          plan: "Manter curativo atual",
+        }),
+        context(patientId),
+      );
+      const body = (await response.json()) as Envelope<{
+        id: string;
+        patientId: string;
+        subjective: string;
+      }>;
+
+      expect(response.status).toBe(200);
+      expect(body.data.patientId).toBe(patientId);
+      expect(body.data.subjective).toBe("Paciente relata melhora da dor");
+    });
+
+    it("Dado só um campo SOAP preenchido, Quando POST /api/patients/:id/evolutions, Então usa defaults vazios nos demais", async () => {
+      const response = await evolutionsRoute.POST(
+        jsonRequest(`/api/patients/${patientId}/evolutions`, "POST", {
+          subjective: "Nota rápida",
+        }),
+        context(patientId),
+      );
+      const body = (await response.json()) as Envelope<{
+        subjective: string;
+        objective: string;
+        assessment: string;
+        plan: string;
+      }>;
+
+      expect(response.status).toBe(200);
+      expect(body.data.subjective).toBe("Nota rápida");
+      expect(body.data.objective).toBe("");
+      expect(body.data.plan).toBe("");
+    });
+
+    it("Dado todos os campos SOAP vazios, Quando POST /api/patients/:id/evolutions, Então retorna 400 de regra de negócio", async () => {
+      const response = await evolutionsRoute.POST(
+        jsonRequest(`/api/patients/${patientId}/evolutions`, "POST", {}),
+        context(patientId),
+      );
+      const body = (await response.json()) as Envelope<null>;
+
+      expect(response.status).toBe(400);
+      expect(body.error).toContain("ao menos um campo SOAP");
+    });
+
+    it("Dado paciente inexistente, Quando POST /api/patients/:id/evolutions, Então retorna 404", async () => {
+      const response = await evolutionsRoute.POST(
+        jsonRequest("/api/patients/ghost/evolutions", "POST", {
+          subjective: "x",
+        }),
+        context("ghost"),
+      );
+
+      expect(response.status).toBe(404);
+    });
+
+    it("Dado paciente com notas, Quando GET /api/patients/:id/evolutions, Então lista as notas criadas", async () => {
+      const response = await evolutionsRoute.GET(
+        jsonRequest(`/api/patients/${patientId}/evolutions`, "GET"),
+        context(patientId),
+      );
+      const body = (await response.json()) as Envelope<Array<{ patientId: string }>>;
+
+      expect(body.data).toHaveLength(2);
+      expect(body.data[0].patientId).toBe(patientId);
+    });
+  });
+});

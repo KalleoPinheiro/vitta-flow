@@ -103,4 +103,14 @@ describe("Feature: Previsão de ruptura e validade de lotes", () => {
     const active = await batchRepo.findActiveBySupplyId(bolsa.id);
     expect(active).toHaveLength(0);
   });
+
+  it("Dado GetSupplyInsights sem repositório de lotes, Quando calcular, Então expiringBatches vazio sem lançar", async () => {
+    await move({ supplyId: bolsa.id, type: "in", quantity: 120, reason: "Compra" });
+    await move({ supplyId: bolsa.id, type: "out", quantity: 90, reason: "Uso" });
+
+    const insights = await new GetSupplyInsights(supplyRepo, movementRepo).execute();
+
+    expect(insights.expiringBatches).toEqual([]);
+    expect(insights.bySupply.find((i) => i.supplyId === bolsa.id)?.daysToStockout).toBe(30);
+  });
 });

@@ -10,13 +10,15 @@
     "db:migrate": "drizzle-kit migrate",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@quiet-tech/ui": "^1.0.0",
     "drizzle-orm": "^0.45.2",
     "googleapis": "^173.0.0",
-    "next": "16.2.10",
+    "next": "^16.2.11",
     "pg": "^8.22.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
@@ -24,6 +26,7 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.4",
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",

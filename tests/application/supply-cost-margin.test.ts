@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { InMemoryPatientRepository } from "@/infrastructure/persistence/in-memory/in-memory-patient-repository";
 import { InMemoryAppointmentRepository } from "@/infrastructure/persistence/in-memory/in-memory-appointment-repository";
 import { InMemoryInvoiceRepository } from "@/infrastructure/persistence/in-memory/in-memory-invoice-repository";
+import { InMemoryProfessionalRepository } from "@/infrastructure/persistence/in-memory/in-memory-professional-repository";
 import {
   InMemorySupplyRepository,
   InMemoryStockMovementRepository,
@@ -13,6 +14,7 @@ import { CreateSupply } from "@/application/inventory/create-supply";
 import { RegisterStockMovement } from "@/application/inventory/register-stock-movement";
 import { GetMonthlyReport } from "@/application/reports/get-monthly-report";
 import { NotFoundError } from "@/domain/shared/errors";
+import { Professional } from "@/domain/professional/professional";
 import type { Patient } from "@/domain/patient/patient";
 import type { Supply } from "@/domain/inventory/supply";
 
@@ -131,5 +133,48 @@ describe("Feature: Custo de insumos por atendimento e margem por procedimento", 
         appointmentId: "ghost",
       }),
     ).rejects.toThrow(NotFoundError);
+  });
+
+  it("Dado dois profissionais com produção diferente, Quando gerar relatório, Então ordena por receita e calcula repasse", async () => {
+    const professionalRepo = new InMemoryProfessionalRepository();
+    const top = Professional.create({ fullName: "Dra. Ana", commissionPct: 20 });
+    const secondary = Professional.create({ fullName: "Dr. Bruno", commissionPct: null });
+    await professionalRepo.save(top);
+    await professionalRepo.save(secondary);
+
+    const appt1 = await new ScheduleAppointment(appointmentRepo, patientRepo).execute({
+      patientId: maria.id,
+      startsAt: new Date("2026-07-21T09:00:00Z"),
+      endsAt: new Date("2026-07-21T10:00:00Z"),
+      procedure: "Avaliação",
+      priceCents: 30000,
+      professionalId: top.id,
+    });
+    await new CompleteAppointment(appointmentRepo, invoiceRepo).execute({ id: appt1.id });
+
+    const appt2 = await new ScheduleAppointment(appointmentRepo, patientRepo).execute({
+      patientId: maria.id,
+      startsAt: new Date("2026-07-22T09:00:00Z"),
+      endsAt: new Date("2026-07-22T10:00:00Z"),
+      procedure: "Curativo",
+      priceCents: 10000,
+      professionalId: secondary.id,
+    });
+    await new CompleteAppointment(appointmentRepo, invoiceRepo).execute({ id: appt2.id });
+
+    const report = await new GetMonthlyReport(
+      appointmentRepo,
+      invoiceRepo,
+      movementRepo,
+      professionalRepo,
+    ).execute({
+      from: new Date("2026-07-01T00:00:00Z"),
+      to: new Date("2026-08-01T00:00:00Z"),
+    });
+
+    expect(report.productionByProfessional[0]?.professionalName).toBe("Dra. Ana");
+    expect(report.productionByProfessional[0]?.commissionCents).toBe(6000);
+    expect(report.productionByProfessional[1]?.professionalName).toBe("Dr. Bruno");
+    expect(report.productionByProfessional[1]?.commissionCents).toBeNull();
   });
 });

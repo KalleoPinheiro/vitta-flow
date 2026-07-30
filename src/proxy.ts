@@ -3,7 +3,10 @@ import { getAuthConfig, verifySessionToken, SESSION_COOKIE } from "@/lib/auth/se
 import { googleOAuthConfigFromEnv } from "@/lib/auth/google-oauth";
 import { RateLimiter } from "@/lib/auth/rate-limit";
 
-const API_RATE_LIMIT = new RateLimiter(120, 60_000);
+// Configurável via env para permitir relaxar em ambientes de teste E2E (muitas
+// chamadas de setup em sequência) sem afetar o padrão de produção.
+const API_RATE_LIMIT_MAX = Number(process.env.API_RATE_LIMIT_MAX) || 120;
+const API_RATE_LIMIT = new RateLimiter(API_RATE_LIMIT_MAX, 60_000);
 
 const PUBLIC_PATHS = [
   "/login",

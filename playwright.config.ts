@@ -1,0 +1,91 @@
+import { defineConfig, devices } from "@playwright/test";
+import {
+  ADMIN_STORAGE_STATE_PATH,
+  E2E_AUTH_PASSWORD,
+  E2E_AUTH_SECRET,
+  MAIN_BASE_URL,
+  OPEN_MODE_BASE_URL,
+  OPEN_MODE_PORT,
+} from "./e2e/support/constants";
+
+/**
+ * O app exige AUTH_SECRET configurado para QUALQUER sessão funcionar — inclusive o
+ * portal do paciente/parceiro (`getRequestSession()` não depende só do proxy, ver
+ * `src/lib/auth/request-session.ts`). Por isso o servidor principal (porta 3000)
+ * roda sempre com autenticação ligada: specs de equipe reaproveitam uma sessão
+ * admin já logada via `storageState` (gerada em `global-setup.ts`); specs de
+ * portal assinam um cookie de sessão paciente/parceiro na hora (mesmo segredo);
+ * `auth.spec.ts` testa o fluxo de login de verdade.
+ *
+ * Um segundo servidor (porta 3100), sem AUTH_SECRET/AUTH_PASSWORD, sobe só para o
+ * cenário de "modo aberto" em `auth.spec.ts` — processo Next isolado, então tem seu
+ * próprio PGlite em memória (não compartilha dados semeados com o servidor principal).
+ */
+export default defineConfig({
+  testDir: "./e2e",
+  // Banco PGlite em memória é compartilhado por todo o processo do servidor
+  // principal — rodar specs em paralelo geraria corrida em agenda/estoque/etc.
+  fullyParallel: false,
+  workers: 1,
+  // Servidor dev compila rotas sob demanda — a primeira visita de cada rota
+  // no processo pode ser lenta o bastante pra estourar o timeout da assertion;
+  // 1 retry absorve esse cold-compile sem mascarar falhas reais (que persistem).
+  retries: 1,
+  reporter: "list",
+  timeout: 60_000,
+  // Servidor dev (Turbopack) compila rotas sob demanda na primeira visita —
+  // o default de 5s para assertions é apertado demais para isso.
+  expect: { timeout: 10_000 },
+  globalSetup: "./e2e/global-setup.ts",
+  use: {
+    baseURL: MAIN_BASE_URL,
+    trace: "on-first-retry",
+    screenshot: "only-on-failure",
+    storageState: ADMIN_STORAGE_STATE_PATH,
+    // O servidor roda com TZ=America/Sao_Paulo (ver webServer.env abaixo) e telas
+    // como o formulário de remarcar constroem `new Date("YYYY-MM-DDTHH:mm:ss")`
+    // sem offset (interpretado no fuso do BROWSER) — sem isso, o fuso do host que
+    // roda os testes (não necessariamente São Paulo) desalinha os horários.
+    timezoneId: "America/Sao_Paulo",
+  },
+  projects: [
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
+    },
+  ],
+  webServer: [
+    {
+      command: "npm run dev",
+      url: MAIN_BASE_URL,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+      env: {
+        VITTA_DB_DRIVER: "pglite",
+        TZ: "America/Sao_Paulo",
+        AUTH_SECRET: E2E_AUTH_SECRET,
+        AUTH_PASSWORD: E2E_AUTH_PASSWORD,
+        // A suíte inteira roda no mesmo IP (loopback) contra um processo só —
+        // o limite de produção (120/min) estoura fácil com o volume de setup via API.
+        API_RATE_LIMIT_MAX: "100000",
+      },
+    },
+    {
+      command: "npm run dev",
+      url: OPEN_MODE_BASE_URL,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+      env: {
+        VITTA_DB_DRIVER: "pglite",
+        TZ: "America/Sao_Paulo",
+        PORT: String(OPEN_MODE_PORT),
+        AUTH_SECRET: "",
+        AUTH_PASSWORD: "",
+        // distDir isolado — dois `next dev` no mesmo checkout, mesmo diretório,
+        // travam no lock de distDir do Next 16 (experimental.lockDistDir, default true).
+        NEXT_DIST_DIR: ".next-open-mode",
+        API_RATE_LIMIT_MAX: "100000",
+      },
+    },
+  ],
+});

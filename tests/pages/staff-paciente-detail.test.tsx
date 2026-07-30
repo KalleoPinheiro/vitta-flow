@@ -1,0 +1,1397 @@
+// @vitest-environment jsdom
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
+import type {
+  AnamnesisDto,
+  AssessmentDto,
+  ConditionDto,
+  ConditionPhotoDto,
+  EvolutionNoteDto,
+  PatientDto,
+  ProfessionalDto,
+} from "@/lib/dto";
+import { formatDate, formatDateTime } from "@/lib/format";
+import PatientRecordPage from "@/app/(staff)/pacientes/[id]/page";
+
+interface FetchCall {
+  url: string;
+  init?: RequestInit;
+}
+type MockedResponse = { ok: boolean; json: () => Promise<unknown> };
+
+const jsonResponse = (data: unknown, ok = true): MockedResponse => ({
+  ok,
+  json: async () => ({ success: ok, data, error: ok ? null : "Erro" }),
+});
+
+const errorResponse = (message: string): MockedResponse => ({
+  ok: false,
+  json: async () => ({ success: false, data: null, error: message }),
+});
+
+/** Resposta crua usada pelo upload de foto (fetch direto, sem envelope da API). */
+const rawResponse = (ok: boolean, body: unknown): MockedResponse => ({
+  ok,
+  json: async () => body,
+});
+
+const mockFetch = (
+  router: (call: FetchCall) => MockedResponse | Promise<MockedResponse>,
+): ReturnType<typeof vi.fn> => {
+  const fn = vi.fn(async (url: string, init?: RequestInit) => router({ url, init }));
+  vi.stubGlobal("fetch", fn);
+  return fn;
+};
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+async function renderDetail(id = "pac-1") {
+  await act(async () => {
+    render(<PatientRecordPage params={Promise.resolve({ id })} />);
+  });
+}
+
+const patientFixture: PatientDto = {
+  id: "pac-1",
+  fullName: "Maria Souza",
+  email: "maria@example.com",
+  phone: "11988887777",
+  birthDate: "1990-05-10T00:00:00.000Z",
+  notes: null,
+  referredByPartnerId: null,
+  active: true,
+  createdAt: "2026-01-01T00:00:00.000Z",
+};
+
+const anamnesisFixture: AnamnesisDto = {
+  patientId: "pac-1",
+  comorbidities: "Diabetes tipo 2",
+  allergies: "Látex",
+  medications: "Metformina 850mg",
+  surgicalHistory: "Colectomia (2024)",
+  notes: "Paciente colaborativo",
+  updatedAt: "2026-01-05T10:00:00.000Z",
+};
+
+const woundConditionFixture: ConditionDto = {
+  id: "cond-wound",
+  patientId: "pac-1",
+  kind: "wound",
+  title: "Úlcera venosa perna E",
+  stomaType: null,
+  startedAt: "2026-01-01T00:00:00.000Z",
+  notes: null,
+  status: "active",
+  createdAt: "2026-01-01T00:00:00.000Z",
+};
+
+const stomaConditionFixture: ConditionDto = {
+  id: "cond-stoma",
+  patientId: "pac-1",
+  kind: "stoma",
+  title: "Colostomia terminal QIE",
+  stomaType: "colostomia",
+  startedAt: "2026-01-01T00:00:00.000Z",
+  notes: null,
+  status: "active",
+  createdAt: "2026-01-01T00:00:00.000Z",
+};
+
+const resolvedConditionFixture: ConditionDto = {
+  ...woundConditionFixture,
+  id: "cond-resolved",
+  title: "Ferida cicatrizada",
+  status: "resolved",
+};
+
+const pushAssessmentFixture: AssessmentDto = {
+  id: "assess-push",
+  conditionId: "cond-wound",
+  lengthMm: 10,
+  widthMm: 5,
+  depthMm: 2,
+  areaMm2: 50,
+  tissueType: "granulation",
+  exudate: "low",
+  painScale: 3,
+  skinCondition: null,
+  complications: null,
+  complicationCodes: [],
+  detScore: null,
+  pushScore: 7,
+  notes: null,
+  createdAt: "2026-01-02T09:00:00.000Z",
+};
+
+const detAssessmentFixture: AssessmentDto = {
+  id: "assess-det",
+  conditionId: "cond-stoma",
+  lengthMm: null,
+  widthMm: null,
+  depthMm: null,
+  areaMm2: null,
+  tissueType: null,
+  exudate: null,
+  painScale: null,
+  skinCondition: "Íntegra",
+  complications: null,
+  complicationCodes: [],
+  detScore: 5,
+  pushScore: null,
+  notes: null,
+  createdAt: "2026-01-02T09:00:00.000Z",
+};
+
+const evolutionFixture: EvolutionNoteDto = {
+  id: "evo-1",
+  patientId: "pac-1",
+  appointmentId: null,
+  professionalId: "prof-1",
+  subjective: "Dor leve na região",
+  objective: "Ferida limpa, sem sinais de infecção",
+  assessment: "Evoluindo bem",
+  plan: "Manter curativo atual",
+  createdAt: "2026-01-02T09:00:00.000Z",
+};
+
+const professionalFixture: ProfessionalDto = {
+  id: "prof-1",
+  fullName: "Dra. Ana",
+  registry: null,
+  commissionPct: null,
+  active: true,
+};
+
+const photoFixture: ConditionPhotoDto = {
+  id: "photo-1",
+  conditionId: "cond-wound",
+  assessmentId: null,
+  contentType: "image/png",
+  sizeBytes: 1000,
+  origin: "staff",
+  patientNote: null,
+  triageStatus: null,
+  createdAt: "2026-01-01T08:00:00.000Z",
+};
+
+const laterPhotoFixture: ConditionPhotoDto = {
+  ...photoFixture,
+  id: "photo-2",
+  createdAt: "2026-01-10T08:00:00.000Z",
+};
+
+interface RouterOptions {
+  patient?: PatientDto | null;
+  patientError?: string;
+  anamnesis?: AnamnesisDto | null;
+  conditions?: ConditionDto[];
+  evolutions?: EvolutionNoteDto[];
+  professionals?: ProfessionalDto[];
+  assessmentsByCondition?: Record<string, AssessmentDto[]>;
+  photosByCondition?: Record<string, ConditionPhotoDto[]>;
+  extra?: (call: FetchCall) => MockedResponse | Promise<MockedResponse> | undefined;
+}
+
+/** Rotas GET aninhadas por conditionId (assessments/photos) — casadas via regex. */
+function matchNestedConditionRoute(
+  url: string,
+  method: string,
+  assessmentsByCondition: Record<string, AssessmentDto[]>,
+  photosByCondition: Record<string, ConditionPhotoDto[]>,
+): MockedResponse | undefined {
+  if (method !== "GET") return undefined;
+  const assessMatch = /^\/api\/conditions\/([^/]+)\/assessments$/.exec(url);
+  if (assessMatch) return jsonResponse(assessmentsByCondition[assessMatch[1]] ?? []);
+  const photosMatch = /^\/api\/conditions\/([^/]+)\/photos$/.exec(url);
+  if (photosMatch) return jsonResponse(photosByCondition[photosMatch[1]] ?? []);
+  return undefined;
+}
+
+function buildRouter({
+  patient = patientFixture,
+  patientError,
+  anamnesis = null,
+  conditions = [],
+  evolutions = [],
+  professionals = [],
+  assessmentsByCondition = {},
+  photosByCondition = {},
+  extra,
+}: RouterOptions = {}) {
+  const exactRoutes: Record<string, () => MockedResponse> = {
+    "/api/patients/pac-1": () => (patientError ? errorResponse(patientError) : jsonResponse(patient)),
+    "/api/patients/pac-1/anamnesis": () => jsonResponse(anamnesis),
+    "/api/patients/pac-1/conditions": () => jsonResponse(conditions),
+    "/api/patients/pac-1/evolutions": () => jsonResponse(evolutions),
+    "/api/professionals": () => jsonResponse(professionals),
+  };
+
+  return ({ url, init }: FetchCall): MockedResponse | Promise<MockedResponse> => {
+    const method = init?.method ?? "GET";
+
+    const custom = extra?.({ url, init });
+    if (custom) return custom;
+
+    const exact = exactRoutes[url];
+    if (exact) return exact();
+
+    const nested = matchNestedConditionRoute(url, method, assessmentsByCondition, photosByCondition);
+    if (nested) return nested;
+
+    return errorResponse(`URL não mapeada no mock: ${method} ${url}`);
+  };
+}
+
+describe("Feature: PatientRecordPage", () => {
+  describe("Cenário: carregamento e erro", () => {
+    it("Dado que o paciente ainda não carregou, Quando renderizar, Então exibe indicador de carregamento", async () => {
+      mockFetch(({ url }) => {
+        if (url === "/api/patients/pac-1") return new Promise<never>(() => {});
+        return jsonResponse([]);
+      });
+
+      await renderDetail();
+
+      expect(screen.getByText("Carregando…")).toBeInTheDocument();
+    });
+
+    it("Dado falha ao carregar paciente, Quando renderizar, Então exibe alerta de erro", async () => {
+      mockFetch(buildRouter({ patientError: "Paciente não encontrado" }));
+
+      await renderDetail();
+
+      expect(await screen.findByText("Paciente não encontrado")).toBeInTheDocument();
+    });
+  });
+
+  describe("Cenário: cabeçalho, alergias e abas", () => {
+    it("Dado paciente com alergias, Quando renderizar, Então exibe cabeçalho e banner de alergia", async () => {
+      mockFetch(buildRouter({ anamnesis: anamnesisFixture }));
+
+      await renderDetail();
+
+      expect(await screen.findByText("Maria Souza")).toBeInTheDocument();
+      const allergyLabel = screen.getByText(/Alergias:/);
+      expect(allergyLabel).toBeInTheDocument();
+      expect(allergyLabel.parentElement).toHaveTextContent("Látex");
+    });
+
+    it("Dado condições e evoluções cadastradas, Quando renderizar, Então mostra contagem nas abas e alterna entre elas", async () => {
+      mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          evolutions: [evolutionFixture],
+        }),
+      );
+
+      await renderDetail();
+      await screen.findByText("Maria Souza");
+
+      expect(screen.getByText("Estomias e feridas (1)")).toBeInTheDocument();
+      expect(screen.getByText("Evoluções (SOAP) (1)")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("Estomias e feridas (1)"));
+      expect(await screen.findByText("Úlcera venosa perna E")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("Evoluções (SOAP) (1)"));
+      expect(await screen.findByText(/Dor leve na região/)).toBeInTheDocument();
+    });
+
+    it("Dado paciente inativo e sem data de nascimento, Quando renderizar cabeçalho, Então exibe badge Inativo sem texto de nascimento", async () => {
+      mockFetch(
+        buildRouter({
+          patient: { ...patientFixture, active: false, birthDate: null },
+        }),
+      );
+
+      await renderDetail();
+      await screen.findByText("Maria Souza");
+
+      expect(screen.getByText("Inativo")).toBeInTheDocument();
+      expect(screen.queryByText(/nasc\./)).not.toBeInTheDocument();
+    });
+
+    it("Dado condições e evoluções ainda carregando, Quando exibir abas e trocar, Então usa fallback de lista vazia", async () => {
+      mockFetch(
+        buildRouter({
+          extra: ({ url }) => {
+            if (
+              url === "/api/patients/pac-1/conditions" ||
+              url === "/api/patients/pac-1/evolutions"
+            ) {
+              return new Promise<never>(() => {});
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await renderDetail();
+      await screen.findByText("Maria Souza");
+
+      expect(screen.getByText("Estomias e feridas")).toBeInTheDocument();
+      expect(screen.getByText("Evoluções (SOAP)")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("Estomias e feridas"));
+      expect(await screen.findByText("Nenhuma condição clínica cadastrada.")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("Evoluções (SOAP)"));
+      expect(await screen.findByText("Nenhuma evolução registrada.")).toBeInTheDocument();
+    });
+  });
+
+  describe("Cenário: anamnesis-section", () => {
+    it("Dado anamnese existente, Quando renderizar, Então exibe os campos preenchidos", async () => {
+      mockFetch(buildRouter({ anamnesis: anamnesisFixture }));
+
+      await renderDetail();
+      await screen.findByText("Maria Souza");
+
+      expect(screen.getByDisplayValue("Diabetes tipo 2")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("Metformina 850mg")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("Colectomia (2024)")).toBeInTheDocument();
+    });
+
+    it("Dado edição de anamnese, Quando salvar com sucesso, Então envia PUT e confirma o salvamento", async () => {
+      const fetchMock = mockFetch(
+        buildRouter({
+          extra: ({ url, init }) => {
+            if (url === "/api/patients/pac-1/anamnesis" && init?.method === "PUT") {
+              return jsonResponse({ ...anamnesisFixture, comorbidities: "Hipertensão" });
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await renderDetail();
+      await screen.findByText("Maria Souza");
+
+      fireEvent.change(screen.getByLabelText("Comorbidades"), {
+        target: { value: "Hipertensão" },
+      });
+      fireEvent.click(screen.getByText("Salvar anamnese"));
+
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(
+          "/api/patients/pac-1/anamnesis",
+          expect.objectContaining({ method: "PUT" }),
+        );
+      });
+      expect(await screen.findByText(/Salvo às/)).toBeInTheDocument();
+    });
+
+    it("Dado erro ao salvar anamnese, Quando a chamada falha, Então exibe alerta de erro", async () => {
+      mockFetch(
+        buildRouter({
+          extra: ({ url, init }) => {
+            if (url === "/api/patients/pac-1/anamnesis" && init?.method === "PUT") {
+              return errorResponse("Erro ao salvar anamnese");
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await renderDetail();
+      await screen.findByText("Maria Souza");
+
+      fireEvent.click(screen.getByText("Salvar anamnese"));
+
+      expect(await screen.findByText("Erro ao salvar anamnese")).toBeInTheDocument();
+    });
+  });
+
+  describe("Cenário: conditions-section", () => {
+    async function openConditionsTab() {
+      await renderDetail();
+      await screen.findByText("Maria Souza");
+      fireEvent.click(screen.getByText(/Estomias e feridas/));
+    }
+
+    it("Dado nenhuma condição, Quando abrir a aba, Então exibe mensagem de vazio", async () => {
+      mockFetch(buildRouter({ conditions: [] }));
+
+      await openConditionsTab();
+
+      expect(await screen.findByText("Nenhuma condição clínica cadastrada.")).toBeInTheDocument();
+    });
+
+    it("Dado condições ativas e resolvidas, Quando listar, Então exibe badges e ações corretas para cada uma", async () => {
+      mockFetch(
+        buildRouter({ conditions: [woundConditionFixture, resolvedConditionFixture] }),
+      );
+
+      await openConditionsTab();
+
+      expect(await screen.findByText("Úlcera venosa perna E")).toBeInTheDocument();
+      expect(screen.getByText("Em acompanhamento")).toBeInTheDocument();
+      expect(screen.getByText("Resolvida")).toBeInTheDocument();
+      expect(screen.getAllByText("+ Avaliação")).toHaveLength(1);
+      expect(screen.getAllByText("Marcar resolvida")).toHaveLength(1);
+    });
+
+    it("Dado clique em nova condição do tipo ferida, Quando submetido, Então envia POST sem tipo de estomia", async () => {
+      const fetchMock = mockFetch(
+        buildRouter({
+          extra: ({ url, init }) => {
+            if (url === "/api/patients/pac-1/conditions" && init?.method === "POST") {
+              return jsonResponse({ ...woundConditionFixture, id: "cond-new" });
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await openConditionsTab();
+      await screen.findByText("Nenhuma condição clínica cadastrada.");
+
+      fireEvent.click(screen.getByText("+ Nova condição"));
+      fireEvent.change(screen.getByLabelText(/Tipo \*/), { target: { value: "wound" } });
+      fireEvent.change(screen.getByLabelText(/Descrição\/localização/), {
+        target: { value: "Ferida no calcanhar" },
+      });
+      fireEvent.click(screen.getByText("Criar condição"));
+
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(
+          "/api/patients/pac-1/conditions",
+          expect.objectContaining({
+            method: "POST",
+            body: JSON.stringify({
+              kind: "wound",
+              title: "Ferida no calcanhar",
+              stomaType: null,
+              startedAt: null,
+              notes: null,
+            }),
+          }),
+        );
+      });
+    });
+
+    it("Dado clique em nova condição do tipo estomia (padrão), Quando submetido, Então envia POST com tipo de estomia", async () => {
+      const fetchMock = mockFetch(
+        buildRouter({
+          extra: ({ url, init }) => {
+            if (url === "/api/patients/pac-1/conditions" && init?.method === "POST") {
+              return jsonResponse({ ...stomaConditionFixture, id: "cond-new" });
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await openConditionsTab();
+      await screen.findByText("Nenhuma condição clínica cadastrada.");
+
+      fireEvent.click(screen.getByText("+ Nova condição"));
+      fireEvent.change(screen.getByLabelText(/Descrição\/localização/), {
+        target: { value: "Colostomia terminal QIE" },
+      });
+      fireEvent.click(screen.getByText("Criar condição"));
+
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(
+          "/api/patients/pac-1/conditions",
+          expect.objectContaining({
+            method: "POST",
+            body: JSON.stringify({
+              kind: "stoma",
+              title: "Colostomia terminal QIE",
+              stomaType: "colostomia",
+              startedAt: null,
+              notes: null,
+            }),
+          }),
+        );
+      });
+    });
+
+    it("Dado erro ao criar condição, Quando a chamada falha, Então exibe alerta no formulário", async () => {
+      mockFetch(
+        buildRouter({
+          extra: ({ url, init }) => {
+            if (url === "/api/patients/pac-1/conditions" && init?.method === "POST") {
+              return errorResponse("Erro ao criar condição");
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await openConditionsTab();
+      await screen.findByText("Nenhuma condição clínica cadastrada.");
+
+      fireEvent.click(screen.getByText("+ Nova condição"));
+      fireEvent.change(screen.getByLabelText(/Descrição\/localização/), {
+        target: { value: "Colostomia terminal QIE" },
+      });
+      fireEvent.click(screen.getByText("Criar condição"));
+
+      expect(await screen.findByText("Erro ao criar condição")).toBeInTheDocument();
+    });
+
+    it("Dado condição de ferida, Quando abrir e enviar avaliação PUSH, Então envia POST para assessments", async () => {
+      const fetchMock = mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          extra: ({ url, init }) => {
+            if (url === "/api/conditions/cond-wound/assessments" && init?.method === "POST") {
+              return jsonResponse({ ...pushAssessmentFixture, id: "assess-new" });
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await openConditionsTab();
+      await screen.findByText("Úlcera venosa perna E");
+
+      fireEvent.click(screen.getByText("+ Avaliação"));
+      expect(screen.getByText("Avaliação — Úlcera venosa perna E")).toBeInTheDocument();
+
+      fireEvent.change(screen.getByLabelText(/Dor \(0–10\)/), { target: { value: "4" } });
+      fireEvent.click(screen.getByText("Registrar avaliação"));
+
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(
+          "/api/conditions/cond-wound/assessments",
+          expect.objectContaining({ method: "POST" }),
+        );
+      });
+      const [, requestInit] = fetchMock.mock.calls.find(
+        ([callUrl]) => callUrl === "/api/conditions/cond-wound/assessments",
+      ) as [string, RequestInit];
+      const payload = JSON.parse(String(requestInit.body)) as { painScale: number };
+      expect(payload.painScale).toBe(4);
+    });
+
+    it("Dado condição de estomia, Quando abrir avaliação DET e marcar complicação, Então envia complicationCodes preenchido", async () => {
+      const fetchMock = mockFetch(
+        buildRouter({
+          conditions: [stomaConditionFixture],
+          extra: ({ url, init }) => {
+            if (url === "/api/conditions/cond-stoma/assessments" && init?.method === "POST") {
+              return jsonResponse({ ...detAssessmentFixture, id: "assess-new" });
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await openConditionsTab();
+      await screen.findByText("Colostomia terminal QIE");
+
+      fireEvent.click(screen.getByText("+ Avaliação"));
+      expect(screen.getByText("Escala DET (0–15) — área 0–3 · severidade 0–2")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("Dermatite"));
+      fireEvent.click(screen.getByText("Registrar avaliação"));
+
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(
+          "/api/conditions/cond-stoma/assessments",
+          expect.objectContaining({ method: "POST" }),
+        );
+      });
+      const [, requestInit] = fetchMock.mock.calls.find(
+        ([callUrl]) => callUrl === "/api/conditions/cond-stoma/assessments",
+      ) as [string, RequestInit];
+      const payload = JSON.parse(String(requestInit.body)) as { complicationCodes: string };
+      expect(payload.complicationCodes).toBe("dermatitis");
+    });
+
+    it("Dado erro ao registrar avaliação, Quando a chamada falha, Então exibe alerta no formulário", async () => {
+      mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          extra: ({ url, init }) => {
+            if (url === "/api/conditions/cond-wound/assessments" && init?.method === "POST") {
+              return errorResponse("Erro ao registrar avaliação");
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await openConditionsTab();
+      await screen.findByText("Úlcera venosa perna E");
+
+      fireEvent.click(screen.getByText("+ Avaliação"));
+      fireEvent.click(screen.getByText("Registrar avaliação"));
+
+      expect(await screen.findByText("Erro ao registrar avaliação")).toBeInTheDocument();
+    });
+
+    it("Dado condição expandida com avaliações registradas, Quando visualizar, Então exibe o score PUSH/DET calculado", async () => {
+      mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture, stomaConditionFixture],
+          assessmentsByCondition: {
+            "cond-wound": [pushAssessmentFixture],
+            "cond-stoma": [detAssessmentFixture],
+          },
+        }),
+      );
+
+      await openConditionsTab();
+      await screen.findByText("Úlcera venosa perna E");
+
+      fireEvent.click(screen.getAllByText("Ver avaliações")[0]);
+      expect(await screen.findByText("PUSH 7")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("Ver avaliações"));
+      expect(await screen.findByText("DET 5")).toBeInTheDocument();
+    });
+
+    it("Dado clique em marcar resolvida, Quando a chamada é bem-sucedida, Então envia PATCH com action resolve", async () => {
+      const fetchMock = mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          extra: ({ url, init }) => {
+            if (url === "/api/conditions/cond-wound" && init?.method === "PATCH") {
+              return jsonResponse({ ...woundConditionFixture, status: "resolved" });
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await openConditionsTab();
+      await screen.findByText("Úlcera venosa perna E");
+
+      fireEvent.click(screen.getByText("Marcar resolvida"));
+
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(
+          "/api/conditions/cond-wound",
+          expect.objectContaining({
+            method: "PATCH",
+            body: JSON.stringify({ action: "resolve" }),
+          }),
+        );
+      });
+    });
+
+    it("Dado erro ao resolver condição, Quando a chamada falha, Então exibe alerta de erro", async () => {
+      mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          extra: ({ url, init }) => {
+            if (url === "/api/conditions/cond-wound" && init?.method === "PATCH") {
+              return errorResponse("Erro ao resolver condição");
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await openConditionsTab();
+      await screen.findByText("Úlcera venosa perna E");
+
+      fireEvent.click(screen.getByText("Marcar resolvida"));
+
+      expect(await screen.findByText("Erro ao resolver condição")).toBeInTheDocument();
+    });
+
+    it("Dado erro não-Error (falha de rede bruta) ao resolver condição, Quando falhar, Então exibe mensagem padrão", async () => {
+      mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          extra: ({ url, init }) => {
+            if (url === "/api/conditions/cond-wound" && init?.method === "PATCH") {
+              throw "falha de rede";
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await openConditionsTab();
+      await screen.findByText("Úlcera venosa perna E");
+
+      fireEvent.click(screen.getByText("Marcar resolvida"));
+
+      expect(await screen.findByText("Erro ao resolver condição")).toBeInTheDocument();
+    });
+
+    it("Dado condição sem data de início registrada, Quando listar, Então não exibe texto 'desde'", async () => {
+      mockFetch(
+        buildRouter({ conditions: [{ ...woundConditionFixture, startedAt: null }] }),
+      );
+
+      await openConditionsTab();
+
+      expect(await screen.findByText("Úlcera venosa perna E")).toBeInTheDocument();
+      expect(screen.queryByText(/desde/)).not.toBeInTheDocument();
+    });
+
+    it("Dado condição expandida, Quando clicar novamente para ocultar, Então recolhe a seção de avaliações", async () => {
+      mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          assessmentsByCondition: { "cond-wound": [pushAssessmentFixture] },
+        }),
+      );
+
+      await openConditionsTab();
+      await screen.findByText("Úlcera venosa perna E");
+
+      fireEvent.click(screen.getByText("Ver avaliações"));
+      expect(await screen.findByText("PUSH 7")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("Ocultar avaliações"));
+      expect(screen.queryByText("PUSH 7")).not.toBeInTheDocument();
+      expect(screen.getByText("Ver avaliações")).toBeInTheDocument();
+    });
+
+    it("Dado erro ao carregar avaliações, Quando expandir a condição, Então mantém a lista vazia sem quebrar", async () => {
+      mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          extra: ({ url, init }) => {
+            if (url === "/api/conditions/cond-wound/assessments" && (init?.method ?? "GET") === "GET") {
+              return errorResponse("Erro ao buscar avaliações");
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await openConditionsTab();
+      await screen.findByText("Úlcera venosa perna E");
+
+      fireEvent.click(screen.getByText("Ver avaliações"));
+
+      expect(await screen.findByText("Nenhuma avaliação registrada.")).toBeInTheDocument();
+    });
+
+    it("Dado modal de nova condição aberto, Quando clicar em fechar, Então fecha sem enviar requisição", async () => {
+      const fetchMock = mockFetch(buildRouter({ conditions: [] }));
+
+      await openConditionsTab();
+      await screen.findByText("Nenhuma condição clínica cadastrada.");
+
+      fireEvent.click(screen.getByText("+ Nova condição"));
+      expect(screen.getByText("Criar condição")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByLabelText("Fechar"));
+
+      expect(screen.queryByText("Criar condição")).not.toBeInTheDocument();
+      expect(
+        fetchMock.mock.calls.some(([, callInit]) => callInit?.method === "POST"),
+      ).toBe(false);
+    });
+
+    it("Dado modal de avaliação aberto, Quando clicar em fechar, Então fecha sem enviar requisição", async () => {
+      const fetchMock = mockFetch(buildRouter({ conditions: [woundConditionFixture] }));
+
+      await openConditionsTab();
+      await screen.findByText("Úlcera venosa perna E");
+
+      fireEvent.click(screen.getByText("+ Avaliação"));
+      expect(screen.getByText("Avaliação — Úlcera venosa perna E")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByLabelText("Fechar"));
+
+      expect(screen.queryByText("Registrar avaliação")).not.toBeInTheDocument();
+      expect(
+        fetchMock.mock.calls.some(([, callInit]) => callInit?.method === "POST"),
+      ).toBe(false);
+    });
+
+    it("Dado avaliação registrada com sucesso mas recarregar a lista falha, Quando salvar, Então fecha o modal mesmo assim", async () => {
+      mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          extra: ({ url, init }) => {
+            if (url === "/api/conditions/cond-wound/assessments") {
+              if (init?.method === "POST") {
+                return jsonResponse({ ...pushAssessmentFixture, id: "assess-new" });
+              }
+              return errorResponse("Erro ao buscar avaliações");
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await openConditionsTab();
+      await screen.findByText("Úlcera venosa perna E");
+
+      fireEvent.click(screen.getByText("+ Avaliação"));
+      fireEvent.click(screen.getByText("Registrar avaliação"));
+
+      await waitFor(() => {
+        expect(screen.queryByText("Registrar avaliação")).not.toBeInTheDocument();
+      });
+    });
+
+    it("Dado preenchimento completo do formulário de nova condição (estomia), Quando submeter, Então envia tipo de estomia, data de início e observações", async () => {
+      const fetchMock = mockFetch(
+        buildRouter({
+          extra: ({ url, init }) => {
+            if (url === "/api/patients/pac-1/conditions" && init?.method === "POST") {
+              return jsonResponse({ ...stomaConditionFixture, id: "cond-new" });
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await openConditionsTab();
+      await screen.findByText("Nenhuma condição clínica cadastrada.");
+
+      fireEvent.click(screen.getByText("+ Nova condição"));
+      fireEvent.change(screen.getByLabelText(/Tipo de estomia/), {
+        target: { value: "urostomia" },
+      });
+      fireEvent.change(screen.getByLabelText(/Descrição\/localização/), {
+        target: { value: "Urostomia QID" },
+      });
+      fireEvent.change(screen.getByLabelText(/Início/), { target: { value: "2026-02-10" } });
+      fireEvent.change(screen.getByLabelText("Observações"), {
+        target: { value: "Sem intercorrências" },
+      });
+      fireEvent.click(screen.getByText("Criar condição"));
+
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(
+          "/api/patients/pac-1/conditions",
+          expect.objectContaining({ method: "POST" }),
+        );
+      });
+      const [, requestInit] = fetchMock.mock.calls.find(
+        ([callUrl, callInit]) =>
+          callUrl === "/api/patients/pac-1/conditions" && callInit?.method === "POST",
+      ) as [string, RequestInit];
+      const payload = JSON.parse(String(requestInit.body)) as {
+        stomaType: string;
+        startedAt: string | null;
+        notes: string | null;
+      };
+      expect(payload.stomaType).toBe("urostomia");
+      expect(payload.startedAt).not.toBeNull();
+      expect(payload.notes).toBe("Sem intercorrências");
+    });
+
+    it("Dado erro não-Error (falha de rede bruta) ao criar condição, Quando falhar, Então exibe mensagem padrão", async () => {
+      mockFetch(
+        buildRouter({
+          extra: ({ url, init }) => {
+            if (url === "/api/patients/pac-1/conditions" && init?.method === "POST") {
+              throw "falha de rede";
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await openConditionsTab();
+      await screen.findByText("Nenhuma condição clínica cadastrada.");
+
+      fireEvent.click(screen.getByText("+ Nova condição"));
+      fireEvent.change(screen.getByLabelText(/Descrição\/localização/), {
+        target: { value: "Colostomia terminal QIE" },
+      });
+      fireEvent.click(screen.getByText("Criar condição"));
+
+      expect(await screen.findByText("Erro ao criar condição")).toBeInTheDocument();
+    });
+
+    it("Dado preenchimento completo do formulário PUSH, Quando registrar avaliação, Então envia dimensões, tecido e exsudato preenchidos", async () => {
+      const fetchMock = mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          extra: ({ url, init }) => {
+            if (url === "/api/conditions/cond-wound/assessments" && init?.method === "POST") {
+              return jsonResponse({ ...pushAssessmentFixture, id: "assess-new" });
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await openConditionsTab();
+      await screen.findByText("Úlcera venosa perna E");
+
+      fireEvent.click(screen.getByText("+ Avaliação"));
+      fireEvent.change(screen.getByLabelText(/Comprimento/), { target: { value: "12" } });
+      fireEvent.change(screen.getByLabelText(/Largura/), { target: { value: "6" } });
+      fireEvent.change(screen.getByLabelText(/Profundidade/), { target: { value: "3" } });
+      fireEvent.change(screen.getByLabelText(/Tecido predominante/), {
+        target: { value: "granulation" },
+      });
+      fireEvent.change(screen.getByLabelText(/Exsudato/), { target: { value: "moderate" } });
+      fireEvent.change(screen.getByLabelText("Observações"), {
+        target: { value: "Boa evolução" },
+      });
+      fireEvent.click(screen.getByText("Registrar avaliação"));
+
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(
+          "/api/conditions/cond-wound/assessments",
+          expect.objectContaining({ method: "POST" }),
+        );
+      });
+      const [, requestInit] = fetchMock.mock.calls.find(
+        ([callUrl]) => callUrl === "/api/conditions/cond-wound/assessments",
+      ) as [string, RequestInit];
+      const payload = JSON.parse(String(requestInit.body)) as {
+        lengthMm: number;
+        widthMm: number;
+        depthMm: number;
+        tissueType: string;
+        exudate: string;
+        notes: string;
+      };
+      expect(payload.lengthMm).toBe(12);
+      expect(payload.widthMm).toBe(6);
+      expect(payload.depthMm).toBe(3);
+      expect(payload.tissueType).toBe("granulation");
+      expect(payload.exudate).toBe("moderate");
+      expect(payload.notes).toBe("Boa evolução");
+    });
+
+    it("Dado preenchimento completo do formulário DET, Quando registrar avaliação, Então envia pele periestomal, complicações, domínio DET e desmarca complicação", async () => {
+      const fetchMock = mockFetch(
+        buildRouter({
+          conditions: [stomaConditionFixture],
+          extra: ({ url, init }) => {
+            if (url === "/api/conditions/cond-stoma/assessments" && init?.method === "POST") {
+              return jsonResponse({ ...detAssessmentFixture, id: "assess-new" });
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await openConditionsTab();
+      await screen.findByText("Colostomia terminal QIE");
+
+      fireEvent.click(screen.getByText("+ Avaliação"));
+
+      // Marca e desmarca a mesma complicação (exercita o ramo de remoção do toggle).
+      fireEvent.click(screen.getByText("Dermatite"));
+      fireEvent.click(screen.getByText("Dermatite"));
+
+      fireEvent.change(screen.getByLabelText(/Pele periestomal/), {
+        target: { value: "Íntegra, sem sinais de irritação" },
+      });
+      fireEvent.change(screen.getByLabelText(/Observação de complicações/), {
+        target: { value: "Nenhuma no momento" },
+      });
+      const [areaInput, severityInput] = screen.getAllByPlaceholderText(/área|sev\./);
+      fireEvent.change(areaInput, { target: { value: "2" } });
+      fireEvent.change(severityInput, { target: { value: "1" } });
+      fireEvent.click(screen.getByText("Registrar avaliação"));
+
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(
+          "/api/conditions/cond-stoma/assessments",
+          expect.objectContaining({ method: "POST" }),
+        );
+      });
+      const [, requestInit] = fetchMock.mock.calls.find(
+        ([callUrl]) => callUrl === "/api/conditions/cond-stoma/assessments",
+      ) as [string, RequestInit];
+      const payload = JSON.parse(String(requestInit.body)) as {
+        complicationCodes: string | null;
+        skinCondition: string;
+        complications: string;
+        detDiscolorationArea: number;
+        detDiscolorationSeverity: number;
+      };
+      expect(payload.complicationCodes).toBeNull();
+      expect(payload.skinCondition).toBe("Íntegra, sem sinais de irritação");
+      expect(payload.complications).toBe("Nenhuma no momento");
+      expect(payload.detDiscolorationArea).toBe(2);
+      expect(payload.detDiscolorationSeverity).toBe(1);
+    });
+
+    it("Dado erro não-Error (falha de rede bruta) ao registrar avaliação, Quando falhar, Então exibe mensagem padrão", async () => {
+      mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          extra: ({ url, init }) => {
+            if (url === "/api/conditions/cond-wound/assessments" && init?.method === "POST") {
+              throw "falha de rede";
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await openConditionsTab();
+      await screen.findByText("Úlcera venosa perna E");
+
+      fireEvent.click(screen.getByText("+ Avaliação"));
+      fireEvent.click(screen.getByText("Registrar avaliação"));
+
+      expect(await screen.findByText("Erro ao registrar avaliação")).toBeInTheDocument();
+    });
+
+    it("Dado avaliação com comprimento preenchido mas largura e profundidade nulas, Quando expandir, Então exibe o traço para os campos ausentes", async () => {
+      mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          assessmentsByCondition: {
+            "cond-wound": [{ ...pushAssessmentFixture, id: "assess-partial", widthMm: null, depthMm: null }],
+          },
+        }),
+      );
+
+      await openConditionsTab();
+      await screen.findByText("Úlcera venosa perna E");
+
+      fireEvent.click(screen.getByText("Ver avaliações"));
+
+      expect(await screen.findByText("10×—×—")).toBeInTheDocument();
+    });
+  });
+
+  describe("Cenário: condition-photos", () => {
+    async function expandWoundCondition() {
+      await renderDetail();
+      await screen.findByText("Maria Souza");
+      fireEvent.click(screen.getByText(/Estomias e feridas/));
+      await screen.findByText("Úlcera venosa perna E");
+      fireEvent.click(screen.getByText("Ver avaliações"));
+    }
+
+    it("Dado condição sem fotos, Quando expandir, Então exibe mensagem de vazio", async () => {
+      mockFetch(buildRouter({ conditions: [woundConditionFixture] }));
+
+      await expandWoundCondition();
+
+      expect(await screen.findByText("Nenhuma foto registrada.")).toBeInTheDocument();
+    });
+
+    it("Dado duas ou mais fotos, Quando expandir, Então exibe comparação entre a primeira e a última", async () => {
+      mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          photosByCondition: { "cond-wound": [photoFixture, laterPhotoFixture] },
+        }),
+      );
+
+      await expandWoundCondition();
+
+      expect(
+        await screen.findByText(`Primeira — ${formatDate(photoFixture.createdAt)}`),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText(`Atual — ${formatDate(laterPhotoFixture.createdAt)}`),
+      ).toBeInTheDocument();
+    });
+
+    it("Dado upload de foto válida, Quando enviado, Então chama POST multipart e recarrega a lista", async () => {
+      const fetchMock = mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          extra: ({ url, init }) => {
+            if (url === "/api/conditions/cond-wound/photos" && init?.method === "POST") {
+              return rawResponse(true, { ok: true });
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await expandWoundCondition();
+      await screen.findByText("Nenhuma foto registrada.");
+
+      const file = new File(["conteudo"], "foto.png", { type: "image/png" });
+      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      fireEvent.change(input, { target: { files: [file] } });
+
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(
+          "/api/conditions/cond-wound/photos",
+          expect.objectContaining({ method: "POST" }),
+        );
+      });
+    });
+
+    it("Dado arquivo maior que 5MB, Quando selecionado, Então exibe erro de validação local sem chamar a API", async () => {
+      const fetchMock = mockFetch(buildRouter({ conditions: [woundConditionFixture] }));
+
+      await expandWoundCondition();
+      await screen.findByText("Nenhuma foto registrada.");
+
+      const bigFile = new File(["conteudo"], "foto-grande.png", { type: "image/png" });
+      Object.defineProperty(bigFile, "size", { value: 6 * 1024 * 1024 });
+      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      fireEvent.change(input, { target: { files: [bigFile] } });
+
+      expect(await screen.findByText("Imagem excede o limite de 5 MB")).toBeInTheDocument();
+      expect(
+        fetchMock.mock.calls.some(
+          ([callUrl, callInit]) =>
+            String(callUrl).endsWith("/photos") && callInit?.method === "POST",
+        ),
+      ).toBe(false);
+    });
+
+    it("Dado erro retornado pela API ao enviar foto, Quando falha, Então exibe a mensagem de erro", async () => {
+      mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          extra: ({ url, init }) => {
+            if (url === "/api/conditions/cond-wound/photos" && init?.method === "POST") {
+              return rawResponse(false, { error: "Formato de imagem inválido" });
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await expandWoundCondition();
+      await screen.findByText("Nenhuma foto registrada.");
+
+      const file = new File(["conteudo"], "foto.png", { type: "image/png" });
+      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      fireEvent.change(input, { target: { files: [file] } });
+
+      expect(await screen.findByText("Formato de imagem inválido")).toBeInTheDocument();
+    });
+
+    it("Dado clique em excluir foto, Quando a chamada é bem-sucedida, Então envia DELETE e recarrega", async () => {
+      const fetchMock = mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          photosByCondition: { "cond-wound": [photoFixture] },
+          extra: ({ url, init }) => {
+            if (url === "/api/photos/photo-1" && init?.method === "DELETE") {
+              return jsonResponse({ deleted: true });
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await expandWoundCondition();
+      expect(await screen.findByText("excluir")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("excluir"));
+
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(
+          "/api/photos/photo-1",
+          expect.objectContaining({ method: "DELETE" }),
+        );
+      });
+    });
+
+    it("Dado resposta de erro sem corpo JSON válido, Quando enviar foto, Então exibe mensagem padrão de erro", async () => {
+      mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          extra: ({ url, init }) => {
+            if (url === "/api/conditions/cond-wound/photos" && init?.method === "POST") {
+              return {
+                ok: false,
+                json: async () => {
+                  throw new Error("corpo inválido");
+                },
+              };
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await expandWoundCondition();
+      await screen.findByText("Nenhuma foto registrada.");
+
+      const file = new File(["conteudo"], "foto.png", { type: "image/png" });
+      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      fireEvent.change(input, { target: { files: [file] } });
+
+      expect(await screen.findByText("Erro ao enviar foto")).toBeInTheDocument();
+    });
+
+    it("Dado falha de rede bruta (não Error) ao enviar foto, Quando falhar, Então exibe mensagem padrão de erro", async () => {
+      mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          extra: ({ url, init }) => {
+            if (url === "/api/conditions/cond-wound/photos" && init?.method === "POST") {
+              throw "falha de rede";
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await expandWoundCondition();
+      await screen.findByText("Nenhuma foto registrada.");
+
+      const file = new File(["conteudo"], "foto.png", { type: "image/png" });
+      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      fireEvent.change(input, { target: { files: [file] } });
+
+      expect(await screen.findByText("Erro ao enviar foto")).toBeInTheDocument();
+    });
+
+    it("Dado falha de rede bruta (não Error) ao excluir foto, Quando falhar, Então exibe mensagem padrão de erro", async () => {
+      mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          photosByCondition: { "cond-wound": [photoFixture] },
+          extra: ({ url, init }) => {
+            if (url === "/api/photos/photo-1" && init?.method === "DELETE") {
+              throw "falha de rede";
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await expandWoundCondition();
+      expect(await screen.findByText("excluir")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("excluir"));
+
+      expect(await screen.findByText("Erro ao excluir foto")).toBeInTheDocument();
+    });
+
+    it("Dado componente de fotos desmontado antes da resposta, Quando a busca falhar depois, Então ignora o erro silenciosamente", async () => {
+      let rejectPhotos: (reason: unknown) => void = () => undefined;
+      const pendingPhotos = new Promise<MockedResponse>((_, reject) => {
+        rejectPhotos = reject;
+      });
+
+      mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          extra: ({ url, init }) => {
+            if (
+              url === "/api/conditions/cond-wound/photos" &&
+              (init?.method ?? "GET") === "GET"
+            ) {
+              return pendingPhotos;
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await renderDetail();
+      await screen.findByText("Maria Souza");
+      fireEvent.click(screen.getByText(/Estomias e feridas/));
+      await screen.findByText("Úlcera venosa perna E");
+
+      fireEvent.click(screen.getByText("Ver avaliações"));
+      fireEvent.click(screen.getByText("Ocultar avaliações"));
+
+      await act(async () => {
+        rejectPhotos("falha depois de desmontar");
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+
+      expect(screen.getByText("Úlcera venosa perna E")).toBeInTheDocument();
+    });
+  });
+
+  describe("Cenário: evolutions-section", () => {
+    async function openEvolutionsTab() {
+      await renderDetail();
+      await screen.findByText("Maria Souza");
+      fireEvent.click(screen.getByText(/Evoluções \(SOAP\)/));
+    }
+
+    it("Dado nenhuma evolução, Quando abrir a aba, Então exibe mensagem de vazio", async () => {
+      mockFetch(buildRouter({ evolutions: [] }));
+
+      await openEvolutionsTab();
+
+      expect(await screen.findByText("Nenhuma evolução registrada.")).toBeInTheDocument();
+    });
+
+    it("Dado evolução registrada, Quando listar, Então exibe dados SOAP e profissional responsável", async () => {
+      mockFetch(
+        buildRouter({
+          evolutions: [evolutionFixture],
+          professionals: [professionalFixture],
+        }),
+      );
+
+      await openEvolutionsTab();
+
+      expect(await screen.findByText(/Dor leve na região/)).toBeInTheDocument();
+      expect(screen.getByText(/Ferida limpa, sem sinais de infecção/)).toBeInTheDocument();
+      expect(screen.getByText(new RegExp(formatDateTime(evolutionFixture.createdAt)))).toBeInTheDocument();
+      expect(screen.getByText(/Dra\. Ana/)).toBeInTheDocument();
+    });
+
+    it("Dado preenchimento do formulário SOAP, Quando submetido, Então envia POST e fecha o formulário", async () => {
+      const fetchMock = mockFetch(
+        buildRouter({
+          professionals: [professionalFixture],
+          extra: ({ url, init }) => {
+            if (url === "/api/patients/pac-1/evolutions" && init?.method === "POST") {
+              return jsonResponse({ ...evolutionFixture, id: "evo-new" });
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await openEvolutionsTab();
+      await screen.findByText("Nenhuma evolução registrada.");
+
+      fireEvent.click(screen.getByText("+ Nova evolução"));
+      fireEvent.change(screen.getByLabelText(/S — Subjetivo/), {
+        target: { value: "Queixa de dor" },
+      });
+      fireEvent.change(screen.getByLabelText(/P — Plano/), {
+        target: { value: "Trocar curativo" },
+      });
+      fireEvent.click(screen.getByText("Registrar evolução"));
+
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(
+          "/api/patients/pac-1/evolutions",
+          expect.objectContaining({
+            method: "POST",
+            body: JSON.stringify({
+              subjective: "Queixa de dor",
+              objective: "",
+              assessment: "",
+              plan: "Trocar curativo",
+              professionalId: null,
+            }),
+          }),
+        );
+      });
+      await waitFor(() => {
+        expect(screen.queryByText("Registrar evolução")).not.toBeInTheDocument();
+      });
+    });
+
+    it("Dado erro ao registrar evolução, Quando a chamada falha, Então exibe alerta de erro", async () => {
+      mockFetch(
+        buildRouter({
+          extra: ({ url, init }) => {
+            if (url === "/api/patients/pac-1/evolutions" && init?.method === "POST") {
+              return errorResponse("Erro ao registrar evolução");
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await openEvolutionsTab();
+      await screen.findByText("Nenhuma evolução registrada.");
+
+      fireEvent.click(screen.getByText("+ Nova evolução"));
+      fireEvent.click(screen.getByText("Registrar evolução"));
+
+      expect(await screen.findByText("Erro ao registrar evolução")).toBeInTheDocument();
+    });
+  });
+});

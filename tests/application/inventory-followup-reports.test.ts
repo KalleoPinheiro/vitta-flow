@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { InMemoryPatientRepository } from "@/infrastructure/persistence/in-memory/in-memory-patient-repository";
 import { InMemoryAppointmentRepository } from "@/infrastructure/persistence/in-memory/in-memory-appointment-repository";
 import { InMemoryInvoiceRepository } from "@/infrastructure/persistence/in-memory/in-memory-invoice-repository";
+import { InMemoryProfessionalRepository } from "@/infrastructure/persistence/in-memory/in-memory-professional-repository";
 import {
   InMemoryFollowUpRepository,
   InMemoryStockMovementRepository,
@@ -19,6 +20,7 @@ import { CreateFollowUp } from "@/application/followups/create-follow-up";
 import { ListFollowUps } from "@/application/followups/list-follow-ups";
 import { SetFollowUpStatus } from "@/application/followups/set-follow-up-status";
 import { GetMonthlyReport } from "@/application/reports/get-monthly-report";
+import { Professional } from "@/domain/professional/professional";
 import type { Patient } from "@/domain/patient/patient";
 import { InsufficientStockError, NotFoundError } from "@/domain/shared/errors";
 

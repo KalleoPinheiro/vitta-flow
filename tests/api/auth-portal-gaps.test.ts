@@ -1,0 +1,704 @@
+import { describe, it, expect, beforeAll, vi } from "vitest";
+import { NextRequest } from "next/server";
+
+process.env.VITTA_DB_DRIVER = "pglite";
+
+/**
+ * Mock leve do SDK "googleapis" — não fazemos chamada HTTP real. Cobre os
+ * ramos de troca de código bem-sucedida/malsucedida do callback OAuth sem
+ * depender de rede real ao Google (a mock não é um mock elaborado de fetch,
+ * apenas substitui o client OAuth2 do SDK oficial).
+ */
+const googleMockState: {
+  tokenBehavior: "success" | "no-refresh-token" | "throw";
+  userinfoEmail: string | null;
+} = { tokenBehavior: "success", userinfoEmail: null };
+
+vi.mock("googleapis", () => {
+  class MockOAuth2Client {
+    async getToken(_code: string) {
+      if (googleMockState.tokenBehavior === "throw") {
+        throw new Error("falha simulada na troca do código");
+      }
+      return {
+        tokens: {
+          refresh_token:
+            googleMockState.tokenBehavior === "no-refresh-token" ? undefined : "refresh-token-abc",
+        },
+      };
+    }
+    setCredentials() {}
+    generateAuthUrl(_opts: unknown) {
+      return "https://accounts.google.com/mock-auth-url";
+    }
+  }
+  return {
+    google: {
+      auth: { OAuth2: MockOAuth2Client },
+      oauth2: () => ({
+        userinfo: {
+          get: async () => ({ data: { email: googleMockState.userinfoEmail ?? undefined } }),
+        },
+      }),
+    },
+  };
+});
+
+const jsonRequest = (
+  url: string,
+  method: string,
+  body?: unknown,
+  headers?: Record<string, string>,
+) =>
+  new NextRequest(`http://localhost${url}`, {
+    method,
+    body: body === undefined ? undefined : JSON.stringify(body),
+    headers: { "Content-Type": "application/json", ...headers },
+  });
+
+interface Envelope<T> {
+  success: boolean;
+  data: T;
+  error: string | null;
+}
+
+const context = (id: string) => ({ params: Promise.resolve({ id }) });
+
+const resetGoogleEnv = () => {
+  delete process.env.GOOGLE_CLIENT_ID;
+  delete process.env.GOOGLE_CLIENT_SECRET;
+  delete process.env.APP_URL;
+  delete process.env.GOOGLE_ALLOWED_EMAILS;
+};
+
+describe("Feature: Fechamento de branches — auth Google, login e rotas do portal", () => {
+  let googleRoute: typeof import("@/app/api/auth/google/route");
+  let googleCallbackRoute: typeof import("@/app/api/auth/google/callback/route");
+  let loginRoute: typeof import("@/app/api/auth/login/route");
+
+  let patientsRoute: typeof import("@/app/api/patients/route");
+  let partnersRoute: typeof import("@/app/api/partners/route");
+  let appointmentsRoute: typeof import("@/app/api/appointments/route");
+  let appointmentByIdRoute: typeof import("@/app/api/appointments/[id]/route");
+  let conditionsRoute: typeof import("@/app/api/patients/[id]/conditions/route");
+  let assessmentsRoute: typeof import("@/app/api/conditions/[id]/assessments/route");
+  let patientByIdRoute: typeof import("@/app/api/patients/[id]/route");
+  let photoByIdRoute: typeof import("@/app/api/photos/[id]/route");
+
+  let partnerPortalRoute: typeof import("@/app/api/portal/partner/route");
+  let patientPortalRoute: typeof import("@/app/api/portal/patient/route");
+  let photosRoute: typeof import("@/app/api/portal/patient/photos/route");
+  let photoByIdPortalRoute: typeof import("@/app/api/portal/patient/photos/[id]/route");
+  let consentRoute: typeof import("@/app/api/portal/patient/consent/route");
+  let confirmRoute: typeof import(
+    "@/app/api/portal/patient/appointments/[id]/confirm/route"
+  );
+
+  let createSessionToken: typeof import("@/lib/auth/session").createSessionToken;
+
+  beforeAll(async () => {
+    process.env.AUTH_SECRET = "test-secret-gaps";
+
+    googleRoute = await import("@/app/api/auth/google/route");
+    googleCallbackRoute = await import("@/app/api/auth/google/callback/route");
+    loginRoute = await import("@/app/api/auth/login/route");
+
+    patientsRoute = await import("@/app/api/patients/route");
+    partnersRoute = await import("@/app/api/partners/route");
+    appointmentsRoute = await import("@/app/api/appointments/route");
+    appointmentByIdRoute = await import("@/app/api/appointments/[id]/route");
+    conditionsRoute = await import("@/app/api/patients/[id]/conditions/route");
+    assessmentsRoute = await import("@/app/api/conditions/[id]/assessments/route");
+    patientByIdRoute = await import("@/app/api/patients/[id]/route");
+    photoByIdRoute = await import("@/app/api/photos/[id]/route");
+
+    partnerPortalRoute = await import("@/app/api/portal/partner/route");
+    patientPortalRoute = await import("@/app/api/portal/patient/route");
+    photosRoute = await import("@/app/api/portal/patient/photos/route");
+    photoByIdPortalRoute = await import("@/app/api/portal/patient/photos/[id]/route");
+    consentRoute = await import("@/app/api/portal/patient/consent/route");
+    confirmRoute = await import("@/app/api/portal/patient/appointments/[id]/confirm/route");
+
+    ({ createSessionToken } = await import("@/lib/auth/session"));
+  });
+
+  const cookieHeader = (token: string) => ({ cookie: `vitta_session=${token}` });
+  const sessionFor = (email: string, role: "admin" | "partner" | "patient") =>
+    createSessionToken(process.env.AUTH_SECRET as string, Date.now() + 3_600_000, email, role);
+
+  describe("GET /api/auth/google — branch 'connect=calendar'", () => {
+    it("Dado connect=calendar, Quando GET google, Então pede escopo de agenda com access_type offline", async () => {
+      resetGoogleEnv();
+      process.env.GOOGLE_CLIENT_ID = "client-id";
+      process.env.GOOGLE_CLIENT_SECRET = "client-secret";
+      process.env.APP_URL = "http://localhost:3000";
+      process.env.GOOGLE_ALLOWED_EMAILS = "admin@clinica.com";
+
+      const response = await googleRoute.GET(
+        jsonRequest("/api/auth/google?connect=calendar", "GET"),
+      );
+
+      expect(response.status).toBe(307);
+      expect(response.headers.get("set-cookie")).toContain("vitta_oauth_state=");
+      resetGoogleEnv();
+    });
+  });
+
+  describe("GET /api/auth/google/callback — troca de código (googleapis mockado)", () => {
+    const buildCallbackRequest = (state: string, code = "auth-code-123") =>
+      jsonRequest(`/api/auth/google/callback?code=${code}&state=${state}`, "GET", undefined, {
+        cookie: `vitta_oauth_state=${state}`,
+      });
+
+    const configureGoogleEnv = () => {
+      resetGoogleEnv();
+      process.env.GOOGLE_CLIENT_ID = "client-id";
+      process.env.GOOGLE_CLIENT_SECRET = "client-secret";
+      process.env.APP_URL = "http://localhost:3000";
+      process.env.GOOGLE_ALLOWED_EMAILS = "admin.gaps@clinica.com";
+    };
+
+    it("Dado email não retornado pelo Google, Quando GET callback, Então redireciona com erro de email", async () => {
+      configureGoogleEnv();
+      googleMockState.tokenBehavior = "success";
+      googleMockState.userinfoEmail = null;
+
+      const response = await googleCallbackRoute.GET(buildCallbackRequest("state-1"));
+      const location = response.headers.get("location") ?? "";
+
+      expect(response.status).toBe(307);
+      expect(decodeURIComponent(location).replace(/\+/g, " ")).toContain(
+        "Não foi possível obter o email da conta Google",
+      );
+    });
+
+    it("Dado email autenticado sem vínculo (não admin/parceiro/paciente), Quando GET callback, Então redireciona com erro de conta não autorizada", async () => {
+      configureGoogleEnv();
+      googleMockState.tokenBehavior = "success";
+      googleMockState.userinfoEmail = "estranho.gaps@example.com";
+
+      const response = await googleCallbackRoute.GET(buildCallbackRequest("state-2"));
+      const location = response.headers.get("location") ?? "";
+
+      expect(response.status).toBe(307);
+      expect(decodeURIComponent(location).replace(/\+/g, " ")).toContain("não autorizada");
+    });
+
+    it("Dado exchangeCode lança erro, Quando GET callback, Então redireciona com erro genérico de autenticação", async () => {
+      configureGoogleEnv();
+      googleMockState.tokenBehavior = "throw";
+
+      const response = await googleCallbackRoute.GET(buildCallbackRequest("state-3"));
+      const location = response.headers.get("location") ?? "";
+
+      expect(response.status).toBe(307);
+      expect(decodeURIComponent(location).replace(/\+/g, " ")).toContain(
+        "Falha ao autenticar com o Google",
+      );
+    });
+
+    it("Dado email de paciente ativo autenticado via Google, Quando GET callback, Então cria sessão e redireciona para /portal", async () => {
+      configureGoogleEnv();
+      googleMockState.tokenBehavior = "success";
+      googleMockState.userinfoEmail = "paciente.google.gaps@example.com";
+
+      const patientResponse = await patientsRoute.POST(
+        jsonRequest("/api/patients", "POST", {
+          fullName: "Paciente Google Gaps",
+          email: "paciente.google.gaps@example.com",
+          phone: "11911112222",
+        }),
+      );
+      expect(patientResponse.status).toBe(200);
+
+      const response = await googleCallbackRoute.GET(buildCallbackRequest("state-4"));
+
+      expect(response.status).toBe(307);
+      expect(response.headers.get("location")).toContain("/portal");
+      expect(response.headers.get("set-cookie")).toContain("vitta_session=");
+    });
+
+    it("Dado email da allowlist (admin) com refresh token, Quando GET callback, Então persiste credencial do Calendar e redireciona para /", async () => {
+      configureGoogleEnv();
+      googleMockState.tokenBehavior = "success";
+      googleMockState.userinfoEmail = "admin.gaps@clinica.com";
+
+      const response = await googleCallbackRoute.GET(buildCallbackRequest("state-5"));
+
+      expect(response.status).toBe(307);
+      const location = response.headers.get("location") ?? "";
+      expect(location.endsWith("/") || location.includes("localhost:3000/")).toBe(true);
+      expect(location).not.toContain("/portal");
+      expect(response.headers.get("set-cookie")).toContain("vitta_session=");
+    });
+
+    it("Dado admin autenticado sem refresh token (reautorização), Quando GET callback, Então cria sessão sem persistir credencial", async () => {
+      configureGoogleEnv();
+      googleMockState.tokenBehavior = "no-refresh-token";
+      googleMockState.userinfoEmail = "admin.gaps@clinica.com";
+
+      const response = await googleCallbackRoute.GET(buildCallbackRequest("state-6"));
+
+      expect(response.status).toBe(307);
+      expect(response.headers.get("set-cookie")).toContain("vitta_session=");
+    });
+
+  });
+
+  describe("POST /api/auth/login — conta individual desativada", () => {
+    it("Dado conta individual desativada, Quando POST login, Então retorna 401", async () => {
+      process.env.AUTH_SECRET = "test-secret-gaps";
+      process.env.AUTH_PASSWORD = "senha-clinica";
+
+      const { getRepositories } = await import("@/infrastructure/container");
+      const { hashPassword } = await import("@/lib/auth/password");
+      const { UserAccount } = await import("@/domain/auth/user-account");
+      const { userAccounts } = await getRepositories();
+      const account = UserAccount.create({
+        email: "inativo.gaps@clinica.com",
+        passwordHash: await hashPassword("senha-individual"),
+      });
+      await userAccounts.save(account.deactivate());
+
+      const response = await loginRoute.POST(
+        jsonRequest(
+          "/api/auth/login",
+          "POST",
+          { password: "senha-individual", email: "inativo.gaps@clinica.com" },
+          { "x-forwarded-for": "10.0.1.1" },
+        ),
+      );
+      const body = (await response.json()) as Envelope<null>;
+
+      expect(response.status).toBe(401);
+      expect(body.error).toContain("Email ou senha incorretos");
+      delete process.env.AUTH_PASSWORD;
+    });
+  });
+
+  describe("GET /api/portal/partner — fluxo completo com pacientes indicados", () => {
+    it("Dado parceiro com paciente indicado (condição + avaliação), Quando GET portal do parceiro, Então retorna dados agrupados", async () => {
+      const partnerEmail = "parceiro.completo.gaps@example.com";
+      const partnerResponse = await partnersRoute.POST(
+        jsonRequest("/api/partners", "POST", {
+          fullName: "Dr. Parceiro Completo",
+          email: partnerEmail,
+          phone: "11922223333",
+        }),
+      );
+      const partnerBody = (await partnerResponse.json()) as Envelope<{ id: string }>;
+      const partnerId = partnerBody.data.id;
+
+      const referredResponse = await patientsRoute.POST(
+        jsonRequest("/api/patients", "POST", {
+          fullName: "Paciente Indicado Gaps",
+          email: "paciente.indicado.gaps@example.com",
+          phone: "11933334444",
+          referredByPartnerId: partnerId,
+        }),
+      );
+      const referredBody = (await referredResponse.json()) as Envelope<{ id: string }>;
+      const referredPatientId = referredBody.data.id;
+
+      const conditionResponse = await conditionsRoute.POST(
+        jsonRequest(`/api/patients/${referredPatientId}/conditions`, "POST", {
+          kind: "wound",
+          title: "Ferida indicada",
+        }),
+        context(referredPatientId),
+      );
+      const conditionBody = (await conditionResponse.json()) as Envelope<{ id: string }>;
+
+      await assessmentsRoute.POST(
+        jsonRequest(`/api/conditions/${conditionBody.data.id}/assessments`, "POST", {
+          lengthMm: 10,
+          widthMm: 5,
+        }),
+        context(conditionBody.data.id),
+      );
+
+      await appointmentsRoute.POST(
+        jsonRequest("/api/appointments", "POST", {
+          patientId: referredPatientId,
+          startsAt: "2027-02-08T12:00:00.000Z",
+          endsAt: "2027-02-08T13:00:00.000Z",
+          procedure: "Retorno",
+          priceCents: 10000,
+        }),
+      );
+
+      const response = await partnerPortalRoute.GET(
+        jsonRequest("/api/portal/partner", "GET", undefined, cookieHeader(sessionFor(partnerEmail, "partner"))),
+      );
+      const body = (await response.json()) as Envelope<{
+        partner: { id: string };
+        referredPatients: Array<{
+          patient: { id: string };
+          appointments: Array<{ id: string }>;
+          conditions: Array<{ condition: { id: string }; assessments: Array<{ id: string }> }>;
+        }>;
+      }>;
+
+      expect(response.status).toBe(200);
+      expect(body.data.partner.id).toBe(partnerId);
+      const entry = body.data.referredPatients.find((r) => r.patient.id === referredPatientId);
+      expect(entry).toBeDefined();
+      expect(entry?.appointments.length).toBeGreaterThan(0);
+      expect(entry?.conditions.length).toBeGreaterThan(0);
+      expect(entry?.conditions[0]?.assessments.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("GET /api/portal/patient — fluxo completo com fatura, retorno e fotos", () => {
+    it("Dado paciente com fatura pendente, follow-up e foto, Quando GET portal do paciente, Então retorna tudo agregado", async () => {
+      const patientEmail = "paciente.completo.gaps@example.com";
+      const patientResponse = await patientsRoute.POST(
+        jsonRequest("/api/patients", "POST", {
+          fullName: "Paciente Completo Gaps",
+          email: patientEmail,
+          phone: "11944445555",
+        }),
+      );
+      const patientBody = (await patientResponse.json()) as Envelope<{ id: string }>;
+      const patientId = patientBody.data.id;
+
+      // Fatura: agenda e completa uma consulta passada.
+      const apptResponse = await appointmentsRoute.POST(
+        jsonRequest("/api/appointments", "POST", {
+          patientId,
+          startsAt: "2026-07-13T12:00:00.000Z",
+          endsAt: "2026-07-13T13:00:00.000Z",
+          procedure: "Avaliação",
+          priceCents: 12000,
+        }),
+      );
+      const apptBody = (await apptResponse.json()) as Envelope<{ id: string }>;
+      await appointmentByIdRoute.PATCH(
+        jsonRequest(`/api/appointments/${apptBody.data.id}`, "PATCH", { action: "complete" }),
+        context(apptBody.data.id),
+      );
+
+      // Condição ativa para envio de foto pelo paciente.
+      const conditionResponse = await conditionsRoute.POST(
+        jsonRequest(`/api/patients/${patientId}/conditions`, "POST", {
+          kind: "wound",
+          title: "Ferida do paciente completo",
+        }),
+        context(patientId),
+      );
+      const conditionBody = (await conditionResponse.json()) as Envelope<{ id: string }>;
+
+      const patientToken = sessionFor(patientEmail, "patient");
+
+      const pngBytes = new Uint8Array([
+        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
+      ]);
+      const file = new File([pngBytes], "foto.png", { type: "image/png" });
+      const form = new FormData();
+      form.set("file", file);
+      form.set("conditionId", conditionBody.data.id);
+      const photoUploadResponse = await photosRoute.POST(
+        new NextRequest("http://localhost/api/portal/patient/photos", {
+          method: "POST",
+          body: form,
+          headers: cookieHeader(patientToken),
+        }),
+      );
+      const photoBody = (await photoUploadResponse.json()) as Envelope<{ id: string }>;
+
+      // Escalar triagem gera follow-up pendente.
+      await photoByIdRoute.PATCH(
+        jsonRequest(`/api/photos/${photoBody.data.id}`, "PATCH", { triage: "escalated" }),
+        context(photoBody.data.id),
+      );
+
+      const response = await patientPortalRoute.GET(
+        jsonRequest("/api/portal/patient", "GET", undefined, cookieHeader(patientToken)),
+      );
+      const body = (await response.json()) as Envelope<{
+        patient: { id: string };
+        invoices: Array<{ id: string }>;
+        followUps: Array<{ id: string }>;
+        conditions: Array<{
+          condition: { id: string };
+          photos: Array<{ id: string }>;
+        }>;
+      }>;
+
+      expect(response.status).toBe(200);
+      expect(body.data.patient.id).toBe(patientId);
+      expect(body.data.invoices.length).toBeGreaterThan(0);
+      expect(body.data.followUps.length).toBeGreaterThan(0);
+      const conditionEntry = body.data.conditions.find(
+        (c) => c.condition.id === conditionBody.data.id,
+      );
+      expect(conditionEntry?.photos.length).toBeGreaterThan(0);
+    });
+
+    it("Dado sessão de paciente válida mas sem cadastro de paciente correspondente, Quando GET portal do paciente, Então retorna 404", async () => {
+      const response = await patientPortalRoute.GET(
+        jsonRequest(
+          "/api/portal/patient",
+          "GET",
+          undefined,
+          cookieHeader(sessionFor("fantasma.gaps@example.com", "patient")),
+        ),
+      );
+
+      expect(response.status).toBe(404);
+    });
+  });
+
+  describe("POST /api/portal/patient/photos — branches restantes", () => {
+    let conditionId: string;
+    let patientToken: string;
+    const pngBytes = new Uint8Array([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
+    ]);
+
+    beforeAll(async () => {
+      const patientEmail = "paciente.fotos.gaps@example.com";
+      const patientResponse = await patientsRoute.POST(
+        jsonRequest("/api/patients", "POST", {
+          fullName: "Paciente Fotos Gaps",
+          email: patientEmail,
+          phone: "11955556666",
+        }),
+      );
+      const patientBody = (await patientResponse.json()) as Envelope<{ id: string }>;
+      const conditionResponse = await conditionsRoute.POST(
+        jsonRequest(`/api/patients/${patientBody.data.id}/conditions`, "POST", {
+          kind: "wound",
+          title: "Ferida a resolver",
+        }),
+        context(patientBody.data.id),
+      );
+      const conditionBody = (await conditionResponse.json()) as Envelope<{ id: string }>;
+      conditionId = conditionBody.data.id;
+      patientToken = sessionFor(patientEmail, "patient");
+    });
+
+    it("Dado arquivo maior que 5 MB, Quando POST photos, Então retorna 400", async () => {
+      const bigBytes = new Uint8Array(5 * 1024 * 1024 + 1);
+      const file = new File([bigBytes], "grande.png", { type: "image/png" });
+      const form = new FormData();
+      form.set("file", file);
+      form.set("conditionId", conditionId);
+      const response = await photosRoute.POST(
+        new NextRequest("http://localhost/api/portal/patient/photos", {
+          method: "POST",
+          body: form,
+          headers: cookieHeader(patientToken),
+        }),
+      );
+
+      expect(response.status).toBe(400);
+    });
+
+    it("Dado condição já resolvida, Quando POST photos, Então retorna 400", async () => {
+      const resolveResponse = await (
+        await import("@/app/api/conditions/[id]/route")
+      ).PATCH(
+        jsonRequest(`/api/conditions/${conditionId}`, "PATCH", { action: "resolve" }),
+        context(conditionId),
+      );
+      expect(resolveResponse.status).toBe(200);
+
+      const file = new File([pngBytes], "foto.png", { type: "image/png" });
+      const form = new FormData();
+      form.set("file", file);
+      form.set("conditionId", conditionId);
+      const response = await photosRoute.POST(
+        new NextRequest("http://localhost/api/portal/patient/photos", {
+          method: "POST",
+          body: form,
+          headers: cookieHeader(patientToken),
+        }),
+      );
+
+      expect(response.status).toBe(400);
+    });
+  });
+
+  describe("GET /api/portal/patient/photos/:id — sessão sem paciente correspondente", () => {
+    it("Dado sessão de paciente válida sem cadastro correspondente, Quando GET foto, Então retorna 404", async () => {
+      const response = await photoByIdPortalRoute.GET(
+        jsonRequest(
+          "/api/portal/patient/photos/ghost",
+          "GET",
+          undefined,
+          cookieHeader(sessionFor("fantasma-foto.gaps@example.com", "patient")),
+        ),
+        context("ghost"),
+      );
+
+      expect(response.status).toBe(404);
+    });
+  });
+
+  describe("GET/POST /api/portal/patient/consent — branches restantes", () => {
+    it("Dado sessão de paciente sem cadastro correspondente, Quando GET consent, Então retorna 404", async () => {
+      const response = await consentRoute.GET(
+        jsonRequest(
+          "/api/portal/patient/consent",
+          "GET",
+          undefined,
+          cookieHeader(sessionFor("fantasma-consent.gaps@example.com", "patient")),
+        ),
+      );
+
+      expect(response.status).toBe(404);
+    });
+
+    it("Dado paciente desativado, Quando POST consent, Então retorna 404", async () => {
+      const patientEmail = "paciente.consent.inativo.gaps@example.com";
+      const patientResponse = await patientsRoute.POST(
+        jsonRequest("/api/patients", "POST", {
+          fullName: "Paciente Consent Inativo",
+          email: patientEmail,
+          phone: "11966667777",
+        }),
+      );
+      const patientBody = (await patientResponse.json()) as Envelope<{ id: string }>;
+      await patientByIdRoute.PATCH(
+        jsonRequest(`/api/patients/${patientBody.data.id}`, "PATCH", { active: false }),
+        context(patientBody.data.id),
+      );
+
+      const response = await consentRoute.POST(
+        jsonRequest(
+          "/api/portal/patient/consent",
+          "POST",
+          undefined,
+          cookieHeader(sessionFor(patientEmail, "patient")),
+        ),
+      );
+
+      expect(response.status).toBe(404);
+    });
+  });
+
+  describe("POST /api/portal/patient/appointments/:id/confirm — branches restantes", () => {
+    it("Dado consulta já confirmada, Quando POST confirm novamente, Então retorna a mesma consulta (idempotente)", async () => {
+      const patientEmail = "paciente.confirm.idempotente.gaps@example.com";
+      const patientResponse = await patientsRoute.POST(
+        jsonRequest("/api/patients", "POST", {
+          fullName: "Paciente Confirm Idempotente",
+          email: patientEmail,
+          phone: "11977778888",
+        }),
+      );
+      const patientBody = (await patientResponse.json()) as Envelope<{ id: string }>;
+      const appointmentResponse = await appointmentsRoute.POST(
+        jsonRequest("/api/appointments", "POST", {
+          patientId: patientBody.data.id,
+          startsAt: "2027-03-08T12:00:00.000Z",
+          endsAt: "2027-03-08T13:00:00.000Z",
+          procedure: "Avaliação",
+          priceCents: 9000,
+        }),
+      );
+      const appointmentBody = (await appointmentResponse.json()) as Envelope<{ id: string }>;
+      const token = sessionFor(patientEmail, "patient");
+
+      const first = await confirmRoute.POST(
+        jsonRequest(
+          `/api/portal/patient/appointments/${appointmentBody.data.id}/confirm`,
+          "POST",
+          undefined,
+          cookieHeader(token),
+        ),
+        context(appointmentBody.data.id),
+      );
+      expect(first.status).toBe(200);
+
+      const second = await confirmRoute.POST(
+        jsonRequest(
+          `/api/portal/patient/appointments/${appointmentBody.data.id}/confirm`,
+          "POST",
+          undefined,
+          cookieHeader(token),
+        ),
+        context(appointmentBody.data.id),
+      );
+      const secondBody = (await second.json()) as Envelope<{ status: string }>;
+
+      expect(second.status).toBe(200);
+      expect(secondBody.data.status).toBe("confirmed");
+    });
+
+    it("Dado consulta já passada, Quando POST confirm, Então retorna 400", async () => {
+      const patientEmail = "paciente.confirm.passado.gaps@example.com";
+      const patientResponse = await patientsRoute.POST(
+        jsonRequest("/api/patients", "POST", {
+          fullName: "Paciente Confirm Passado",
+          email: patientEmail,
+          phone: "11988889999",
+        }),
+      );
+      const patientBody = (await patientResponse.json()) as Envelope<{ id: string }>;
+      const appointmentResponse = await appointmentsRoute.POST(
+        jsonRequest("/api/appointments", "POST", {
+          patientId: patientBody.data.id,
+          startsAt: "2020-01-06T12:00:00.000Z",
+          endsAt: "2020-01-06T13:00:00.000Z",
+          procedure: "Avaliação",
+          priceCents: 8000,
+        }),
+      );
+      const appointmentBody = (await appointmentResponse.json()) as Envelope<{ id: string }>;
+
+      const response = await confirmRoute.POST(
+        jsonRequest(
+          `/api/portal/patient/appointments/${appointmentBody.data.id}/confirm`,
+          "POST",
+          undefined,
+          cookieHeader(sessionFor(patientEmail, "patient")),
+        ),
+        context(appointmentBody.data.id),
+      );
+      const body = (await response.json()) as Envelope<null>;
+
+      expect(response.status).toBe(400);
+      expect(body.error).toContain("consultas futuras");
+    });
+
+    it("Dado paciente desativado, Quando POST confirm, Então retorna 404", async () => {
+      const patientEmail = "paciente.confirm.inativo.gaps@example.com";
+      const patientResponse = await patientsRoute.POST(
+        jsonRequest("/api/patients", "POST", {
+          fullName: "Paciente Confirm Inativo",
+          email: patientEmail,
+          phone: "11999990000",
+        }),
+      );
+      const patientBody = (await patientResponse.json()) as Envelope<{ id: string }>;
+      const appointmentResponse = await appointmentsRoute.POST(
+        jsonRequest("/api/appointments", "POST", {
+          patientId: patientBody.data.id,
+          startsAt: "2027-04-05T12:00:00.000Z",
+          endsAt: "2027-04-05T13:00:00.000Z",
+          procedure: "Avaliação",
+          priceCents: 8500,
+        }),
+      );
+      const appointmentBody = (await appointmentResponse.json()) as Envelope<{ id: string }>;
+      await patientByIdRoute.PATCH(
+        jsonRequest(`/api/patients/${patientBody.data.id}`, "PATCH", { active: false }),
+        context(patientBody.data.id),
+      );
+
+      const response = await confirmRoute.POST(
+        jsonRequest(
+          `/api/portal/patient/appointments/${appointmentBody.data.id}/confirm`,
+          "POST",
+          undefined,
+          cookieHeader(sessionFor(patientEmail, "patient")),
+        ),
+        context(appointmentBody.data.id),
+      );
+
+      expect(response.status).toBe(404);
+    });
+  });
+});

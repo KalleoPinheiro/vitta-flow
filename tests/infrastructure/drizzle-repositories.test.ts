@@ -10,35 +10,62 @@ import type { AppDb } from "@/infrastructure/persistence/drizzle/db";
 import { DrizzlePatientRepository } from "@/infrastructure/persistence/drizzle/drizzle-patient-repository";
 import { DrizzleAppointmentRepository } from "@/infrastructure/persistence/drizzle/drizzle-appointment-repository";
 import { DrizzleInvoiceRepository } from "@/infrastructure/persistence/drizzle/drizzle-invoice-repository";
+import { DrizzleProfessionalRepository } from "@/infrastructure/persistence/drizzle/drizzle-professional-repository";
+import {
+  DrizzleProcedureRepository,
+  DrizzleUserAccountRepository,
+  DrizzleScheduleConfigRepository,
+  DrizzleProcedureKitRepository,
+} from "@/infrastructure/persistence/drizzle/drizzle-foundation-repositories";
 import { Patient } from "@/domain/patient/patient";
 import { Appointment } from "@/domain/scheduling/appointment";
 import { Invoice } from "@/domain/billing/invoice";
 import { Money } from "@/domain/shared/money";
 import { TimeSlot } from "@/domain/shared/time-slot";
 import { SchedulingConflictError } from "@/domain/shared/errors";
+import { Professional } from "@/domain/professional/professional";
+import { Procedure } from "@/domain/catalog/procedure";
+import { UserAccount } from "@/domain/auth/user-account";
+import { DEFAULT_SCHEDULE_CONFIG } from "@/domain/scheduling/schedule-config";
 
 const slot = (startIso: string, endIso: string) =>
   TimeSlot.create(new Date(startIso), new Date(endIso));
 
 describe("Feature: Persistência PostgreSQL (Drizzle)", () => {
   let db: PgliteDatabase<typeof schema>;
+  let appDb: AppDb;
   let patientRepo: DrizzlePatientRepository;
   let appointmentRepo: DrizzleAppointmentRepository;
   let invoiceRepo: DrizzleInvoiceRepository;
+  let professionalRepo: DrizzleProfessionalRepository;
+  let procedureRepo: DrizzleProcedureRepository;
+  let userAccountRepo: DrizzleUserAccountRepository;
+  let scheduleConfigRepo: DrizzleScheduleConfigRepository;
+  let procedureKitRepo: DrizzleProcedureKitRepository;
 
   beforeAll(async () => {
     const client = new PGlite({ extensions: { pg_trgm, btree_gist } });
     db = drizzle(client, { schema });
     await migrate(db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
-    const appDb = db as unknown as AppDb;
+    appDb = db as unknown as AppDb;
     patientRepo = new DrizzlePatientRepository(appDb);
     appointmentRepo = new DrizzleAppointmentRepository(appDb);
     invoiceRepo = new DrizzleInvoiceRepository(appDb);
+    professionalRepo = new DrizzleProfessionalRepository(appDb);
+    procedureRepo = new DrizzleProcedureRepository(appDb);
+    userAccountRepo = new DrizzleUserAccountRepository(appDb);
+    scheduleConfigRepo = new DrizzleScheduleConfigRepository(appDb);
+    procedureKitRepo = new DrizzleProcedureKitRepository(appDb);
   });
 
   beforeEach(async () => {
     await db.delete(schema.invoices);
+    await db.delete(schema.procedureSupplies);
+    await db.delete(schema.userAccounts);
+    await db.delete(schema.scheduleSettings);
     await db.delete(schema.appointments);
+    await db.delete(schema.professionals);
+    await db.delete(schema.procedures);
     await db.delete(schema.patients);
   });
 
@@ -258,6 +285,272 @@ describe("Feature: Persistência PostgreSQL (Drizzle)", () => {
       expect(
         await invoiceRepo.findAll({ from: new Date(Date.now() + 86_400_000) }),
       ).toHaveLength(0);
+    });
+  });
+
+  describe("Cenário: consultas em lote e por profissional", () => {
+    const makeAppointment = (
+      patientId: string,
+      startIso: string,
+      endIso: string,
+      professionalId?: string | null,
+    ) =>
+      Appointment.create({
+        patientId,
+        slot: slot(startIso, endIso),
+        procedure: "Troca de bolsa",
+        price: Money.fromCents(25000),
+        professionalId,
+      });
+
+    it("Dado ids vazios, Quando buscar consultas em lote, Então retorna array vazio", async () => {
+      expect(await appointmentRepo.findByIds([])).toEqual([]);
+      expect(await appointmentRepo.findByPatientIds([])).toEqual([]);
+    });
+
+    it("Dado consultas salvas, Quando buscar por ids e por pacientes com endsAfter, Então filtra", async () => {
+      const patient = await savedPatient();
+      const past = makeAppointment(patient.id, "2020-01-10T09:00:00Z", "2020-01-10T10:00:00Z");
+      const future = makeAppointment(patient.id, "2026-07-20T09:00:00Z", "2026-07-20T10:00:00Z");
+      await appointmentRepo.save(past);
+      await appointmentRepo.save(future);
+
+      const byIds = await appointmentRepo.findByIds([past.id, past.id, future.id]);
+      expect(byIds).toHaveLength(2);
+
+      const afterFilter = await appointmentRepo.findByPatientIds([patient.id], {
+        endsAfter: new Date("2025-01-01T00:00:00Z"),
+      });
+      expect(afterFilter).toHaveLength(1);
+      expect(afterFilter[0].id).toBe(future.id);
+      expect(await appointmentRepo.findByPatientIds([patient.id])).toHaveLength(2);
+    });
+
+    it("Dado consultas de profissionais distintos, Quando filtrar range por profissional, Então escopa", async () => {
+      const patient = await savedPatient();
+      const professional = Professional.create({ fullName: "Ana Enfermeira" });
+      await professionalRepo.save(professional);
+
+      await appointmentRepo.save(
+        makeAppointment(
+          patient.id,
+          "2026-07-20T09:00:00Z",
+          "2026-07-20T10:00:00Z",
+          professional.id,
+        ),
+      );
+      await appointmentRepo.save(
+        makeAppointment(patient.id, "2026-07-20T11:00:00Z", "2026-07-20T12:00:00Z"),
+      );
+
+      const scoped = await appointmentRepo.findInRange(
+        new Date("2026-07-20T00:00:00Z"),
+        new Date("2026-07-21T00:00:00Z"),
+        { professionalId: professional.id },
+      );
+      expect(scoped).toHaveLength(1);
+
+      const all = await appointmentRepo.findInRange(
+        new Date("2026-07-20T00:00:00Z"),
+        new Date("2026-07-21T00:00:00Z"),
+      );
+      expect(all).toHaveLength(2);
+    });
+
+    it("Dado consulta atribuída, Quando buscar conflito escopado por profissional, Então respeita atribuição", async () => {
+      const patient = await savedPatient();
+      const professionalA = Professional.create({ fullName: "Ana Enfermeira" });
+      const professionalB = Professional.create({ fullName: "Beto Técnico" });
+      await professionalRepo.save(professionalA);
+      await professionalRepo.save(professionalB);
+
+      await appointmentRepo.save(
+        makeAppointment(
+          patient.id,
+          "2026-07-20T09:00:00Z",
+          "2026-07-20T10:00:00Z",
+          professionalA.id,
+        ),
+      );
+
+      const overlapping = slot("2026-07-20T09:30:00Z", "2026-07-20T10:30:00Z");
+      expect(
+        await appointmentRepo.findConflicting(overlapping, undefined, professionalA.id),
+      ).toHaveLength(1);
+      expect(
+        await appointmentRepo.findConflicting(overlapping, undefined, professionalB.id),
+      ).toHaveLength(0);
+    });
+
+    it("Dado consultas concluídas, Quando obter estatísticas e produção no período, Então agrega corretamente", async () => {
+      const patient = await savedPatient();
+      const professional = Professional.create({ fullName: "Ana Enfermeira" });
+      await professionalRepo.save(professional);
+
+      const completed = makeAppointment(
+        patient.id,
+        "2026-07-20T09:00:00Z",
+        "2026-07-20T10:00:00Z",
+        professional.id,
+      )
+        .confirm()
+        .complete();
+      const cancelled = makeAppointment(
+        patient.id,
+        "2026-07-20T11:00:00Z",
+        "2026-07-20T12:00:00Z",
+      ).cancel();
+      await appointmentRepo.save(completed);
+      await appointmentRepo.save(cancelled);
+
+      const stats = await appointmentRepo.getStatsInRange(
+        new Date("2026-07-20T00:00:00Z"),
+        new Date("2026-07-21T00:00:00Z"),
+      );
+      expect(stats.byStatus.completed).toBe(1);
+      expect(stats.byStatus.cancelled).toBe(1);
+      expect(stats.revenueByProcedure[0]).toEqual({
+        procedure: "Troca de bolsa",
+        count: 1,
+        totalCents: 25000,
+      });
+
+      const production = await appointmentRepo.getProductionInRange(
+        new Date("2026-07-20T00:00:00Z"),
+        new Date("2026-07-21T00:00:00Z"),
+      );
+      expect(production).toEqual([
+        { professionalId: professional.id, count: 1, totalCents: 25000 },
+      ]);
+    });
+  });
+
+  describe("Cenário: catálogo de procedimentos", () => {
+    it("Dado procedimento salvo, Quando buscar por id e nome, Então campos preservados", async () => {
+      const procedure = Procedure.create({
+        name: "Curativo especial",
+        priceCents: 12000,
+        durationMinutes: 30,
+      });
+      await procedureRepo.save(procedure);
+
+      const byId = await procedureRepo.findById(procedure.id);
+      expect(byId?.name).toBe("Curativo especial");
+      expect(byId?.priceCents).toBe(12000);
+
+      expect(await procedureRepo.findByName("curativo ESPECIAL")).not.toBeNull();
+      expect(await procedureRepo.findByName("inexistente")).toBeNull();
+    });
+
+    it("Dado id e nome inexistentes, Quando buscar, Então retorna null", async () => {
+      expect(await procedureRepo.findById("id-inexistente")).toBeNull();
+    });
+
+    it("Dado procedimento desativado, Quando salvar (upsert) e listar, Então reflete estado", async () => {
+      const procedure = Procedure.create({
+        name: "Avaliação",
+        priceCents: 10000,
+        durationMinutes: 20,
+      });
+      await procedureRepo.save(procedure);
+      await procedureRepo.save(procedure.deactivate());
+
+      expect((await procedureRepo.findById(procedure.id))?.isActive).toBe(false);
+      expect(await procedureRepo.findAll()).toHaveLength(1);
+    });
+  });
+
+  describe("Cenário: kit padrão de insumos por procedimento", () => {
+    it("Dado procedimento sem kit, Quando consultar, Então retorna lista vazia", async () => {
+      const procedure = Procedure.create({
+        name: "Sem kit",
+        priceCents: 5000,
+        durationMinutes: 15,
+      });
+      await procedureRepo.save(procedure);
+
+      expect(await procedureKitRepo.getKit(procedure.id)).toEqual([]);
+    });
+
+    it("Dado itens definidos, Quando substituir o kit, Então reflete a nova lista", async () => {
+      const procedure = Procedure.create({
+        name: "Com kit",
+        priceCents: 5000,
+        durationMinutes: 15,
+      });
+      await procedureRepo.save(procedure);
+
+      await procedureKitRepo.setKit(procedure.id, [
+        { supplyId: "supply-1", quantity: 2 },
+        { supplyId: "supply-2", quantity: 1 },
+      ]);
+      expect(await procedureKitRepo.getKit(procedure.id)).toHaveLength(2);
+
+      await procedureKitRepo.setKit(procedure.id, [{ supplyId: "supply-1", quantity: 5 }]);
+      const updated = await procedureKitRepo.getKit(procedure.id);
+      expect(updated).toEqual([{ supplyId: "supply-1", quantity: 5 }]);
+
+      await procedureKitRepo.setKit(procedure.id, []);
+      expect(await procedureKitRepo.getKit(procedure.id)).toEqual([]);
+    });
+  });
+
+  describe("Cenário: contas de acesso da equipe", () => {
+    it("Dado conta salva, Quando buscar por email, Então normaliza e preserva campos", async () => {
+      const account = UserAccount.create({
+        email: "Equipe@Clinica.com",
+        passwordHash: "scrypt$1$salt$hash",
+      });
+      await userAccountRepo.save(account);
+
+      const stored = await userAccountRepo.findByEmail("equipe@clinica.com");
+      expect(stored?.email).toBe("equipe@clinica.com");
+      expect(stored?.passwordHash).toBe("scrypt$1$salt$hash");
+      expect(stored?.isActive).toBe(true);
+    });
+
+    it("Dado email não cadastrado, Quando buscar, Então retorna null", async () => {
+      expect(await userAccountRepo.findByEmail("ninguem@clinica.com")).toBeNull();
+    });
+
+    it("Dado contas salvas, Quando desativar (upsert) e listar, Então reflete estado", async () => {
+      const account = UserAccount.create({
+        email: "outra@clinica.com",
+        passwordHash: "scrypt$1$salt$hash",
+      });
+      await userAccountRepo.save(account);
+      await userAccountRepo.save(account.deactivate());
+
+      expect((await userAccountRepo.findByEmail("outra@clinica.com"))?.isActive).toBe(false);
+      expect(await userAccountRepo.findAll()).toHaveLength(1);
+    });
+  });
+
+  describe("Cenário: configuração da agenda da clínica", () => {
+    it("Dado nenhuma configuração salva, Quando buscar, Então retorna null", async () => {
+      expect(await scheduleConfigRepo.get()).toBeNull();
+    });
+
+    it("Dado configuração salva, Quando buscar (upsert), Então retorna a mais recente", async () => {
+      await scheduleConfigRepo.save(DEFAULT_SCHEDULE_CONFIG);
+      await scheduleConfigRepo.save({ ...DEFAULT_SCHEDULE_CONFIG, startHour: 7 });
+
+      const stored = await scheduleConfigRepo.get();
+      expect(stored?.startHour).toBe(7);
+      expect(stored?.weekdays).toEqual(DEFAULT_SCHEDULE_CONFIG.weekdays);
+    });
+
+    it("Dado configuração corrompida no banco, Quando buscar, Então cai no default (retorna null)", async () => {
+      await db.insert(schema.scheduleSettings).values({
+        id: "default",
+        weekdays: "não-é-json",
+        startHour: 8,
+        endHour: 18,
+        minGapMinutes: 15,
+        updatedAt: new Date(),
+      });
+
+      expect(await scheduleConfigRepo.get()).toBeNull();
     });
   });
 });

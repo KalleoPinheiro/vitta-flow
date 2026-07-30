@@ -10,6 +10,9 @@ import { CompleteAppointment } from "@/application/appointments/complete-appoint
 import { SendReminders } from "@/application/reminders/send-reminders";
 import type { MessagingGateway } from "@/application/ports/messaging-gateway";
 import { NullMessagingGateway } from "@/application/ports/messaging-gateway";
+import { Appointment } from "@/domain/scheduling/appointment";
+import { TimeSlot } from "@/domain/shared/time-slot";
+import { Money } from "@/domain/shared/money";
 import type { Patient } from "@/domain/patient/patient";
 
 class FakeMessagingGateway implements MessagingGateway {
@@ -130,5 +133,35 @@ describe("Feature: Lembretes de confirmação (D-1) e recall de retornos", () =>
     expect(summary.channelEnabled).toBe(false);
     expect(summary.sent).toBe(0);
     expect(summary.skipped).toBe(1);
+  });
+
+  it("Dado paciente desativado com consulta amanhã, Quando rodar, Então pula sem enviar", async () => {
+    await scheduleTomorrow();
+    await patientRepo.save(maria.deactivate());
+
+    const summary = await run();
+
+    expect(summary.sent).toBe(0);
+    expect(summary.skipped).toBe(1);
+    expect(gateway.sentMessages).toHaveLength(0);
+  });
+
+  it("Dado consulta órfã (paciente removido do cadastro), Quando rodar, Então pula sem enviar", async () => {
+    const orphan = Appointment.create({
+      patientId: "paciente-removido",
+      slot: TimeSlot.create(
+        new Date("2026-07-17T09:00:00Z"),
+        new Date("2026-07-17T10:00:00Z"),
+      ),
+      procedure: "Troca de bolsa",
+      price: Money.fromCents(25000),
+    });
+    await appointmentRepo.save(orphan);
+
+    const summary = await run();
+
+    expect(summary.sent).toBe(0);
+    expect(summary.skipped).toBe(1);
+    expect(gateway.sentMessages).toHaveLength(0);
   });
 });

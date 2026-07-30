@@ -36,6 +36,51 @@ describe("Feature: Médico parceiro (indicação)", () => {
     expect(partner.isActive).toBe(true);
   });
 
+  it("Dado atualização de crm, Quando atualizar, Então novo crm aplicado mantendo demais campos", () => {
+    const partner = Partner.create(validProps);
+
+    const updated = partner.update({ crm: "CRM-SP 654321" });
+
+    expect(updated.crm).toBe("CRM-SP 654321");
+    expect(updated.specialty).toBe(validProps.specialty);
+  });
+
+  it("Dado crm e specialty explicitamente nulos, Quando atualizar, Então ambos são limpos", () => {
+    const partner = Partner.create(validProps);
+
+    const updated = partner.update({ crm: null, specialty: null });
+
+    expect(updated.crm).toBeNull();
+    expect(updated.specialty).toBeNull();
+  });
+
+  it("Dado nenhuma mudança, Quando atualizar, Então mantém valores atuais", () => {
+    const partner = Partner.create(validProps);
+
+    const updated = partner.update({});
+
+    expect(updated.fullName).toBe(partner.fullName);
+    expect(updated.email).toBe(partner.email);
+    expect(updated.phone).toBe(partner.phone);
+    expect(updated.crm).toBe(partner.crm);
+    expect(updated.specialty).toBe(partner.specialty);
+  });
+
+  it("Dado atualização de email e telefone, Quando atualizar, Então aplica novos valores normalizados", () => {
+    const partner = Partner.create(validProps);
+
+    const updated = partner.update({ email: " Novo@Email.com ", phone: "11900001111" });
+
+    expect(updated.email).toBe("novo@email.com");
+    expect(updated.phone).toBe("11900001111");
+  });
+
+  it("Dado reativação, Quando reativar parceiro inativo, Então isActive true", () => {
+    const partner = Partner.create(validProps).deactivate();
+
+    expect(partner.reactivate().isActive).toBe(true);
+  });
+
   it("Dado restore, Quando reconstituir, Então mantém id e campos", () => {
     const partner = Partner.restore({
       id: "partner-1",
@@ -50,6 +95,22 @@ describe("Feature: Médico parceiro (indicação)", () => {
 
     expect(partner.id).toBe("partner-1");
     expect(partner.isActive).toBe(false);
+  });
+
+  it("Dado restore com crm e specialty preenchidos, Quando reconstituir, Então mantém valores", () => {
+    const partner = Partner.restore({
+      id: "partner-2",
+      fullName: "Dr. Bruno",
+      email: "bruno@x.com",
+      phone: "11988887777",
+      crm: "CRM-RJ 111111",
+      specialty: "Angiologia",
+      active: true,
+      createdAt: new Date("2026-01-01T00:00:00Z"),
+    });
+
+    expect(partner.crm).toBe("CRM-RJ 111111");
+    expect(partner.specialty).toBe("Angiologia");
   });
 });
 

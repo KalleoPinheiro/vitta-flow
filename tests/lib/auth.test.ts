@@ -1,12 +1,17 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import {
   createSessionToken,
   verifySessionToken,
   passwordMatches,
 } from "@/lib/auth/session";
 import { encryptSecret, decryptSecret } from "@/lib/auth/crypto";
-import { isEmailAllowed, parseAllowedEmails } from "@/lib/auth/google-oauth";
+import {
+  isEmailAllowed,
+  parseAllowedEmails,
+  googleOAuthConfigFromEnv,
+} from "@/lib/auth/google-oauth";
 import { RateLimiter } from "@/lib/auth/rate-limit";
+import { hashPassword, verifyPassword } from "@/lib/auth/password";
 
 const SECRET = "test-secret";
 
@@ -129,5 +134,85 @@ describe("Feature: Rate limiting de janela fixa", () => {
 
     expect(limiter.allow("ip1", 0)).toBe(true);
     expect(limiter.allow("ip2", 0)).toBe(true);
+  });
+});
+
+describe("Feature: Criptografia de segredos — payload malformado", () => {
+  it("Dado payload cifrado sem as 3 partes esperadas, Quando decifrar, Então lança erro de formato", () => {
+    expect(() => decryptSecret("apenas-uma-parte", SECRET)).toThrow(
+      "Segredo cifrado em formato inválido",
+    );
+    expect(() => decryptSecret("iv.tag", SECRET)).toThrow(
+      "Segredo cifrado em formato inválido",
+    );
+  });
+});
+
+describe("Feature: Configuração de OAuth do Google a partir do ambiente", () => {
+  const ENV_KEYS = ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "APP_URL", "GOOGLE_ALLOWED_EMAILS"] as const;
+  const savedEnv: Record<string, string | undefined> = {};
+
+  afterEach(() => {
+    for (const key of ENV_KEYS) {
+      if (savedEnv[key] === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = savedEnv[key];
+      }
+    }
+  });
+
+  it("Dado alguma variável de ambiente ausente, Quando googleOAuthConfigFromEnv, Então retorna null", () => {
+    for (const key of ENV_KEYS) {
+      savedEnv[key] = process.env[key];
+      delete process.env[key];
+    }
+    process.env.GOOGLE_CLIENT_ID = "client-id";
+
+    expect(googleOAuthConfigFromEnv()).toBeNull();
+  });
+
+  it("Dado todas as variáveis configuradas, Quando googleOAuthConfigFromEnv, Então monta config com redirectUri normalizada", () => {
+    for (const key of ENV_KEYS) {
+      savedEnv[key] = process.env[key];
+    }
+    process.env.GOOGLE_CLIENT_ID = "client-id";
+    process.env.GOOGLE_CLIENT_SECRET = "client-secret";
+    process.env.APP_URL = "https://vitta.exemplo.com/";
+    process.env.GOOGLE_ALLOWED_EMAILS = "ana@clinica.com";
+
+    const config = googleOAuthConfigFromEnv();
+
+    expect(config).toEqual({
+      clientId: "client-id",
+      clientSecret: "client-secret",
+      redirectUri: "https://vitta.exemplo.com/api/auth/google/callback",
+      allowedEmails: ["ana@clinica.com"],
+    });
+  });
+});
+
+describe("Feature: Hash e verificação de senha (scrypt)", () => {
+  it("Dado uma senha, Quando hashPassword e verifyPassword, Então valida corretamente e rejeita senha errada", async () => {
+    const hash = await hashPassword("s3nh@forte");
+
+    expect(hash.startsWith("scrypt$")).toBe(true);
+    expect(await verifyPassword("s3nh@forte", hash)).toBe(true);
+    expect(await verifyPassword("senha-errada", hash)).toBe(false);
+  });
+
+  it("Dado hash com formato inválido, Quando verifyPassword, Então retorna false", async () => {
+    expect(await verifyPassword("qualquer", "formato-invalido")).toBe(false);
+    expect(await verifyPassword("qualquer", "bcrypt$10$salt$hash")).toBe(false);
+  });
+
+  it("Dado hash com custo fora do intervalo permitido, Quando verifyPassword, Então retorna false", async () => {
+    expect(await verifyPassword("qualquer", "scrypt$500$salt$abcd")).toBe(false);
+    expect(await verifyPassword("qualquer", "scrypt$2000000$salt$abcd")).toBe(false);
+    expect(await verifyPassword("qualquer", "scrypt$naoenumero$salt$abcd")).toBe(false);
+  });
+
+  it("Dado hash com custo não potência de dois, Quando verifyPassword, Então scrypt lança e retorna false", async () => {
+    expect(await verifyPassword("qualquer", "scrypt$1030$salt$abcd")).toBe(false);
   });
 });

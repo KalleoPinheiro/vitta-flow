@@ -1,0 +1,123 @@
+import { test, expect } from "@playwright/test";
+import {
+  completeAppointment,
+  createAppointment,
+  createInvoice,
+  createPackage,
+  createPatient,
+  createProcedure,
+  getPackagesByPatient,
+  payInvoice,
+  unique,
+} from "./support/api";
+import { slotFromSeed } from "./support/dates";
+
+test.describe("faturamento", () => {
+  test("concluir consulta gera fatura pendente", async ({ page, request }) => {
+    const patient = await createPatient(request, { fullName: `Paciente Fatura ${unique()}` });
+    const slot = slotFromSeed("faturamento-complete");
+    const appointment = await createAppointment(request, {
+      patientId: patient.id,
+      startsAt: slot.startsAt,
+      endsAt: slot.endsAt,
+      procedure: `Procedimento Faturável ${unique()}`,
+      priceCents: 23400,
+    });
+    await completeAppointment(request, appointment.id);
+
+    await page.goto("/faturamento");
+    await page.getByRole("button", { name: "Pendentes" }).click();
+    const row = page.getByRole("row", { name: new RegExp(patient.fullName) });
+    await expect(row).toBeVisible();
+    await expect(row.getByText("R$ 234,00")).toBeVisible();
+  });
+
+  test("recebe pagamento de uma fatura pendente (pix)", async ({ page, request }) => {
+    const patient = await createPatient(request);
+    await createInvoice(request, {
+      patientId: patient.id,
+      description: `Sessão avulsa ${unique()}`,
+      amountCents: 15000,
+    });
+
+    await page.goto("/faturamento");
+    const row = page.getByRole("row", { name: new RegExp(patient.fullName) });
+    await row.getByRole("button", { name: "Receber" }).click();
+    await expect(page.getByRole("heading", { name: "Registrar pagamento" })).toBeVisible();
+    await page.getByRole("button", { name: "Pix", exact: true }).click();
+
+    await expect(page.getByRole("heading", { name: "Registrar pagamento" })).not.toBeVisible();
+    await page.getByRole("button", { name: "Pagas" }).click();
+    await expect(page.getByRole("row", { name: new RegExp(patient.fullName) })).toContainText(
+      "Pix",
+    );
+  });
+
+  test("bloqueia cancelamento de fatura já paga", async ({ page, request }) => {
+    const patient = await createPatient(request);
+    const invoice = await createInvoice(request, {
+      patientId: patient.id,
+      description: `Sessão paga ${unique()}`,
+      amountCents: 9000,
+    });
+    await payInvoice(request, invoice.id, "cash");
+
+    const response = await request.patch(`/api/invoices/${invoice.id}`, {
+      data: { action: "cancel" },
+    });
+    expect(response.ok()).toBe(false);
+    const body = await response.json();
+    expect(body.error).toContain("paid");
+
+    await page.goto("/faturamento");
+    await page.getByRole("button", { name: "Pagas" }).click();
+    const row = page.getByRole("row", { name: new RegExp(patient.fullName) });
+    await expect(row).toBeVisible();
+    await expect(row.getByRole("button", { name: "Cancelar" })).toHaveCount(0);
+  });
+
+  test("pacote pré-pago consome sessão sem gerar nova fatura ao concluir", async ({
+    page,
+    request,
+  }) => {
+    const patient = await createPatient(request, { fullName: `Paciente Pacote ${unique()}` });
+    const procedure = await createProcedure(request, { name: `Procedimento Pacote ${unique()}` });
+
+    await page.goto("/faturamento");
+    await page.getByRole("button", { name: "Vender pacote" }).click();
+    await page.getByLabel("Paciente *").selectOption({ label: patient.fullName });
+    await page.getByLabel("Procedimento *").selectOption({ label: procedure.name });
+    await page.getByLabel("Sessões *").fill("5");
+    await page.getByLabel("Preço total (R$) *").fill("500");
+    // Dois botões com o mesmo texto na página (o que abre o modal e o de submit) — o
+    // de submit é o último no DOM, dentro do modal.
+    await page.getByRole("button", { name: "Vender pacote", exact: true }).last().click();
+    await expect(page.getByRole("heading", { name: "Vender pacote de sessões" })).not.toBeVisible();
+
+    const [pkg] = await getPackagesByPatient(request, patient.id);
+    expect(pkg.remainingSessions).toBe(5);
+
+    const slot = slotFromSeed("faturamento-package-session");
+    const appointment = await createAppointment(request, {
+      patientId: patient.id,
+      startsAt: slot.startsAt,
+      endsAt: slot.endsAt,
+      procedure: procedure.name,
+      priceCents: procedure.priceCents,
+      procedureId: procedure.id,
+    });
+    await completeAppointment(request, appointment.id);
+
+    const [pkgAfter] = await getPackagesByPatient(request, patient.id);
+    expect(pkgAfter.remainingSessions).toBe(4);
+    expect(pkgAfter.usedSessions).toBe(1);
+
+    // A sessão do pacote não deve ter gerado uma nova fatura pendente separada.
+    await page.goto("/faturamento");
+    await page.getByRole("button", { name: "Pendentes" }).click();
+    const pendingForAppointment = page.getByRole("row", {
+      name: new RegExp(`${patient.fullName}.*${procedure.name}`),
+    });
+    await expect(pendingForAppointment).toHaveCount(0);
+  });
+});

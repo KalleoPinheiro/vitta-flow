@@ -1,0 +1,43 @@
+/**
+ * Constantes compartilhadas entre `playwright.config.ts`, `global-setup.ts` e os specs.
+ *
+ * O app exige AUTH_SECRET configurado para qualquer sessão funcionar — inclusive o
+ * portal do paciente/parceiro, que chama `getRequestSession()` diretamente (não só o
+ * proxy). Por isso a suíte roda com autenticação SEMPRE ligada no servidor principal
+ * (porta 3000): login mestre real para specs de equipe, e um cookie de sessão assinado
+ * manualmente (mesma assinatura HMAC de `src/lib/auth/session.ts`) para os specs de
+ * portal, já que não há como logar como paciente/parceiro por senha (login por senha
+ * sempre resulta em role "admin" — só há paciente/parceiro via OAuth Google).
+ *
+ * Um segundo servidor (porta 3100), sem AUTH_SECRET/AUTH_PASSWORD, sobe em paralelo
+ * só para o cenário de "modo aberto" em `auth.spec.ts` — ele tem seu próprio banco
+ * PGlite isolado (cada processo Next tem sua própria instância em memória), então só
+ * serve para checar navegação sem login, nunca para dados semeados.
+ */
+export const MAIN_BASE_URL = "http://localhost:3000";
+export const MAIN_PORT = 3000;
+
+export const OPEN_MODE_BASE_URL = "http://localhost:3100";
+export const OPEN_MODE_PORT = 3100;
+
+/** Segredo fixo — vale só para a suíte E2E local, nunca usado em produção. */
+export const E2E_AUTH_SECRET = "e2e-fixed-secret-do-not-use-in-production-0000000000";
+export const E2E_AUTH_PASSWORD = "e2e-master-password-123";
+
+export const ADMIN_STORAGE_STATE_PATH = "e2e/.auth/admin-storage.json";
+export const SEED_DATA_PATH = "e2e/support/seed-data.json";
+
+/** Mesmo nome de cookie de `src/lib/auth/session.ts` (SESSION_COOKIE). */
+export const SESSION_COOKIE_NAME = "vitta_session";
+
+/**
+ * Espelha `DEFAULT_SCHEDULE_CONFIG` de `src/domain/scheduling/schedule-config.ts`.
+ * `configuracoes.spec.ts` restaura este valor depois de testar grades customizadas,
+ * já que o banco PGlite do servidor principal é compartilhado por toda a suíte.
+ */
+export const DEFAULT_SCHEDULE_CONFIG = {
+  weekdays: [1, 2, 3, 4, 5],
+  startHour: 8,
+  endHour: 18,
+  minGapMinutes: 15,
+};

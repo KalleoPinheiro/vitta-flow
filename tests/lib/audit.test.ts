@@ -1,0 +1,93 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import type { AuditEventRepository } from "@/domain/audit/audit-event-repository";
+import type { Session } from "@/lib/auth/session";
+
+const afterTasks: Array<() => Promise<void>> = [];
+
+vi.mock("next/server", () => ({
+  after: (task: () => Promise<void>) => {
+    afterTasks.push(task);
+  },
+}));
+
+// Import após o mock de "next/server", como exigido pelo hoisting do vi.mock.
+const { recordAudit } = await import("@/lib/audit");
+
+function createRepositoryStub(): AuditEventRepository & { save: ReturnType<typeof vi.fn> } {
+  return {
+    save: vi.fn().mockResolvedValue(undefined),
+    findAll: vi.fn(),
+  } as unknown as AuditEventRepository & { save: ReturnType<typeof vi.fn> };
+}
+
+describe("Feature: Registro de auditoria best-effort (após a resposta)", () => {
+  beforeEach(() => {
+    afterTasks.length = 0;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("Dado sessão autenticada, Quando recordAudit, Então agenda gravação com ator da sessão", async () => {
+    const auditEvents = createRepositoryStub();
+    const session: Session = { expiresAtMs: Date.now() + 60_000, subject: "maria@clinica.com", role: "admin" };
+
+    recordAudit(auditEvents, session, {
+      action: "read",
+      resourceType: "anamnesis",
+      resourceId: "patient-1",
+      patientId: "patient-1",
+      detail: "visualizou anamnese",
+    });
+
+    expect(afterTasks).toHaveLength(1);
+    await afterTasks[0]!();
+
+    expect(auditEvents.save).toHaveBeenCalledTimes(1);
+    const saved = auditEvents.save.mock.calls[0][0];
+    expect(saved.actorRole).toBe("admin");
+    expect(saved.actorId).toBe("maria@clinica.com");
+    expect(saved.action).toBe("read");
+    expect(saved.resourceType).toBe("anamnesis");
+    expect(saved.resourceId).toBe("patient-1");
+    expect(saved.patientId).toBe("patient-1");
+    expect(saved.detail).toBe("visualizou anamnese");
+  });
+
+  it("Dado sessão nula, Quando recordAudit, Então registra ator 'anonymous'", async () => {
+    const auditEvents = createRepositoryStub();
+
+    recordAudit(auditEvents, null, {
+      action: "update",
+      resourceType: "evolution",
+      resourceId: "note-1",
+    });
+
+    await afterTasks[0]!();
+
+    const saved = auditEvents.save.mock.calls[0][0];
+    expect(saved.actorRole).toBe("anonymous");
+    expect(saved.actorId).toBe("anonymous");
+    expect(saved.patientId).toBeNull();
+    expect(saved.detail).toBeNull();
+  });
+
+  it("Dado falha ao salvar, Quando a tarefa agendada roda, Então não lança e loga no console", async () => {
+    const auditEvents = createRepositoryStub();
+    auditEvents.save.mockRejectedValueOnce(new Error("banco indisponível"));
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    recordAudit(auditEvents, null, {
+      action: "delete",
+      resourceType: "condition",
+      resourceId: "cond-1",
+    });
+
+    await expect(afterTasks[0]!()).resolves.toBeUndefined();
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "Auditoria: falha ao registrar evento",
+      expect.any(Error),
+    );
+  });
+});

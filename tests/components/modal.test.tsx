@@ -137,5 +137,21 @@ describe("Feature: Modal", () => {
 
       expect(closeButton).toHaveFocus();
     });
+
+    it("Dado foco no primeiro elemento focável, Quando Shift+Tab é pressionado, Então o foco vai ao último", () => {
+      render(
+        <Modal title="Detalhes" onClose={vi.fn()}>
+          <button type="button">Salvar</button>
+        </Modal>,
+      );
+
+      const closeButton = screen.getByLabelText("Fechar");
+      const saveButton = screen.getByText("Salvar");
+      closeButton.focus();
+
+      fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+
+      expect(saveButton).toHaveFocus();
+    });
   });
 });

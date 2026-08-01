@@ -169,7 +169,7 @@ export default function BillingPage() {
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Faturamento</h1>
+        <h1 className="sv-display text-2xl font-bold">Faturamento</h1>
         <div className="flex gap-2">
           <button
             type="button"

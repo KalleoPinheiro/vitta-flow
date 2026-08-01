@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Hero } from "@still-void/ui/react";
 import { apiFetch } from "@/lib/client";
 import type {
   FollowUpDto,
@@ -60,10 +61,12 @@ export function PatientPortalView() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold">Olá, {data.patient.fullName.split(" ")[0]}!</h1>
-        <p className="text-sm text-slate-500">Acompanhe aqui suas consultas e sua evolução clínica.</p>
-      </div>
+      <Hero
+        className="pt-0 pb-2"
+        eyebrow="Portal do paciente"
+        title={`Olá, ${data.patient.fullName.split(" ")[0]}!`}
+        description="Acompanhe aqui suas consultas e sua evolução clínica."
+      />
 
       <ConsentCard />
 

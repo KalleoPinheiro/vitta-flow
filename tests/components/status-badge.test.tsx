@@ -7,57 +7,59 @@ afterEach(() => {
   cleanup();
 });
 
+/** Cor do ponto da pílula, exposta pelo Still Void como a var --sv-pill-color. */
+function dotColorOf(status: string, label: string) {
+  render(<StatusBadge status={status} label={label} />);
+  return screen.getByText(label).style.getPropertyValue("--sv-pill-color");
+}
+
 describe("Feature: Selo de status", () => {
   describe("Cenário: status conhecidos recebem cor específica", () => {
-    it("Dado status 'scheduled', Quando renderizar, Então aplica classe sky", () => {
-      render(<StatusBadge status="scheduled" label="Agendada" />);
-
-      const badge = screen.getByText("Agendada");
-      expect(badge).toHaveClass("bg-sky-100", "text-sky-800");
+    it("Dado status 'scheduled', Quando renderizar, Então usa o token de info", () => {
+      expect(dotColorOf("scheduled", "Agendada")).toBe("var(--sv-info-ink)");
     });
 
-    it("Dado status 'confirmed', Quando renderizar, Então aplica classe teal", () => {
-      render(<StatusBadge status="confirmed" label="Confirmada" />);
-
-      expect(screen.getByText("Confirmada")).toHaveClass("bg-teal-100", "text-teal-800");
+    it("Dado status 'confirmed', Quando renderizar, Então usa o accent do sistema", () => {
+      expect(dotColorOf("confirmed", "Confirmada")).toBe("var(--sv-accent-ink)");
     });
 
-    it("Dado status 'completed', Quando renderizar, Então aplica classe emerald", () => {
-      render(<StatusBadge status="completed" label="Concluída" />);
-
-      expect(screen.getByText("Concluída")).toHaveClass("bg-emerald-100", "text-emerald-800");
+    it("Dado status 'completed', Quando renderizar, Então usa o token de sucesso", () => {
+      expect(dotColorOf("completed", "Concluída")).toBe("var(--sv-success-ink)");
     });
 
-    it("Dado status 'cancelled', Quando renderizar, Então aplica classe slate", () => {
-      render(<StatusBadge status="cancelled" label="Cancelada" />);
-
-      expect(screen.getByText("Cancelada")).toHaveClass("bg-slate-200", "text-slate-600");
+    it("Dado status 'cancelled', Quando renderizar, Então usa o token neutro", () => {
+      expect(dotColorOf("cancelled", "Cancelada")).toBe("var(--sv-text-3)");
     });
 
-    it("Dado status 'no_show', Quando renderizar, Então aplica classe amber", () => {
-      render(<StatusBadge status="no_show" label="Faltou" />);
-
-      expect(screen.getByText("Faltou")).toHaveClass("bg-amber-100", "text-amber-800");
+    it("Dado status 'no_show', Quando renderizar, Então usa o token de aviso", () => {
+      expect(dotColorOf("no_show", "Faltou")).toBe("var(--sv-warning-ink)");
     });
 
-    it("Dado status 'pending', Quando renderizar, Então aplica classe amber", () => {
-      render(<StatusBadge status="pending" label="Pendente" />);
-
-      expect(screen.getByText("Pendente")).toHaveClass("bg-amber-100", "text-amber-800");
+    it("Dado status 'pending', Quando renderizar, Então usa o token de aviso", () => {
+      expect(dotColorOf("pending", "Pendente")).toBe("var(--sv-warning-ink)");
     });
 
-    it("Dado status 'paid', Quando renderizar, Então aplica classe emerald", () => {
-      render(<StatusBadge status="paid" label="Pago" />);
-
-      expect(screen.getByText("Pago")).toHaveClass("bg-emerald-100", "text-emerald-800");
+    it("Dado status 'paid', Quando renderizar, Então usa o token de sucesso", () => {
+      expect(dotColorOf("paid", "Pago")).toBe("var(--sv-success-ink)");
     });
   });
 
   describe("Cenário: status desconhecido usa cor de fallback", () => {
-    it("Dado status não mapeado, Quando renderizar, Então aplica classe slate neutra", () => {
-      render(<StatusBadge status="unknown_status" label="Indefinido" />);
+    it("Dado status não mapeado, Quando renderizar, Então usa o token neutro", () => {
+      expect(dotColorOf("unknown_status", "Indefinido")).toBe("var(--sv-text-3)");
+    });
+  });
 
-      expect(screen.getByText("Indefinido")).toHaveClass("bg-slate-100", "text-slate-700");
+  describe("Cenário: estrutura da pílula do design system", () => {
+    it("Dado qualquer status, Quando renderizar, Então é uma sv-pill com ponto colorido", () => {
+      render(<StatusBadge status="paid" label="Pago" />);
+
+      const badge = screen.getByText("Pago");
+      expect(badge).toHaveClass("sv-pill");
+      // O ponto é decorativo: some para a tecnologia assistiva, que lê só a label.
+      const dot = badge.querySelector(".sv-pill__dot");
+      expect(dot).toBeInTheDocument();
+      expect(dot).toHaveAttribute("aria-hidden", "true");
     });
   });
 

@@ -31,7 +31,7 @@ interface ScheduleConfigDto {
 export default function SettingsPage() {
   return (
     <div className="flex flex-col gap-8">
-      <h1 className="text-2xl font-bold">Configurações</h1>
+      <h1 className="sv-display text-2xl font-bold">Configurações</h1>
       <ScheduleSection />
       <AccountsSection />
     </div>

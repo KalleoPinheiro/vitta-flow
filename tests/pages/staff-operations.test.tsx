@@ -90,7 +90,7 @@ describe("Feature: AuditPage", () => {
 
       render(<AuditPage />);
 
-      expect(await screen.findByText("Erro")).toBeInTheDocument();
+      expect(await screen.findByRole("alert")).toBeInTheDocument();
     });
   });
 
@@ -272,7 +272,7 @@ describe("Feature: SettingsPage", () => {
 
       fireEvent.click(screen.getByText("Salvar grade"));
 
-      expect(await screen.findByText("Erro")).toBeInTheDocument();
+      expect(await screen.findByRole("alert")).toBeInTheDocument();
     });
 
     it("Dado erro ao carregar a grade de horários, Quando a página carrega, Então exibe alerta de erro", async () => {
@@ -285,7 +285,7 @@ describe("Feature: SettingsPage", () => {
 
       render(<SettingsPage />);
 
-      expect(await screen.findByText("Erro")).toBeInTheDocument();
+      expect(await screen.findByRole("alert")).toBeInTheDocument();
     });
 
     it("Dado clique em um dia já selecionado, Quando alternado, Então o dia é removido da seleção", async () => {
@@ -467,7 +467,7 @@ describe("Feature: SettingsPage", () => {
 
       fireEvent.click(screen.getByText("Desativar"));
 
-      expect(await screen.findByText("Erro")).toBeInTheDocument();
+      expect(await screen.findByRole("alert")).toBeInTheDocument();
     });
 
     it("Dado erro não padronizado ao desativar conta, Quando a chamada rejeita com valor que não é Error, Então exibe mensagem padrão", async () => {
@@ -514,7 +514,7 @@ describe("Feature: SettingsPage", () => {
       render(<SettingsPage />);
       await screen.findByText("Grade de horários");
 
-      expect(await screen.findByText("Erro")).toBeInTheDocument();
+      expect(await screen.findByRole("alert")).toBeInTheDocument();
     });
 
     it("Dado clique em nova conta e preenchimento do formulário, Quando submetido, Então cria a conta e fecha o modal", async () => {
@@ -744,7 +744,7 @@ describe("Feature: PartnersPage", () => {
 
       render(<PartnersPage />);
 
-      expect(await screen.findByText("Erro")).toBeInTheDocument();
+      expect(await screen.findByRole("alert")).toBeInTheDocument();
     });
   });
 
@@ -1124,7 +1124,7 @@ describe("Feature: ProfessionalsPage", () => {
 
       render(<ProfessionalsPage />);
 
-      expect(await screen.findByText("Erro")).toBeInTheDocument();
+      expect(await screen.findByRole("alert")).toBeInTheDocument();
     });
   });
 

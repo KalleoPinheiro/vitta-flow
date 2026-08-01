@@ -1,23 +1,31 @@
+import { CategoryPill } from "@still-void/ui/react";
+
+/**
+ * Cor por status usando os tokens semânticos do Still Void — fixos e
+ * independentes do accent do site, justamente para "pago" nunca colidir com a
+ * cor da marca. Sempre a variante -ink, que é a que bate 4.5:1 no tema claro.
+ */
 const COLOR_BY_STATUS: Record<string, string> = {
-  scheduled: "bg-sky-100 text-sky-800",
-  confirmed: "bg-teal-100 text-teal-800",
-  completed: "bg-emerald-100 text-emerald-800",
-  cancelled: "bg-slate-200 text-slate-600",
-  no_show: "bg-amber-100 text-amber-800",
-  pending: "bg-amber-100 text-amber-800",
-  paid: "bg-emerald-100 text-emerald-800",
+  scheduled: "var(--sv-info-ink)",
+  confirmed: "var(--sv-accent-ink)",
+  completed: "var(--sv-success-ink)",
+  cancelled: "var(--sv-text-3)",
+  no_show: "var(--sv-warning-ink)",
+  pending: "var(--sv-warning-ink)",
+  paid: "var(--sv-success-ink)",
 };
+
+const FALLBACK_COLOR = "var(--sv-text-3)";
 
 interface StatusBadgeProps {
   status: string;
   label: string;
 }
 
+/**
+ * Selo de status como pílula do design system: ponto colorido + label, nunca
+ * emoji (regra de fidelidade do Still Void).
+ */
 export function StatusBadge({ status, label }: StatusBadgeProps) {
-  const color = COLOR_BY_STATUS[status] ?? "bg-slate-100 text-slate-700";
-  return (
-    <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${color}`}>
-      {label}
-    </span>
-  );
+  return <CategoryPill label={label} color={COLOR_BY_STATUS[status] ?? FALLBACK_COLOR} />;
 }

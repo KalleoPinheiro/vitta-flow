@@ -64,4 +64,94 @@ describe("Feature: Modal", () => {
       expect(onClose).not.toHaveBeenCalled();
     });
   });
+
+  describe("Cenário: semântica de diálogo acessível", () => {
+    it("Dado o modal renderizado, Então expõe role dialog com aria-modal e título associado", () => {
+      render(
+        <Modal title="Detalhes do paciente" onClose={vi.fn()}>
+          <p>Conteúdo</p>
+        </Modal>,
+      );
+
+      const dialog = screen.getByRole("dialog", { name: "Detalhes do paciente" });
+      expect(dialog).toHaveAttribute("aria-modal", "true");
+    });
+
+    it("Dado o modal montado, Então o foco vai para o primeiro elemento focável dentro dele", () => {
+      render(
+        <Modal title="Detalhes" onClose={vi.fn()}>
+          <button type="button">Salvar</button>
+        </Modal>,
+      );
+
+      expect(screen.getByLabelText("Fechar")).toHaveFocus();
+    });
+  });
+
+  describe("Cenário: fechamento pela tecla Escape", () => {
+    it("Dado Escape pressionado, Quando o modal está aberto, Então onClose é chamado", () => {
+      const onClose = vi.fn();
+      render(
+        <Modal title="Detalhes" onClose={onClose}>
+          <p>Conteúdo</p>
+        </Modal>,
+      );
+
+      fireEvent.keyDown(document, { key: "Escape" });
+
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("Cenário: restauração de foco ao fechar", () => {
+    it("Dado um elemento focado antes de abrir, Quando o modal desmonta, Então o foco volta pra ele", () => {
+      const trigger = document.createElement("button");
+      document.body.appendChild(trigger);
+      trigger.focus();
+
+      const { unmount } = render(
+        <Modal title="Detalhes" onClose={vi.fn()}>
+          <p>Conteúdo</p>
+        </Modal>,
+      );
+      unmount();
+
+      expect(trigger).toHaveFocus();
+      trigger.remove();
+    });
+  });
+
+  describe("Cenário: Tab preso dentro do modal", () => {
+    it("Dado foco no último elemento focável, Quando Tab é pressionado, Então o foco volta ao primeiro", () => {
+      render(
+        <Modal title="Detalhes" onClose={vi.fn()}>
+          <button type="button">Salvar</button>
+        </Modal>,
+      );
+
+      const closeButton = screen.getByLabelText("Fechar");
+      const saveButton = screen.getByText("Salvar");
+      saveButton.focus();
+
+      fireEvent.keyDown(document, { key: "Tab" });
+
+      expect(closeButton).toHaveFocus();
+    });
+
+    it("Dado foco no primeiro elemento focável, Quando Shift+Tab é pressionado, Então o foco vai ao último", () => {
+      render(
+        <Modal title="Detalhes" onClose={vi.fn()}>
+          <button type="button">Salvar</button>
+        </Modal>,
+      );
+
+      const closeButton = screen.getByLabelText("Fechar");
+      const saveButton = screen.getByText("Salvar");
+      closeButton.focus();
+
+      fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+
+      expect(saveButton).toHaveFocus();
+    });
+  });
 });

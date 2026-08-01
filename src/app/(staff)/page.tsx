@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Hero } from "@still-void/ui/react";
 import type { AppointmentDto, FollowUpDto, SupplyDto } from "@/lib/dto";
 import type { BillingSummary } from "@/application/billing/get-billing-summary";
 import { apiFetch } from "@/lib/client";
@@ -50,7 +51,7 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold">Dashboard</h1>
+      <Hero className="pt-0 pb-6" eyebrow="Visão geral" title="Dashboard" />
 
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((card) => (

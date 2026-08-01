@@ -33,6 +33,16 @@ function toPoints(values: SeriesPoint[], min: number, max: number, xOf: (d: Date
 
 const CLINICAL_SCORE_MAX = 17; // PUSH 0–17 (DET 0–15 compartilha o eixo)
 
+/**
+ * Séries do gráfico nos tokens do Still Void. A área usa o accent do site; as
+ * outras duas usam cores semânticas, que são fixas no sistema justamente para
+ * não colidirem com o accent quando ele muda. Sempre a variante -ink, a que
+ * mantém contraste no tema claro.
+ */
+const SERIES_AREA = "var(--sv-accent-ink)";
+const SERIES_SCORE = "var(--sv-info-ink)";
+const SERIES_PAIN = "var(--sv-warning-ink)";
+
 interface ChartModel {
   areaSeries: SeriesPoint[];
   painSeries: SeriesPoint[];
@@ -101,7 +111,7 @@ export function HealingChart({ assessments }: HealingChartProps) {
   const model = buildChartModel(assessments);
   if (!model) {
     return (
-      <p className="text-xs text-slate-400">
+      <p className="text-xs text-ink-3">
         Registre medidas (C×L) ou dor em pelo menos duas avaliações para acompanhar a tendência.
       </p>
     );
@@ -111,7 +121,9 @@ export function HealingChart({ assessments }: HealingChartProps) {
   return (
     <div>
       {trend != null && (
-        <p className={`mb-1 text-xs font-medium ${trend <= 0 ? "text-emerald-700" : "text-amber-600"}`}>
+        <p
+          className={`mb-1 text-xs font-medium ${trend <= 0 ? "text-success" : "text-warning"}`}
+        >
           {trend <= 0
             ? `Área reduziu ${Math.abs(trend)}% desde a primeira medição`
             : `Área aumentou ${trend}% desde a primeira medição`}
@@ -119,7 +131,8 @@ export function HealingChart({ assessments }: HealingChartProps) {
       )}
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-        className="w-full rounded border border-slate-200 bg-white"
+        className="w-full rounded border"
+        style={{ background: "var(--sv-surface)", borderColor: "var(--sv-border)" }}
         role="img"
         aria-label="Gráfico de evolução da condição"
       >
@@ -128,14 +141,14 @@ export function HealingChart({ assessments }: HealingChartProps) {
           y1={HEIGHT - PAD_BOTTOM}
           x2={WIDTH - PAD_RIGHT}
           y2={HEIGHT - PAD_BOTTOM}
-          stroke="#cbd5e1"
+          stroke="var(--sv-border-strong)"
         />
         {areaSeries.length >= MIN_MEASURED_POINTS && (
           <>
             <polyline
               points={toPoints(areaSeries, 0, areaMax, xOf)}
               fill="none"
-              stroke="#0f766e"
+              stroke={SERIES_AREA}
               strokeWidth="2"
             />
             {areaSeries.map((p) => (
@@ -146,10 +159,10 @@ export function HealingChart({ assessments }: HealingChartProps) {
                   PAD_TOP + (HEIGHT - PAD_TOP - PAD_BOTTOM) * (1 - p.value / areaMax)
                 }
                 r="3"
-                fill="#0f766e"
+                fill={SERIES_AREA}
               />
             ))}
-            <text x={4} y={PAD_TOP + 4} fontSize="10" fill="#0f766e">
+            <text x={4} y={PAD_TOP + 4} fontSize="10" fill={SERIES_AREA}>
               {areaMax}mm²
             </text>
           </>
@@ -159,7 +172,7 @@ export function HealingChart({ assessments }: HealingChartProps) {
             <polyline
               points={toPoints(scoreSeries, 0, CLINICAL_SCORE_MAX, xOf)}
               fill="none"
-              stroke="#7c3aed"
+              stroke={SERIES_SCORE}
               strokeWidth="2"
             />
             {scoreSeries.map((p) => (
@@ -168,7 +181,7 @@ export function HealingChart({ assessments }: HealingChartProps) {
                 cx={xOf(p.date)}
                 cy={PAD_TOP + (HEIGHT - PAD_TOP - PAD_BOTTOM) * (1 - p.value / CLINICAL_SCORE_MAX)}
                 r="3"
-                fill="#7c3aed"
+                fill={SERIES_SCORE}
               />
             ))}
           </>
@@ -178,24 +191,24 @@ export function HealingChart({ assessments }: HealingChartProps) {
             <polyline
               points={toPoints(painSeries, 0, PAIN_MAX, xOf)}
               fill="none"
-              stroke="#d97706"
+              stroke={SERIES_PAIN}
               strokeWidth="1.5"
               strokeDasharray="4 3"
             />
-            <text x={WIDTH - PAD_RIGHT + 4} y={PAD_TOP + 4} fontSize="10" fill="#d97706">
+            <text x={WIDTH - PAD_RIGHT + 4} y={PAD_TOP + 4} fontSize="10" fill={SERIES_PAIN}>
               dor /10
             </text>
           </>
         )}
-        <text x={PAD_LEFT} y={HEIGHT - 8} fontSize="10" fill="#64748b">
+        <text x={PAD_LEFT} y={HEIGHT - 8} fontSize="10" fill="var(--sv-text-3)">
           {formatDate(new Date(minT).toISOString())}
         </text>
-        <text x={WIDTH - PAD_RIGHT} y={HEIGHT - 8} fontSize="10" fill="#64748b" textAnchor="end">
+        <text x={WIDTH - PAD_RIGHT} y={HEIGHT - 8} fontSize="10" fill="var(--sv-text-3)" textAnchor="end">
           {formatDate(new Date(maxT).toISOString())}
         </text>
       </svg>
-      <p className="mt-1 text-[11px] text-slate-400">
-        Verde: área (mm²) · roxa: score PUSH/DET · tracejada: dor (0–10)
+      <p className="mt-1 text-[11px] text-ink-3">
+        Sólida no accent: área (mm²) · sólida azul: score PUSH/DET · tracejada âmbar: dor (0–10)
       </p>
     </div>
   );

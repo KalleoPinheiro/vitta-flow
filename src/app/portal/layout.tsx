@@ -1,16 +1,24 @@
+import { Header, Layout } from "@still-void/ui/react";
+import { BrandLogo } from "@/components/brand-logo";
 import { LogoutButton } from "@/components/logout-button";
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-6">
-      <header className="mb-6 flex items-center justify-between border-b border-slate-200 pb-4">
-        <div>
-          <span className="text-lg font-bold text-teal-700">VittaFlow</span>
-          <p className="text-xs text-slate-500">Portal do paciente e do parceiro</p>
-        </div>
-        <LogoutButton />
-      </header>
-      {children}
-    </div>
+    <>
+      <Header
+        logo={
+          <div>
+            <BrandLogo />
+            <p className="text-xs text-ink-3">
+              Portal do paciente e do parceiro
+            </p>
+          </div>
+        }
+        actions={<LogoutButton />}
+      />
+      {/* `.sv-layout` centraliza em 1120px; o portal lê melhor mais estreito e o
+          utilitário vence porque o CSS do pacote entra em layer(components). */}
+      <Layout className="max-w-3xl">{children}</Layout>
+    </>
   );
 }

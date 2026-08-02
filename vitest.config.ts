@@ -24,6 +24,8 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: [
+        // Camada 1 de autorização (antigo middleware) — arquivo mais sensível do projeto.
+        "src/proxy.ts",
         "src/domain/**",
         "src/application/**",
         "src/infrastructure/**",

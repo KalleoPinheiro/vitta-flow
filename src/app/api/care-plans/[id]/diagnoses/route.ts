@@ -20,14 +20,14 @@ type DiagnosisBody = z.infer<typeof diagnosisBodySchema>;
 type PesFields = Pick<DiagnosisBody, "relatedFactors" | "definingCharacteristics">;
 
 function validateRiscoFields(body: PesFields, ctx: z.RefinementCtx): void {
-  if (!body.relatedFactors) {
+  if (!body.relatedFactors?.trim()) {
     ctx.addIssue({
       code: "custom",
       path: ["relatedFactors"],
       message: "Fator relacionado é obrigatório para este tipo de diagnóstico",
     });
   }
-  if (body.definingCharacteristics) {
+  if (body.definingCharacteristics?.trim()) {
     ctx.addIssue({
       code: "custom",
       path: ["definingCharacteristics"],
@@ -37,14 +37,14 @@ function validateRiscoFields(body: PesFields, ctx: z.RefinementCtx): void {
 }
 
 function validateRealFields(body: PesFields, ctx: z.RefinementCtx): void {
-  if (!body.relatedFactors) {
+  if (!body.relatedFactors?.trim()) {
     ctx.addIssue({
       code: "custom",
       path: ["relatedFactors"],
       message: "Fator relacionado é obrigatório para este tipo de diagnóstico",
     });
   }
-  if (!body.definingCharacteristics) {
+  if (!body.definingCharacteristics?.trim()) {
     ctx.addIssue({
       code: "custom",
       path: ["definingCharacteristics"],
@@ -54,14 +54,14 @@ function validateRealFields(body: PesFields, ctx: z.RefinementCtx): void {
 }
 
 function validatePromocaoSaudeFields(body: PesFields, ctx: z.RefinementCtx): void {
-  if (body.relatedFactors) {
+  if (body.relatedFactors?.trim()) {
     ctx.addIssue({
       code: "custom",
       path: ["relatedFactors"],
       message: "Diagnóstico de promoção da saúde não tem fatores relacionados",
     });
   }
-  if (!body.definingCharacteristics) {
+  if (!body.definingCharacteristics?.trim()) {
     ctx.addIssue({
       code: "custom",
       path: ["definingCharacteristics"],

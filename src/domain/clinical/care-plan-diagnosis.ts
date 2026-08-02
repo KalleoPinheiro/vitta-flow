@@ -60,6 +60,9 @@ export class CarePlanDiagnosis {
     relatedFactors: string | null,
     definingCharacteristics: string | null,
   ): void {
+    if (!CARE_PLAN_DIAGNOSIS_TYPES.includes(type)) {
+      throw new ValidationError("Tipo de diagnóstico inválido");
+    }
     if (type === "risco") {
       CarePlanDiagnosis.validateRisco(relatedFactors, definingCharacteristics);
     } else if (type === "real") {

@@ -233,6 +233,22 @@ describe("Feature: Rotas do plano de cuidados (SAE) e catálogo de taxonomias", 
     expect(body.error).toMatch(/relatedFactors/);
   });
 
+  it("Dado diagnóstico real com etiologia só de espaços, Quando POST diagnoses, Então rejeita no schema com 400", async () => {
+    const response = await diagnosesRoute.POST(
+      jsonRequest(`/api/care-plans/${carePlanId}/diagnoses`, "POST", {
+        diagnosisCode: "00046",
+        type: "real",
+        relatedFactors: "   ",
+        definingCharacteristics: "Ruptura da epiderme",
+      }),
+      context(carePlanId),
+    );
+    const body = (await response.json()) as Envelope<never>;
+
+    expect(response.status).toBe(400);
+    expect(body.error).toMatch(/relatedFactors/);
+  });
+
   it("Dado diagnóstico real sem etiologia, Quando POST diagnoses, Então rejeita no schema com 400", async () => {
     const response = await diagnosesRoute.POST(
       jsonRequest(`/api/care-plans/${carePlanId}/diagnoses`, "POST", {

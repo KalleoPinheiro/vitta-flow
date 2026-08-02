@@ -211,6 +211,17 @@ describe("Feature: Diagnóstico de enfermagem no formato PES", () => {
     ).toThrow(ValidationError);
   });
 
+  it("Dado tipo inválido em runtime, Quando criar, Então lança ValidationError", () => {
+    expect(() =>
+      CarePlanDiagnosis.create({
+        carePlanId: "cp1",
+        diagnosisCode: "00046",
+        type: "invalido" as unknown as "promocao-saude",
+        definingCharacteristics: "x",
+      }),
+    ).toThrow(ValidationError);
+  });
+
   it("Dado restore, Quando reconstituir, Então mantém todos os campos", () => {
     const createdAt = new Date("2026-01-01T00:00:00Z");
     const diagnosis = CarePlanDiagnosis.restore({

@@ -217,6 +217,22 @@ describe("Feature: Rotas do plano de cuidados (SAE) e catálogo de taxonomias", 
     expect(response.status).toBe(400);
   });
 
+  it("Dado diagnóstico de promoção da saúde com etiologia, Quando POST diagnoses, Então rejeita no schema com 400", async () => {
+    const response = await diagnosesRoute.POST(
+      jsonRequest(`/api/care-plans/${carePlanId}/diagnoses`, "POST", {
+        diagnosisCode: "00046",
+        type: "promocao-saude",
+        relatedFactors: "Não deveria existir em promoção da saúde",
+        definingCharacteristics: "Expressa desejo de aprender autocuidado",
+      }),
+      context(carePlanId),
+    );
+    const body = (await response.json()) as Envelope<never>;
+
+    expect(response.status).toBe(400);
+    expect(body.error).toMatch(/relatedFactors/);
+  });
+
   it("Dado diagnóstico real sem etiologia, Quando POST diagnoses, Então rejeita no schema com 400", async () => {
     const response = await diagnosesRoute.POST(
       jsonRequest(`/api/care-plans/${carePlanId}/diagnoses`, "POST", {

@@ -65,7 +65,7 @@ export class CarePlanDiagnosis {
     } else if (type === "real") {
       CarePlanDiagnosis.validateReal(relatedFactors, definingCharacteristics);
     } else {
-      CarePlanDiagnosis.validatePromocaoSaude(definingCharacteristics);
+      CarePlanDiagnosis.validatePromocaoSaude(relatedFactors, definingCharacteristics);
     }
   }
 
@@ -100,7 +100,15 @@ export class CarePlanDiagnosis {
   }
 
   /** Promoção da saúde não tem etiologia, mas exige evidência (motivação/desejo expresso). */
-  private static validatePromocaoSaude(definingCharacteristics: string | null): void {
+  private static validatePromocaoSaude(
+    relatedFactors: string | null,
+    definingCharacteristics: string | null,
+  ): void {
+    if (relatedFactors) {
+      throw new ValidationError(
+        "Diagnóstico de promoção da saúde não tem fatores relacionados — não há problema, só motivação",
+      );
+    }
     if (!definingCharacteristics) {
       throw new ValidationError(
         "Diagnóstico de promoção da saúde exige características definidoras (evidenciado por)",

@@ -185,6 +185,18 @@ describe("Feature: Diagnóstico de enfermagem no formato PES", () => {
         }),
       ).toThrow(ValidationError);
     });
+
+    it("Dado promoção da saúde com etiologia, Quando criar, Então lança ValidationError", () => {
+      expect(() =>
+        CarePlanDiagnosis.create({
+          carePlanId: "cp1",
+          diagnosisCode: "00162",
+          type: "promocao-saude",
+          relatedFactors: "Motivação para melhorar o autocuidado",
+          definingCharacteristics: "Expressa desejo de aprender autocuidado da estomia",
+        }),
+      ).toThrow(ValidationError);
+    });
   });
 
   it("Dado carePlanId vazio, Quando criar, Então lança ValidationError", () => {

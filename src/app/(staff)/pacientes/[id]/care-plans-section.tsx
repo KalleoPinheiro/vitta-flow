@@ -17,6 +17,8 @@ import {
   CARE_PLAN_STATUS_LABELS,
   INTERVENTION_PRIORITY_LABELS,
   formatDateTime,
+  outcomeStatusLabel,
+  pesSentence,
 } from "@/lib/format";
 import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
@@ -24,17 +26,6 @@ import { EmptyState, ErrorAlert } from "@/components/feedback";
 
 const inputClass =
   "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none";
-
-/** Frase PES legível: Problema relacionado a Etiologia, evidenciado por Sinais/sintomas. */
-function pesSentence(diagnosis: CarePlanDetailDto["diagnoses"][number]): string {
-  if (diagnosis.type === "risco") {
-    return `Risco de ${diagnosis.diagnosisLabel} relacionado a ${diagnosis.relatedFactors}`;
-  }
-  if (diagnosis.type === "promocao-saude") {
-    return diagnosis.diagnosisLabel;
-  }
-  return `${diagnosis.diagnosisLabel} relacionado a ${diagnosis.relatedFactors}, evidenciado por ${diagnosis.definingCharacteristics}`;
-}
 
 interface CarePlansSectionProps {
   patientId: string;
@@ -453,7 +444,7 @@ function OutcomeRow({
         <span aria-hidden="true">→</span>
         <span>Meta {outcome.targetScore}</span>
         {outcome.isAchieved != null && (
-          <span className="ml-1 font-medium">{outcome.isAchieved ? "Meta atingida" : "Em progresso"}</span>
+          <span className="ml-1 font-medium">{outcomeStatusLabel(outcome)}</span>
         )}
       </div>
       {outcome.evaluations.length > 0 && (
@@ -522,8 +513,8 @@ function RecordInterventionButton({
 function useTaxonomySearch<T>(kind: "diagnoses" | "outcomes" | "interventions") {
   const [term, setTerm] = useState("");
   const query = term.trim().length >= 2 ? `/api/taxonomy/${kind}?q=${encodeURIComponent(term)}` : null;
-  const { data } = useApiQuery<T[]>(query ?? `/api/taxonomy/${kind}?q=`);
-  return { term, setTerm, results: term.trim().length >= 2 ? (data ?? []) : [] };
+  const { data } = useApiQuery<T[]>(query);
+  return { term, setTerm, results: data ?? [] };
 }
 
 interface TaxonomyOption {
@@ -624,6 +615,7 @@ function AddDiagnosisForm({ carePlanId, onSaved }: { carePlanId: string; onSaved
       {selected && (
         <>
           <fieldset className="flex gap-3 text-sm">
+            <legend className="sr-only">Tipo de diagnóstico</legend>
             {(["real", "risco", "promocao-saude"] as const).map((option) => (
               <label key={option} className="flex items-center gap-1">
                 <input
@@ -681,7 +673,7 @@ function PrescribeOutcomeForm({
   onSaved: () => void;
 }) {
   const { data: linked } = useApiQuery<{ outcomes: NursingOutcomeDto[] }>(
-    diagnosisCode ? `/api/taxonomy/diagnoses/${diagnosisCode}/linked-terms` : "/api/taxonomy/outcomes?q=",
+    diagnosisCode ? `/api/taxonomy/diagnoses/${diagnosisCode}/linked-terms` : null,
   );
   const { term, setTerm, results } = useTaxonomySearch<NursingOutcomeDto>("outcomes");
   const [selected, setSelected] = useState<NursingOutcomeDto | null>(null);
@@ -746,8 +738,10 @@ function PrescribeOutcomeForm({
             Pontuação basal (1–5)
             <input
               type="number"
+              required
               min={1}
               max={5}
+              step={1}
               value={baselineScore}
               onChange={(e) => setBaselineScore(e.target.value)}
               className={`mt-1 ${inputClass}`}
@@ -758,8 +752,10 @@ function PrescribeOutcomeForm({
             Meta (1–5)
             <input
               type="number"
+              required
               min={1}
               max={5}
+              step={1}
               value={targetScore}
               onChange={(e) => setTargetScore(e.target.value)}
               className={`mt-1 ${inputClass}`}
@@ -789,7 +785,7 @@ function PrescribeInterventionForm({
   onSaved: () => void;
 }) {
   const { data: linked } = useApiQuery<{ interventions: NursingInterventionDto[] }>(
-    diagnosisCode ? `/api/taxonomy/diagnoses/${diagnosisCode}/linked-terms` : "/api/taxonomy/interventions?q=",
+    diagnosisCode ? `/api/taxonomy/diagnoses/${diagnosisCode}/linked-terms` : null,
   );
   const { term, setTerm, results } = useTaxonomySearch<NursingInterventionDto>("interventions");
   const [selected, setSelected] = useState<NursingInterventionDto | null>(null);
@@ -857,6 +853,7 @@ function PrescribeInterventionForm({
             />
           </label>
           <fieldset className="flex gap-3 text-sm">
+            <legend className="sr-only">Prioridade da intervenção</legend>
             {(["baixa", "media", "alta"] as const).map((option) => (
               <label key={option} className="flex items-center gap-1">
                 <input

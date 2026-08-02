@@ -104,7 +104,7 @@ describe("Feature: Plano de cuidados (SAE) — casos de uso", () => {
 
   describe("Cenário: abrir plano de cuidados", () => {
     it("Dado paciente existente, Quando abrir plano, Então plano ativo persistido", async () => {
-      const plan = await new OpenCarePlan(carePlanRepo, patientRepo).execute({
+      const plan = await new OpenCarePlan(carePlanRepo, patientRepo, conditionRepo).execute({
         patientId: maria.id,
       });
 
@@ -114,14 +114,14 @@ describe("Feature: Plano de cuidados (SAE) — casos de uso", () => {
 
     it("Dado paciente inexistente, Quando abrir plano, Então lança NotFoundError", async () => {
       await expect(
-        new OpenCarePlan(carePlanRepo, patientRepo).execute({ patientId: "ghost" }),
+        new OpenCarePlan(carePlanRepo, patientRepo, conditionRepo).execute({ patientId: "ghost" }),
       ).rejects.toThrow(NotFoundError);
     });
   });
 
   describe("Cenário: prescrever diagnóstico", () => {
     it("Dado plano ativo e código catalogado, Quando prescrever, Então diagnóstico salvo", async () => {
-      const plan = await new OpenCarePlan(carePlanRepo, patientRepo).execute({ patientId: maria.id });
+      const plan = await new OpenCarePlan(carePlanRepo, patientRepo, conditionRepo).execute({ patientId: maria.id });
 
       const diagnosis = await new AddCarePlanDiagnosis(diagnosisRepo, carePlanRepo, diagnosisCatalog).execute({
         carePlanId: plan.id,
@@ -147,7 +147,7 @@ describe("Feature: Plano de cuidados (SAE) — casos de uso", () => {
     });
 
     it("Dado plano resolvido, Quando prescrever diagnóstico, Então lança ValidationError", async () => {
-      const plan = await new OpenCarePlan(carePlanRepo, patientRepo).execute({ patientId: maria.id });
+      const plan = await new OpenCarePlan(carePlanRepo, patientRepo, conditionRepo).execute({ patientId: maria.id });
       await new ResolveCarePlan(carePlanRepo).execute({ id: plan.id });
 
       await expect(
@@ -162,7 +162,7 @@ describe("Feature: Plano de cuidados (SAE) — casos de uso", () => {
     });
 
     it("Dado código fora do catálogo, Quando prescrever diagnóstico, Então lança NotFoundError", async () => {
-      const plan = await new OpenCarePlan(carePlanRepo, patientRepo).execute({ patientId: maria.id });
+      const plan = await new OpenCarePlan(carePlanRepo, patientRepo, conditionRepo).execute({ patientId: maria.id });
 
       await expect(
         new AddCarePlanDiagnosis(diagnosisRepo, carePlanRepo, diagnosisCatalog).execute({
@@ -178,7 +178,7 @@ describe("Feature: Plano de cuidados (SAE) — casos de uso", () => {
 
   describe("Cenário: prescrever resultado NOC", () => {
     it("Dado plano ativo e código catalogado, Quando prescrever, Então resultado salvo", async () => {
-      const plan = await new OpenCarePlan(carePlanRepo, patientRepo).execute({ patientId: maria.id });
+      const plan = await new OpenCarePlan(carePlanRepo, patientRepo, conditionRepo).execute({ patientId: maria.id });
 
       const outcome = await new PrescribeOutcome(outcomeRepo, carePlanRepo, outcomeCatalog).execute({
         carePlanId: plan.id,
@@ -191,7 +191,7 @@ describe("Feature: Plano de cuidados (SAE) — casos de uso", () => {
     });
 
     it("Dado plano resolvido, Quando prescrever resultado, Então lança ValidationError", async () => {
-      const plan = await new OpenCarePlan(carePlanRepo, patientRepo).execute({ patientId: maria.id });
+      const plan = await new OpenCarePlan(carePlanRepo, patientRepo, conditionRepo).execute({ patientId: maria.id });
       await new ResolveCarePlan(carePlanRepo).execute({ id: plan.id });
 
       await expect(
@@ -205,7 +205,7 @@ describe("Feature: Plano de cuidados (SAE) — casos de uso", () => {
     });
 
     it("Dado código fora do catálogo, Quando prescrever resultado, Então lança NotFoundError", async () => {
-      const plan = await new OpenCarePlan(carePlanRepo, patientRepo).execute({ patientId: maria.id });
+      const plan = await new OpenCarePlan(carePlanRepo, patientRepo, conditionRepo).execute({ patientId: maria.id });
 
       await expect(
         new PrescribeOutcome(outcomeRepo, carePlanRepo, outcomeCatalog).execute({
@@ -231,7 +231,7 @@ describe("Feature: Plano de cuidados (SAE) — casos de uso", () => {
 
   describe("Cenário: prescrever intervenção NIC", () => {
     it("Dado plano ativo e código catalogado, Quando prescrever, Então intervenção salva", async () => {
-      const plan = await new OpenCarePlan(carePlanRepo, patientRepo).execute({ patientId: maria.id });
+      const plan = await new OpenCarePlan(carePlanRepo, patientRepo, conditionRepo).execute({ patientId: maria.id });
 
       const intervention = await new PrescribeIntervention(
         interventionRepo,
@@ -248,7 +248,7 @@ describe("Feature: Plano de cuidados (SAE) — casos de uso", () => {
     });
 
     it("Dado plano resolvido, Quando prescrever intervenção, Então lança ValidationError", async () => {
-      const plan = await new OpenCarePlan(carePlanRepo, patientRepo).execute({ patientId: maria.id });
+      const plan = await new OpenCarePlan(carePlanRepo, patientRepo, conditionRepo).execute({ patientId: maria.id });
       await new ResolveCarePlan(carePlanRepo).execute({ id: plan.id });
 
       await expect(
@@ -262,7 +262,7 @@ describe("Feature: Plano de cuidados (SAE) — casos de uso", () => {
     });
 
     it("Dado código fora do catálogo, Quando prescrever intervenção, Então lança NotFoundError", async () => {
-      const plan = await new OpenCarePlan(carePlanRepo, patientRepo).execute({ patientId: maria.id });
+      const plan = await new OpenCarePlan(carePlanRepo, patientRepo, conditionRepo).execute({ patientId: maria.id });
 
       await expect(
         new PrescribeIntervention(interventionRepo, carePlanRepo, interventionCatalog).execute({
@@ -277,7 +277,7 @@ describe("Feature: Plano de cuidados (SAE) — casos de uso", () => {
 
   describe("Cenário: registrar execução de intervenção", () => {
     it("Dado intervenção prescrita, Quando registrar execução, Então registro salvo", async () => {
-      const plan = await new OpenCarePlan(carePlanRepo, patientRepo).execute({ patientId: maria.id });
+      const plan = await new OpenCarePlan(carePlanRepo, patientRepo, conditionRepo).execute({ patientId: maria.id });
       const intervention = await new PrescribeIntervention(
         interventionRepo,
         carePlanRepo,
@@ -289,7 +289,7 @@ describe("Feature: Plano de cuidados (SAE) — casos de uso", () => {
         priority: "alta",
       });
 
-      const record = await new RecordIntervention(recordRepo, interventionRepo).execute({
+      const record = await new RecordIntervention(recordRepo, interventionRepo, carePlanRepo).execute({
         interventionId: intervention.id,
         professionalId: "prof1",
       });
@@ -299,14 +299,14 @@ describe("Feature: Plano de cuidados (SAE) — casos de uso", () => {
 
     it("Dado intervenção inexistente, Quando registrar execução, Então lança NotFoundError", async () => {
       await expect(
-        new RecordIntervention(recordRepo, interventionRepo).execute({ interventionId: "ghost" }),
+        new RecordIntervention(recordRepo, interventionRepo, carePlanRepo).execute({ interventionId: "ghost" }),
       ).rejects.toThrow(NotFoundError);
     });
   });
 
   describe("Cenário: avaliar resultado", () => {
     it("Dado resultado prescrito, Quando avaliar, Então avaliação salva", async () => {
-      const plan = await new OpenCarePlan(carePlanRepo, patientRepo).execute({ patientId: maria.id });
+      const plan = await new OpenCarePlan(carePlanRepo, patientRepo, conditionRepo).execute({ patientId: maria.id });
       const outcome = await new PrescribeOutcome(outcomeRepo, carePlanRepo, outcomeCatalog).execute({
         carePlanId: plan.id,
         outcomeCode: "1101",
@@ -314,7 +314,7 @@ describe("Feature: Plano de cuidados (SAE) — casos de uso", () => {
         targetScore: 4,
       });
 
-      const evaluation = await new EvaluateOutcome(evaluationRepo, outcomeRepo).execute({
+      const evaluation = await new EvaluateOutcome(evaluationRepo, outcomeRepo, carePlanRepo).execute({
         outcomeId: outcome.id,
         score: 3,
         professionalId: "prof1",
@@ -325,14 +325,14 @@ describe("Feature: Plano de cuidados (SAE) — casos de uso", () => {
 
     it("Dado resultado inexistente, Quando avaliar, Então lança NotFoundError", async () => {
       await expect(
-        new EvaluateOutcome(evaluationRepo, outcomeRepo).execute({ outcomeId: "ghost", score: 3 }),
+        new EvaluateOutcome(evaluationRepo, outcomeRepo, carePlanRepo).execute({ outcomeId: "ghost", score: 3 }),
       ).rejects.toThrow(NotFoundError);
     });
   });
 
   describe("Cenário: resolver e listar planos", () => {
     it("Dado plano ativo, Quando resolver, Então status muda para resolved", async () => {
-      const plan = await new OpenCarePlan(carePlanRepo, patientRepo).execute({ patientId: maria.id });
+      const plan = await new OpenCarePlan(carePlanRepo, patientRepo, conditionRepo).execute({ patientId: maria.id });
 
       const resolved = await new ResolveCarePlan(carePlanRepo).execute({ id: plan.id });
 
@@ -346,8 +346,8 @@ describe("Feature: Plano de cuidados (SAE) — casos de uso", () => {
     });
 
     it("Dado múltiplos planos do paciente, Quando listar, Então retorna todos", async () => {
-      await new OpenCarePlan(carePlanRepo, patientRepo).execute({ patientId: maria.id });
-      await new OpenCarePlan(carePlanRepo, patientRepo).execute({ patientId: maria.id });
+      await new OpenCarePlan(carePlanRepo, patientRepo, conditionRepo).execute({ patientId: maria.id });
+      await new OpenCarePlan(carePlanRepo, patientRepo, conditionRepo).execute({ patientId: maria.id });
 
       const plans = await new ListCarePlansByPatient(carePlanRepo).execute({ patientId: maria.id });
 
@@ -362,7 +362,7 @@ describe("Feature: Plano de cuidados (SAE) — casos de uso", () => {
         kind: "wound",
         title: "Lesão sacral",
       });
-      const plan = await new OpenCarePlan(carePlanRepo, patientRepo).execute({
+      const plan = await new OpenCarePlan(carePlanRepo, patientRepo, conditionRepo).execute({
         patientId: maria.id,
         conditionId: condition.id,
       });
@@ -389,8 +389,8 @@ describe("Feature: Plano de cuidados (SAE) — casos de uso", () => {
         frequency: "Diária",
         priority: "alta",
       });
-      await new EvaluateOutcome(evaluationRepo, outcomeRepo).execute({ outcomeId: outcome.id, score: 3 });
-      await new RecordIntervention(recordRepo, interventionRepo).execute({
+      await new EvaluateOutcome(evaluationRepo, outcomeRepo, carePlanRepo).execute({ outcomeId: outcome.id, score: 3 });
+      await new RecordIntervention(recordRepo, interventionRepo, carePlanRepo).execute({
         interventionId: intervention.id,
       });
 

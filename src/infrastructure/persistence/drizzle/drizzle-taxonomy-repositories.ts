@@ -1,4 +1,4 @@
-import { asc, eq, ilike, inArray, or } from "drizzle-orm";
+import { and, asc, eq, ilike, inArray, or } from "drizzle-orm";
 import { NursingDiagnosis } from "@/domain/taxonomy/nursing-diagnosis";
 import { NursingOutcome } from "@/domain/taxonomy/nursing-outcome";
 import { NursingIntervention } from "@/domain/taxonomy/nursing-intervention";
@@ -227,9 +227,12 @@ export class DrizzleTaxonomyLinkageRepository implements TaxonomyLinkageReposito
     const rows = await this.db
       .select()
       .from(taxonomyLinkages)
-      .where(eq(taxonomyLinkages.diagnosisCode, diagnosisCode));
-    const filtered = role ? rows.filter((row) => row.role === role) : rows;
-    return filtered.map((row) =>
+      .where(
+        role
+          ? and(eq(taxonomyLinkages.diagnosisCode, diagnosisCode), eq(taxonomyLinkages.role, role))
+          : eq(taxonomyLinkages.diagnosisCode, diagnosisCode),
+      );
+    return rows.map((row) =>
       TaxonomyLinkage.create({
         diagnosisCode: row.diagnosisCode,
         role: row.role as LinkageRole,

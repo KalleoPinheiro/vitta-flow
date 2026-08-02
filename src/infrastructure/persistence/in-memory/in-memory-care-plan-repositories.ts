@@ -27,13 +27,13 @@ export class InMemoryCarePlanRepository implements CarePlanRepository {
   async findByPatientId(patientId: string): Promise<CarePlan[]> {
     return [...this.items.values()]
       .filter((plan) => plan.patientId === patientId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime() || a.id.localeCompare(b.id));
   }
 
   async findByConditionId(conditionId: string): Promise<CarePlan[]> {
     return [...this.items.values()]
       .filter((plan) => plan.conditionId === conditionId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime() || a.id.localeCompare(b.id));
   }
 }
 
@@ -47,14 +47,14 @@ export class InMemoryCarePlanDiagnosisRepository implements CarePlanDiagnosisRep
   async findByCarePlanId(carePlanId: string): Promise<CarePlanDiagnosis[]> {
     return [...this.items.values()]
       .filter((item) => item.carePlanId === carePlanId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime() || a.id.localeCompare(b.id));
   }
 
   async findByCarePlanIds(carePlanIds: string[]): Promise<CarePlanDiagnosis[]> {
     const ids = new Set(carePlanIds);
     return [...this.items.values()]
       .filter((item) => ids.has(item.carePlanId))
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime() || a.id.localeCompare(b.id));
   }
 }
 
@@ -72,14 +72,14 @@ export class InMemoryCarePlanOutcomeRepository implements CarePlanOutcomeReposit
   async findByCarePlanId(carePlanId: string): Promise<CarePlanOutcome[]> {
     return [...this.items.values()]
       .filter((item) => item.carePlanId === carePlanId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime() || a.id.localeCompare(b.id));
   }
 
   async findByCarePlanIds(carePlanIds: string[]): Promise<CarePlanOutcome[]> {
     const ids = new Set(carePlanIds);
     return [...this.items.values()]
       .filter((item) => ids.has(item.carePlanId))
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime() || a.id.localeCompare(b.id));
   }
 }
 
@@ -97,14 +97,14 @@ export class InMemoryCarePlanInterventionRepository implements CarePlanIntervent
   async findByCarePlanId(carePlanId: string): Promise<CarePlanIntervention[]> {
     return [...this.items.values()]
       .filter((item) => item.carePlanId === carePlanId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime() || a.id.localeCompare(b.id));
   }
 
   async findByCarePlanIds(carePlanIds: string[]): Promise<CarePlanIntervention[]> {
     const ids = new Set(carePlanIds);
     return [...this.items.values()]
       .filter((item) => ids.has(item.carePlanId))
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime() || a.id.localeCompare(b.id));
   }
 }
 
@@ -118,14 +118,14 @@ export class InMemoryOutcomeEvaluationRepository implements OutcomeEvaluationRep
   async findByOutcomeId(outcomeId: string): Promise<OutcomeEvaluation[]> {
     return this.items
       .filter((item) => item.outcomeId === outcomeId)
-      .sort((a, b) => b.evaluatedAt.getTime() - a.evaluatedAt.getTime());
+      .sort((a, b) => b.evaluatedAt.getTime() - a.evaluatedAt.getTime() || a.id.localeCompare(b.id));
   }
 
   async findByOutcomeIds(outcomeIds: string[]): Promise<OutcomeEvaluation[]> {
     const ids = new Set(outcomeIds);
     return this.items
       .filter((item) => ids.has(item.outcomeId))
-      .sort((a, b) => b.evaluatedAt.getTime() - a.evaluatedAt.getTime());
+      .sort((a, b) => b.evaluatedAt.getTime() - a.evaluatedAt.getTime() || a.id.localeCompare(b.id));
   }
 }
 
@@ -139,13 +139,13 @@ export class InMemoryInterventionRecordRepository implements InterventionRecordR
   async findByInterventionId(interventionId: string): Promise<InterventionRecord[]> {
     return this.items
       .filter((item) => item.interventionId === interventionId)
-      .sort((a, b) => b.performedAt.getTime() - a.performedAt.getTime());
+      .sort((a, b) => b.performedAt.getTime() - a.performedAt.getTime() || a.id.localeCompare(b.id));
   }
 
   async findByInterventionIds(interventionIds: string[]): Promise<InterventionRecord[]> {
     const ids = new Set(interventionIds);
     return this.items
       .filter((item) => ids.has(item.interventionId))
-      .sort((a, b) => b.performedAt.getTime() - a.performedAt.getTime());
+      .sort((a, b) => b.performedAt.getTime() - a.performedAt.getTime() || a.id.localeCompare(b.id));
   }
 }

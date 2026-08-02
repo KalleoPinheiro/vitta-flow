@@ -1,8 +1,9 @@
+import { NOC_SCALE_MAX, NOC_SCALE_MIN } from "../taxonomy/noc-scale";
 import { ValidationError } from "../shared/errors";
 import { newId } from "../shared/id";
 
-const SCALE_MIN = 1;
-const SCALE_MAX = 5;
+const SCALE_MIN = NOC_SCALE_MIN;
+const SCALE_MAX = NOC_SCALE_MAX;
 
 export interface OutcomeEvaluationProps {
   outcomeId: string;

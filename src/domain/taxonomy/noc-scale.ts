@@ -1,7 +1,9 @@
 import { ValidationError } from "../shared/errors";
 
-const SCALE_MIN = 1;
-const SCALE_MAX = 5;
+export const NOC_SCALE_MIN = 1;
+export const NOC_SCALE_MAX = 5;
+const SCALE_MIN = NOC_SCALE_MIN;
+const SCALE_MAX = NOC_SCALE_MAX;
 
 /** Rótulos das 5 âncoras da escala NOC, na ordem 1→5 (gravemente comprometido → não comprometido). */
 export type NocScaleAnchors = readonly [string, string, string, string, string];

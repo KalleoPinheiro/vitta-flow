@@ -1,4 +1,4 @@
-import { desc, eq, inArray } from "drizzle-orm";
+import { asc, desc, eq, inArray } from "drizzle-orm";
 import { CarePlan, type CarePlanStatus } from "@/domain/clinical/care-plan";
 import {
   CarePlanDiagnosis,
@@ -61,7 +61,7 @@ export class DrizzleCarePlanRepository implements CarePlanRepository {
       .select()
       .from(carePlans)
       .where(eq(carePlans.patientId, patientId))
-      .orderBy(desc(carePlans.createdAt));
+      .orderBy(desc(carePlans.createdAt), asc(carePlans.id));
     return rows.map((row) => this.toEntity(row));
   }
 
@@ -70,7 +70,7 @@ export class DrizzleCarePlanRepository implements CarePlanRepository {
       .select()
       .from(carePlans)
       .where(eq(carePlans.conditionId, conditionId))
-      .orderBy(desc(carePlans.createdAt));
+      .orderBy(desc(carePlans.createdAt), asc(carePlans.id));
     return rows.map((row) => this.toEntity(row));
   }
 }
@@ -99,7 +99,7 @@ export class DrizzleCarePlanDiagnosisRepository implements CarePlanDiagnosisRepo
       .select()
       .from(carePlanDiagnoses)
       .where(eq(carePlanDiagnoses.carePlanId, carePlanId))
-      .orderBy(desc(carePlanDiagnoses.createdAt));
+      .orderBy(desc(carePlanDiagnoses.createdAt), asc(carePlanDiagnoses.id));
     return rows.map((row) => this.toEntity(row));
   }
 
@@ -112,7 +112,7 @@ export class DrizzleCarePlanDiagnosisRepository implements CarePlanDiagnosisRepo
       .select()
       .from(carePlanDiagnoses)
       .where(inArray(carePlanDiagnoses.carePlanId, unique))
-      .orderBy(desc(carePlanDiagnoses.createdAt));
+      .orderBy(desc(carePlanDiagnoses.createdAt), asc(carePlanDiagnoses.id));
     return rows.map((row) => this.toEntity(row));
   }
 }
@@ -150,7 +150,7 @@ export class DrizzleCarePlanOutcomeRepository implements CarePlanOutcomeReposito
       .select()
       .from(carePlanOutcomes)
       .where(eq(carePlanOutcomes.carePlanId, carePlanId))
-      .orderBy(desc(carePlanOutcomes.createdAt));
+      .orderBy(desc(carePlanOutcomes.createdAt), asc(carePlanOutcomes.id));
     return rows.map((row) => this.toEntity(row));
   }
 
@@ -163,7 +163,7 @@ export class DrizzleCarePlanOutcomeRepository implements CarePlanOutcomeReposito
       .select()
       .from(carePlanOutcomes)
       .where(inArray(carePlanOutcomes.carePlanId, unique))
-      .orderBy(desc(carePlanOutcomes.createdAt));
+      .orderBy(desc(carePlanOutcomes.createdAt), asc(carePlanOutcomes.id));
     return rows.map((row) => this.toEntity(row));
   }
 }
@@ -200,7 +200,7 @@ export class DrizzleCarePlanInterventionRepository implements CarePlanInterventi
       .select()
       .from(carePlanInterventions)
       .where(eq(carePlanInterventions.carePlanId, carePlanId))
-      .orderBy(desc(carePlanInterventions.createdAt));
+      .orderBy(desc(carePlanInterventions.createdAt), asc(carePlanInterventions.id));
     return rows.map((row) => this.toEntity(row));
   }
 
@@ -213,7 +213,7 @@ export class DrizzleCarePlanInterventionRepository implements CarePlanInterventi
       .select()
       .from(carePlanInterventions)
       .where(inArray(carePlanInterventions.carePlanId, unique))
-      .orderBy(desc(carePlanInterventions.createdAt));
+      .orderBy(desc(carePlanInterventions.createdAt), asc(carePlanInterventions.id));
     return rows.map((row) => this.toEntity(row));
   }
 }
@@ -241,7 +241,7 @@ export class DrizzleOutcomeEvaluationRepository implements OutcomeEvaluationRepo
       .select()
       .from(outcomeEvaluations)
       .where(eq(outcomeEvaluations.outcomeId, outcomeId))
-      .orderBy(desc(outcomeEvaluations.evaluatedAt));
+      .orderBy(desc(outcomeEvaluations.evaluatedAt), asc(outcomeEvaluations.id));
     return rows.map((row) => this.toEntity(row));
   }
 
@@ -254,7 +254,7 @@ export class DrizzleOutcomeEvaluationRepository implements OutcomeEvaluationRepo
       .select()
       .from(outcomeEvaluations)
       .where(inArray(outcomeEvaluations.outcomeId, unique))
-      .orderBy(desc(outcomeEvaluations.evaluatedAt));
+      .orderBy(desc(outcomeEvaluations.evaluatedAt), asc(outcomeEvaluations.id));
     return rows.map((row) => this.toEntity(row));
   }
 }
@@ -281,7 +281,7 @@ export class DrizzleInterventionRecordRepository implements InterventionRecordRe
       .select()
       .from(interventionRecords)
       .where(eq(interventionRecords.interventionId, interventionId))
-      .orderBy(desc(interventionRecords.performedAt));
+      .orderBy(desc(interventionRecords.performedAt), asc(interventionRecords.id));
     return rows.map((row) => this.toEntity(row));
   }
 
@@ -294,7 +294,7 @@ export class DrizzleInterventionRecordRepository implements InterventionRecordRe
       .select()
       .from(interventionRecords)
       .where(inArray(interventionRecords.interventionId, unique))
-      .orderBy(desc(interventionRecords.performedAt));
+      .orderBy(desc(interventionRecords.performedAt), asc(interventionRecords.id));
     return rows.map((row) => this.toEntity(row));
   }
 }

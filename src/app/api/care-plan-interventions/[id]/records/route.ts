@@ -18,16 +18,24 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = recordSchema.parse(await request.json());
-    const { interventionRecords, carePlanInterventions, auditEvents } = await getRepositories();
-    const record = await new RecordIntervention(interventionRecords, carePlanInterventions).execute({
+    const { interventionRecords, carePlanInterventions, carePlans, auditEvents } =
+      await getRepositories();
+    const record = await new RecordIntervention(
+      interventionRecords,
+      carePlanInterventions,
+      carePlans,
+    ).execute({
       interventionId: id,
       professionalId: body.professionalId ?? null,
       notes: body.notes ?? null,
     });
+    const intervention = await carePlanInterventions.findById(id);
+    const plan = intervention ? await carePlans.findById(intervention.carePlanId) : null;
     recordAudit(auditEvents, getRequestSession(request), {
       action: "create",
       resourceType: "intervention_record",
       resourceId: record.id,
+      patientId: plan?.patientId ?? null,
     });
     return toInterventionRecordDto(record);
   });

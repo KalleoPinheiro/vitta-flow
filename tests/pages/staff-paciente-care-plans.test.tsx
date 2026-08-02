@@ -10,6 +10,8 @@ import type {
   NursingOutcomeDto,
   PatientDto,
 } from "@/lib/dto";
+import type { CarePlanDiagnosisType } from "@/domain/clinical/care-plan-diagnosis";
+import type { InterventionPriority } from "@/domain/clinical/care-plan-intervention";
 import PatientRecordPage from "@/app/(staff)/pacientes/[id]/page";
 
 interface FetchCall {
@@ -166,7 +168,7 @@ function handleDiagnosesRoute(
     carePlanId: match[1],
     diagnosisCode: body.diagnosisCode as string,
     diagnosisLabel: diagnosisCatalog.label,
-    type: body.type as string,
+    type: body.type as CarePlanDiagnosisType,
     relatedFactors: (body.relatedFactors as string | null) ?? null,
     definingCharacteristics: (body.definingCharacteristics as string | null) ?? null,
     createdAt: new Date().toISOString(),
@@ -218,7 +220,7 @@ function handleInterventionsRoute(
     interventionCode: body.interventionCode as string,
     interventionLabel: interventionCatalog.label,
     frequency: body.frequency as string,
-    priority: body.priority as string,
+    priority: body.priority as InterventionPriority,
     createdAt: new Date().toISOString(),
     records: [],
   };

@@ -19,17 +19,24 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = evaluationSchema.parse(await request.json());
-    const { outcomeEvaluations, carePlanOutcomes, auditEvents } = await getRepositories();
-    const evaluation = await new EvaluateOutcome(outcomeEvaluations, carePlanOutcomes).execute({
+    const { outcomeEvaluations, carePlanOutcomes, carePlans, auditEvents } = await getRepositories();
+    const evaluation = await new EvaluateOutcome(
+      outcomeEvaluations,
+      carePlanOutcomes,
+      carePlans,
+    ).execute({
       outcomeId: id,
       score: body.score,
       professionalId: body.professionalId ?? null,
       notes: body.notes ?? null,
     });
+    const outcome = await carePlanOutcomes.findById(id);
+    const plan = outcome ? await carePlans.findById(outcome.carePlanId) : null;
     recordAudit(auditEvents, getRequestSession(request), {
       action: "create",
       resourceType: "outcome_evaluation",
       resourceId: evaluation.id,
+      patientId: plan?.patientId ?? null,
     });
     return toOutcomeEvaluationDto(evaluation);
   });

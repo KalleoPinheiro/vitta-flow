@@ -28,6 +28,9 @@ export class CarePlanIntervention {
     if (props.interventionCode.trim().length === 0) {
       throw new ValidationError("Intervenção é obrigatória");
     }
+    if (!INTERVENTION_PRIORITIES.includes(props.priority)) {
+      throw new ValidationError("Prioridade da intervenção inválida");
+    }
     const frequency = props.frequency.trim();
     if (frequency.length === 0) {
       throw new ValidationError("Frequência da intervenção é obrigatória");

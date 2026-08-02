@@ -17,10 +17,16 @@ import type { UserAccount } from "@/domain/auth/user-account";
 import type { NursingDiagnosis } from "@/domain/taxonomy/nursing-diagnosis";
 import type { NursingOutcome } from "@/domain/taxonomy/nursing-outcome";
 import type { NursingIntervention } from "@/domain/taxonomy/nursing-intervention";
-import type { CarePlan } from "@/domain/clinical/care-plan";
-import type { CarePlanDiagnosis } from "@/domain/clinical/care-plan-diagnosis";
+import type { CarePlan, CarePlanStatus } from "@/domain/clinical/care-plan";
+import type {
+  CarePlanDiagnosis,
+  CarePlanDiagnosisType,
+} from "@/domain/clinical/care-plan-diagnosis";
 import type { CarePlanOutcome } from "@/domain/clinical/care-plan-outcome";
-import type { CarePlanIntervention } from "@/domain/clinical/care-plan-intervention";
+import type {
+  CarePlanIntervention,
+  InterventionPriority,
+} from "@/domain/clinical/care-plan-intervention";
 import type { OutcomeEvaluation } from "@/domain/clinical/outcome-evaluation";
 import type { InterventionRecord } from "@/domain/clinical/intervention-record";
 import type { CarePlanDetail } from "@/application/clinical/get-care-plan";
@@ -326,7 +332,7 @@ export interface CarePlanDto {
   patientId: string;
   conditionId: string | null;
   professionalId: string | null;
-  status: string;
+  status: CarePlanStatus;
   createdAt: string;
 }
 
@@ -344,7 +350,7 @@ export interface CarePlanDiagnosisDto {
   carePlanId: string;
   diagnosisCode: string;
   diagnosisLabel: string;
-  type: string;
+  type: CarePlanDiagnosisType;
   relatedFactors: string | null;
   definingCharacteristics: string | null;
   createdAt: string;
@@ -442,7 +448,7 @@ export interface CarePlanInterventionDto {
   interventionCode: string;
   interventionLabel: string;
   frequency: string;
-  priority: string;
+  priority: InterventionPriority;
   createdAt: string;
   records: InterventionRecordDto[];
 }

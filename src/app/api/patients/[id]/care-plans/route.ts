@@ -34,8 +34,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = openCarePlanSchema.parse(await request.json());
-    const { carePlans, patients, auditEvents } = await getRepositories();
-    const plan = await new OpenCarePlan(carePlans, patients).execute({
+    const { carePlans, patients, conditions, auditEvents } = await getRepositories();
+    const plan = await new OpenCarePlan(carePlans, patients, conditions).execute({
       patientId: id,
       conditionId: body.conditionId ?? null,
       professionalId: body.professionalId ?? null,

@@ -1,27 +1,18 @@
 "use client";
 
 import { use } from "react";
-import type { CarePlanDetailDto, CarePlanDiagnosisDto, PatientDto } from "@/lib/dto";
+import type { CarePlanDetailDto, PatientDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import {
   CARE_PLAN_DIAGNOSIS_TYPE_LABELS,
   CARE_PLAN_STATUS_LABELS,
   INTERVENTION_PRIORITY_LABELS,
   formatDate,
+  outcomeStatusLabel,
+  pesSentence,
 } from "@/lib/format";
 import { ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import { DocumentFrame, type ClinicInfoDto } from "@/components/document-frame";
-
-/** Frase PES legível: Problema relacionado a Etiologia, evidenciado por Sinais/sintomas. */
-function pesSentence(diagnosis: CarePlanDiagnosisDto): string {
-  if (diagnosis.type === "risco") {
-    return `Risco de ${diagnosis.diagnosisLabel} relacionado a ${diagnosis.relatedFactors}`;
-  }
-  if (diagnosis.type === "promocao-saude") {
-    return diagnosis.diagnosisLabel;
-  }
-  return `${diagnosis.diagnosisLabel} relacionado a ${diagnosis.relatedFactors}, evidenciado por ${diagnosis.definingCharacteristics}`;
-}
 
 /**
  * Plano de cuidados (SAE) para impressão — diagnóstico (NANDA-I), resultado
@@ -49,12 +40,17 @@ function CarePlanDocumentContent({
   clinic: ClinicInfoDto;
   detail: CarePlanDetailDto;
 }) {
-  const { data: patient } = useApiQuery<PatientDto>(`/api/patients/${detail.plan.patientId}`);
+  const { data: patient, error: patientError } = useApiQuery<PatientDto>(
+    `/api/patients/${detail.plan.patientId}`,
+  );
+
+  if (patientError) return <ErrorAlert message={patientError} />;
+  if (!patient) return <LoadingIndicator />;
 
   return (
     <DocumentFrame clinic={clinic} title="Plano de Cuidados de Enfermagem (SAE)">
       <p className="mb-1">
-        <strong>Paciente:</strong> {patient?.fullName ?? "—"}
+        <strong>Paciente:</strong> {patient.fullName}
       </p>
       <p className="mb-4">
         <strong>Aberto em:</strong> {formatDate(detail.plan.createdAt)} ·{" "}
@@ -100,13 +96,7 @@ function CarePlanDocumentContent({
                 <td className="py-1 pr-2">{outcome.baselineScore}</td>
                 <td className="py-1 pr-2">{outcome.currentScore ?? "—"}</td>
                 <td className="py-1 pr-2">{outcome.targetScore}</td>
-                <td className="py-1">
-                  {outcome.isAchieved == null
-                    ? "Sem avaliação"
-                    : outcome.isAchieved
-                      ? "Meta atingida"
-                      : "Em progresso"}
-                </td>
+                <td className="py-1">{outcomeStatusLabel(outcome)}</td>
               </tr>
             ))}
           </tbody>

@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { createCondition, createPatient, unique } from "./support/api";
+import { addCarePlanDiagnosis, createCarePlan, createCondition, createPatient, unique } from "./support/api";
 import { sessionCookie } from "./support/session-token";
 
 async function openCarePlanTab(page: import("@playwright/test").Page, patientId: string) {
@@ -93,7 +93,7 @@ test.describe("plano de cuidados (SAE)", () => {
     await page.getByRole("button", { name: "Registrar avaliação" }).click();
 
     await expect(page.getByText("Atual 1")).toBeVisible();
-    await expect(page.getByText("Em progresso")).toBeVisible();
+    await expect(page.getByText("Em regressão")).toBeVisible();
   });
 
   test("meta menor ou igual à basal é bloqueada; diagnóstico sem seleção mostra erro", async ({
@@ -139,14 +139,25 @@ test.describe("plano de cuidados (SAE)", () => {
     await expect(page.getByRole("button", { name: "+ Intervenção" })).not.toBeVisible();
     await expect(page.getByRole("button", { name: "Resolver plano" })).not.toBeVisible();
   });
+});
 
+test.describe("plano de cuidados (SAE) — limite staff × portal", () => {
   test("portal do paciente não expõe dados do plano de cuidados (SAE)", async ({ page, context, request }) => {
     const patient = await createPatient(request);
+    const plan = await createCarePlan(request, patient.id);
+    await addCarePlanDiagnosis(request, plan.id, {
+      diagnosisCode: "00046",
+      type: "real",
+      relatedFactors: "Umidade excessiva",
+      definingCharacteristics: "Ruptura da epiderme",
+    });
     await context.addCookies([sessionCookie(patient.email, "patient")]);
 
     await page.goto("/portal");
     await expect(page.getByText(`Olá, ${patient.fullName.split(" ")[0]}!`)).toBeVisible();
     await expect(page.getByText(/Plano de Cuidados/)).toHaveCount(0);
     await expect(page.getByText(/NANDA/)).toHaveCount(0);
+    await expect(page.getByText(/Integridade da pele prejudicada/)).toHaveCount(0);
+    await expect(page.getByText(/Ruptura da epiderme/)).toHaveCount(0);
   });
 });

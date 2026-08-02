@@ -22,11 +22,12 @@ export class CarePlan {
   private constructor(private readonly state: CarePlanState) {}
 
   static create(props: CarePlanProps): CarePlan {
-    if (props.patientId.trim().length === 0) {
+    const patientId = props.patientId.trim();
+    if (patientId.length === 0) {
       throw new ValidationError("Paciente é obrigatório");
     }
     return new CarePlan({
-      patientId: props.patientId,
+      patientId,
       conditionId: props.conditionId ?? null,
       professionalId: props.professionalId ?? null,
       id: newId(),

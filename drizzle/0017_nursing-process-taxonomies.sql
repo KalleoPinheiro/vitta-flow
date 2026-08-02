@@ -24,7 +24,9 @@ CREATE TABLE "care_plan_outcomes" (
 	"baseline_score" integer NOT NULL,
 	"target_score" integer NOT NULL,
 	"deadline" timestamp with time zone,
-	"created_at" timestamp with time zone NOT NULL
+	"created_at" timestamp with time zone NOT NULL,
+	CONSTRAINT "chk_care_plan_outcomes_baseline_score" CHECK ("care_plan_outcomes"."baseline_score" BETWEEN 1 AND 5),
+	CONSTRAINT "chk_care_plan_outcomes_target_score" CHECK ("care_plan_outcomes"."target_score" BETWEEN 1 AND 5)
 );
 --> statement-breakpoint
 CREATE TABLE "care_plans" (
@@ -89,13 +91,15 @@ CREATE TABLE "outcome_evaluations" (
 	"score" integer NOT NULL,
 	"professional_id" text,
 	"notes" text,
-	"evaluated_at" timestamp with time zone NOT NULL
+	"evaluated_at" timestamp with time zone NOT NULL,
+	CONSTRAINT "chk_outcome_evaluations_score" CHECK ("outcome_evaluations"."score" BETWEEN 1 AND 5)
 );
 --> statement-breakpoint
 CREATE TABLE "taxonomy_linkages" (
 	"diagnosis_code" text NOT NULL,
 	"role" text NOT NULL,
-	"target_code" text NOT NULL
+	"target_code" text NOT NULL,
+	CONSTRAINT "taxonomy_linkages_diagnosis_code_role_target_code_pk" PRIMARY KEY("diagnosis_code","role","target_code")
 );
 --> statement-breakpoint
 ALTER TABLE "care_plan_diagnoses" ADD CONSTRAINT "care_plan_diagnoses_care_plan_id_care_plans_id_fk" FOREIGN KEY ("care_plan_id") REFERENCES "public"."care_plans"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -121,5 +125,4 @@ CREATE INDEX "idx_nursing_interventions_label" ON "nursing_interventions" USING 
 CREATE UNIQUE INDEX "uq_nursing_outcomes_code_edition" ON "nursing_outcomes" USING btree ("code","edition");--> statement-breakpoint
 CREATE INDEX "idx_nursing_outcomes_label" ON "nursing_outcomes" USING btree ("label");--> statement-breakpoint
 CREATE INDEX "idx_outcome_evaluations_outcome" ON "outcome_evaluations" USING btree ("outcome_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "uq_taxonomy_linkages" ON "taxonomy_linkages" USING btree ("diagnosis_code","role","target_code");--> statement-breakpoint
 CREATE INDEX "idx_taxonomy_linkages_diagnosis" ON "taxonomy_linkages" USING btree ("diagnosis_code");

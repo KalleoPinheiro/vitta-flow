@@ -1,9 +1,11 @@
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   index,
   integer,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -492,7 +494,7 @@ export const taxonomyLinkages = pgTable(
     targetCode: text("target_code").notNull(),
   },
   (table) => [
-    uniqueIndex("uq_taxonomy_linkages").on(table.diagnosisCode, table.role, table.targetCode),
+    primaryKey({ columns: [table.diagnosisCode, table.role, table.targetCode] }),
     index("idx_taxonomy_linkages_diagnosis").on(table.diagnosisCode),
   ],
 );
@@ -547,7 +549,11 @@ export const carePlanOutcomes = pgTable(
     deadline: timestamp("deadline", { withTimezone: true, mode: "date" }),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
   },
-  (table) => [index("idx_care_plan_outcomes_plan").on(table.carePlanId)],
+  (table) => [
+    index("idx_care_plan_outcomes_plan").on(table.carePlanId),
+    check("chk_care_plan_outcomes_baseline_score", sql`${table.baselineScore} BETWEEN 1 AND 5`),
+    check("chk_care_plan_outcomes_target_score", sql`${table.targetScore} BETWEEN 1 AND 5`),
+  ],
 );
 
 export const carePlanInterventions = pgTable(
@@ -578,7 +584,10 @@ export const outcomeEvaluations = pgTable(
     notes: text("notes"),
     evaluatedAt: timestamp("evaluated_at", { withTimezone: true, mode: "date" }).notNull(),
   },
-  (table) => [index("idx_outcome_evaluations_outcome").on(table.outcomeId)],
+  (table) => [
+    index("idx_outcome_evaluations_outcome").on(table.outcomeId),
+    check("chk_outcome_evaluations_score", sql`${table.score} BETWEEN 1 AND 5`),
+  ],
 );
 
 // Execução de intervenção NIC prescrita — append-only.

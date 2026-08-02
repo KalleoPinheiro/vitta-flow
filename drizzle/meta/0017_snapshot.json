@@ -1,5 +1,5 @@
 {
-  "id": "c59f9f1c-13cb-46a0-860b-c64b78f702f9",
+  "id": "5f129d14-b97c-4b4b-af19-2e90d7ec96e1",
   "prevId": "d1fd93a6-168d-488c-a007-fb8acf616196",
   "version": "7",
   "dialect": "postgresql",
@@ -605,7 +605,16 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "chk_care_plan_outcomes_baseline_score": {
+          "name": "chk_care_plan_outcomes_baseline_score",
+          "value": "\"care_plan_outcomes\".\"baseline_score\" BETWEEN 1 AND 5"
+        },
+        "chk_care_plan_outcomes_target_score": {
+          "name": "chk_care_plan_outcomes_target_score",
+          "value": "\"care_plan_outcomes\".\"target_score\" BETWEEN 1 AND 5"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.care_plans": {
@@ -2054,7 +2063,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "chk_outcome_evaluations_score": {
+          "name": "chk_outcome_evaluations_score",
+          "value": "\"outcome_evaluations\".\"score\" BETWEEN 1 AND 5"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.package_consumptions": {
@@ -3087,33 +3101,6 @@
         }
       },
       "indexes": {
-        "uq_taxonomy_linkages": {
-          "name": "uq_taxonomy_linkages",
-          "columns": [
-            {
-              "expression": "diagnosis_code",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "role",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "target_code",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "idx_taxonomy_linkages_diagnosis": {
           "name": "idx_taxonomy_linkages_diagnosis",
           "columns": [
@@ -3131,7 +3118,16 @@
         }
       },
       "foreignKeys": {},
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "taxonomy_linkages_diagnosis_code_role_target_code_pk": {
+          "name": "taxonomy_linkages_diagnosis_code_role_target_code_pk",
+          "columns": [
+            "diagnosis_code",
+            "role",
+            "target_code"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},

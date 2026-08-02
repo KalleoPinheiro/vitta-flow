@@ -8,12 +8,36 @@ import { getRequestSession } from "@/lib/auth/request-session";
 import { recordAudit } from "@/lib/audit";
 import { toCarePlanDiagnosisDto } from "@/lib/dto";
 
-const diagnosisSchema = z.object({
-  diagnosisCode: z.string().min(1).max(20),
-  type: z.enum(CARE_PLAN_DIAGNOSIS_TYPES),
-  relatedFactors: z.string().max(2000).nullish(),
-  definingCharacteristics: z.string().max(2000).nullish(),
-});
+const diagnosisSchema = z
+  .object({
+    diagnosisCode: z.string().min(1).max(20),
+    type: z.enum(CARE_PLAN_DIAGNOSIS_TYPES),
+    relatedFactors: z.string().max(2000).nullish(),
+    definingCharacteristics: z.string().max(2000).nullish(),
+  })
+  .superRefine((body, ctx) => {
+    if ((body.type === "risco" || body.type === "real") && !body.relatedFactors) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["relatedFactors"],
+        message: "Fator relacionado é obrigatório para este tipo de diagnóstico",
+      });
+    }
+    if ((body.type === "real" || body.type === "promocao-saude") && !body.definingCharacteristics) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["definingCharacteristics"],
+        message: "Característica definidora é obrigatória para este tipo de diagnóstico",
+      });
+    }
+    if (body.type === "risco" && body.definingCharacteristics) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["definingCharacteristics"],
+        message: "Diagnóstico de risco não tem características definidoras",
+      });
+    }
+  });
 
 type RouteContext = { params: Promise<{ id: string }> };
 

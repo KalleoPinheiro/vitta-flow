@@ -7,12 +7,17 @@ import { getRequestSession } from "@/lib/auth/request-session";
 import { recordAudit } from "@/lib/audit";
 import { toCarePlanOutcomeDto } from "@/lib/dto";
 
-const outcomeSchema = z.object({
-  outcomeCode: z.string().min(1).max(20),
-  baselineScore: z.number().int().min(1).max(5),
-  targetScore: z.number().int().min(1).max(5),
-  deadline: z.iso.datetime().nullish(),
-});
+const outcomeSchema = z
+  .object({
+    outcomeCode: z.string().min(1).max(20),
+    baselineScore: z.number().int().min(1).max(5),
+    targetScore: z.number().int().min(1).max(5),
+    deadline: z.iso.datetime().nullish(),
+  })
+  .refine((body) => body.targetScore > body.baselineScore, {
+    error: "Meta deve ser maior que a pontuação basal",
+    path: ["targetScore"],
+  });
 
 type RouteContext = { params: Promise<{ id: string }> };
 

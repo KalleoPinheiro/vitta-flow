@@ -217,6 +217,21 @@ describe("Feature: Rotas do plano de cuidados (SAE) e catálogo de taxonomias", 
     expect(response.status).toBe(400);
   });
 
+  it("Dado diagnóstico real sem etiologia, Quando POST diagnoses, Então rejeita no schema com 400", async () => {
+    const response = await diagnosesRoute.POST(
+      jsonRequest(`/api/care-plans/${carePlanId}/diagnoses`, "POST", {
+        diagnosisCode: "00046",
+        type: "real",
+        definingCharacteristics: "Ruptura da epiderme",
+      }),
+      context(carePlanId),
+    );
+    const body = (await response.json()) as Envelope<never>;
+
+    expect(response.status).toBe(400);
+    expect(body.error).toMatch(/relatedFactors/);
+  });
+
   it("Dado código fora do catálogo, Quando POST diagnoses, Então retorna 404", async () => {
     const response = await diagnosesRoute.POST(
       jsonRequest(`/api/care-plans/${carePlanId}/diagnoses`, "POST", {
@@ -247,7 +262,7 @@ describe("Feature: Rotas do plano de cuidados (SAE) e catálogo de taxonomias", 
     outcomeId = body.data.id;
   });
 
-  it("Dado meta menor ou igual à basal, Quando POST outcomes, Então retorna 400", async () => {
+  it("Dado meta menor ou igual à basal, Quando POST outcomes, Então rejeita no schema com 400", async () => {
     const response = await outcomesRoute.POST(
       jsonRequest(`/api/care-plans/${carePlanId}/outcomes`, "POST", {
         outcomeCode: "1101",
@@ -256,8 +271,10 @@ describe("Feature: Rotas do plano de cuidados (SAE) e catálogo de taxonomias", 
       }),
       context(carePlanId),
     );
+    const body = (await response.json()) as Envelope<never>;
 
     expect(response.status).toBe(400);
+    expect(body.error).toMatch(/Meta deve ser maior/i);
   });
 
   it("Dado intervenção catalogada, Quando POST interventions, Então prescreve intervenção", async () => {

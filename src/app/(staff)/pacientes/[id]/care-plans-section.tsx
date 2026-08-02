@@ -639,13 +639,17 @@ function AddDiagnosisForm({ carePlanId, onSaved }: { carePlanId: string; onSaved
               />
             </label>
           )}
-          {type === "real" && (
+          {(type === "real" || type === "promocao-saude") && (
             <label className="text-sm font-medium">
               Evidenciado por (características definidoras)
               <input
                 value={definingCharacteristics}
                 onChange={(e) => setDefiningCharacteristics(e.target.value)}
-                placeholder="Sinais e sintomas observados"
+                placeholder={
+                  type === "promocao-saude"
+                    ? "Motivação/desejo expresso pelo paciente"
+                    : "Sinais e sintomas observados"
+                }
                 className={`mt-1 ${inputClass}`}
               />
             </label>

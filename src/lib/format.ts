@@ -86,7 +86,7 @@ export function pesSentence(diagnosis: CarePlanDiagnosisDto): string {
     return `Risco de ${diagnosis.diagnosisLabel} relacionado a ${diagnosis.relatedFactors}`;
   }
   if (diagnosis.type === "promocao-saude") {
-    return diagnosis.diagnosisLabel;
+    return `${diagnosis.diagnosisLabel} evidenciado por ${diagnosis.definingCharacteristics}`;
   }
   return `${diagnosis.diagnosisLabel} relacionado a ${diagnosis.relatedFactors}, evidenciado por ${diagnosis.definingCharacteristics}`;
 }

@@ -161,16 +161,29 @@ describe("Feature: Diagnóstico de enfermagem no formato PES", () => {
   });
 
   describe("Cenário: diagnóstico de promoção da saúde", () => {
-    it("Dado apenas o código, Quando criar, Então diagnóstico é aceito sem etiologia/evidência", () => {
+    it("Dado motivação expressa, Quando criar, Então diagnóstico é aceito sem etiologia", () => {
       const diagnosis = CarePlanDiagnosis.create({
         carePlanId: "cp1",
         diagnosisCode: "00162",
         type: "promocao-saude",
+        definingCharacteristics: "Expressa desejo de aprender autocuidado da estomia",
       });
 
       expect(diagnosis.type).toBe("promocao-saude");
       expect(diagnosis.relatedFactors).toBeNull();
-      expect(diagnosis.definingCharacteristics).toBeNull();
+      expect(diagnosis.definingCharacteristics).toBe(
+        "Expressa desejo de aprender autocuidado da estomia",
+      );
+    });
+
+    it("Dado diagnóstico de promoção da saúde sem evidência, Quando criar, Então lança ValidationError", () => {
+      expect(() =>
+        CarePlanDiagnosis.create({
+          carePlanId: "cp1",
+          diagnosisCode: "00162",
+          type: "promocao-saude",
+        }),
+      ).toThrow(ValidationError);
     });
   });
 

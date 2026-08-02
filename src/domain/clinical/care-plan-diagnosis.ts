@@ -22,7 +22,8 @@ export interface CarePlanDiagnosisState extends CarePlanDiagnosisProps {
 /**
  * Diagnóstico de enfermagem prescrito no formato PES (Problema-Etiologia-Sinais/sintomas).
  * Diagnóstico real exige etiologia e evidência; diagnóstico de risco exige etiologia mas
- * rejeita evidência (um risco, por definição, ainda não se manifestou).
+ * rejeita evidência (um risco, por definição, ainda não se manifestou); diagnóstico de
+ * promoção da saúde não tem etiologia, mas exige evidência (motivação/desejo expresso).
  */
 export class CarePlanDiagnosis {
   private constructor(private readonly state: CarePlanDiagnosisState) {}
@@ -73,6 +74,11 @@ export class CarePlanDiagnosis {
     if (type === "real" && !definingCharacteristics) {
       throw new ValidationError(
         "Diagnóstico real exige características definidoras (evidenciado por)",
+      );
+    }
+    if (type === "promocao-saude" && !definingCharacteristics) {
+      throw new ValidationError(
+        "Diagnóstico de promoção da saúde exige características definidoras (evidenciado por)",
       );
     }
   }

@@ -56,3 +56,21 @@ export const PAYMENT_METHOD_LABELS: Record<string, string> = {
   insurance: "Convênio",
   transfer: "Transferência",
 };
+
+export const CARE_PLAN_STATUS_LABELS: Record<string, string> = {
+  active: "Ativo",
+  resolved: "Resolvido",
+  cancelled: "Cancelado",
+};
+
+export const CARE_PLAN_DIAGNOSIS_TYPE_LABELS: Record<string, string> = {
+  real: "Real",
+  risco: "Risco",
+  "promocao-saude": "Promoção da saúde",
+};
+
+export const INTERVENTION_PRIORITY_LABELS: Record<string, string> = {
+  baixa: "Baixa",
+  media: "Média",
+  alta: "Alta",
+};

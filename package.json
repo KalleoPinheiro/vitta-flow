@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "import-taxonomy": "tsx scripts/import-taxonomy.ts"
   },
   "dependencies": {
     "@still-void/ui": "^1.1.0",
@@ -42,6 +43,7 @@
     "eslint-config-next": "16.2.10",
     "jsdom": "^29.1.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.4",
     "typescript": "^5",
     "vitest": "^4.1.10"
   }

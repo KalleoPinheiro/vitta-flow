@@ -1,0 +1,36 @@
+import type { NextRequest } from "next/server";
+import { z } from "zod";
+import { getRepositories } from "@/infrastructure/container";
+import { EvaluateOutcome } from "@/application/clinical/evaluate-outcome";
+import { handleRequest } from "@/lib/api-response";
+import { getRequestSession } from "@/lib/auth/request-session";
+import { recordAudit } from "@/lib/audit";
+import { toOutcomeEvaluationDto } from "@/lib/dto";
+
+const evaluationSchema = z.object({
+  score: z.number().int().min(1).max(5),
+  professionalId: z.string().min(1).nullish(),
+  notes: z.string().max(2000).nullish(),
+});
+
+type RouteContext = { params: Promise<{ id: string }> };
+
+export async function POST(request: NextRequest, context: RouteContext) {
+  return handleRequest(async () => {
+    const { id } = await context.params;
+    const body = evaluationSchema.parse(await request.json());
+    const { outcomeEvaluations, carePlanOutcomes, auditEvents } = await getRepositories();
+    const evaluation = await new EvaluateOutcome(outcomeEvaluations, carePlanOutcomes).execute({
+      outcomeId: id,
+      score: body.score,
+      professionalId: body.professionalId ?? null,
+      notes: body.notes ?? null,
+    });
+    recordAudit(auditEvents, getRequestSession(request), {
+      action: "create",
+      resourceType: "outcome_evaluation",
+      resourceId: evaluation.id,
+    });
+    return toOutcomeEvaluationDto(evaluation);
+  });
+}

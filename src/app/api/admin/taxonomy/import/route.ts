@@ -7,8 +7,8 @@ import {
   STOMATHERAPY_LINKAGES,
   STOMATHERAPY_OUTCOMES,
 } from "@/infrastructure/persistence/taxonomy-seed/stomatherapy-seed";
-import { fail, handleRequest } from "@/lib/api-response";
-import { getRequestSession } from "@/lib/auth/request-session";
+import { handleRequest } from "@/lib/api-response";
+import { requireStaffSession } from "@/lib/auth/require-session";
 import { recordAudit } from "@/lib/audit";
 
 /**
@@ -17,13 +17,9 @@ import { recordAudit } from "@/lib/audit";
  * catálogo licenciado do cliente via `scripts/import-taxonomy.ts <arquivo>`.
  */
 export async function POST(request: NextRequest) {
-  const session = getRequestSession(request);
-  if (!session) {
-    return fail("Não autenticado", 401);
-  }
-  if (session.role !== "admin") {
-    return fail("Rota exclusiva de administração", 403);
-  }
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+  const { session } = guard;
 
   return handleRequest(async () => {
     const { nursingDiagnoses, nursingOutcomes, nursingInterventions, taxonomyLinkages, auditEvents } =

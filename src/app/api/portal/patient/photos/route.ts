@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { getRepositories } from "@/infrastructure/container";
 import { AddConditionPhoto } from "@/application/clinical/add-condition-photo";
 import { MAX_PHOTO_BYTES } from "@/domain/clinical/condition-photo";
-import { getRequestSession } from "@/lib/auth/request-session";
+import { requirePortalSession } from "@/lib/auth/require-session";
 import { handleRequest, fail } from "@/lib/api-response";
 import { recordAudit } from "@/lib/audit";
 import { NotFoundError, ValidationError } from "@/domain/shared/errors";
@@ -13,13 +13,9 @@ import { NotFoundError, ValidationError } from "@/domain/shared/errors";
  * triagem da equipe como origem "patient".
  */
 export async function POST(request: NextRequest) {
-  const session = getRequestSession(request);
-  if (!session) {
-    return fail("Não autenticado", 401);
-  }
-  if (session.role !== "patient") {
-    return fail("Rota exclusiva do portal do paciente", 403);
-  }
+  const guard = requirePortalSession(request, "patient");
+  if (!guard.ok) return guard.response;
+  const { session } = guard;
 
   const form = await request.formData().catch(() => null);
   const file = form?.get("file");

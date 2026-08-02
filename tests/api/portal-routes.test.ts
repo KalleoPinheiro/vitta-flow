@@ -1,10 +1,16 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { NextRequest } from "next/server";
-import { adminCookieHeader } from "../support/session";
+import { jsonRequest as staffRequest } from "../support/request";
 
 process.env.VITTA_DB_DRIVER = "pglite";
 process.env.AUTH_SECRET = "test-secret-e2e";
 
+/**
+ * Os testes de portal usam este `jsonRequest` local, sem cookie por padrão,
+ * para exercitar o 401 de verdade. Setup via rotas da equipe (que exigem papel
+ * admin) usa `staffRequest`, autenticado por padrão — importado do builder
+ * compartilhado em `tests/support/request.ts`.
+ */
 const jsonRequest = (
   url: string,
   method: string,
@@ -16,14 +22,6 @@ const jsonRequest = (
     body: body === undefined ? undefined : JSON.stringify(body),
     headers: { "Content-Type": "application/json", ...headers },
   });
-
-/**
- * Setup via rotas da equipe: estas exigem papel admin (requireStaffSession).
- * Os testes de portal continuam usando `jsonRequest` sem cookie, para exercitar
- * o 401 de verdade.
- */
-const staffRequest = (url: string, method: string, body?: unknown) =>
-  jsonRequest(url, method, body, adminCookieHeader());
 
 interface Envelope<T> {
   success: boolean;

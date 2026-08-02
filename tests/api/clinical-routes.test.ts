@@ -1,15 +1,7 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { NextRequest } from "next/server";
-import { adminCookieHeader } from "../support/session";
+import { jsonRequest, multipartRequest } from "../support/request";
 
 process.env.VITTA_DB_DRIVER = "pglite";
-
-const jsonRequest = (url: string, method: string, body?: unknown) =>
-  new NextRequest(`http://localhost${url}`, {
-    method,
-    body: body === undefined ? undefined : JSON.stringify(body),
-    headers: { "Content-Type": "application/json", ...adminCookieHeader() },
-  });
 
 const PNG_BYTES = new Uint8Array([
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
@@ -18,11 +10,7 @@ const PNG_BYTES = new Uint8Array([
 const NOT_IMAGE_BYTES = new Uint8Array([0x00, 0x01, 0x02, 0x03, 0x04, 0x05]);
 
 const photoUploadRequest = (conditionId: string, formData: FormData) =>
-  new NextRequest(`http://localhost/api/conditions/${conditionId}/photos`, {
-    method: "POST",
-    body: formData,
-    headers: adminCookieHeader(),
-  });
+  multipartRequest(`/api/conditions/${conditionId}/photos`, formData);
 
 interface Envelope<T> {
   success: boolean;

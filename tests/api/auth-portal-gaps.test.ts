@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { adminCookieHeader } from "../support/session";
+import { jsonRequest } from "../support/request";
 
 process.env.VITTA_DB_DRIVER = "pglite";
 
@@ -44,18 +44,6 @@ vi.mock("googleapis", () => {
     },
   };
 });
-
-const jsonRequest = (
-  url: string,
-  method: string,
-  body?: unknown,
-  headers?: Record<string, string>,
-) =>
-  new NextRequest(`http://localhost${url}`, {
-    method,
-    body: body === undefined ? undefined : JSON.stringify(body),
-    headers: { "Content-Type": "application/json", ...adminCookieHeader(), ...headers },
-  });
 
 interface Envelope<T> {
   success: boolean;

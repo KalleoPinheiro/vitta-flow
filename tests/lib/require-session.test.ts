@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { requirePortalSession, requireStaffSession } from "@/lib/auth/require-session";
+import { createSessionToken } from "@/lib/auth/session";
 import { resetAuthModeWarning } from "@/lib/auth/access-policy";
 import { cookieHeaderFor } from "../support/session";
 
@@ -66,6 +67,17 @@ describe("Feature: Guarda de sessão nas rotas (camada 2 de autorização)", () 
     );
 
     it("Dado cookie assinado por outro segredo, Então responde 401", () => {
+      const token = createSessionToken("outro-segredo", Date.now() + 3_600_000, "x@y.com", "admin");
+      const forjado = { cookie: `vitta_session=${token}` };
+
+      const guard = requireStaffSession(request(forjado));
+
+      expect(guard.ok).toBe(false);
+      if (guard.ok) return;
+      expect(guard.response.status).toBe(401);
+    });
+
+    it("Dado cookie malformado, Então responde 401", () => {
       const forjado = { cookie: "vitta_session=payload.assinatura-invalida" };
 
       const guard = requireStaffSession(request(forjado));

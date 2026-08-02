@@ -16,6 +16,7 @@ const AUTH_ENV_KEYS = [
   "GOOGLE_CLIENT_SECRET",
   "APP_URL",
   "GOOGLE_ALLOWED_EMAILS",
+  "VITTA_ALLOW_OPEN_MODE",
 ] as const;
 
 describe("Feature: Política de acesso compartilhada entre proxy e rotas", () => {
@@ -120,8 +121,32 @@ describe("Feature: Política de acesso compartilhada entre proxy e rotas", () =>
       expect(resolveAuthMode()).toBe("unconfigured");
     });
 
-    it("Dado ambiente de desenvolvimento sem autenticação, Então o modo é 'open' e avisa uma única vez", () => {
+    it("Dado produção COM VITTA_ALLOW_OPEN_MODE=true, Então ainda assim é 'unconfigured'", () => {
+      vi.stubEnv("NODE_ENV", "production");
+      process.env.VITTA_ALLOW_OPEN_MODE = "true";
+
+      expect(resolveAuthMode()).toBe("unconfigured");
+    });
+
+    it("Dado desenvolvimento sem autenticação e SEM o opt-in, Então é 'unconfigured' (fail-closed)", () => {
       vi.stubEnv("NODE_ENV", "development");
+
+      expect(resolveAuthMode()).toBe("unconfigured");
+    });
+
+    it.each(["1", "sim", "TRUE", ""])(
+      "Dado VITTA_ALLOW_OPEN_MODE=%j (diferente de 'true'), Então não libera",
+      (value) => {
+        vi.stubEnv("NODE_ENV", "development");
+        process.env.VITTA_ALLOW_OPEN_MODE = value;
+
+        expect(resolveAuthMode()).toBe("unconfigured");
+      },
+    );
+
+    it("Dado desenvolvimento com o opt-in explícito, Então o modo é 'open' e avisa uma única vez", () => {
+      vi.stubEnv("NODE_ENV", "development");
+      process.env.VITTA_ALLOW_OPEN_MODE = "true";
 
       expect(resolveAuthMode()).toBe("open");
       expect(resolveAuthMode()).toBe("open");

@@ -39,6 +39,14 @@ export const STAFF_ONLY_MESSAGE = "Acesso restrito à equipe da clínica";
 export const AUTH_NOT_CONFIGURED_MESSAGE =
   "Autenticação não configurada: defina AUTH_SECRET e AUTH_PASSWORD (ou login Google via GOOGLE_CLIENT_ID/SECRET + APP_URL + GOOGLE_ALLOWED_EMAILS)";
 
+/**
+ * Opt-in explícito para rodar SEM autenticação (desenvolvimento, testes E2E do
+ * cenário "modo aberto"). Sem esta variável o app é fail-closed: auth ausente
+ * responde 503 em vez de liberar o prontuário. Antes, bastava `NODE_ENV` não ser
+ * "production" — um deploy self-hosted que esquecesse essa variável ficava aberto.
+ */
+export const ALLOW_OPEN_MODE_ENV = "VITTA_ALLOW_OPEN_MODE";
+
 export function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some((path) => path === pathname);
 }
@@ -74,7 +82,7 @@ function warnAuthDisabledOnce(): void {
   }
   warnedAuthDisabled = true;
   console.warn(
-    "⚠ Autenticação DESATIVADA — configure AUTH_SECRET + senha ou Google (permitido apenas em desenvolvimento)",
+    `⚠ Autenticação DESATIVADA por ${ALLOW_OPEN_MODE_ENV}=true — nenhuma rota exige sessão (permitido apenas fora de produção)`,
   );
 }
 
@@ -96,7 +104,8 @@ export function resolveAuthMode(): AuthMode {
   if (isAuthUsable()) {
     return "configured";
   }
-  if (isProduction()) {
+  // Fail-closed: liberar exige NÃO ser produção E o opt-in explícito.
+  if (isProduction() || process.env[ALLOW_OPEN_MODE_ENV] !== "true") {
     return "unconfigured";
   }
   warnAuthDisabledOnce();

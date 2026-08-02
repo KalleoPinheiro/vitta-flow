@@ -12,6 +12,7 @@ const AUTH_ENV_KEYS = [
   "APP_URL",
   "GOOGLE_ALLOWED_EMAILS",
   "API_RATE_LIMIT_MAX",
+  "VITTA_ALLOW_OPEN_MODE",
 ] as const;
 
 /**
@@ -126,10 +127,21 @@ describe("Feature: Proxy (camada 1 de autorização, antigo middleware)", () => 
       expect((await body(response)).error).toMatch(/Autenticação não configurada/);
     });
 
-    it("Dado desenvolvimento sem autenticação, Então libera (modo aberto)", async () => {
+    it("Dado desenvolvimento sem autenticação e sem o opt-in, Então responde 503 (fail-closed)", async () => {
       delete process.env.AUTH_SECRET;
       delete process.env.AUTH_PASSWORD;
       vi.stubEnv("NODE_ENV", "development");
+      const proxy = await loadProxy();
+
+      expect(proxy(request("/api/patients")).status).toBe(503);
+      expect(proxy(request("/agenda")).status).toBe(503);
+    });
+
+    it("Dado VITTA_ALLOW_OPEN_MODE=true fora de produção, Então libera (modo aberto)", async () => {
+      delete process.env.AUTH_SECRET;
+      delete process.env.AUTH_PASSWORD;
+      vi.stubEnv("NODE_ENV", "development");
+      process.env.VITTA_ALLOW_OPEN_MODE = "true";
       const proxy = await loadProxy();
 
       expect(isNext(proxy(request("/api/patients")))).toBe(true);

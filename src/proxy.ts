@@ -9,6 +9,7 @@ import {
 } from "@/lib/auth/access-policy";
 import { getRequestSession } from "@/lib/auth/request-session";
 import { RateLimiter } from "@/lib/auth/rate-limit";
+import { fail } from "@/lib/api-response";
 
 /**
  * Camada 1 de autorização (borda). No Next.js 16 este arquivo se chama `proxy.ts`
@@ -33,43 +34,27 @@ const isApiPath = (pathname: string): boolean => pathname.startsWith("/api/");
 
 function unauthorized(request: NextRequest): NextResponse {
   if (isApiPath(request.nextUrl.pathname)) {
-    return NextResponse.json(
-      { success: false, data: null, error: UNAUTHENTICATED_MESSAGE },
-      { status: 401 },
-    );
+    return fail(UNAUTHENTICATED_MESSAGE, 401);
   }
   return NextResponse.redirect(new URL("/login", request.url));
 }
 
 function forbidden(request: NextRequest): NextResponse {
   if (isApiPath(request.nextUrl.pathname)) {
-    return NextResponse.json(
-      { success: false, data: null, error: STAFF_ONLY_MESSAGE },
-      { status: 403 },
-    );
+    return fail(STAFF_ONLY_MESSAGE, 403);
   }
   return NextResponse.redirect(new URL("/portal", request.url));
 }
 
 function authNotConfiguredResponse(): NextResponse {
-  return NextResponse.json(
-    { success: false, data: null, error: AUTH_NOT_CONFIGURED_MESSAGE },
-    { status: 503 },
-  );
+  return fail(AUTH_NOT_CONFIGURED_MESSAGE, 503);
 }
 
 export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
 
   if (isApiPath(pathname) && !API_RATE_LIMIT.allow(clientIp(request))) {
-    return NextResponse.json(
-      {
-        success: false,
-        data: null,
-        error: "Limite de requisições excedido, tente novamente em instantes",
-      },
-      { status: 429 },
-    );
+    return fail("Limite de requisições excedido, tente novamente em instantes", 429);
   }
 
   if (isPublicPath(pathname)) {

@@ -10,16 +10,17 @@ A Issue #4 relatava que **nenhuma rota `/api/*` exigia sessão válida**, com ba
 observação de que "não existe `middleware.ts` no repositório".
 
 **A premissa estava incorreta.** No Next.js 16 o `middleware.ts` foi renomeado para
-`proxy.ts` (ver `node_modules/next/dist/docs/01-app/01-getting-started/16-proxy.md`:
-*"Starting with Next.js 16, Middleware is now called Proxy"*). O arquivo existe em
+`proxy.ts` (ver <https://nextjs.org/docs/app/getting-started/proxy>, Next.js 16:
+*"Starting with Next.js 16, Middleware is now called Proxy to better reflect its
+purpose"*). O arquivo existe em
 `src/proxy.ts` e já fazia deny-by-default em todas as rotas, verificação HMAC do
 cookie, RBAC por papel e rate limit. `curl -X POST /api/patients` sem cookie já
 respondia 401 antes desta mudança — a exposição relatada não existia.
 
 O que **era** problema real:
 
-1. **Camada única.** A própria doc do Next 16 diz: *"Proxy is not intended to be used
-   as a full session management or authorization solution"* — é uma checagem otimista
+1. **Camada única.** A própria doc do Next 16 diz: *"it should not be used as a full
+   session management or authorization solution"* — é uma checagem otimista
    de borda. Se o `matcher` fosse editado sem cuidado, se uma rota fosse servida fora
    do pipeline do proxy, ou se um handler nascesse num grupo liberado pela allowlist,
    não havia segunda barreira. As rotas de equipe não sabiam quem era o chamador — 21
@@ -35,7 +36,7 @@ O que **era** problema real:
 
 | Opção | Prós | Contras |
 |---|---|---|
-| **A. Proxy + guarda por handler** | Defesa em profundidade; é o que a doc do Next 16 recomenda; auditoria com ator real | Uma linha a mais por handler (~83 handlers) |
+| **A. Proxy + guarda por handler** | Defesa em profundidade; é o que a doc do Next 16 recomenda; auditoria com ator real | Duas linhas a mais por handler (~83 handlers) |
 | B. Só o proxy (status quo) | Zero mudança | Camada única; nada impede rota nova desprotegida; auditoria anônima |
 | C. Só guarda por handler (remover o proxy) | Uma fonte de verdade | Perde o redirect de páginas e o rate limit de borda; I/O antes de barrar |
 | D. Wrapper `withAuth(handler)` | Impossível esquecer | Esconde a assinatura do handler, atrapalha os tipos do Next e o `params` tipado |

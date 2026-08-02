@@ -16,7 +16,7 @@ Toda a API e todas as páginas eram públicas: qualquer pessoa com acesso à URL
 - Senha via `AUTH_PASSWORD` + segredo de assinatura `AUTH_SECRET` (env, nunca em código).
 - Login com comparação em tempo constante (`timingSafeEqual`) — evita timing attack.
 - Cookie de sessão `HttpOnly` + `SameSite=Lax` + `Secure` em produção, assinado com HMAC-SHA256 e expiração de 12h — não é possível forjar sem o segredo.
-- `src/proxy.ts` protege **todas** as rotas e páginas (deny-by-default; allowlist: `/login`, `/api/auth/login`, assets). No Next.js 16 o `middleware.ts` passou a se chamar `proxy.ts` — o arquivo sempre existiu, só mudou de nome.
+- `src/proxy.ts` protege **todas** as rotas e páginas (deny-by-default; allowlist declarada em `PUBLIC_PATHS` de `src/lib/auth/access-policy.ts`: `/login`, os endpoints de login/OAuth em `/api/auth/*` e `/api/reminders/run`, que autentica por `x-cron-secret`). No Next.js 16 o `middleware.ts` passou a se chamar `proxy.ts` — o arquivo sempre existiu, só mudou de nome.
 - **Segunda camada (✅, Issue #4):** guarda dentro de cada route handler (`requireStaffSession`/`requirePortalSession`), porque a doc do Next 16 é explícita que o proxy é uma checagem otimista de borda e não deve ser a única barreira. Política única em `src/lib/auth/access-policy.ts`, consumida pelas duas camadas. Ver [ADR 002](adr/002-autorizacao-em-duas-camadas.md).
 - **Conformidade automática:** `tests/api/route-guard-conformance.test.ts` varre `src/app/api/**/route.ts` e quebra o build se um handler novo nascer sem guarda.
 - **Fail-closed em produção e em desenvolvimento**: sem `AUTH_PASSWORD`/`AUTH_SECRET` configurados o app responde 503 em todas as rotas. Rodar sem autenticação exige o opt-in explícito `VITTA_ALLOW_OPEN_MODE=true`, ignorado quando `NODE_ENV=production` (antes bastava não estar em produção para liberar tudo).
@@ -24,6 +24,7 @@ Toda a API e todas as páginas eram públicas: qualquer pessoa com acesso à URL
 - Logout limpa o cookie.
 
 ### 1.2 ALTO — Sem rate limiting em nenhum endpoint (API4 Unrestricted Resource Consumption)
+
 Scripts podiam criar pacientes/consultas ilimitados e derrubar o banco.
 **Correção (✅):** rate limit em memória no proxy (janela fixa por IP, 120 req/min para API; 5/min no login). Limitação conhecida: memória é por instância — para múltiplas réplicas, mover para Redis (**🗓 P1**).
 

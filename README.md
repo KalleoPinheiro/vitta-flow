@@ -52,7 +52,7 @@ npm run dev                      # http://localhost:3000
 
 \* Em produção é preciso ao menos um método de login: senha (`AUTH_PASSWORD`) ou Google (3 variáveis acima). Sem nenhum, o sistema responde 503 (fail-closed).
 
-**Modo aberto (`VITTA_ALLOW_OPEN_MODE=true`)**: sem autenticação configurada, o app responde **503 em todas as rotas** — inclusive em desenvolvimento. Para rodar sem login (demo local, testes E2E de navegação), defina `VITTA_ALLOW_OPEN_MODE=true`. A variável é ignorada quando `NODE_ENV=production`: **nunca** é possível rodar produção sem autenticação. Nesse modo o app registra a auditoria com o ator `anonymous`.
+**Modo aberto (`VITTA_ALLOW_OPEN_MODE`)**: sem autenticação configurada e sem esta variável, o app responde **503 em todas as rotas** — inclusive em desenvolvimento (fail-closed). Para rodar sem login (demo local, testes E2E de navegação), defina `VITTA_ALLOW_OPEN_MODE=true`. A variável é ignorada quando `NODE_ENV=production`: **nunca** é possível rodar produção sem autenticação. Em modo aberto o app registra a auditoria com o ator `anonymous`.
 
 **Login com Google + Calendar (recomendado)**: no Google Cloud Console crie um *OAuth client ID* (tipo Web application) com redirect URI `{APP_URL}/api/auth/google/callback` e habilite a **Google Calendar API**. Preencha `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `APP_URL` e `GOOGLE_ALLOWED_EMAILS`. A partir daí:
 - A tela de login mostra **"Entrar com Google"**; apenas emails da allowlist entram (qualquer outra conta é recusada).

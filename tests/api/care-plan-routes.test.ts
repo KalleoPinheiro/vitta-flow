@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { NextRequest } from "next/server";
+import { adminCookieHeader } from "../support/session";
 import { getRepositories } from "@/infrastructure/container";
 import { NursingDiagnosis } from "@/domain/taxonomy/nursing-diagnosis";
 import { NursingOutcome } from "@/domain/taxonomy/nursing-outcome";
@@ -12,7 +13,7 @@ const jsonRequest = (url: string, method: string, body?: unknown) =>
   new NextRequest(`http://localhost${url}`, {
     method,
     body: body === undefined ? undefined : JSON.stringify(body),
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...adminCookieHeader() },
   });
 
 interface Envelope<T> {

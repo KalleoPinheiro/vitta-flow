@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { NextRequest } from "next/server";
+import { adminCookieHeader } from "../support/session";
 
 process.env.VITTA_DB_DRIVER = "pglite";
 process.env.AUTH_SECRET = "test-secret-e2e";
@@ -15,6 +16,14 @@ const jsonRequest = (
     body: body === undefined ? undefined : JSON.stringify(body),
     headers: { "Content-Type": "application/json", ...headers },
   });
+
+/**
+ * Setup via rotas da equipe: estas exigem papel admin (requireStaffSession).
+ * Os testes de portal continuam usando `jsonRequest` sem cookie, para exercitar
+ * o 401 de verdade.
+ */
+const staffRequest = (url: string, method: string, body?: unknown) =>
+  jsonRequest(url, method, body, adminCookieHeader());
 
 interface Envelope<T> {
   success: boolean;
@@ -70,7 +79,7 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
     // Paciente principal
     patientEmail = "portal.paciente@example.com";
     const patientResponse = await patientsRoute.POST(
-      jsonRequest("/api/patients", "POST", {
+      staffRequest("/api/patients", "POST", {
         fullName: "Joana Portal",
         email: patientEmail,
         phone: "11977776666",
@@ -82,7 +91,7 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
     // Segundo paciente, para testar posse/negação
     otherPatientEmail = "portal.outro@example.com";
     const otherPatientResponse = await patientsRoute.POST(
-      jsonRequest("/api/patients", "POST", {
+      staffRequest("/api/patients", "POST", {
         fullName: "Carlos Outro",
         email: otherPatientEmail,
         phone: "11955554444",
@@ -94,7 +103,7 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
     // Parceiro
     partnerEmail = "portal.parceiro@example.com";
     const partnerResponse = await partnersRoute.POST(
-      jsonRequest("/api/partners", "POST", {
+      staffRequest("/api/partners", "POST", {
         fullName: "Dr. Parceiro Portal",
         email: partnerEmail,
         phone: "11933332222",
@@ -105,7 +114,7 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
 
     // Consulta futura do paciente principal
     const appointmentResponse = await appointmentsRoute.POST(
-      jsonRequest("/api/appointments", "POST", {
+      staffRequest("/api/appointments", "POST", {
         patientId,
         startsAt: "2027-01-11T12:00:00.000Z",
         endsAt: "2027-01-11T13:00:00.000Z",
@@ -118,7 +127,7 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
 
     // Condição clínica ativa para o paciente principal (para testes de foto)
     const conditionResponse = await conditionsRoute.POST(
-      jsonRequest(`/api/patients/${patientId}/conditions`, "POST", {
+      staffRequest(`/api/patients/${patientId}/conditions`, "POST", {
         kind: "wound",
         title: "Ferida abdominal",
       }),

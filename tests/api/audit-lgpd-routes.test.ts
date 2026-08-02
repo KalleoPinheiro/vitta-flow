@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { NextRequest } from "next/server";
+import { adminCookieHeader } from "../support/session";
 
 process.env.VITTA_DB_DRIVER = "pglite";
 process.env.AUTH_SECRET = "test-secret-audit-lgpd";
@@ -13,7 +14,7 @@ const jsonRequest = (
   new NextRequest(`http://localhost${url}`, {
     method,
     body: body === undefined ? undefined : JSON.stringify(body),
-    headers: { "Content-Type": "application/json", ...headers },
+    headers: { "Content-Type": "application/json", ...adminCookieHeader(), ...headers },
   });
 
 interface Envelope<T> {
@@ -59,7 +60,11 @@ describe("Feature: Rotas de auditoria, export LGPD, fotos (staff) e cron de lemb
     const form = new FormData();
     if (fields.file) form.set("file", fields.file);
     if (fields.assessmentId !== undefined) form.set("assessmentId", fields.assessmentId);
-    return new NextRequest(`http://localhost${url}`, { method: "POST", body: form });
+    return new NextRequest(`http://localhost${url}`, {
+      method: "POST",
+      body: form,
+      headers: adminCookieHeader(),
+    });
   };
 
   /** Fotos com origem "patient" (única que passa por triagem) via portal do paciente. */
@@ -334,7 +339,7 @@ describe("Feature: Rotas de auditoria, export LGPD, fotos (staff) e cron de lemb
     it("Dado fotos pendentes de revisão, Quando GET triage, Então retorna fila com nome do paciente", async () => {
       const pendingPhotoId = await uploadPatientOriginPhoto("está inflamado");
 
-      const response = await triageRoute.GET();
+      const response = await triageRoute.GET(jsonRequest("/api/photos/triage", "GET"));
       const body = (await response.json()) as Envelope<
         Array<{ id: string; patientName: string; patientId: string | null; conditionTitle: string }>
       >;
@@ -413,7 +418,7 @@ describe("Feature: Rotas de auditoria, export LGPD, fotos (staff) e cron de lemb
 
   describe("GET /api/clinic-info", () => {
     it("Dado nenhuma configuração de env, Quando GET clinic-info, Então retorna defaults neutros", async () => {
-      const response = await clinicInfoRoute.GET();
+      const response = await clinicInfoRoute.GET(jsonRequest("/api/clinic-info", "GET"));
       const body = (await response.json()) as Envelope<{ name: string; cnpj: string | null }>;
 
       expect(response.status).toBe(200);

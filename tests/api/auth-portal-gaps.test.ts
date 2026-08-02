@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, vi } from "vitest";
 import { NextRequest } from "next/server";
+import { adminCookieHeader } from "../support/session";
 
 process.env.VITTA_DB_DRIVER = "pglite";
 
@@ -53,7 +54,7 @@ const jsonRequest = (
   new NextRequest(`http://localhost${url}`, {
     method,
     body: body === undefined ? undefined : JSON.stringify(body),
-    headers: { "Content-Type": "application/json", ...headers },
+    headers: { "Content-Type": "application/json", ...adminCookieHeader(), ...headers },
   });
 
 interface Envelope<T> {

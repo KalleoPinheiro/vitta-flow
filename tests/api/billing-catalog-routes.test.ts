@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { NextRequest } from "next/server";
+import { adminCookieHeader } from "../support/session";
 
 process.env.VITTA_DB_DRIVER = "pglite";
 
@@ -7,7 +8,7 @@ const jsonRequest = (url: string, method: string, body?: unknown) =>
   new NextRequest(`http://localhost${url}`, {
     method,
     body: body === undefined ? undefined : JSON.stringify(body),
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...adminCookieHeader() },
   });
 
 interface Envelope<T> {
@@ -349,7 +350,7 @@ describe("Feature: Faturamento e catálogo de procedimentos (API)", () => {
     });
 
     it("Dado procedimentos cadastrados, Quando GET /api/procedures, Então lista todos", async () => {
-      const response = await proceduresRoute.GET();
+      const response = await proceduresRoute.GET(jsonRequest("/api/procedures", "GET"));
       const body = (await response.json()) as Envelope<ProcedureResponse[]>;
 
       expect(response.status).toBe(200);

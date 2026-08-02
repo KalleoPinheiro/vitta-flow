@@ -4,7 +4,7 @@ import { getRepositories } from "@/infrastructure/container";
 import { GetAnamnesis } from "@/application/clinical/get-anamnesis";
 import { UpsertAnamnesis } from "@/application/clinical/upsert-anamnesis";
 import { handleRequest } from "@/lib/api-response";
-import { getRequestSession } from "@/lib/auth/request-session";
+import { requireStaffSession } from "@/lib/auth/require-session";
 import { recordAudit } from "@/lib/audit";
 import { toAnamnesisDto } from "@/lib/dto";
 
@@ -19,11 +19,14 @@ const anamnesisSchema = z.object({
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(request: NextRequest, context: RouteContext) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { id } = await context.params;
     const { anamneses, auditEvents } = await getRepositories();
     const anamnesis = await new GetAnamnesis(anamneses).execute({ patientId: id });
-    recordAudit(auditEvents, getRequestSession(request), {
+    recordAudit(auditEvents, guard.session, {
       action: "read",
       resourceType: "anamnesis",
       resourceId: id,
@@ -34,6 +37,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
 }
 
 export async function PUT(request: NextRequest, context: RouteContext) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = anamnesisSchema.parse(await request.json());
@@ -42,7 +48,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       patientId: id,
       ...body,
     });
-    recordAudit(auditEvents, getRequestSession(request), {
+    recordAudit(auditEvents, guard.session, {
       action: "update",
       resourceType: "anamnesis",
       resourceId: id,

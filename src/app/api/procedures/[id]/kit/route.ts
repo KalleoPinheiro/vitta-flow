@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getRepositories } from "@/infrastructure/container";
 import { NotFoundError } from "@/domain/shared/errors";
 import { handleRequest } from "@/lib/api-response";
+import { requireStaffSession } from "@/lib/auth/require-session";
 
 const kitSchema = z.object({
   items: z
@@ -17,7 +18,10 @@ const kitSchema = z.object({
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(_request: NextRequest, context: RouteContext) {
+export async function GET(request: NextRequest, context: RouteContext) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { id } = await context.params;
     const { procedureKits } = await getRepositories();
@@ -26,6 +30,9 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 }
 
 export async function PUT(request: NextRequest, context: RouteContext) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = kitSchema.parse(await request.json());

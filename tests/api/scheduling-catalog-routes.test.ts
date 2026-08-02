@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { NextRequest } from "next/server";
+import { adminCookieHeader } from "../support/session";
 
 process.env.VITTA_DB_DRIVER = "pglite";
 
@@ -7,7 +8,7 @@ const jsonRequest = (url: string, method: string, body?: unknown) =>
   new NextRequest(`http://localhost${url}`, {
     method,
     body: body === undefined ? undefined : JSON.stringify(body),
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...adminCookieHeader() },
   });
 
 interface Envelope<T> {
@@ -167,7 +168,7 @@ describe("Feature: Recorrência de consultas, grade de horários, profissionais,
 
   describe("Grade de horários (GET/PUT /api/settings/schedule)", () => {
     it("Dado nenhuma configuração salva, Quando GET, Então retorna grade padrão", async () => {
-      const response = await scheduleSettingsRoute.GET();
+      const response = await scheduleSettingsRoute.GET(jsonRequest("/api/settings/schedule", "GET"));
       const body = (await response.json()) as Envelope<{
         config: { weekdays: number[] };
         isDefault: boolean;
@@ -199,7 +200,7 @@ describe("Feature: Recorrência de consultas, grade de horários, profissionais,
     });
 
     it("Dado configuração salva anteriormente, Quando GET, Então retorna configuração persistida", async () => {
-      const response = await scheduleSettingsRoute.GET();
+      const response = await scheduleSettingsRoute.GET(jsonRequest("/api/settings/schedule", "GET"));
       const body = (await response.json()) as Envelope<{
         config: { minGapMinutes: number };
         isDefault: boolean;
@@ -332,7 +333,7 @@ describe("Feature: Recorrência de consultas, grade de horários, profissionais,
     });
 
     it("Dado profissional cadastrado, Quando GET /api/professionals, Então lista", async () => {
-      const response = await professionalsRoute.GET();
+      const response = await professionalsRoute.GET(jsonRequest("/api/professionals", "GET"));
       const body = (await response.json()) as Envelope<Array<{ id: string }>>;
 
       expect(response.status).toBe(200);
@@ -406,7 +407,7 @@ describe("Feature: Recorrência de consultas, grade de horários, profissionais,
     });
 
     it("Dado parceiro cadastrado, Quando GET /api/partners, Então lista", async () => {
-      const response = await partnersRoute.GET();
+      const response = await partnersRoute.GET(jsonRequest("/api/partners", "GET"));
       const body = (await response.json()) as Envelope<Array<{ id: string }>>;
 
       expect(response.status).toBe(200);
@@ -488,7 +489,7 @@ describe("Feature: Recorrência de consultas, grade de horários, profissionais,
     });
 
     it("Dado contas cadastradas, Quando GET /api/accounts, Então lista todas", async () => {
-      const response = await accountsRoute.GET();
+      const response = await accountsRoute.GET(jsonRequest("/api/accounts", "GET"));
       const body = (await response.json()) as Envelope<Array<{ id: string }>>;
 
       expect(response.status).toBe(200);

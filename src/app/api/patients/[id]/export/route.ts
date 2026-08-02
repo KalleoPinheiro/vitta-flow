@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { getRepositories } from "@/infrastructure/container";
 import { NotFoundError } from "@/domain/shared/errors";
 import { handleRequest } from "@/lib/api-response";
-import { getRequestSession } from "@/lib/auth/request-session";
+import { requireStaffSession } from "@/lib/auth/require-session";
 import { recordAudit } from "@/lib/audit";
 import {
   toAnamnesisDto,
@@ -22,6 +22,9 @@ type RouteContext = { params: Promise<{ id: string }> };
  * JSON único com tudo que o sistema mantém sobre o paciente; geração auditada.
  */
 export async function GET(request: NextRequest, context: RouteContext) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { id } = await context.params;
     const repos = await getRepositories();
@@ -47,7 +50,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       repos.sessionPackages.findByPatientId(id),
     ]);
 
-    recordAudit(repos.auditEvents, getRequestSession(request), {
+    recordAudit(repos.auditEvents, guard.session, {
       action: "read",
       resourceType: "export",
       resourceId: id,

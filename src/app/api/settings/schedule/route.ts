@@ -6,6 +6,7 @@ import {
   validateScheduleConfig,
 } from "@/domain/scheduling/schedule-config";
 import { handleRequest } from "@/lib/api-response";
+import { requireStaffSession } from "@/lib/auth/require-session";
 
 const configSchema = z.object({
   weekdays: z.array(z.number().int().min(0).max(6)).min(1).max(7),
@@ -14,7 +15,10 @@ const configSchema = z.object({
   minGapMinutes: z.number().int().min(15).max(120),
 });
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { scheduleConfig } = await getRepositories();
     const config = await scheduleConfig.get();
@@ -23,6 +27,9 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const body = configSchema.parse(await request.json());
     const { scheduleConfig } = await getRepositories();

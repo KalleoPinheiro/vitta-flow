@@ -285,4 +285,20 @@ describe("Feature: Ligação NANDA→NOC/NIC (TaxonomyLinkage)", () => {
       TaxonomyLinkage.create({ diagnosisCode: "00046", role: "intervention", targetCode: " " }),
     ).toThrow(ValidationError);
   });
+
+  it("Dado diagnosisCode vazio, Quando criar, Então lança ValidationError", () => {
+    expect(() =>
+      TaxonomyLinkage.create({ diagnosisCode: " ", role: "outcome", targetCode: "1101" }),
+    ).toThrow(ValidationError);
+  });
+
+  it("Dado papel inválido, Quando criar, Então lança ValidationError", () => {
+    expect(() =>
+      TaxonomyLinkage.create({
+        diagnosisCode: "00046",
+        role: "diagnosis" as unknown as "outcome",
+        targetCode: "1101",
+      }),
+    ).toThrow(ValidationError);
+  });
 });

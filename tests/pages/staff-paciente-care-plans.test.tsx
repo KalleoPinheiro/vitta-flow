@@ -145,7 +145,8 @@ function handleCarePlanByIdRoute(
   const match = /^\/api\/care-plans\/([^/]+)$/.exec(url);
   if (!match) return undefined;
   if (method === "GET") return jsonResponse(state.details.get(match[1]));
-  const detail = state.details.get(match[1])!;
+  const detail = state.details.get(match[1]);
+  if (!detail) return errorResponse("Plano de cuidados não encontrado");
   detail.plan = { ...detail.plan, status: "resolved" };
   state.plans = state.plans.map((p) => (p.id === detail.plan.id ? detail.plan : p));
   return jsonResponse(detail.plan);
@@ -162,7 +163,8 @@ function handleDiagnosesRoute(
   if (body.type === "risco" && body.definingCharacteristics) {
     return errorResponse("Diagnóstico de risco não tem características definidoras");
   }
-  const detail = state.details.get(match[1])!;
+  const detail = state.details.get(match[1]);
+  if (!detail) return errorResponse("Plano de cuidados não encontrado");
   const diagnosis = {
     id: state.nextId("diag"),
     carePlanId: match[1],
@@ -185,7 +187,8 @@ function handleOutcomesRoute(
 ): MockedResponse | undefined {
   const match = /^\/api\/care-plans\/([^/]+)\/outcomes$/.exec(url);
   if (!match || method !== "POST") return undefined;
-  const detail = state.details.get(match[1])!;
+  const detail = state.details.get(match[1]);
+  if (!detail) return errorResponse("Plano de cuidados não encontrado");
   const outcome = {
     id: state.nextId("out"),
     carePlanId: match[1],
@@ -213,7 +216,8 @@ function handleInterventionsRoute(
 ): MockedResponse | undefined {
   const match = /^\/api\/care-plans\/([^/]+)\/interventions$/.exec(url);
   if (!match || method !== "POST") return undefined;
-  const detail = state.details.get(match[1])!;
+  const detail = state.details.get(match[1]);
+  if (!detail) return errorResponse("Plano de cuidados não encontrado");
   const intervention = {
     id: state.nextId("int"),
     carePlanId: match[1],

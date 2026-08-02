@@ -117,6 +117,35 @@ describe("Feature: Plano de cuidados (SAE) — casos de uso", () => {
         new OpenCarePlan(carePlanRepo, patientRepo, conditionRepo).execute({ patientId: "ghost" }),
       ).rejects.toThrow(NotFoundError);
     });
+
+    it("Dado condição inexistente, Quando abrir plano, Então lança NotFoundError", async () => {
+      await expect(
+        new OpenCarePlan(carePlanRepo, patientRepo, conditionRepo).execute({
+          patientId: maria.id,
+          conditionId: "ghost",
+        }),
+      ).rejects.toThrow(NotFoundError);
+    });
+
+    it("Dado condição de outro paciente, Quando abrir plano, Então lança ValidationError", async () => {
+      const joao = await new CreatePatient(patientRepo).execute({
+        fullName: "João Souza",
+        email: "joao@example.com",
+        phone: "11988880000",
+      });
+      const condition = await new CreateCondition(conditionRepo, patientRepo).execute({
+        patientId: joao.id,
+        kind: "wound",
+        title: "Lesão de João",
+      });
+
+      await expect(
+        new OpenCarePlan(carePlanRepo, patientRepo, conditionRepo).execute({
+          patientId: maria.id,
+          conditionId: condition.id,
+        }),
+      ).rejects.toThrow(ValidationError);
+    });
   });
 
   describe("Cenário: prescrever diagnóstico", () => {
@@ -302,6 +331,27 @@ describe("Feature: Plano de cuidados (SAE) — casos de uso", () => {
         new RecordIntervention(recordRepo, interventionRepo, carePlanRepo).execute({ interventionId: "ghost" }),
       ).rejects.toThrow(NotFoundError);
     });
+
+    it("Dado plano resolvido, Quando registrar execução, Então lança ValidationError", async () => {
+      const plan = await new OpenCarePlan(carePlanRepo, patientRepo, conditionRepo).execute({ patientId: maria.id });
+      const intervention = await new PrescribeIntervention(
+        interventionRepo,
+        carePlanRepo,
+        interventionCatalog,
+      ).execute({
+        carePlanId: plan.id,
+        interventionCode: "3660",
+        frequency: "Diária",
+        priority: "alta",
+      });
+      await new ResolveCarePlan(carePlanRepo).execute({ id: plan.id });
+
+      await expect(
+        new RecordIntervention(recordRepo, interventionRepo, carePlanRepo).execute({
+          interventionId: intervention.id,
+        }),
+      ).rejects.toThrow(ValidationError);
+    });
   });
 
   describe("Cenário: avaliar resultado", () => {
@@ -327,6 +377,47 @@ describe("Feature: Plano de cuidados (SAE) — casos de uso", () => {
       await expect(
         new EvaluateOutcome(evaluationRepo, outcomeRepo, carePlanRepo).execute({ outcomeId: "ghost", score: 3 }),
       ).rejects.toThrow(NotFoundError);
+    });
+
+    it("Dado plano resolvido, Quando avaliar, Então lança ValidationError", async () => {
+      const plan = await new OpenCarePlan(carePlanRepo, patientRepo, conditionRepo).execute({ patientId: maria.id });
+      const outcome = await new PrescribeOutcome(outcomeRepo, carePlanRepo, outcomeCatalog).execute({
+        carePlanId: plan.id,
+        outcomeCode: "1101",
+        baselineScore: 2,
+        targetScore: 4,
+      });
+      await new ResolveCarePlan(carePlanRepo).execute({ id: plan.id });
+
+      await expect(
+        new EvaluateOutcome(evaluationRepo, outcomeRepo, carePlanRepo).execute({
+          outcomeId: outcome.id,
+          score: 3,
+        }),
+      ).rejects.toThrow(ValidationError);
+    });
+
+    it("Dado escore fora de 1–5, Quando avaliar, Então lança ValidationError", async () => {
+      const plan = await new OpenCarePlan(carePlanRepo, patientRepo, conditionRepo).execute({ patientId: maria.id });
+      const outcome = await new PrescribeOutcome(outcomeRepo, carePlanRepo, outcomeCatalog).execute({
+        carePlanId: plan.id,
+        outcomeCode: "1101",
+        baselineScore: 2,
+        targetScore: 4,
+      });
+
+      await expect(
+        new EvaluateOutcome(evaluationRepo, outcomeRepo, carePlanRepo).execute({
+          outcomeId: outcome.id,
+          score: 0,
+        }),
+      ).rejects.toThrow(ValidationError);
+      await expect(
+        new EvaluateOutcome(evaluationRepo, outcomeRepo, carePlanRepo).execute({
+          outcomeId: outcome.id,
+          score: 6,
+        }),
+      ).rejects.toThrow(ValidationError);
     });
   });
 

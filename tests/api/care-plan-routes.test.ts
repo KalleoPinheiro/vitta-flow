@@ -334,10 +334,13 @@ describe("Feature: Rotas do plano de cuidados (SAE) e catálogo de taxonomias", 
       jsonRequest(`/api/care-plans/${carePlanId}/diagnoses`, "POST", {
         diagnosisCode: "00046",
         type: "promocao-saude",
+        definingCharacteristics: "Expressa desejo de aprender autocuidado",
       }),
       context(carePlanId),
     );
+    const body = (await response.json()) as Envelope<never>;
 
     expect(response.status).toBe(400);
+    expect(body.error).toMatch(/não está ativo/i);
   });
 });

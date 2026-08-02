@@ -402,7 +402,7 @@ describe("Feature: Intervenção NIC prescrita (CarePlanIntervention)", () => {
   });
 });
 
-describe("Feature: Avaliação de resultado (OutcomeEvaluation) — append-only", () => {
+describe("Feature: Avaliação de resultado (OutcomeEvaluation) — somente inserção, nunca sobrescreve", () => {
   it("Dado pontuação válida, Quando criar, Então avaliação registrada com evaluatedAt", () => {
     const evaluation = OutcomeEvaluation.create({
       outcomeId: "o1",
@@ -456,7 +456,7 @@ describe("Feature: Avaliação de resultado (OutcomeEvaluation) — append-only"
   });
 });
 
-describe("Feature: Execução de intervenção (InterventionRecord) — append-only", () => {
+describe("Feature: Execução de intervenção (InterventionRecord) — somente inserção, nunca sobrescreve", () => {
   it("Dado interventionId válido, Quando criar, Então registro criado com performedAt", () => {
     const record = InterventionRecord.create({ interventionId: "i1", professionalId: "prof1" });
 

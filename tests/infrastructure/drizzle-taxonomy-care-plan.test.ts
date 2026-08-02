@@ -206,6 +206,12 @@ describe("Feature: Persistência PostgreSQL — taxonomias de enfermagem e plano
     await evaluationRepo.save(
       OutcomeEvaluation.create({ outcomeId: outcome.id, score: 3, professionalId: professional.id }),
     );
+    await evaluationRepo.save(
+      OutcomeEvaluation.create({ outcomeId: outcome.id, score: 4, professionalId: professional.id }),
+    );
+    await recordRepo.save(
+      InterventionRecord.create({ interventionId: intervention.id, professionalId: professional.id }),
+    );
     await recordRepo.save(
       InterventionRecord.create({ interventionId: intervention.id, professionalId: professional.id }),
     );
@@ -228,12 +234,15 @@ describe("Feature: Persistência PostgreSQL — taxonomias de enfermagem e plano
     expect(await interventionRepo.findByCarePlanIds([plan.id])).toHaveLength(1);
 
     const evaluations = await evaluationRepo.findByOutcomeId(outcome.id);
-    expect(evaluations[0].score).toBe(3);
-    expect(await evaluationRepo.findByOutcomeIds([outcome.id])).toHaveLength(1);
+    expect(evaluations).toHaveLength(2);
+    expect(evaluations.map((e) => e.score).sort()).toEqual([3, 4]);
+    expect(await evaluationRepo.findByOutcomeIds([outcome.id])).toHaveLength(2);
 
     const records = await recordRepo.findByInterventionId(intervention.id);
-    expect(records[0].professionalId).toBe(professional.id);
-    expect(await recordRepo.findByInterventionIds([intervention.id])).toHaveLength(1);
+    expect(records).toHaveLength(2);
+    expect(records.every((r) => r.professionalId === professional.id)).toBe(true);
+    expect(new Set(records.map((r) => r.id)).size).toBe(2);
+    expect(await recordRepo.findByInterventionIds([intervention.id])).toHaveLength(2);
 
     await carePlanRepo.save(plan.resolve());
     expect((await carePlanRepo.findById(plan.id))?.status).toBe("resolved");

@@ -60,23 +60,48 @@ export class CarePlanDiagnosis {
     relatedFactors: string | null,
     definingCharacteristics: string | null,
   ): void {
-    if (type === "risco" && definingCharacteristics) {
+    if (type === "risco") {
+      CarePlanDiagnosis.validateRisco(relatedFactors, definingCharacteristics);
+    } else if (type === "real") {
+      CarePlanDiagnosis.validateReal(relatedFactors, definingCharacteristics);
+    } else {
+      CarePlanDiagnosis.validatePromocaoSaude(definingCharacteristics);
+    }
+  }
+
+  /** Risco exige fatores de risco (etiologia) e rejeita evidência — ainda não se manifestou. */
+  private static validateRisco(
+    relatedFactors: string | null,
+    definingCharacteristics: string | null,
+  ): void {
+    if (definingCharacteristics) {
       throw new ValidationError(
         "Diagnóstico de risco não tem características definidoras — apenas fatores de risco",
       );
     }
-    if (type === "risco" && !relatedFactors) {
+    if (!relatedFactors) {
       throw new ValidationError("Diagnóstico de risco exige fatores de risco (relacionado a)");
     }
-    if (type === "real" && !relatedFactors) {
+  }
+
+  /** Real exige etiologia e evidência. */
+  private static validateReal(
+    relatedFactors: string | null,
+    definingCharacteristics: string | null,
+  ): void {
+    if (!relatedFactors) {
       throw new ValidationError("Diagnóstico real exige fatores relacionados (relacionado a)");
     }
-    if (type === "real" && !definingCharacteristics) {
+    if (!definingCharacteristics) {
       throw new ValidationError(
         "Diagnóstico real exige características definidoras (evidenciado por)",
       );
     }
-    if (type === "promocao-saude" && !definingCharacteristics) {
+  }
+
+  /** Promoção da saúde não tem etiologia, mas exige evidência (motivação/desejo expresso). */
+  private static validatePromocaoSaude(definingCharacteristics: string | null): void {
+    if (!definingCharacteristics) {
       throw new ValidationError(
         "Diagnóstico de promoção da saúde exige características definidoras (evidenciado por)",
       );

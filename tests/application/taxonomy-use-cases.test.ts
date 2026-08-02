@@ -90,6 +90,11 @@ describe("Feature: Catálogo de taxonomias — casos de uso", () => {
       const result = await new SearchInterventions(interventions).execute({ term: "inexistente" });
       expect(result).toHaveLength(0);
     });
+
+    it("Dado termo em caixa alta, Quando buscar diagnósticos, Então busca é case-insensitive", async () => {
+      const result = await new SearchDiagnoses(diagnoses).execute({ term: "PELE" });
+      expect(result).toHaveLength(1);
+    });
   });
 
   describe("Cenário: sugerir termos ligados", () => {
@@ -157,6 +162,12 @@ describe("Feature: Catálogo de taxonomias — casos de uso", () => {
       expect(await empty.diagnoses.findByCodes(STOMATHERAPY_DIAGNOSES.map((d) => d.code))).toHaveLength(
         STOMATHERAPY_DIAGNOSES.length,
       );
+      const firstDiagnosisCode = STOMATHERAPY_LINKAGES[0].diagnosisCode;
+      const linkedAfterReimport = await empty.linkages.findByDiagnosisCode(firstDiagnosisCode);
+      const expectedForFirst = STOMATHERAPY_LINKAGES.filter(
+        (linkage) => linkage.diagnosisCode === firstDiagnosisCode,
+      ).length;
+      expect(linkedAfterReimport).toHaveLength(expectedForFirst);
     });
   });
 });

@@ -1,9 +1,11 @@
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   index,
   integer,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -418,4 +420,187 @@ export const invoices = pgTable(
     // Portal do paciente e filtros por paciente.
     index("idx_invoices_patient").on(table.patientId),
   ],
+);
+
+// Catálogo de taxonomias de enfermagem (NANDA-I/NOC/NIC) — populado por importação
+// licenciada (scripts/import-taxonomy.ts), unicidade por (code, edition).
+export const nursingDiagnoses = pgTable(
+  "nursing_diagnoses",
+  {
+    id: text("id").primaryKey(),
+    code: text("code").notNull(),
+    label: text("label").notNull(),
+    domain: text("domain").notNull(),
+    class: text("class").notNull(),
+    definition: text("definition"),
+    edition: text("edition").notNull(),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("uq_nursing_diagnoses_code_edition").on(table.code, table.edition),
+    index("idx_nursing_diagnoses_label").on(table.label),
+  ],
+);
+
+export const nursingOutcomes = pgTable(
+  "nursing_outcomes",
+  {
+    id: text("id").primaryKey(),
+    code: text("code").notNull(),
+    label: text("label").notNull(),
+    domain: text("domain").notNull(),
+    class: text("class").notNull(),
+    edition: text("edition").notNull(),
+    // Escala Likert 1–5 do resultado, âncoras 1→5 (ver NocScale).
+    scaleAnchor1: text("scale_anchor_1").notNull(),
+    scaleAnchor2: text("scale_anchor_2").notNull(),
+    scaleAnchor3: text("scale_anchor_3").notNull(),
+    scaleAnchor4: text("scale_anchor_4").notNull(),
+    scaleAnchor5: text("scale_anchor_5").notNull(),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("uq_nursing_outcomes_code_edition").on(table.code, table.edition),
+    index("idx_nursing_outcomes_label").on(table.label),
+  ],
+);
+
+export const nursingInterventions = pgTable(
+  "nursing_interventions",
+  {
+    id: text("id").primaryKey(),
+    code: text("code").notNull(),
+    label: text("label").notNull(),
+    domain: text("domain").notNull(),
+    class: text("class").notNull(),
+    edition: text("edition").notNull(),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("uq_nursing_interventions_code_edition").on(table.code, table.edition),
+    index("idx_nursing_interventions_label").on(table.label),
+  ],
+);
+
+// Ligações sugeridas NANDA→NOC/NIC — priorizam o subset curado na busca, não restringem.
+export const taxonomyLinkages = pgTable(
+  "taxonomy_linkages",
+  {
+    diagnosisCode: text("diagnosis_code").notNull(),
+    role: text("role").notNull(),
+    targetCode: text("target_code").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.diagnosisCode, table.role, table.targetCode] }),
+    index("idx_taxonomy_linkages_diagnosis").on(table.diagnosisCode),
+  ],
+);
+
+// Plano de cuidados (SAE) — raiz do agregado diagnóstico→resultado→intervenção.
+export const carePlans = pgTable(
+  "care_plans",
+  {
+    id: text("id").primaryKey(),
+    patientId: text("patient_id")
+      .notNull()
+      .references(() => patients.id),
+    conditionId: text("condition_id").references(() => clinicalConditions.id),
+    professionalId: text("professional_id").references(() => professionals.id),
+    status: text("status").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [
+    index("idx_care_plans_patient").on(table.patientId),
+    index("idx_care_plans_condition").on(table.conditionId),
+  ],
+);
+
+export const carePlanDiagnoses = pgTable(
+  "care_plan_diagnoses",
+  {
+    id: text("id").primaryKey(),
+    carePlanId: text("care_plan_id")
+      .notNull()
+      .references(() => carePlans.id),
+    diagnosisCode: text("diagnosis_code").notNull(),
+    type: text("type").notNull(),
+    // Etiologia ("relacionado a").
+    relatedFactors: text("related_factors"),
+    // Sinais/sintomas ("evidenciado por") — ausente em diagnóstico de risco.
+    definingCharacteristics: text("defining_characteristics"),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [index("idx_care_plan_diagnoses_plan").on(table.carePlanId)],
+);
+
+export const carePlanOutcomes = pgTable(
+  "care_plan_outcomes",
+  {
+    id: text("id").primaryKey(),
+    carePlanId: text("care_plan_id")
+      .notNull()
+      .references(() => carePlans.id),
+    outcomeCode: text("outcome_code").notNull(),
+    baselineScore: integer("baseline_score").notNull(),
+    targetScore: integer("target_score").notNull(),
+    deadline: timestamp("deadline", { withTimezone: true, mode: "date" }),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [
+    index("idx_care_plan_outcomes_plan").on(table.carePlanId),
+    check("chk_care_plan_outcomes_baseline_score", sql`${table.baselineScore} BETWEEN 1 AND 5`),
+    check("chk_care_plan_outcomes_target_score", sql`${table.targetScore} BETWEEN 1 AND 5`),
+  ],
+);
+
+export const carePlanInterventions = pgTable(
+  "care_plan_interventions",
+  {
+    id: text("id").primaryKey(),
+    carePlanId: text("care_plan_id")
+      .notNull()
+      .references(() => carePlans.id),
+    interventionCode: text("intervention_code").notNull(),
+    frequency: text("frequency").notNull(),
+    priority: text("priority").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [index("idx_care_plan_interventions_plan").on(table.carePlanId)],
+);
+
+// Reavaliação de resultado NOC — append-only (integridade de prontuário).
+export const outcomeEvaluations = pgTable(
+  "outcome_evaluations",
+  {
+    id: text("id").primaryKey(),
+    outcomeId: text("outcome_id")
+      .notNull()
+      .references(() => carePlanOutcomes.id),
+    score: integer("score").notNull(),
+    professionalId: text("professional_id").references(() => professionals.id),
+    notes: text("notes"),
+    evaluatedAt: timestamp("evaluated_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [
+    index("idx_outcome_evaluations_outcome").on(table.outcomeId),
+    check("chk_outcome_evaluations_score", sql`${table.score} BETWEEN 1 AND 5`),
+  ],
+);
+
+// Execução de intervenção NIC prescrita — append-only.
+export const interventionRecords = pgTable(
+  "intervention_records",
+  {
+    id: text("id").primaryKey(),
+    interventionId: text("intervention_id")
+      .notNull()
+      .references(() => carePlanInterventions.id),
+    professionalId: text("professional_id").references(() => professionals.id),
+    notes: text("notes"),
+    performedAt: timestamp("performed_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [index("idx_intervention_records_intervention").on(table.interventionId)],
 );

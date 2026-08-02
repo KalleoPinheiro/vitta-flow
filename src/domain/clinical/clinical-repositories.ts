@@ -3,6 +3,12 @@ import type { ConditionPhoto } from "./condition-photo";
 import type { EvolutionNote } from "./evolution-note";
 import type { ClinicalCondition } from "./clinical-condition";
 import type { ConditionAssessment } from "./condition-assessment";
+import type { CarePlan } from "./care-plan";
+import type { CarePlanDiagnosis } from "./care-plan-diagnosis";
+import type { CarePlanOutcome } from "./care-plan-outcome";
+import type { CarePlanIntervention } from "./care-plan-intervention";
+import type { OutcomeEvaluation } from "./outcome-evaluation";
+import type { InterventionRecord } from "./intervention-record";
 
 export interface AnamnesisRepository {
   save(anamnesis: Anamnesis): Promise<void>;
@@ -38,4 +44,43 @@ export interface ConditionAssessmentRepository {
   findByConditionId(conditionId: string): Promise<ConditionAssessment[]>;
   /** Busca em lote — evita N+1 ao montar dados de várias condições. */
   findByConditionIds(conditionIds: string[]): Promise<ConditionAssessment[]>;
+}
+
+export interface CarePlanRepository {
+  save(carePlan: CarePlan): Promise<void>;
+  findById(id: string): Promise<CarePlan | null>;
+  findByPatientId(patientId: string): Promise<CarePlan[]>;
+  findByConditionId(conditionId: string): Promise<CarePlan[]>;
+}
+
+export interface CarePlanDiagnosisRepository {
+  save(diagnosis: CarePlanDiagnosis): Promise<void>;
+  findByCarePlanId(carePlanId: string): Promise<CarePlanDiagnosis[]>;
+  findByCarePlanIds(carePlanIds: string[]): Promise<CarePlanDiagnosis[]>;
+}
+
+export interface CarePlanOutcomeRepository {
+  save(outcome: CarePlanOutcome): Promise<void>;
+  findById(id: string): Promise<CarePlanOutcome | null>;
+  findByCarePlanId(carePlanId: string): Promise<CarePlanOutcome[]>;
+  findByCarePlanIds(carePlanIds: string[]): Promise<CarePlanOutcome[]>;
+}
+
+export interface CarePlanInterventionRepository {
+  save(intervention: CarePlanIntervention): Promise<void>;
+  findById(id: string): Promise<CarePlanIntervention | null>;
+  findByCarePlanId(carePlanId: string): Promise<CarePlanIntervention[]>;
+  findByCarePlanIds(carePlanIds: string[]): Promise<CarePlanIntervention[]>;
+}
+
+export interface OutcomeEvaluationRepository {
+  save(evaluation: OutcomeEvaluation): Promise<void>;
+  findByOutcomeId(outcomeId: string): Promise<OutcomeEvaluation[]>;
+  findByOutcomeIds(outcomeIds: string[]): Promise<OutcomeEvaluation[]>;
+}
+
+export interface InterventionRecordRepository {
+  save(record: InterventionRecord): Promise<void>;
+  findByInterventionId(interventionId: string): Promise<InterventionRecord[]>;
+  findByInterventionIds(interventionIds: string[]): Promise<InterventionRecord[]>;
 }

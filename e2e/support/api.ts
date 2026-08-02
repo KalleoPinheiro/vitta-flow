@@ -362,6 +362,55 @@ export async function getPackagesByPatient(
   return apiGet<PackageDto[]>(request, `/api/packages?patientId=${encodeURIComponent(patientId)}`);
 }
 
+export interface CarePlanDto {
+  id: string;
+  patientId: string;
+  conditionId: string | null;
+  professionalId: string | null;
+  status: string;
+  createdAt: string;
+}
+
+export async function createCarePlan(
+  request: APIRequestContext,
+  patientId: string,
+  overrides: Partial<{ conditionId: string | null; professionalId: string | null }> = {},
+): Promise<CarePlanDto> {
+  return apiPost<CarePlanDto>(request, `/api/patients/${patientId}/care-plans`, {
+    conditionId: overrides.conditionId ?? null,
+    professionalId: overrides.professionalId ?? null,
+  });
+}
+
+export interface CarePlanDiagnosisDto {
+  id: string;
+  carePlanId: string;
+  diagnosisCode: string;
+  diagnosisLabel: string;
+  type: string;
+  relatedFactors: string | null;
+  definingCharacteristics: string | null;
+  createdAt: string;
+}
+
+export async function addCarePlanDiagnosis(
+  request: APIRequestContext,
+  carePlanId: string,
+  data: {
+    diagnosisCode: string;
+    type: "real" | "risco" | "promocao-saude";
+    relatedFactors?: string | null;
+    definingCharacteristics?: string | null;
+  },
+): Promise<CarePlanDiagnosisDto> {
+  return apiPost<CarePlanDiagnosisDto>(request, `/api/care-plans/${carePlanId}/diagnoses`, {
+    diagnosisCode: data.diagnosisCode,
+    type: data.type,
+    relatedFactors: data.relatedFactors ?? null,
+    definingCharacteristics: data.definingCharacteristics ?? null,
+  });
+}
+
 export async function createFollowUp(
   request: APIRequestContext,
   data: { patientId: string; dueDate: string; reason: string },

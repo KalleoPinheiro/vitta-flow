@@ -5,6 +5,7 @@ import { CreatePartner } from "@/application/partners/create-partner";
 import { ListPartners } from "@/application/partners/list-partners";
 import { handleRequest } from "@/lib/api-response";
 import { toPartnerDto } from "@/lib/dto";
+import { requireStaffSession } from "@/lib/auth/require-session";
 
 const partnerSchema = z.object({
   fullName: z.string().min(1).max(200),
@@ -14,7 +15,10 @@ const partnerSchema = z.object({
   specialty: z.string().max(200).nullish(),
 });
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { partners } = await getRepositories();
     const result = await new ListPartners(partners).execute();
@@ -23,6 +27,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const body = partnerSchema.parse(await request.json());
     const { partners } = await getRepositories();

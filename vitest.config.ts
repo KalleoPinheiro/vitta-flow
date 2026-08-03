@@ -18,12 +18,21 @@ export default defineConfig({
     hookTimeout: 30_000,
     env: {
       TZ: "UTC",
+      // As rotas exigem sessão (src/lib/auth/require-session.ts) — a suíte roda
+      // com autenticação LIGADA e assina cookies com este segredo
+      // (tests/support/session.ts), em vez de exercitar um caminho sem sessão
+      // que não existe em produção. Testes que precisam do cenário "sem auth"
+      // sobrescrevem/limpam estas variáveis localmente.
+      AUTH_SECRET: "vitest-auth-secret-0000000000000000",
+      AUTH_PASSWORD: "vitest-master-password",
     },
     setupFiles: ["tests/setup.ts"],
     include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
     coverage: {
       provider: "v8",
       include: [
+        // Camada 1 de autorização (antigo middleware) — arquivo mais sensível do projeto.
+        "src/proxy.ts",
         "src/domain/**",
         "src/application/**",
         "src/infrastructure/**",

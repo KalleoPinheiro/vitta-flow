@@ -5,13 +5,16 @@ import { DeleteConditionPhoto } from "@/application/clinical/delete-condition-ph
 import { FollowUp } from "@/domain/followup/follow-up";
 import { NotFoundError } from "@/domain/shared/errors";
 import { handleRequest, fail } from "@/lib/api-response";
-import { getRequestSession } from "@/lib/auth/request-session";
+import { requireStaffSession } from "@/lib/auth/require-session";
 import { recordAudit } from "@/lib/audit";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 /** Serve o binário da foto — rota exclusiva do staff (proxy barra portais). */
-export async function GET(_request: NextRequest, context: RouteContext) {
+export async function GET(request: NextRequest, context: RouteContext) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   const { id } = await context.params;
   const { conditionPhotos, photoStorage } = await getRepositories();
 
@@ -32,6 +35,9 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 }
 
 export async function DELETE(request: NextRequest, context: RouteContext) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { id } = await context.params;
     const { conditionPhotos, photoStorage, conditions, auditEvents } = await getRepositories();
@@ -40,7 +46,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     const condition = photo ? await conditions.findById(photo.conditionId) : null;
     await new DeleteConditionPhoto(conditionPhotos, photoStorage).execute({ id });
 
-    recordAudit(auditEvents, getRequestSession(request), {
+    recordAudit(auditEvents, guard.session, {
       action: "delete",
       resourceType: "photo",
       resourceId: id,
@@ -58,6 +64,9 @@ const triageSchema = z.object({ triage: z.enum(["reviewed", "escalated"]) });
  * "escalated" antecipa o retorno criando follow-up com vencimento imediato.
  */
 export async function PATCH(request: NextRequest, context: RouteContext) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = triageSchema.parse(await request.json());
@@ -83,7 +92,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       );
     }
 
-    recordAudit(auditEvents, getRequestSession(request), {
+    recordAudit(auditEvents, guard.session, {
       action: "update",
       resourceType: "photo",
       resourceId: id,

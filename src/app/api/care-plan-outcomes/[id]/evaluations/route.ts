@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getRepositories } from "@/infrastructure/container";
 import { EvaluateOutcome } from "@/application/clinical/evaluate-outcome";
 import { handleRequest } from "@/lib/api-response";
-import { getRequestSession } from "@/lib/auth/request-session";
+import { requireStaffSession } from "@/lib/auth/require-session";
 import { recordAudit } from "@/lib/audit";
 import { toOutcomeEvaluationDto } from "@/lib/dto";
 
@@ -16,6 +16,9 @@ const evaluationSchema = z.object({
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(request: NextRequest, context: RouteContext) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = evaluationSchema.parse(await request.json());
@@ -32,7 +35,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     });
     const outcome = await carePlanOutcomes.findById(id);
     const plan = outcome ? await carePlans.findById(outcome.carePlanId) : null;
-    recordAudit(auditEvents, getRequestSession(request), {
+    recordAudit(auditEvents, guard.session, {
       action: "create",
       resourceType: "outcome_evaluation",
       resourceId: evaluation.id,

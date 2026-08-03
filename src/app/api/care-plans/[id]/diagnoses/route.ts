@@ -4,7 +4,7 @@ import { getRepositories } from "@/infrastructure/container";
 import { AddCarePlanDiagnosis } from "@/application/clinical/add-care-plan-diagnosis";
 import { CARE_PLAN_DIAGNOSIS_TYPES } from "@/domain/clinical/care-plan-diagnosis";
 import { handleRequest } from "@/lib/api-response";
-import { getRequestSession } from "@/lib/auth/request-session";
+import { requireStaffSession } from "@/lib/auth/require-session";
 import { recordAudit } from "@/lib/audit";
 import { toCarePlanDiagnosisDto } from "@/lib/dto";
 
@@ -86,6 +86,9 @@ const diagnosisSchema = diagnosisBodySchema.superRefine(validatePesFields);
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(request: NextRequest, context: RouteContext) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = diagnosisSchema.parse(await request.json());
@@ -105,7 +108,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       carePlans.findById(id),
       nursingDiagnoses.findByCode(body.diagnosisCode),
     ]);
-    recordAudit(auditEvents, getRequestSession(request), {
+    recordAudit(auditEvents, guard.session, {
       action: "create",
       resourceType: "care_plan_diagnosis",
       resourceId: diagnosis.id,

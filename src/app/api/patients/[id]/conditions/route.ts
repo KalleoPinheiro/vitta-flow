@@ -5,7 +5,7 @@ import { CreateCondition } from "@/application/clinical/create-condition";
 import { ListConditions } from "@/application/clinical/list-conditions";
 import { CONDITION_KINDS, STOMA_TYPES } from "@/domain/clinical/clinical-condition";
 import { handleRequest } from "@/lib/api-response";
-import { getRequestSession } from "@/lib/auth/request-session";
+import { requireStaffSession } from "@/lib/auth/require-session";
 import { recordAudit } from "@/lib/audit";
 import { toConditionDto } from "@/lib/dto";
 
@@ -20,11 +20,14 @@ const conditionSchema = z.object({
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(request: NextRequest, context: RouteContext) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { id } = await context.params;
     const { conditions, auditEvents } = await getRepositories();
     const result = await new ListConditions(conditions).execute({ patientId: id });
-    recordAudit(auditEvents, getRequestSession(request), {
+    recordAudit(auditEvents, guard.session, {
       action: "read",
       resourceType: "conditions",
       resourceId: id,
@@ -35,6 +38,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = conditionSchema.parse(await request.json());
@@ -47,7 +53,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       startedAt: body.startedAt ? new Date(body.startedAt) : null,
       notes: body.notes ?? null,
     });
-    recordAudit(auditEvents, getRequestSession(request), {
+    recordAudit(auditEvents, guard.session, {
       action: "create",
       resourceType: "condition",
       resourceId: condition.id,

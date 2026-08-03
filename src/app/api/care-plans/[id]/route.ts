@@ -4,7 +4,7 @@ import { getRepositories } from "@/infrastructure/container";
 import { GetCarePlan } from "@/application/clinical/get-care-plan";
 import { ResolveCarePlan } from "@/application/clinical/resolve-care-plan";
 import { handleRequest } from "@/lib/api-response";
-import { getRequestSession } from "@/lib/auth/request-session";
+import { requireStaffSession } from "@/lib/auth/require-session";
 import { recordAudit } from "@/lib/audit";
 import { toCarePlanDetailDto, toCarePlanDto } from "@/lib/dto";
 
@@ -13,6 +13,9 @@ const actionSchema = z.object({ action: z.literal("resolve") });
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(request: NextRequest, context: RouteContext) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { id } = await context.params;
     const {
@@ -44,7 +47,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       ),
     ]);
 
-    recordAudit(auditEvents, getRequestSession(request), {
+    recordAudit(auditEvents, guard.session, {
       action: "read",
       resourceType: "care_plan",
       resourceId: id,
@@ -59,12 +62,15 @@ export async function GET(request: NextRequest, context: RouteContext) {
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { id } = await context.params;
     actionSchema.parse(await request.json());
     const { carePlans, auditEvents } = await getRepositories();
     const plan = await new ResolveCarePlan(carePlans).execute({ id });
-    recordAudit(auditEvents, getRequestSession(request), {
+    recordAudit(auditEvents, guard.session, {
       action: "update",
       resourceType: "care_plan",
       resourceId: plan.id,

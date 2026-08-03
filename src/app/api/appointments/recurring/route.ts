@@ -6,6 +6,7 @@ import { ScheduleRecurringAppointments } from "@/application/appointments/schedu
 import { handleRequest } from "@/lib/api-response";
 import { scheduleCalendarSync } from "@/lib/calendar-sync";
 import { toAppointmentDto } from "@/lib/dto";
+import { requireStaffSession } from "@/lib/auth/require-session";
 
 const recurringSchema = z.object({
   patientId: z.string().min(1),
@@ -21,6 +22,9 @@ const recurringSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const body = recurringSchema.parse(await request.json());
     const services = await getRepositories();

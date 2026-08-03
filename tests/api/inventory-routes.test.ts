@@ -1,14 +1,7 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { NextRequest } from "next/server";
+import { jsonRequest } from "../support/request";
 
 process.env.VITTA_DB_DRIVER = "pglite";
-
-const jsonRequest = (url: string, method: string, body?: unknown) =>
-  new NextRequest(`http://localhost${url}`, {
-    method,
-    body: body === undefined ? undefined : JSON.stringify(body),
-    headers: { "Content-Type": "application/json" },
-  });
 
 interface Envelope<T> {
   success: boolean;
@@ -96,7 +89,7 @@ describe("Feature: Rotas de estoque (insumos e movimentações)", () => {
   });
 
   it("Dado insumo criado, Quando GET /api/supplies, Então lista contém o insumo", async () => {
-    const response = await suppliesRoute.GET();
+    const response = await suppliesRoute.GET(jsonRequest("/api/supplies", "GET"));
     const body = (await response.json()) as Envelope<SupplyPayload[]>;
 
     expect(response.status).toBe(200);
@@ -232,7 +225,7 @@ describe("Feature: Rotas de estoque (insumos e movimentações)", () => {
   });
 
   it("Dado insumo com saldo inalterado, Quando GET /api/supplies após tentativas falhas, Então saldo permanece 50", async () => {
-    const response = await suppliesRoute.GET();
+    const response = await suppliesRoute.GET(jsonRequest("/api/supplies", "GET"));
     const body = (await response.json()) as Envelope<SupplyPayload[]>;
     const supply = body.data.find((item) => item.id === supplyId);
 
@@ -258,7 +251,7 @@ describe("Feature: Rotas de estoque (insumos e movimentações)", () => {
   });
 
   it("Dado insumo com lote a vencer, Quando GET /api/supplies/insights, Então retorna bySupply e expiringBatches", async () => {
-    const response = await insightsRoute.GET();
+    const response = await insightsRoute.GET(jsonRequest("/api/supplies/insights", "GET"));
     const body = (await response.json()) as Envelope<SupplyInsightsPayload>;
 
     expect(response.status).toBe(200);

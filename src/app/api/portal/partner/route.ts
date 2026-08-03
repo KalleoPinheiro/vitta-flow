@@ -1,8 +1,8 @@
 import type { NextRequest } from "next/server";
 import { getRepositories } from "@/infrastructure/container";
 import { GetPartnerPortalData } from "@/application/portal/get-partner-portal-data";
-import { getRequestSession } from "@/lib/auth/request-session";
-import { handleRequest, fail } from "@/lib/api-response";
+import { requirePortalSession } from "@/lib/auth/require-session";
+import { handleRequest } from "@/lib/api-response";
 import { recordAudit } from "@/lib/audit";
 import {
   toAssessmentDto,
@@ -13,13 +13,9 @@ import {
 } from "@/lib/dto";
 
 export async function GET(request: NextRequest) {
-  const session = getRequestSession(request);
-  if (!session) {
-    return fail("Não autenticado", 401);
-  }
-  if (session.role !== "partner") {
-    return fail("Rota exclusiva do portal do parceiro", 403);
-  }
+  const guard = requirePortalSession(request, "partner");
+  if (!guard.ok) return guard.response;
+  const { session } = guard;
 
   return handleRequest(async () => {
     const { partners, patients, appointments, conditions, assessments } =

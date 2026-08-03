@@ -4,7 +4,7 @@ import { getRepositories } from "@/infrastructure/container";
 import { OpenCarePlan } from "@/application/clinical/open-care-plan";
 import { ListCarePlansByPatient } from "@/application/clinical/list-care-plans-by-patient";
 import { handleRequest } from "@/lib/api-response";
-import { getRequestSession } from "@/lib/auth/request-session";
+import { requireStaffSession } from "@/lib/auth/require-session";
 import { recordAudit } from "@/lib/audit";
 import { toCarePlanDto } from "@/lib/dto";
 
@@ -16,11 +16,14 @@ const openCarePlanSchema = z.object({
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(request: NextRequest, context: RouteContext) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { id } = await context.params;
     const { carePlans, auditEvents } = await getRepositories();
     const result = await new ListCarePlansByPatient(carePlans).execute({ patientId: id });
-    recordAudit(auditEvents, getRequestSession(request), {
+    recordAudit(auditEvents, guard.session, {
       action: "read",
       resourceType: "care_plans",
       resourceId: id,
@@ -31,6 +34,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = openCarePlanSchema.parse(await request.json());
@@ -40,7 +46,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       conditionId: body.conditionId ?? null,
       professionalId: body.professionalId ?? null,
     });
-    recordAudit(auditEvents, getRequestSession(request), {
+    recordAudit(auditEvents, guard.session, {
       action: "create",
       resourceType: "care_plan",
       resourceId: plan.id,

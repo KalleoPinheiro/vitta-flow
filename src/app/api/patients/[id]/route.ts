@@ -6,6 +6,7 @@ import { UpdatePatient } from "@/application/patients/update-patient";
 import { SetPatientActive } from "@/application/patients/set-patient-active";
 import { handleRequest } from "@/lib/api-response";
 import { toPatientDto } from "@/lib/dto";
+import { requireStaffSession } from "@/lib/auth/require-session";
 
 const updatePatientSchema = z.object({
   fullName: z.string().min(1).max(200).optional(),
@@ -22,7 +23,10 @@ const setActiveSchema = z.object({
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(_request: NextRequest, context: RouteContext) {
+export async function GET(request: NextRequest, context: RouteContext) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { id } = await context.params;
     const { patients } = await getRepositories();
@@ -31,6 +35,9 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 }
 
 export async function PUT(request: NextRequest, context: RouteContext) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = updatePatientSchema.parse(await request.json());
@@ -50,6 +57,9 @@ export async function PUT(request: NextRequest, context: RouteContext) {
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = setActiveSchema.parse(await request.json());

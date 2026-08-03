@@ -81,6 +81,9 @@ export default defineConfig({
         PORT: String(OPEN_MODE_PORT),
         AUTH_SECRET: "",
         AUTH_PASSWORD: "",
+        // Sem auth configurada o app é fail-closed (503) — o modo aberto exige
+        // este opt-in explícito. Ver src/lib/auth/access-policy.ts.
+        VITTA_ALLOW_OPEN_MODE: "true",
         // distDir isolado — dois `next dev` no mesmo checkout, mesmo diretório,
         // travam no lock de distDir do Next 16 (experimental.lockDistDir, default true).
         NEXT_DIST_DIR: ".next-open-mode",

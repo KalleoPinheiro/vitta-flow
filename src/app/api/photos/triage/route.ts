@@ -1,8 +1,13 @@
+import type { NextRequest } from "next/server";
 import { getRepositories } from "@/infrastructure/container";
 import { handleRequest } from "@/lib/api-response";
+import { requireStaffSession } from "@/lib/auth/require-session";
 
 /** Fila de triagem (staff): fotos enviadas por pacientes aguardando avaliação. */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { conditionPhotos, conditions, patients } = await getRepositories();
     const pending = await conditionPhotos.findPendingTriage();

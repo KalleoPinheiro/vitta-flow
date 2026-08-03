@@ -42,12 +42,17 @@ npm run dev                      # http://localhost:3000
 | `APP_URL` | P/ login Google | URL pública da aplicação (redirect do OAuth), ex.: `http://localhost:3000` |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | P/ login Google | OAuth client (Web) do Google Cloud Console |
 | `GOOGLE_ALLOWED_EMAILS` | P/ login Google | **Allowlist obrigatória** de emails autorizados, separados por vírgula |
-
-\* Em produção é preciso ao menos um método de login: senha (`AUTH_PASSWORD`) ou Google (3 variáveis acima). Sem nenhum, o sistema responde 503 (fail-closed).
 | `TZ` | Recomendada | Fuso da clínica — horário comercial é validado em hora local (`America/Sao_Paulo` no compose) |
+| `CRON_SECRET` | P/ lembretes | Segredo do header `x-cron-secret` em `POST /api/reminders/run`; sem ele a rota fica desativada (503) |
+| `API_RATE_LIMIT_MAX` | Não | Requisições/minuto por IP em `/api/*` (padrão 120) |
+| `VITTA_ALLOW_OPEN_MODE` | Não | `true` roda **sem autenticação** (só fora de produção) — ver abaixo |
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | Não | Email da service account do Google Cloud |
 | `GOOGLE_PRIVATE_KEY` | Não | Chave privada da service account (aceita `\n` escapado) |
 | `GOOGLE_CALENDAR_ID` | Não | ID do calendário que receberá os eventos |
+
+\* Em produção é preciso ao menos um método de login: senha (`AUTH_PASSWORD`) ou Google (3 variáveis acima). Sem nenhum, o sistema responde 503 (fail-closed).
+
+**Modo aberto (`VITTA_ALLOW_OPEN_MODE`)**: sem autenticação configurada e sem esta variável, o app responde **503 em todas as rotas** — inclusive em desenvolvimento (fail-closed). Para rodar sem login (demo local, testes E2E de navegação), defina `VITTA_ALLOW_OPEN_MODE=true`. A variável é ignorada quando `NODE_ENV=production`: **nunca** é possível rodar produção sem autenticação. Em modo aberto o app registra a auditoria com o ator `anonymous`.
 
 **Login com Google + Calendar (recomendado)**: no Google Cloud Console crie um *OAuth client ID* (tipo Web application) com redirect URI `{APP_URL}/api/auth/google/callback` e habilite a **Google Calendar API**. Preencha `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `APP_URL` e `GOOGLE_ALLOWED_EMAILS`. A partir daí:
 - A tela de login mostra **"Entrar com Google"**; apenas emails da allowlist entram (qualquer outra conta é recusada).

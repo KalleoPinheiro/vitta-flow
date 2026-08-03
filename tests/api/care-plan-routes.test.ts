@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { NextRequest } from "next/server";
+import { jsonRequest } from "../support/request";
 import { getRepositories } from "@/infrastructure/container";
 import { NursingDiagnosis } from "@/domain/taxonomy/nursing-diagnosis";
 import { NursingOutcome } from "@/domain/taxonomy/nursing-outcome";
@@ -7,13 +7,6 @@ import { NursingIntervention } from "@/domain/taxonomy/nursing-intervention";
 import { TaxonomyLinkage } from "@/domain/taxonomy/taxonomy-linkage";
 
 process.env.VITTA_DB_DRIVER = "pglite";
-
-const jsonRequest = (url: string, method: string, body?: unknown) =>
-  new NextRequest(`http://localhost${url}`, {
-    method,
-    body: body === undefined ? undefined : JSON.stringify(body),
-    headers: { "Content-Type": "application/json" },
-  });
 
 interface Envelope<T> {
   success: boolean;

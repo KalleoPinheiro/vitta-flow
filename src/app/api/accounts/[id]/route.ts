@@ -5,6 +5,7 @@ import { NotFoundError } from "@/domain/shared/errors";
 import { hashPassword } from "@/lib/auth/password";
 import { handleRequest } from "@/lib/api-response";
 import { toUserAccountDto } from "@/lib/dto";
+import { requireStaffSession } from "@/lib/auth/require-session";
 
 const updateSchema = z.object({
   active: z.boolean().optional(),
@@ -14,6 +15,9 @@ const updateSchema = z.object({
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = updateSchema.parse(await request.json());

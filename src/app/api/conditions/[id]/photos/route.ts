@@ -3,13 +3,16 @@ import { getRepositories } from "@/infrastructure/container";
 import { AddConditionPhoto } from "@/application/clinical/add-condition-photo";
 import { MAX_PHOTO_BYTES } from "@/domain/clinical/condition-photo";
 import { handleRequest, fail } from "@/lib/api-response";
-import { getRequestSession } from "@/lib/auth/request-session";
+import { requireStaffSession } from "@/lib/auth/require-session";
 import { recordAudit } from "@/lib/audit";
 import { toConditionPhotoDto } from "@/lib/dto";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(request: NextRequest, context: RouteContext) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { id } = await context.params;
     const { conditionPhotos, conditions, auditEvents } = await getRepositories();
@@ -17,7 +20,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       conditionPhotos.findByConditionId(id),
       conditions.findById(id),
     ]);
-    recordAudit(auditEvents, getRequestSession(request), {
+    recordAudit(auditEvents, guard.session, {
       action: "read",
       resourceType: "photos",
       resourceId: id,
@@ -28,6 +31,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   const { id } = await context.params;
 
   const form = await request.formData().catch(() => null);
@@ -48,7 +54,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       assessmentId: typeof assessmentId === "string" && assessmentId ? assessmentId : null,
     });
     const condition = await conditions.findById(id);
-    recordAudit(auditEvents, getRequestSession(request), {
+    recordAudit(auditEvents, guard.session, {
       action: "create",
       resourceType: "photo",
       resourceId: photo.id,

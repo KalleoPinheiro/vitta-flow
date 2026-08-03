@@ -6,6 +6,7 @@ import { ValidationError } from "@/domain/shared/errors";
 import { hashPassword } from "@/lib/auth/password";
 import { handleRequest } from "@/lib/api-response";
 import { toUserAccountDto } from "@/lib/dto";
+import { requireStaffSession } from "@/lib/auth/require-session";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -15,7 +16,10 @@ const createSchema = z.object({
   professionalId: z.string().max(100).nullish(),
 });
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { userAccounts } = await getRepositories();
     const accounts = await userAccounts.findAll();
@@ -24,6 +28,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const body = createSchema.parse(await request.json());
     const { userAccounts, professionals } = await getRepositories();

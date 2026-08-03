@@ -16,14 +16,17 @@ Toda a API e todas as páginas eram públicas: qualquer pessoa com acesso à URL
 - Senha via `AUTH_PASSWORD` + segredo de assinatura `AUTH_SECRET` (env, nunca em código).
 - Login com comparação em tempo constante (`timingSafeEqual`) — evita timing attack.
 - Cookie de sessão `HttpOnly` + `SameSite=Lax` + `Secure` em produção, assinado com HMAC-SHA256 e expiração de 12h — não é possível forjar sem o segredo.
-- `middleware` protege **todas** as rotas e páginas (deny-by-default; allowlist: `/login`, `/api/auth/login`, assets).
-- **Fail-closed em produção**: sem `AUTH_PASSWORD`/`AUTH_SECRET` configurados, produção responde 503 em vez de abrir o sistema. Em dev roda aberto com aviso no log.
+- `src/proxy.ts` protege **todas** as rotas e páginas (deny-by-default; allowlist declarada em `PUBLIC_PATHS` de `src/lib/auth/access-policy.ts`: `/login`, os endpoints de login/OAuth em `/api/auth/*` e `/api/reminders/run`, que autentica por `x-cron-secret`). No Next.js 16 o `middleware.ts` passou a se chamar `proxy.ts` — o arquivo sempre existiu, só mudou de nome.
+- **Segunda camada (✅, Issue #4):** guarda dentro de cada route handler (`requireStaffSession`/`requirePortalSession`), porque a doc do Next 16 é explícita que o proxy é uma checagem otimista de borda e não deve ser a única barreira. Política única em `src/lib/auth/access-policy.ts`, consumida pelas duas camadas. Ver [ADR 002](adr/002-autorizacao-em-duas-camadas.md).
+- **Conformidade automática:** `tests/api/route-guard-conformance.test.ts` varre `src/app/api/**/route.ts` e quebra o build se um handler novo nascer sem guarda.
+- **Fail-closed em produção e em desenvolvimento**: sem `AUTH_PASSWORD`/`AUTH_SECRET` configurados o app responde 503 em todas as rotas. Rodar sem autenticação exige o opt-in explícito `VITTA_ALLOW_OPEN_MODE=true`, ignorado quando `NODE_ENV=production` (antes bastava não estar em produção para liberar tudo).
 - Rate limit no login (5 tentativas/min/IP) — mitiga força bruta (A07).
 - Logout limpa o cookie.
 
 ### 1.2 ALTO — Sem rate limiting em nenhum endpoint (API4 Unrestricted Resource Consumption)
+
 Scripts podiam criar pacientes/consultas ilimitados e derrubar o banco.
-**Correção (✅):** rate limit em memória no middleware (janela fixa por IP, 120 req/min para API; 5/min no login). Limitação conhecida: memória é por instância — para múltiplas réplicas, mover para Redis (**🗓 P1**).
+**Correção (✅):** rate limit em memória no proxy (janela fixa por IP, 120 req/min para API; 5/min no login). Limitação conhecida: memória é por instância — para múltiplas réplicas, mover para Redis (**🗓 P1**).
 
 ### 1.3 ALTO — Race condition no agendamento (TOCTOU) → double-booking (fraude/integridade)
 `findConflicting` + `save` não são atômicos: duas requisições simultâneas no mesmo horário passavam ambas na checagem e gravavam duas consultas sobrepostas. Em cenário multi-instância seria rotina.
@@ -153,7 +156,7 @@ Varredura por violações de camada, duplicação de regra e consistência. **7 
 ### Executado nesta rodada (P0) ✅
 1. Autenticação de sessão fail-closed + login com rate limit + logout.
 2. Headers de segurança globais (CSP, XFO, nosniff, HSTS, Permissions-Policy).
-3. Rate limiting de API por IP no middleware.
+3. Rate limiting de API por IP no proxy (`src/proxy.ts`).
 4. Constraint de exclusão no Postgres eliminando double-booking sob concorrência (+ mapeamento 23P01 → 409).
 5. `.max()`/tetos em todos os inputs zod (anti-DoS).
 6. `findByIds` eliminando N+1 de enriquecimento; teto de 500 linhas nas listagens.

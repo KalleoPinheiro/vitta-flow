@@ -5,6 +5,7 @@ import { Procedure } from "@/domain/catalog/procedure";
 import { ValidationError } from "@/domain/shared/errors";
 import { handleRequest } from "@/lib/api-response";
 import { toProcedureDto } from "@/lib/dto";
+import { requireStaffSession } from "@/lib/auth/require-session";
 
 const procedureSchema = z.object({
   name: z.string().min(1).max(200),
@@ -12,7 +13,10 @@ const procedureSchema = z.object({
   durationMinutes: z.number().int().min(1).max(480),
 });
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { procedures } = await getRepositories();
     const result = await procedures.findAll();
@@ -21,6 +25,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const body = procedureSchema.parse(await request.json());
     const { procedures } = await getRepositories();

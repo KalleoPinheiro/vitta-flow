@@ -515,6 +515,30 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
       expect(response.status).toBe(401);
     });
 
+    it("Dado sem sessão, Quando GET slots, Então retorna 401", async () => {
+      const response = await slotsRoute.GET(
+        jsonRequest(
+          `/api/portal/patient/slots?procedureId=${procedureId}&date=2027-03-15`,
+          "GET",
+        ),
+      );
+
+      expect(response.status).toBe(401);
+    });
+
+    it("Dado sessão de parceiro, Quando GET procedures do portal, Então retorna 403", async () => {
+      const response = await portalProceduresRoute.GET(
+        jsonRequest(
+          "/api/portal/patient/procedures",
+          "GET",
+          undefined,
+          cookieHeader(partnerCookieToken),
+        ),
+      );
+
+      expect(response.status).toBe(403);
+    });
+
     it("Dado sessão de parceiro, Quando GET slots, Então retorna 403", async () => {
       const response = await slotsRoute.GET(
         jsonRequest(
@@ -624,6 +648,17 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
         }),
       );
       procedureId = ((await response.json()) as Envelope<{ id: string }>).data.id;
+    });
+
+    it("Dado sem sessão, Quando POST, Então retorna 401", async () => {
+      const response = await portalAppointmentsRoute.POST(
+        jsonRequest("/api/portal/patient/appointments", "POST", {
+          procedureId,
+          startsAt: "2027-04-05T12:00:00.000Z",
+        }),
+      );
+
+      expect(response.status).toBe(401);
     });
 
     it("Dado sessão de parceiro, Quando POST, Então retorna 403", async () => {

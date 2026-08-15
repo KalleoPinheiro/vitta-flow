@@ -363,7 +363,6 @@ describe("Feature: Visão do paciente no portal", () => {
         endsAt: "2099-03-02T13:00:00.000Z",
         procedure: "Curativo",
         status: "scheduled",
-        notes: null,
       };
       let scheduledYet = false;
       let postBody: string | null = null;

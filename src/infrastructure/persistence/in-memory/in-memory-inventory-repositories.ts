@@ -28,6 +28,19 @@ export class InMemorySupplyRepository implements SupplyRepository {
   async findAll(): Promise<Supply[]> {
     return [...this.items.values()].sort((a, b) => a.name.localeCompare(b.name));
   }
+
+  async adjustStock(id: string, delta: number): Promise<Supply | null> {
+    const current = this.items.get(id);
+    if (!current || current.stockQty + delta < 0) {
+      return null;
+    }
+    if (delta === 0) {
+      return current;
+    }
+    const adjusted = delta > 0 ? current.registerEntry(delta) : current.registerExit(-delta);
+    this.items.set(id, adjusted);
+    return adjusted;
+  }
 }
 
 export class InMemoryStockMovementRepository implements StockMovementRepository {

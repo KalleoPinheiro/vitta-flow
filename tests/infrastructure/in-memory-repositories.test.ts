@@ -628,6 +628,18 @@ describe("Feature: Doubles em memória de infraestrutura", () => {
 
       expect((await repo.findAll()).map((s) => s.name)).toEqual(["Alfa", "Zeta"]);
     });
+
+    it("Dado ajuste condicional, Quando saldo permite aplica; senão null (CONS2-05..08)", async () => {
+      const repo = new InMemorySupplyRepository();
+      const supply = Supply.create({ name: "Gaze", unit: "un", minQty: 1, priceCents: 100 });
+      await repo.save(supply.registerEntry(5));
+
+      expect((await repo.adjustStock(supply.id, -3))?.stockQty).toBe(2);
+      expect((await repo.adjustStock(supply.id, 1))?.stockQty).toBe(3);
+      expect(await repo.adjustStock(supply.id, -4)).toBeNull();
+      expect((await repo.findById(supply.id))?.stockQty).toBe(3);
+      expect(await repo.adjustStock("nao-existe", 1)).toBeNull();
+    });
   });
 
   describe("Cenário: InMemoryStockMovementRepository", () => {

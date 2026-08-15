@@ -46,6 +46,13 @@ export async function POST(request: NextRequest) {
     return fail(identity.error, identity.status);
   }
   const subject = identity.subject;
+  if (subject === "local") {
+    // Credencial compartilhada corrói a trilha de auditoria (ator "local") —
+    // caminho de descontinuação registrado no plano de evolução (Fase 6).
+    console.warn(
+      "Login com a senha master da clínica — prefira contas individuais para auditoria nominal",
+    );
+  }
 
   const expiresAtMs = Date.now() + SESSION_TTL_MS;
   const response = NextResponse.json({ success: true, data: { ok: true }, error: null });

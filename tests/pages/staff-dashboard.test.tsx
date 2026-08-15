@@ -12,6 +12,8 @@ interface TriagePhotoFixture {
   patientName: string;
   patientNote: string | null;
   createdAt: string;
+  waitingHours: number;
+  latestScore: { kind: "push" | "det"; value: number } | null;
 }
 
 const summaryFixture = {
@@ -62,6 +64,8 @@ const triageFixture: TriagePhotoFixture = {
   patientName: "Maria Souza",
   patientNote: "Está coçando",
   createdAt: "2026-07-18T10:00:00.000Z",
+  waitingHours: 2,
+  latestScore: null,
 };
 
 interface FetchOptions {
@@ -281,6 +285,32 @@ describe("Feature: Dashboard do painel interno", () => {
       });
       expect(screen.getAllByText(/Maria Souza/).length).toBeGreaterThan(0);
       expect(screen.getByText(/Está coçando/)).toBeInTheDocument();
+    });
+
+    it("Dado pendência antiga e score da condição, Quando renderizar, Então mostra idade destacada e badge do score (COMP3-04/06)", async () => {
+      mockFetch({
+        triage: [
+          { ...triageFixture, waitingHours: 30, latestScore: { kind: "push", value: 9 } },
+        ],
+      });
+      render(<DashboardPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText("PUSH 9")).toBeInTheDocument();
+      });
+      const waiting = screen.getByText(/aguardando há 30h/);
+      expect(waiting).toHaveClass("text-red-700");
+    });
+
+    it("Dado pendência recente sem score, Quando renderizar, Então idade sem destaque e sem badge (COMP3-05)", async () => {
+      mockFetch({ triage: [triageFixture] });
+      render(<DashboardPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/aguardando há 2h/)).toBeInTheDocument();
+      });
+      expect(screen.getByText(/aguardando há 2h/)).not.toHaveClass("text-red-700");
+      expect(screen.queryByText(/PUSH|DET/)).not.toBeInTheDocument();
     });
 
     it("Dado clique em 'Ok, manter plano', Quando acionado, Então envia triagem reviewed", async () => {

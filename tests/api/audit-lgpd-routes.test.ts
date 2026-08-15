@@ -37,6 +37,7 @@ describe("Feature: Rotas de auditoria, export LGPD, fotos (staff) e cron de lemb
   let exportRoute: typeof import("@/app/api/patients/[id]/export/route");
   let photoByIdRoute: typeof import("@/app/api/photos/[id]/route");
   let triageRoute: typeof import("@/app/api/photos/triage/route");
+  let assessmentsRoute: typeof import("@/app/api/conditions/[id]/assessments/route");
   let remindersRunRoute: typeof import("@/app/api/reminders/run/route");
   let clinicInfoRoute: typeof import("@/app/api/clinic-info/route");
 
@@ -89,6 +90,7 @@ describe("Feature: Rotas de auditoria, export LGPD, fotos (staff) e cron de lemb
     exportRoute = await import("@/app/api/patients/[id]/export/route");
     photoByIdRoute = await import("@/app/api/photos/[id]/route");
     triageRoute = await import("@/app/api/photos/triage/route");
+    assessmentsRoute = await import("@/app/api/conditions/[id]/assessments/route");
     remindersRunRoute = await import("@/app/api/reminders/run/route");
     clinicInfoRoute = await import("@/app/api/clinic-info/route");
 
@@ -354,6 +356,41 @@ describe("Feature: Rotas de auditoria, export LGPD, fotos (staff) e cron de lemb
       expect(entry?.patientId).toBe(patientId);
       expect(entry?.patientName).toBe("Beatriz Auditoria");
       expect(entry?.conditionTitle).toBe("Ferida sacral");
+    });
+
+    it("Dado condição sem avaliação pontuável, Quando GET triage, Então latestScore null e idade da pendência (COMP3-04/05)", async () => {
+      const photoId = await uploadPatientOriginPhoto("sem score ainda");
+
+      const response = await triageRoute.GET();
+      const body = (await response.json()) as Envelope<
+        Array<{ id: string; waitingHours: number; latestScore: unknown }>
+      >;
+      const entry = body.data.find((item) => item.id === photoId);
+
+      expect(entry?.latestScore).toBeNull();
+      expect(entry?.waitingHours).toBe(0);
+    });
+
+    it("Dado avaliação de ferida com componentes do PUSH, Quando GET triage, Então latestScore traz o score da condição (COMP3-04)", async () => {
+      // 20mm x 15mm = 3,0 cm² → subscore de área 5; exsudato moderado 2; granulação 2 → PUSH 9.
+      await assessmentsRoute.POST(
+        jsonRequest(`/api/conditions/${conditionId}/assessments`, "POST", {
+          lengthMm: 20,
+          widthMm: 15,
+          tissueType: "granulation",
+          exudate: "moderate",
+        }),
+        context(conditionId),
+      );
+      const photoId = await uploadPatientOriginPhoto("com score");
+
+      const response = await triageRoute.GET();
+      const body = (await response.json()) as Envelope<
+        Array<{ id: string; latestScore: { kind: string; value: number } | null }>
+      >;
+      const entry = body.data.find((item) => item.id === photoId);
+
+      expect(entry?.latestScore).toEqual({ kind: "push", value: 9 });
     });
   });
 

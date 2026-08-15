@@ -67,6 +67,11 @@ export class InMemoryClinicalConditionRepository implements ClinicalConditionRep
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
+  async findByIds(ids: string[]): Promise<ClinicalCondition[]> {
+    const unique = new Set(ids);
+    return [...this.items.values()].filter((c) => unique.has(c.id));
+  }
+
   async findByPatientIds(patientIds: string[]): Promise<ClinicalCondition[]> {
     const ids = new Set(patientIds);
     return [...this.items.values()]

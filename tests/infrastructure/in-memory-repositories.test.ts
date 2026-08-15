@@ -425,6 +425,17 @@ describe("Feature: Doubles em memória de infraestrutura", () => {
 
       expect(found.map((c) => c.id).sort()).toEqual(["cond-1", "cond-2"]);
     });
+
+    it("Dado ids de condição, Quando findByIds, Então retorna o lote correspondente (CONS2-09)", async () => {
+      const repo = new InMemoryClinicalConditionRepository();
+      await repo.save(ClinicalCondition.restore(conditionState({ id: "cond-1", patientId: "p1" })));
+      await repo.save(ClinicalCondition.restore(conditionState({ id: "cond-2", patientId: "p2" })));
+
+      const found = await repo.findByIds(["cond-2", "cond-2", "inexistente"]);
+
+      expect(found.map((c) => c.id)).toEqual(["cond-2"]);
+      expect(await repo.findByIds([])).toEqual([]);
+    });
   });
 
   describe("Cenário: InMemoryConditionAssessmentRepository", () => {

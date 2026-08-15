@@ -8,12 +8,9 @@ export async function GET() {
     const pending = await conditionPhotos.findPendingTriage();
 
     const conditionIds = [...new Set(pending.map((photo) => photo.conditionId))];
-    const conditionList = await Promise.all(
-      conditionIds.map((id) => conditions.findById(id)),
-    );
-    const conditionById = new Map(
-      conditionList.filter((c) => c !== null).map((c) => [c.id, c]),
-    );
+    // Uma query em lote (CONS2-09) — padrão anti-N+1 do restante do projeto.
+    const conditionList = await conditions.findByIds(conditionIds);
+    const conditionById = new Map(conditionList.map((c) => [c.id, c]));
     const patientList = await patients.findByIds(
       [...conditionById.values()].map((c) => c.patientId),
     );

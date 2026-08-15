@@ -233,6 +233,12 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
     const byPatients = await conditionRepo.findByPatientIds([patient.id, patient.id]);
     expect(byPatients).toHaveLength(1);
     expect(byPatients[0].id).toBe(condition.id);
+
+    // Lote por id (CONS2-09): uma chamada, ids duplicados deduplicados, vazio → [].
+    expect(await conditionRepo.findByIds([])).toEqual([]);
+    const byIds = await conditionRepo.findByIds([condition.id, condition.id, "inexistente"]);
+    expect(byIds).toHaveLength(1);
+    expect(byIds[0].id).toBe(condition.id);
   });
 
   it("Dado fotos de condição, Quando salvar, triar e buscar, Então fluxo completo preservado", async () => {

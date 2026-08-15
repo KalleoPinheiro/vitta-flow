@@ -6,7 +6,7 @@ import { FollowUp } from "@/domain/followup/follow-up";
 import { NotFoundError } from "@/domain/shared/errors";
 import { handleRequest, fail } from "@/lib/api-response";
 import { getRequestSession } from "@/lib/auth/request-session";
-import { recordAudit } from "@/lib/audit";
+import { recordAudit, recordAuditNow } from "@/lib/audit";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -40,7 +40,8 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     const condition = photo ? await conditions.findById(photo.conditionId) : null;
     await new DeleteConditionPhoto(conditionPhotos, photoStorage).execute({ id });
 
-    recordAudit(auditEvents, getRequestSession(request), {
+    // Write-ahead (SEC1-21): exclusão de dado clínico exige trilha antes do sucesso.
+    await recordAuditNow(auditEvents, getRequestSession(request), {
       action: "delete",
       resourceType: "photo",
       resourceId: id,

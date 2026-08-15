@@ -3,7 +3,7 @@ import { getRepositories } from "@/infrastructure/container";
 import { NotFoundError } from "@/domain/shared/errors";
 import { handleRequest } from "@/lib/api-response";
 import { getRequestSession } from "@/lib/auth/request-session";
-import { recordAudit } from "@/lib/audit";
+import { recordAuditNow } from "@/lib/audit";
 import {
   toAnamnesisDto,
   toAppointmentDto,
@@ -47,7 +47,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
       repos.sessionPackages.findByPatientId(id),
     ]);
 
-    recordAudit(repos.auditEvents, getRequestSession(request), {
+    // Write-ahead (SEC1-20): exportação sem trilha de auditoria não responde sucesso.
+    await recordAuditNow(repos.auditEvents, getRequestSession(request), {
       action: "read",
       resourceType: "export",
       resourceId: id,

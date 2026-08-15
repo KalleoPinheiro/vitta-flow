@@ -45,13 +45,7 @@ export class RegisterStockMovement {
       }
     }
 
-    // Validação de domínio no snapshot lido — mensagens atuais preservadas
-    // (quantidade positiva; estoque suficiente).
-    if (input.type === "in") {
-      supply.registerEntry(input.quantity);
-    } else {
-      supply.registerExit(input.quantity);
-    }
+    assertMovementAllowed(supply, input.type, input.quantity);
     const movement = StockMovement.create({
       supplyId: input.supplyId,
       type: input.type,
@@ -106,5 +100,18 @@ export class RegisterStockMovement {
       await this.batches.save(consumed);
       toConsume = leftover;
     }
+  }
+}
+
+/**
+ * Valida a movimentação no snapshot lido — mensagens do domínio preservadas
+ * (quantidade positiva; estoque suficiente). A condição definitiva é aplicada
+ * no banco por `adjustStock` (anti-corrida).
+ */
+function assertMovementAllowed(supply: Supply, type: MovementType, quantity: number): void {
+  if (type === "in") {
+    supply.registerEntry(quantity);
+  } else {
+    supply.registerExit(quantity);
   }
 }

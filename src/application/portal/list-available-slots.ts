@@ -40,15 +40,8 @@ export class ListAvailableSlots {
   ) {}
 
   async execute(input: ListAvailableSlotsInput): Promise<AvailableSlot[]> {
-    const patient = await this.patients.findByEmail(input.email);
-    if (!patient || !patient.isActive) {
-      throw new NotFoundError("Paciente", input.email);
-    }
-
-    const procedure = await this.procedures.findById(input.procedureId);
-    if (!procedure || !procedure.isActive) {
-      throw new NotFoundError("Procedimento", input.procedureId);
-    }
+    await this.assertActivePatient(input.email);
+    const procedure = await this.assertOfferableProcedure(input.procedureId);
 
     const config = (await this.scheduleConfig?.get()) ?? DEFAULT_SCHEDULE_CONFIG;
     const day = parseLocalDate(input.date);
@@ -57,26 +50,35 @@ export class ListAvailableSlots {
     }
 
     const now = input.now ?? new Date();
-    const durationMs = procedure.durationMinutes * MINUTE_MS;
-    const closesAt = new Date(day);
-    closesAt.setHours(config.endHour, 0, 0, 0);
+    const candidates = candidateSlots(day, config, procedure.durationMinutes).filter(
+      // Horário já passado não é ofertado.
+      (slot) => slot.startsAt.getTime() > now.getTime(),
+    );
 
     const slots: AvailableSlot[] = [];
-    for (
-      let start = startOfWindow(day, config.startHour);
-      start.getTime() + durationMs <= closesAt.getTime();
-      start = new Date(start.getTime() + durationMs)
-    ) {
-      const end = new Date(start.getTime() + durationMs);
-      // Horário já passado não é ofertado.
-      if (start.getTime() <= now.getTime()) {
-        continue;
-      }
-      if (await this.isFree(start, end, config)) {
-        slots.push({ startsAt: start, endsAt: end });
+    for (const candidate of candidates) {
+      if (await this.isFree(candidate.startsAt, candidate.endsAt, config)) {
+        slots.push(candidate);
       }
     }
     return slots;
+  }
+
+  /** Escopo da sessão: só paciente cadastrado e ativo consulta horários. */
+  private async assertActivePatient(email: string): Promise<void> {
+    const patient = await this.patients.findByEmail(email);
+    if (!patient || !patient.isActive) {
+      throw new NotFoundError("Paciente", email);
+    }
+  }
+
+  /** Procedimento inativo não é ofertado ao paciente. */
+  private async assertOfferableProcedure(procedureId: string) {
+    const procedure = await this.procedures.findById(procedureId);
+    if (!procedure || !procedure.isActive) {
+      throw new NotFoundError("Procedimento", procedureId);
+    }
+    return procedure;
   }
 
   private async isFree(
@@ -100,10 +102,27 @@ export class ListAvailableSlots {
   }
 }
 
-function startOfWindow(day: Date, startHour: number): Date {
+/** Horários candidatos do dia: passo igual à duração, dentro da grade. */
+function candidateSlots(
+  day: Date,
+  config: { startHour: number; endHour: number },
+  durationMinutes: number,
+): AvailableSlot[] {
+  const durationMs = durationMinutes * MINUTE_MS;
+  const closesAt = new Date(day);
+  closesAt.setHours(config.endHour, 0, 0, 0);
   const start = new Date(day);
-  start.setHours(startHour, 0, 0, 0);
-  return start;
+  start.setHours(config.startHour, 0, 0, 0);
+
+  const candidates: AvailableSlot[] = [];
+  for (
+    let startsAt = start;
+    startsAt.getTime() + durationMs <= closesAt.getTime();
+    startsAt = new Date(startsAt.getTime() + durationMs)
+  ) {
+    candidates.push({ startsAt, endsAt: new Date(startsAt.getTime() + durationMs) });
+  }
+  return candidates;
 }
 
 /** AAAA-MM-DD → data local; null quando o formato é inválido. */

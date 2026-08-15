@@ -44,14 +44,7 @@ export class ScheduleOwnAppointment {
       throw new NotFoundError("Procedimento", input.procedureId);
     }
 
-    // Follow-up precisa ser do próprio paciente — de outro, responde NotFound
-    // (não vaza existência), mesma política do resto do portal.
-    const followUp = input.followUpId
-      ? await this.followUps.findById(input.followUpId)
-      : null;
-    if (input.followUpId && (!followUp || followUp.patientId !== patient.id)) {
-      throw new NotFoundError("Retorno", input.followUpId);
-    }
+    const followUp = await this.resolveOwnFollowUp(input.followUpId ?? null, patient.id);
 
     const appointment = await new ScheduleAppointment(
       this.appointments,
@@ -71,5 +64,20 @@ export class ScheduleOwnAppointment {
       await this.followUps.save(followUp.markScheduled());
     }
     return appointment;
+  }
+
+  /**
+   * Follow-up precisa ser do próprio paciente — de outro, responde NotFound
+   * (não vaza existência), mesma política do resto do portal.
+   */
+  private async resolveOwnFollowUp(followUpId: string | null, patientId: string) {
+    if (!followUpId) {
+      return null;
+    }
+    const followUp = await this.followUps.findById(followUpId);
+    if (!followUp || followUp.patientId !== patientId) {
+      throw new NotFoundError("Retorno", followUpId);
+    }
+    return followUp;
   }
 }

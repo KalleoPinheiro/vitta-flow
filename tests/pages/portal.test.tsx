@@ -12,7 +12,7 @@ import type {
   PortalPatientProfileDto,
   ReferredPatientSummaryDto,
 } from "@/lib/dto";
-import { formatDate, formatDateTime } from "@/lib/format";
+import { formatDate, formatDateTime, formatTime } from "@/lib/format";
 import PortalPage from "@/app/portal/page";
 import { PatientPortalView } from "@/app/portal/patient-view";
 import { PartnerPortalView } from "@/app/portal/partner-view";
@@ -346,6 +346,146 @@ describe("Feature: Visão do paciente no portal", () => {
       expect(await screen.findByText("Retornos recomendados")).toBeInTheDocument();
       expect(screen.getByText(/Retorno para avaliação de ferida/)).toBeInTheDocument();
       expect(screen.getByText(formatDate(followUp.dueDate))).toBeInTheDocument();
+    });
+
+    it("Dado retorno pendente, Quando escolher procedimento e horário, Então agenda e recarrega o portal (PORT4-10/11)", async () => {
+      const followUp: FollowUpDto = {
+        id: "fu-1",
+        patientId: "pat-1",
+        appointmentId: null,
+        dueDate: "2099-02-01T00:00:00.000Z",
+        reason: "Retorno para avaliação de ferida",
+        status: "pending",
+      };
+      const scheduled: PortalAppointmentDto = {
+        id: "appt-novo",
+        startsAt: "2099-03-02T12:00:00.000Z",
+        endsAt: "2099-03-02T13:00:00.000Z",
+        procedure: "Curativo",
+        status: "scheduled",
+        notes: null,
+      };
+      let scheduledYet = false;
+      let postBody: string | null = null;
+      // Após o POST, o portal recarregado devolve a consulta criada e nenhuma pendência.
+      const bundleAfterScheduling = () =>
+        jsonResponse(true, {
+          ...emptyPatientBundle,
+          followUps: scheduledYet ? [] : [followUp],
+          appointments: scheduledYet ? [scheduled] : [],
+        });
+      mockFetch([
+        {
+          method: "POST",
+          path: "/api/portal/patient/appointments",
+          respond: () => {
+            scheduledYet = true;
+            return jsonResponse(true, scheduled);
+          },
+        },
+        {
+          path: "/api/portal/patient/procedures",
+          respond: () =>
+            jsonResponse(true, [
+              { id: "proc-1", name: "Curativo", priceCents: 15000, durationMinutes: 60, active: true },
+            ]),
+        },
+        {
+          path: "/api/portal/patient/slots",
+          respond: () =>
+            jsonResponse(true, [
+              { startsAt: "2099-03-02T12:00:00.000Z", endsAt: "2099-03-02T13:00:00.000Z" },
+            ]),
+        },
+        {
+          path: "/api/portal/patient/consent",
+          respond: () => jsonResponse(true, { consentText: "Termo", accepted: true, acceptedAt: null }),
+        },
+        { path: "/api/portal/patient", respond: bundleAfterScheduling },
+      ]);
+      // Captura do corpo enviado ao POST (o roteador acima não expõe o init).
+      const rawFetch = globalThis.fetch as unknown as (
+        input: RequestInfo | URL,
+        init?: RequestInit,
+      ) => Promise<unknown>;
+      vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = typeof input === "string" ? input : input.toString();
+        if (url.startsWith("/api/portal/patient/appointments") && init?.method === "POST") {
+          postBody = init.body as string;
+        }
+        return rawFetch(input, init);
+      });
+
+      render(<PatientPortalView />);
+
+      fireEvent.click(await screen.findByText("Agendar retorno"));
+      fireEvent.change(await screen.findByLabelText(/Procedimento/), {
+        target: { value: "proc-1" },
+      });
+      fireEvent.change(screen.getByLabelText(/Dia/), { target: { value: "2099-03-02" } });
+
+      fireEvent.click(await screen.findByText(formatTime(scheduled.startsAt)));
+
+      await waitFor(() => {
+        expect(postBody).not.toBeNull();
+      });
+      expect(JSON.parse(postBody as unknown as string)).toEqual({
+        procedureId: "proc-1",
+        startsAt: "2099-03-02T12:00:00.000Z",
+        followUpId: "fu-1",
+      });
+      // Portal recarregado: a consulta nova aparece e a pendência sai da lista.
+      expect(await screen.findByText(/Curativo/)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.queryByText("Retornos recomendados")).not.toBeInTheDocument();
+      });
+    });
+
+    it("Dado falha ao agendar, Quando confirmar horário, Então exibe a mensagem de erro", async () => {
+      const followUp: FollowUpDto = {
+        id: "fu-1",
+        patientId: "pat-1",
+        appointmentId: null,
+        dueDate: "2099-02-01T00:00:00.000Z",
+        reason: "Retorno para avaliação de ferida",
+        status: "pending",
+      };
+      mockFetch([
+        {
+          method: "POST",
+          path: "/api/portal/patient/appointments",
+          respond: () => jsonResponse(false, null, "Horário indisponível"),
+        },
+        {
+          path: "/api/portal/patient/procedures",
+          respond: () =>
+            jsonResponse(true, [
+              { id: "proc-1", name: "Curativo", priceCents: 15000, durationMinutes: 60, active: true },
+            ]),
+        },
+        {
+          path: "/api/portal/patient/slots",
+          respond: () =>
+            jsonResponse(true, [
+              { startsAt: "2099-03-02T12:00:00.000Z", endsAt: "2099-03-02T13:00:00.000Z" },
+            ]),
+        },
+        { path: "/api/portal/patient/consent", respond: () => jsonResponse(true, { consentText: "Termo", accepted: true, acceptedAt: null }) },
+        {
+          path: "/api/portal/patient",
+          respond: () => jsonResponse(true, { ...emptyPatientBundle, followUps: [followUp] }),
+        },
+      ]);
+
+      render(<PatientPortalView />);
+
+      fireEvent.click(await screen.findByText("Agendar retorno"));
+      fireEvent.change(await screen.findByLabelText(/Procedimento/), {
+        target: { value: "proc-1" },
+      });
+      fireEvent.click(await screen.findByText(formatTime("2099-03-02T12:00:00.000Z")));
+
+      expect(await screen.findByText("Horário indisponível")).toBeInTheDocument();
     });
   });
 

@@ -21,6 +21,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import { ConditionProgress, type ConditionWithAssessmentsDto } from "./condition-progress";
 import { ConsentCard, PatientPhotoUpload } from "./consent-card";
+import { ScheduleReturn } from "./schedule-return";
 
 interface PatientPortalDto {
   patient: PortalPatientProfileDto;
@@ -88,6 +89,7 @@ export function PatientPortalView() {
             {data.followUps.map((followUp) => (
               <li key={followUp.id} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
                 {followUp.reason} — até <strong>{formatDate(followUp.dueDate)}</strong>
+                <ScheduleReturn followUpId={followUp.id} onScheduled={refresh} />
               </li>
             ))}
           </ul>

@@ -297,10 +297,16 @@ describe("Feature: Retornos (follow-ups), relatórios e resumo", () => {
     let reportProfessionalId: string;
     // Faturas nascem com issuedAt = agora (Invoice.create), então o mês do
     // relatório precisa ser o mês corrente para capturar a fatura paga no summarize.
+    // A consulta usa o primeiro DIA ÚTIL do mês — dia 01 fixo cai fora do horário
+    // comercial (seg–sex) sempre que o mês começa em fim de semana.
     const now = new Date();
     const reportMonth = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
-    const reportApptStart = `${reportMonth}-01T12:00:00.000Z`;
-    const reportApptEnd = `${reportMonth}-01T13:00:00.000Z`;
+    const firstBusinessDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 12));
+    while (firstBusinessDay.getUTCDay() === 0 || firstBusinessDay.getUTCDay() === 6) {
+      firstBusinessDay.setUTCDate(firstBusinessDay.getUTCDate() + 1);
+    }
+    const reportApptStart = firstBusinessDay.toISOString();
+    const reportApptEnd = new Date(firstBusinessDay.getTime() + 60 * 60_000).toISOString();
 
     beforeAll(async () => {
       const patientResponse = await patientsRoute.POST(

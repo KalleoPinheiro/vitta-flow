@@ -45,7 +45,7 @@ prática de mercado.
 
 1. WHEN a fila é servida THEN cada item SHALL incluir `waitingHours` (horas desde o envio) e `latestScore` ({kind: "push"|"det", value} | null) da condição — `COMP3-04`
 2. WHEN a condição não tem avaliação com score calculável THEN `latestScore` SHALL ser null — `COMP3-05`
-3. WHEN a UI da fila renderiza THEN pendências com mais de 24h SHALL ter destaque visual — `COMP3-06`
+3. WHEN a UI da fila renderiza THEN pendências com 24h ou mais de espera SHALL ter destaque visual — `COMP3-06`
 
 ### P1: Validade de pacotes ⭐ MVP
 

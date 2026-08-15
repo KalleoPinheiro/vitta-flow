@@ -327,8 +327,9 @@ function PackageForm({
           procedureId,
           totalSessions: Number(sessions),
           priceCents: Math.round(Number(price) * 100),
-          // Validade opcional: fim do dia escolhido (pacote vale até o dia inteiro).
-          expiresAt: expiresAt ? new Date(`${expiresAt}T23:59:59.000Z`).toISOString() : null,
+          // Validade opcional: fim do dia escolhido no fuso local da clínica —
+          // forçar UTC encurtaria o último dia em fusos a oeste (UTC-3: 20:59).
+          expiresAt: expiresAt ? new Date(`${expiresAt}T23:59:59`).toISOString() : null,
         }),
       });
       onSaved();

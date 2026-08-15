@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { getRepositories } from "@/infrastructure/container";
 import { GetMonthlyReport } from "@/application/reports/get-monthly-report";
 import { handleRequest, fail } from "@/lib/api-response";
+import { cacheReport, getCachedReport } from "@/lib/report-cache";
 
 const MONTH_REGEX = /^\d{4}-\d{2}$/;
 
@@ -19,12 +20,24 @@ export async function GET(request: NextRequest) {
     const from = new Date(year, monthIndex, 1);
     const to = new Date(year, monthIndex + 1, 1);
 
+    const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const isClosedMonth = to.getTime() <= startOfCurrentMonth.getTime();
+    const cacheKey = `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
+    const cached = isClosedMonth ? getCachedReport(cacheKey) : undefined;
+    if (cached) {
+      return cached;
+    }
+
     const { appointments, invoices, stockMovements, professionals } = await getRepositories();
-    return new GetMonthlyReport(
+    const report = await new GetMonthlyReport(
       appointments,
       invoices,
       stockMovements,
       professionals,
     ).execute({ from, to });
+    if (isClosedMonth) {
+      cacheReport(cacheKey, report);
+    }
+    return report;
   });
 }

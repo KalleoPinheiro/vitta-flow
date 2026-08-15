@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, vi } from "vitest";
 import { NextRequest } from "next/server";
 
 process.env.VITTA_DB_DRIVER = "pglite";
@@ -395,6 +395,36 @@ describe("Feature: Retornos (follow-ups), relatórios e resumo", () => {
         }),
         context(reportInvoiceId),
       );
+    });
+
+    it("Dado mês encerrado requisitado duas vezes, Quando GET /api/reports, Então a segunda vem do cache com payload idêntico (CONS2-11/13)", async () => {
+      const { clearReportCache } = await import("@/lib/report-cache");
+      const { GetMonthlyReport } = await import("@/application/reports/get-monthly-report");
+      clearReportCache();
+      const executeSpy = vi.spyOn(GetMonthlyReport.prototype, "execute");
+
+      const first = await reportsRoute.GET(jsonRequest("/api/reports?month=2020-01", "GET"));
+      const second = await reportsRoute.GET(jsonRequest("/api/reports?month=2020-01", "GET"));
+      const firstBody = (await first.json()) as Envelope<MonthlyReportDto>;
+      const secondBody = (await second.json()) as Envelope<MonthlyReportDto>;
+
+      expect(executeSpy).toHaveBeenCalledTimes(1);
+      expect(secondBody).toEqual(firstBody);
+      executeSpy.mockRestore();
+      clearReportCache();
+    });
+
+    it("Dado mês corrente requisitado duas vezes, Quando GET /api/reports, Então recalcula a cada acesso (CONS2-12)", async () => {
+      const { clearReportCache } = await import("@/lib/report-cache");
+      const { GetMonthlyReport } = await import("@/application/reports/get-monthly-report");
+      clearReportCache();
+      const executeSpy = vi.spyOn(GetMonthlyReport.prototype, "execute");
+
+      await reportsRoute.GET(jsonRequest(`/api/reports?month=${reportMonth}`, "GET"));
+      await reportsRoute.GET(jsonRequest(`/api/reports?month=${reportMonth}`, "GET"));
+
+      expect(executeSpy).toHaveBeenCalledTimes(2);
+      executeSpy.mockRestore();
     });
 
     it("Dado mês sem parâmetro, Quando GET /api/reports, Então usa mês atual e retorna 200", async () => {

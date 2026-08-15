@@ -1,0 +1,29 @@
+import type {
+  TransactionManager,
+  TransactionScope,
+} from "@/application/ports/transaction-manager";
+import type { AppDb } from "./db";
+import { DrizzleAppointmentRepository } from "./drizzle-appointment-repository";
+import { DrizzleInvoiceRepository } from "./drizzle-invoice-repository";
+import { DrizzleFollowUpRepository } from "./drizzle-inventory-repositories";
+import { DrizzleSessionPackageRepository } from "./drizzle-package-repository";
+
+/**
+ * Unidade de trabalho sobre `db.transaction` do Drizzle: os repositórios do
+ * escopo são reconstruídos sobre o `tx`, então qualquer erro dentro de `fn`
+ * desfaz tudo (rollback) — CONS2-01.
+ */
+export class DrizzleTransactionManager implements TransactionManager {
+  constructor(private readonly db: AppDb) {}
+
+  run<T>(fn: (repos: TransactionScope) => Promise<T>): Promise<T> {
+    return this.db.transaction(async (tx) =>
+      fn({
+        appointments: new DrizzleAppointmentRepository(tx),
+        invoices: new DrizzleInvoiceRepository(tx),
+        followUps: new DrizzleFollowUpRepository(tx),
+        sessionPackages: new DrizzleSessionPackageRepository(tx),
+      }),
+    );
+  }
+}

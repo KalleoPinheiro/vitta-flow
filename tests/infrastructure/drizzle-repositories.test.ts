@@ -246,6 +246,49 @@ describe("Feature: Persistência PostgreSQL (Drizzle)", () => {
     });
   });
 
+  describe("Cenário: transação (DrizzleTransactionManager)", () => {
+    it("Dado erro dentro da transação, Quando run, Então nada persiste (CONS2-01); sem erro, tudo persiste (CONS2-02)", async () => {
+      const { DrizzleTransactionManager } = await import(
+        "@/infrastructure/persistence/drizzle/drizzle-transaction-manager"
+      );
+      const manager = new DrizzleTransactionManager(appDb);
+      const patient = await savedPatient();
+      const failing = Appointment.create({
+        patientId: patient.id,
+        slot: slot("2026-07-21T09:00:00Z", "2026-07-21T10:00:00Z"),
+        procedure: "Troca de bolsa",
+        price: Money.fromCents(25000),
+      });
+
+      await expect(
+        manager.run(async (repos) => {
+          await repos.appointments.save(failing);
+          throw new Error("falha simulada após o save");
+        }),
+      ).rejects.toThrow("falha simulada após o save");
+      expect(await appointmentRepo.findById(failing.id)).toBeNull();
+
+      const committed = Appointment.create({
+        patientId: patient.id,
+        slot: slot("2026-07-22T09:00:00Z", "2026-07-22T10:00:00Z"),
+        procedure: "Troca de bolsa",
+        price: Money.fromCents(25000),
+      });
+      const invoice = Invoice.create({
+        patientId: patient.id,
+        description: "Consulta",
+        amount: Money.fromCents(25000),
+        appointmentId: committed.id,
+      });
+      await manager.run(async (repos) => {
+        await repos.appointments.save(committed);
+        await repos.invoices.save(invoice);
+      });
+      expect(await appointmentRepo.findById(committed.id)).not.toBeNull();
+      expect(await invoiceRepo.findById(invoice.id)).not.toBeNull();
+    });
+  });
+
   describe("Cenário: fatura ida e volta com filtros", () => {
     it("Dado fatura paga salva, Quando buscar, Então método e data de pagamento preservados", async () => {
       const patient = await savedPatient();

@@ -44,6 +44,8 @@ import {
 } from "./persistence/drizzle/drizzle-foundation-repositories";
 import type { ProcedureKitRepository } from "@/domain/catalog/procedure-kit";
 import { DrizzleSessionPackageRepository } from "./persistence/drizzle/drizzle-package-repository";
+import { DrizzleTransactionManager } from "./persistence/drizzle/drizzle-transaction-manager";
+import type { TransactionManager } from "@/application/ports/transaction-manager";
 import type { SessionPackageRepository } from "@/domain/billing/package";
 import type { ProcedureRepository } from "@/domain/catalog/procedure-repository";
 import type { UserAccountRepository } from "@/domain/auth/user-account";
@@ -104,6 +106,7 @@ export interface Services {
   reminderLog: ReminderLogRepository;
   calendar: CalendarGateway;
   messaging: MessagingGateway;
+  transactions: TransactionManager;
 }
 
 const globalForServices = globalThis as unknown as {
@@ -193,5 +196,6 @@ export async function getRepositories(): Promise<Services> {
     reminderLog: new DrizzleReminderLogRepository(db),
     calendar,
     messaging: buildMessagingGateway(),
+    transactions: new DrizzleTransactionManager(db),
   };
 }

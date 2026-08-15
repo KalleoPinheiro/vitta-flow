@@ -55,7 +55,7 @@ pacote como unidade, para que falha parcial não deixe billing inconsistente.
 **Acceptance Criteria**:
 
 1. WHEN uma saída de N unidades é registrada com estoque ≥ N THEN o repo SHALL decrementar condicionalmente (`stock_qty + delta >= 0`) e retornar o insumo atualizado — `CONS2-05`
-2. WHEN a saída deixaria o estoque negativo THEN o repo SHALL retornar null e o use case SHALL lançar a `ValidationError` com a mensagem atual do domínio — `CONS2-06`
+2. WHEN a saída deixaria o estoque negativo THEN o repo SHALL retornar null e o use case SHALL lançar `InsufficientStockError` com a mensagem atual do domínio — `CONS2-06`
 3. WHEN é uma entrada THEN o incremento SHALL usar o mesmo caminho atômico — `CONS2-07`
 4. WHEN duas saídas concorrentes disputam o mesmo estoque THEN no máximo uma SHALL exceder o saldo (garantido pela condição no UPDATE; testado via semântica do repo) — `CONS2-08`
 
@@ -84,10 +84,10 @@ pacote como unidade, para que falha parcial não deixe billing inconsistente.
 
 | Requirement ID | Story | Phase | Status |
 |----------------|-------|-------|--------|
-| CONS2-01..04 | P1 transação | Tasks | Pending |
-| CONS2-05..08 | P1 estoque | Tasks | Pending |
-| CONS2-09..10 | P2 triagem | Tasks | Pending |
-| CONS2-11..13 | P2 cache | Tasks | Pending |
+| CONS2-01..04 | P1 transação | Execute | Implemented |
+| CONS2-05..08 | P1 estoque | Execute | Implemented |
+| CONS2-09..10 | P2 triagem | Execute | Implemented |
+| CONS2-11..13 | P2 cache | Execute | Implemented |
 
 ## Success Criteria
 

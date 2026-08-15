@@ -65,6 +65,8 @@ describe("Feature: Persistência PostgreSQL (Drizzle)", () => {
     await db.delete(schema.scheduleSettings);
     await db.delete(schema.appointments);
     await db.delete(schema.professionals);
+    await db.delete(schema.packageConsumptions);
+    await db.delete(schema.sessionPackages);
     await db.delete(schema.procedures);
     await db.delete(schema.patients);
   });
@@ -286,6 +288,43 @@ describe("Feature: Persistência PostgreSQL (Drizzle)", () => {
       });
       expect(await appointmentRepo.findById(committed.id)).not.toBeNull();
       expect(await invoiceRepo.findById(invoice.id)).not.toBeNull();
+    });
+
+    it("Dado consumo de pacote dentro de transação que falha, Quando run, Então o consumo é revertido (edge case CONS2-01)", async () => {
+      const { DrizzleTransactionManager } = await import(
+        "@/infrastructure/persistence/drizzle/drizzle-transaction-manager"
+      );
+      const { DrizzleSessionPackageRepository } = await import(
+        "@/infrastructure/persistence/drizzle/drizzle-package-repository"
+      );
+      const { SessionPackage } = await import("@/domain/billing/package");
+      const manager = new DrizzleTransactionManager(appDb);
+      const packageRepo = new DrizzleSessionPackageRepository(appDb);
+      const patient = await savedPatient();
+      const procedure = Procedure.create({
+        name: "Curativo pacote tx",
+        priceCents: 10000,
+        durationMinutes: 30,
+      });
+      await procedureRepo.save(procedure);
+      const pkg = SessionPackage.create({
+        patientId: patient.id,
+        procedureId: procedure.id,
+        totalSessions: 5,
+        priceCents: 40000,
+      });
+      await packageRepo.save(pkg);
+
+      await expect(
+        manager.run(async (repos) => {
+          await repos.sessionPackages.save(pkg.consumeSession());
+          await repos.sessionPackages.recordConsumption(pkg.id, "appt-tx-falha");
+          throw new Error("falha após consumir pacote");
+        }),
+      ).rejects.toThrow("falha após consumir pacote");
+
+      expect((await packageRepo.findById(pkg.id))?.usedSessions).toBe(0);
+      expect(await packageRepo.wasConsumedBy("appt-tx-falha")).toBe(false);
     });
   });
 

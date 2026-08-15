@@ -25,12 +25,24 @@
 
 | Fase | Nome | Status | Spec |
 |------|------|--------|------|
-| 1 | Hardening de segurança | **Executar agora** | `.specs/features/fase-1-hardening-seguranca/` |
-| 2 | Consistência transacional e performance | **Executar agora** | `.specs/features/fase-2-consistencia-performance/` |
-| 3 | Compliance e UX clínico | **Executar agora** | `.specs/features/fase-3-compliance-ux-clinico/` |
-| 4 | Portal: auto-agendamento e recall | **Executar agora** | `.specs/features/fase-4-portal-auto-agendamento/` |
-| 5 | Monetização e canal | Planejada (backlog) | seção 5 abaixo |
-| 6 | Plataforma (RBAC fino, multi-tenancy, TISS) | Planejada (backlog) | seção 6 abaixo |
+| 1 | Hardening de segurança | ✅ **Entregue** (Verifier PASS) | `.specs/features/fase-1-hardening-seguranca/` |
+| 2 | Consistência transacional e performance | ✅ **Entregue** (PASS na iteração 1) | `.specs/features/fase-2-consistencia-performance/` |
+| 3 | Compliance e UX clínico | 🔄 Implementada, em re-verificação | `.specs/features/fase-3-compliance-ux-clinico/` |
+| 4 | Portal: auto-agendamento e recall | 📋 Planejada (spec+design+tasks prontos) | `.specs/features/fase-4-portal-auto-agendamento/` |
+| 5 | Monetização e canal | Backlog (depende de decisão de negócio) | seção 5 abaixo |
+| 6 | Plataforma (RBAC fino, multi-tenancy, TISS) | Backlog (depende de decisão de negócio) | seção 6 abaixo |
+
+### Registro de entrega
+
+Cada fase entregue passou por: commits atômicos por task, gates verdes (`npm test`, `npm run lint`,
+`npm run build`) e **validação independente** por um Verifier que não escreveu o código — com
+checagem ancorada na spec (evidência `file:line` por critério de aceite) e sensor de discriminação
+(mutações injetadas em estado descartável para provar que os testes detectam regressão).
+
+O ciclo fix→re-verify foi exercido de verdade: a Fase 2 reprovou por um mutante sobrevivente no ramo
+anti-corrida do estoque e a Fase 3 reprovou por cinco lacunas (entre elas `waitingHours` que passava
+com valor fixo e a validade de pacote inalcançável pela interface). Ambas foram corrigidas e
+re-verificadas.
 
 ---
 

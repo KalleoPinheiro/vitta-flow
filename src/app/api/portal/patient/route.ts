@@ -1,8 +1,8 @@
 import type { NextRequest } from "next/server";
 import { getRepositories } from "@/infrastructure/container";
 import { GetPatientPortalData } from "@/application/portal/get-patient-portal-data";
-import { getRequestSession } from "@/lib/auth/request-session";
-import { handleRequest, fail } from "@/lib/api-response";
+import { requireRole } from "@/lib/auth/guard";
+import { handleRequest } from "@/lib/api-response";
 import { recordAudit } from "@/lib/audit";
 import {
   toAssessmentDto,
@@ -15,12 +15,9 @@ import {
 } from "@/lib/dto";
 
 export async function GET(request: NextRequest) {
-  const session = getRequestSession(request);
-  if (!session) {
-    return fail("Não autenticado", 401);
-  }
-  if (session.role !== "patient") {
-    return fail("Rota exclusiva do portal do paciente", 403);
+  const { session, error } = requireRole(request, "patient");
+  if (error) {
+    return error;
   }
 
   return handleRequest(async () => {

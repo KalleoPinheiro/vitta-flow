@@ -32,6 +32,9 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
   let consentRoute: typeof import("@/app/api/portal/patient/consent/route");
   let photosRoute: typeof import("@/app/api/portal/patient/photos/route");
   let photoByIdRoute: typeof import("@/app/api/portal/patient/photos/[id]/route");
+  let slotsRoute: typeof import("@/app/api/portal/patient/slots/route");
+  let portalProceduresRoute: typeof import("@/app/api/portal/patient/procedures/route");
+  let proceduresRoute: typeof import("@/app/api/procedures/route");
 
   let patientsRoute: typeof import("@/app/api/patients/route");
   let partnersRoute: typeof import("@/app/api/partners/route");
@@ -59,6 +62,9 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
     consentRoute = await import("@/app/api/portal/patient/consent/route");
     photosRoute = await import("@/app/api/portal/patient/photos/route");
     photoByIdRoute = await import("@/app/api/portal/patient/photos/[id]/route");
+    slotsRoute = await import("@/app/api/portal/patient/slots/route");
+    portalProceduresRoute = await import("@/app/api/portal/patient/procedures/route");
+    proceduresRoute = await import("@/app/api/procedures/route");
 
     patientsRoute = await import("@/app/api/patients/route");
     partnersRoute = await import("@/app/api/partners/route");
@@ -480,4 +486,123 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
       expect(response.status).toBe(404);
     });
   });
+
+  describe("GET /api/portal/patient/procedures e /slots", () => {
+    let procedureId: string;
+
+    beforeAll(async () => {
+      const response = await proceduresRoute.POST(
+        jsonRequest("/api/procedures", "POST", {
+          name: "Curativo do portal",
+          priceCents: 15000,
+          durationMinutes: 60,
+        }),
+      );
+      procedureId = ((await response.json()) as Envelope<{ id: string }>).data.id;
+    });
+
+    it("Dado sem sessão, Quando GET procedures do portal, Então retorna 401", async () => {
+      const response = await portalProceduresRoute.GET(
+        jsonRequest("/api/portal/patient/procedures", "GET"),
+      );
+
+      expect(response.status).toBe(401);
+    });
+
+    it("Dado sessão de parceiro, Quando GET slots, Então retorna 403", async () => {
+      const response = await slotsRoute.GET(
+        jsonRequest(
+          `/api/portal/patient/slots?procedureId=${procedureId}&date=2026-07-20`,
+          "GET",
+          undefined,
+          cookieHeader(partnerCookieToken),
+        ),
+      );
+
+      expect(response.status).toBe(403);
+    });
+
+    it("Dado sessão de paciente, Quando GET procedures do portal, Então lista o catálogo ativo", async () => {
+      const response = await portalProceduresRoute.GET(
+        jsonRequest(
+          "/api/portal/patient/procedures",
+          "GET",
+          undefined,
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      const body = (await response.json()) as Envelope<
+        Array<{ id: string; name: string; durationMinutes: number; active: boolean }>
+      >;
+
+      expect(response.status).toBe(200);
+      const entry = body.data.find((item) => item.id === procedureId);
+      expect(entry?.name).toBe("Curativo do portal");
+      expect(entry?.durationMinutes).toBe(60);
+      expect(body.data.every((item) => item.active)).toBe(true);
+    });
+
+    it("Dado dia útil, Quando GET slots, Então retorna horários livres do dia (PORT4-01)", async () => {
+      const response = await slotsRoute.GET(
+        jsonRequest(
+          `/api/portal/patient/slots?procedureId=${procedureId}&date=2027-03-15`,
+          "GET",
+          undefined,
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      const body = (await response.json()) as Envelope<
+        Array<{ startsAt: string; endsAt: string }>
+      >;
+
+      expect(response.status).toBe(200);
+      expect(body.data[0]).toEqual({
+        startsAt: "2027-03-15T08:00:00.000Z",
+        endsAt: "2027-03-15T09:00:00.000Z",
+      });
+      expect(body.data).toHaveLength(10);
+    });
+
+    it("Dado sábado, Quando GET slots, Então lista vazia (PORT4-02)", async () => {
+      const response = await slotsRoute.GET(
+        jsonRequest(
+          `/api/portal/patient/slots?procedureId=${procedureId}&date=2027-03-13`,
+          "GET",
+          undefined,
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      const body = (await response.json()) as Envelope<unknown[]>;
+
+      expect(response.status).toBe(200);
+      expect(body.data).toEqual([]);
+    });
+
+    it("Dado parâmetros ausentes, Quando GET slots, Então retorna 400", async () => {
+      const response = await slotsRoute.GET(
+        jsonRequest(
+          "/api/portal/patient/slots",
+          "GET",
+          undefined,
+          cookieHeader(patientCookieToken),
+        ),
+      );
+
+      expect(response.status).toBe(400);
+    });
+
+    it("Dado procedimento inexistente, Quando GET slots, Então retorna 404 (PORT4-03)", async () => {
+      const response = await slotsRoute.GET(
+        jsonRequest(
+          "/api/portal/patient/slots?procedureId=fantasma&date=2027-03-15",
+          "GET",
+          undefined,
+          cookieHeader(patientCookieToken),
+        ),
+      );
+
+      expect(response.status).toBe(404);
+    });
+  });
+
 });

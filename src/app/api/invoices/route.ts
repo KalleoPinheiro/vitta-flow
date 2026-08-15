@@ -6,6 +6,7 @@ import { ListInvoices } from "@/application/billing/list-invoices";
 import { INVOICE_STATUSES } from "@/domain/billing/invoice";
 import { handleRequest } from "@/lib/api-response";
 import { toInvoiceDto } from "@/lib/dto";
+import { requireStaffSession } from "@/lib/auth/require-session";
 
 const createInvoiceSchema = z.object({
   patientId: z.string().min(1),
@@ -23,6 +24,9 @@ const paginationSchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const params = request.nextUrl.searchParams;
     const status = statusSchema.parse(params.get("status") ?? undefined);
@@ -50,6 +54,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const body = createInvoiceSchema.parse(await request.json());
     const { invoices, patients } = await getRepositories();

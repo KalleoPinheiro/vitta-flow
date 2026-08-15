@@ -1,14 +1,7 @@
 import { describe, it, expect, beforeAll, vi } from "vitest";
-import { NextRequest } from "next/server";
+import { jsonRequest } from "../support/request";
 
 process.env.VITTA_DB_DRIVER = "pglite";
-
-const jsonRequest = (url: string, method: string, body?: unknown) =>
-  new NextRequest(`http://localhost${url}`, {
-    method,
-    body: body === undefined ? undefined : JSON.stringify(body),
-    headers: { "Content-Type": "application/json" },
-  });
 
 interface Envelope<T> {
   success: boolean;
@@ -297,10 +290,10 @@ describe("Feature: Retornos (follow-ups), relatórios e resumo", () => {
     let reportProfessionalId: string;
     // Faturas nascem com issuedAt = agora (Invoice.create), então o mês do
     // relatório precisa ser o mês corrente para capturar a fatura paga no summarize.
-    // A consulta usa o primeiro DIA ÚTIL do mês — dia 01 fixo cai fora do horário
-    // comercial (seg–sex) sempre que o mês começa em fim de semana.
     const now = new Date();
     const reportMonth = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+    // Primeiro DIA ÚTIL do mês — dia 01 fixo cai fora do horário comercial
+    // sempre que o mês começa em fim de semana.
     const firstBusinessDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 12));
     while (firstBusinessDay.getUTCDay() === 0 || firstBusinessDay.getUTCDay() === 6) {
       firstBusinessDay.setUTCDate(firstBusinessDay.getUTCDate() + 1);

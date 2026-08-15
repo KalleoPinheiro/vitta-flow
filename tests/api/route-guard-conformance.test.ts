@@ -1,0 +1,150 @@
+import { describe, it, expect } from "vitest";
+import { readdirSync } from "node:fs";
+import path from "node:path";
+import { NextRequest } from "next/server";
+import { PUBLIC_PATHS } from "@/lib/auth/access-policy";
+import { cookieHeaderFor } from "../support/session";
+
+process.env.VITTA_DB_DRIVER = "pglite";
+
+/**
+ * Rede de proteção contra a lacuna descrita na Issue #4: "é fácil esquecer uma
+ * rota nova no futuro".
+ *
+ * Em vez de uma lista fixa que envelhece, o teste VARRE `src/app/api` e exige
+ * que todo handler exportado se recuse a executar sem sessão. Uma rota criada
+ * amanhã sem `requireStaffSession`/`requirePortalSession` quebra o build aqui,
+ * mesmo que o proxy da borda esteja correto.
+ *
+ * Como a guarda roda antes de qualquer I/O, nenhum caso precisa do banco.
+ */
+
+const API_ROOT = path.join(process.cwd(), "src/app/api");
+const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
+type HttpMethod = (typeof HTTP_METHODS)[number];
+
+/**
+ * Rotas legitimamente sem guarda de sessão — precisam ser alcançáveis por quem
+ * ainda não tem sessão (login/OAuth) ou autenticam por outro fator. Espelha a
+ * `PUBLIC_PATHS` do access-policy; a divergência entre as duas é testada abaixo.
+ */
+const UNGUARDED_PREFIXES = ["api/auth/", "api/reminders/run"] as const;
+
+interface RouteFile {
+  /** Caminho relativo a `src/app`, ex.: `api/patients/[id]/route.ts`. */
+  relative: string;
+  /** Especificador de import, ex.: `@/app/api/patients/[id]/route`. */
+  specifier: string;
+  /** Pathname HTTP com os segmentos dinâmicos resolvidos, ex.: `/api/patients/x`. */
+  pathname: string;
+  isUnguarded: boolean;
+  isPortal: boolean;
+}
+
+function collectRouteFiles(dir: string, acc: RouteFile[] = []): RouteFile[] {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      collectRouteFiles(full, acc);
+      continue;
+    }
+    if (entry.name !== "route.ts") continue;
+
+    const relative = path.relative(path.join(process.cwd(), "src/app"), full).split(path.sep).join("/");
+    const withoutFile = relative.replace(/\/route\.ts$/, "");
+    acc.push({
+      relative,
+      specifier: `@/app/${withoutFile}/route`,
+      pathname: `/${withoutFile}`.replace(/\[[^\]]+\]/g, "x"),
+      isUnguarded: UNGUARDED_PREFIXES.some((prefix) => withoutFile.startsWith(prefix)),
+      isPortal: withoutFile.startsWith("api/portal"),
+    });
+  }
+  return acc;
+}
+
+const routeFiles = collectRouteFiles(API_ROOT).sort((a, b) => a.relative.localeCompare(b.relative));
+
+/** Contexto genérico: cobre `[id]`, `[code]` e `[carePlanId]` de uma vez. */
+const anyContext = () => ({
+  params: Promise.resolve({ id: "x", code: "x", carePlanId: "x" }),
+});
+
+const requestFor = (pathname: string, method: HttpMethod, headers: Record<string, string> = {}) =>
+  new NextRequest(`http://localhost${pathname}`, {
+    method,
+    body: method === "GET" || method === "DELETE" ? undefined : "{}",
+    headers: { "Content-Type": "application/json", ...headers },
+  });
+
+type Handler = (request: NextRequest, context: ReturnType<typeof anyContext>) => Promise<Response>;
+
+async function loadHandlers(file: RouteFile): Promise<Array<[HttpMethod, Handler]>> {
+  const mod = (await import(file.specifier)) as Record<string, unknown>;
+  return HTTP_METHODS.filter((m) => typeof mod[m] === "function").map((m) => [
+    m,
+    mod[m] as Handler,
+  ]);
+}
+
+describe("Feature: Conformidade das guardas de rota", () => {
+  it("Dado o diretório de rotas, Quando varrer, Então encontra os arquivos de rota", () => {
+    expect(routeFiles.length).toBeGreaterThan(50);
+  });
+
+  describe("Cenário: allowlist do teste e do access-policy não divergem", () => {
+    it("Dado as rotas sem guarda, Quando comparar com PUBLIC_PATHS, Então toda pública está coberta", () => {
+      const publicApiPaths = PUBLIC_PATHS.filter((p) => p.startsWith("/api/"));
+
+      for (const publicPath of publicApiPaths) {
+        const asRelative = publicPath.slice(1);
+        expect(
+          UNGUARDED_PREFIXES.some((prefix) => asRelative.startsWith(prefix)),
+          `${publicPath} é público no access-policy mas não está na allowlist deste teste`,
+        ).toBe(true);
+      }
+    });
+
+    it("Dado a allowlist deste teste, Quando conferir, Então só cobre auth e o cron de lembretes", () => {
+      expect([...UNGUARDED_PREFIXES]).toEqual(["api/auth/", "api/reminders/run"]);
+    });
+  });
+
+  describe("Cenário: rota nova nasce protegida", () => {
+    const guarded = routeFiles.filter((f) => !f.isUnguarded);
+
+    it.each(guarded.map((f) => [f.relative, f] as const))(
+      "Dado %s sem cookie de sessão, Quando chamar cada handler, Então responde 401",
+      async (_relative, file) => {
+        const handlers = await loadHandlers(file);
+        expect(handlers.length).toBeGreaterThan(0);
+
+        for (const [method, handler] of handlers) {
+          const response = await handler(requestFor(file.pathname, method), anyContext());
+          expect(
+            response.status,
+            `${method} ${file.pathname} deveria exigir sessão (recebido ${response.status})`,
+          ).toBe(401);
+        }
+      },
+    );
+
+    it.each(
+      guarded.filter((f) => !f.isPortal).map((f) => [f.relative, f] as const),
+    )(
+      "Dado %s com sessão de paciente, Quando chamar cada handler, Então responde 403",
+      async (_relative, file) => {
+        const headers = cookieHeaderFor("patient", "paciente@example.com");
+        const handlers = await loadHandlers(file);
+
+        for (const [method, handler] of handlers) {
+          const response = await handler(requestFor(file.pathname, method, headers), anyContext());
+          expect(
+            response.status,
+            `${method} ${file.pathname} deveria ser exclusivo da equipe (recebido ${response.status})`,
+          ).toBe(403);
+        }
+      },
+    );
+  });
+});

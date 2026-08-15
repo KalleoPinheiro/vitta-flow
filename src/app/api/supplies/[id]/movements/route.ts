@@ -5,6 +5,7 @@ import { RegisterStockMovement } from "@/application/inventory/register-stock-mo
 import { MOVEMENT_TYPES } from "@/domain/inventory/stock-movement";
 import { handleRequest } from "@/lib/api-response";
 import { toStockMovementDto, toSupplyDto } from "@/lib/dto";
+import { requireStaffSession } from "@/lib/auth/require-session";
 
 const movementSchema = z.object({
   type: z.enum(MOVEMENT_TYPES),
@@ -17,7 +18,10 @@ const movementSchema = z.object({
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(_request: NextRequest, context: RouteContext) {
+export async function GET(request: NextRequest, context: RouteContext) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { id } = await context.params;
     const { stockMovements } = await getRepositories();
@@ -27,6 +31,9 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = movementSchema.parse(await request.json());

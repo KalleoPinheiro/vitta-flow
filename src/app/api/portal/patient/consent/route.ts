@@ -2,15 +2,15 @@ import type { NextRequest } from "next/server";
 import { getRepositories } from "@/infrastructure/container";
 import { ConsentRecord } from "@/domain/consent/consent-record";
 import { CONSENT_TEXT } from "@/lib/consent-text";
-import { requireRole } from "@/lib/auth/guard";
+import { requirePortalSession } from "@/lib/auth/require-session";
 import { handleRequest } from "@/lib/api-response";
 import { recordAudit } from "@/lib/audit";
 import { NotFoundError } from "@/domain/shared/errors";
 
 /** Texto vigente + status do aceite do paciente logado. */
 export async function GET(request: NextRequest) {
-  const auth = requireRole(request, "patient");
-  if (auth.error) return auth.error;
+  const auth = requirePortalSession(request, "patient");
+  if (!auth.ok) return auth.response;
 
   return handleRequest(async () => {
     const { patients, consentRecords } = await getRepositories();
@@ -30,8 +30,8 @@ export async function GET(request: NextRequest) {
 
 /** Aceite digital: grava hash do texto exato + data + IP (evidência LGPD). */
 export async function POST(request: NextRequest) {
-  const auth = requireRole(request, "patient");
-  if (auth.error) return auth.error;
+  const auth = requirePortalSession(request, "patient");
+  if (!auth.ok) return auth.response;
 
   return handleRequest(async () => {
     const { patients, consentRecords, auditEvents } = await getRepositories();

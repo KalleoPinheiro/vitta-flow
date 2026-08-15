@@ -2,11 +2,15 @@ import type { NextRequest } from "next/server";
 import { getRepositories } from "@/infrastructure/container";
 import { GetMonthlyReport } from "@/application/reports/get-monthly-report";
 import { handleRequest, fail } from "@/lib/api-response";
+import { requireStaffSession } from "@/lib/auth/require-session";
 import { cacheReport, getCachedReport } from "@/lib/report-cache";
 
 const MONTH_REGEX = /^\d{4}-\d{2}$/;
 
 export async function GET(request: NextRequest) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   const month = request.nextUrl.searchParams.get("month");
   if (month && !MONTH_REGEX.test(month)) {
     return fail("Parâmetro month deve estar no formato YYYY-MM", 400);

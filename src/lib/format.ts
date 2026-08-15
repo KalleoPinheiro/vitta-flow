@@ -1,3 +1,8 @@
+import type { CarePlanStatus } from "@/domain/clinical/care-plan";
+import type { CarePlanDiagnosisType } from "@/domain/clinical/care-plan-diagnosis";
+import type { InterventionPriority } from "@/domain/clinical/care-plan-intervention";
+import type { CarePlanDiagnosisDto } from "@/lib/dto";
+
 export const formatCurrency = (cents: number): string =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
 
@@ -56,3 +61,46 @@ export const PAYMENT_METHOD_LABELS: Record<string, string> = {
   insurance: "Convênio",
   transfer: "Transferência",
 };
+
+export const CARE_PLAN_STATUS_LABELS: Record<CarePlanStatus, string> = {
+  active: "Ativo",
+  resolved: "Resolvido",
+  cancelled: "Cancelado",
+};
+
+export const CARE_PLAN_DIAGNOSIS_TYPE_LABELS: Record<CarePlanDiagnosisType, string> = {
+  real: "Real",
+  risco: "Risco",
+  "promocao-saude": "Promoção da saúde",
+};
+
+export const INTERVENTION_PRIORITY_LABELS: Record<InterventionPriority, string> = {
+  baixa: "Baixa",
+  media: "Média",
+  alta: "Alta",
+};
+
+/** Frase PES legível: Problema relacionado a Etiologia, evidenciado por Sinais/sintomas. */
+export function pesSentence(diagnosis: CarePlanDiagnosisDto): string {
+  if (diagnosis.type === "risco") {
+    return `Risco de ${diagnosis.diagnosisLabel} relacionado a ${diagnosis.relatedFactors}`;
+  }
+  if (diagnosis.type === "promocao-saude") {
+    return `${diagnosis.diagnosisLabel} evidenciado por ${diagnosis.definingCharacteristics}`;
+  }
+  return `${diagnosis.diagnosisLabel} relacionado a ${diagnosis.relatedFactors}, evidenciado por ${diagnosis.definingCharacteristics}`;
+}
+
+/** Rótulo de progresso de um resultado NOC — usa `attainment` para distinguir regressão de progresso. */
+export function outcomeStatusLabel(outcome: {
+  isAchieved: boolean | null;
+  attainment: number | null;
+}): string {
+  if (outcome.isAchieved == null) {
+    return "Sem avaliação";
+  }
+  if (outcome.isAchieved) {
+    return "Meta atingida";
+  }
+  return (outcome.attainment ?? 0) < 0 ? "Em regressão" : "Em progresso";
+}

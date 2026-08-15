@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { getRepositories } from "@/infrastructure/container";
 import { GetPartnerPortalData } from "@/application/portal/get-partner-portal-data";
-import { requireRole } from "@/lib/auth/guard";
+import { requirePortalSession } from "@/lib/auth/require-session";
 import { handleRequest } from "@/lib/api-response";
 import { recordAudit } from "@/lib/audit";
 import {
@@ -13,10 +13,9 @@ import {
 } from "@/lib/dto";
 
 export async function GET(request: NextRequest) {
-  const { session, error } = requireRole(request, "partner");
-  if (error) {
-    return error;
-  }
+  const guard = requirePortalSession(request, "partner");
+  if (!guard.ok) return guard.response;
+  const { session } = guard;
 
   return handleRequest(async () => {
     const { partners, patients, appointments, conditions, assessments } =

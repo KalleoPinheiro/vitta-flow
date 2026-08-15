@@ -6,6 +6,7 @@ import { ListAppointments } from "@/application/appointments/list-appointments";
 import { handleRequest, fail } from "@/lib/api-response";
 import { scheduleCalendarSync } from "@/lib/calendar-sync";
 import { toAppointmentDto } from "@/lib/dto";
+import { requireStaffSession } from "@/lib/auth/require-session";
 
 const scheduleSchema = z.object({
   patientId: z.string().min(1),
@@ -21,6 +22,9 @@ const scheduleSchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   const from = request.nextUrl.searchParams.get("from");
   const to = request.nextUrl.searchParams.get("to");
   if (!from || !to) {
@@ -41,6 +45,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const body = scheduleSchema.parse(await request.json());
     const services = await getRepositories();

@@ -1,9 +1,16 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { NextRequest } from "next/server";
+import { jsonRequest as staffRequest } from "../support/request";
 
 process.env.VITTA_DB_DRIVER = "pglite";
 process.env.AUTH_SECRET = "test-secret-e2e";
 
+/**
+ * Os testes de portal usam este `jsonRequest` local, sem cookie por padrão,
+ * para exercitar o 401 de verdade. Setup via rotas da equipe (que exigem papel
+ * admin) usa `staffRequest`, autenticado por padrão — importado do builder
+ * compartilhado em `tests/support/request.ts`.
+ */
 const jsonRequest = (
   url: string,
   method: string,
@@ -82,7 +89,7 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
     // Paciente principal
     patientEmail = "portal.paciente@example.com";
     const patientResponse = await patientsRoute.POST(
-      jsonRequest("/api/patients", "POST", {
+      staffRequest("/api/patients", "POST", {
         fullName: "Joana Portal",
         email: patientEmail,
         phone: "11977776666",
@@ -94,7 +101,7 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
     // Segundo paciente, para testar posse/negação
     otherPatientEmail = "portal.outro@example.com";
     const otherPatientResponse = await patientsRoute.POST(
-      jsonRequest("/api/patients", "POST", {
+      staffRequest("/api/patients", "POST", {
         fullName: "Carlos Outro",
         email: otherPatientEmail,
         phone: "11955554444",
@@ -106,7 +113,7 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
     // Parceiro
     partnerEmail = "portal.parceiro@example.com";
     const partnerResponse = await partnersRoute.POST(
-      jsonRequest("/api/partners", "POST", {
+      staffRequest("/api/partners", "POST", {
         fullName: "Dr. Parceiro Portal",
         email: partnerEmail,
         phone: "11933332222",
@@ -117,7 +124,7 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
 
     // Consulta futura do paciente principal
     const appointmentResponse = await appointmentsRoute.POST(
-      jsonRequest("/api/appointments", "POST", {
+      staffRequest("/api/appointments", "POST", {
         patientId,
         startsAt: "2027-01-11T12:00:00.000Z",
         endsAt: "2027-01-11T13:00:00.000Z",
@@ -130,7 +137,7 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
 
     // Condição clínica ativa para o paciente principal (para testes de foto)
     const conditionResponse = await conditionsRoute.POST(
-      jsonRequest(`/api/patients/${patientId}/conditions`, "POST", {
+      staffRequest(`/api/patients/${patientId}/conditions`, "POST", {
         kind: "wound",
         title: "Ferida abdominal",
       }),
@@ -498,7 +505,7 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
 
     beforeAll(async () => {
       const response = await proceduresRoute.POST(
-        jsonRequest("/api/procedures", "POST", {
+        staffRequest("/api/procedures", "POST", {
           name: "Curativo do portal",
           priceCents: 15000,
           durationMinutes: 60,
@@ -641,7 +648,7 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
 
     beforeAll(async () => {
       const response = await proceduresRoute.POST(
-        jsonRequest("/api/procedures", "POST", {
+        staffRequest("/api/procedures", "POST", {
           name: "Retorno pelo portal",
           priceCents: 18000,
           durationMinutes: 60,
@@ -721,7 +728,7 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
       await new Promise((resolve) => setTimeout(resolve, 20));
 
       const auditResponse = await auditRoute.GET(
-        jsonRequest(`/api/audit?patientId=${patientId}`, "GET"),
+        staffRequest(`/api/audit?patientId=${patientId}`, "GET"),
       );
       const auditBody = (await auditResponse.json()) as Envelope<
         Array<{
@@ -758,7 +765,7 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
 
     it("Dado followUpId próprio, Quando POST, Então o retorno sai da pendência (PORT4-06)", async () => {
       const followUpResponse = await followUpsRoute.POST(
-        jsonRequest("/api/follow-ups", "POST", {
+        staffRequest("/api/follow-ups", "POST", {
           patientId,
           dueDate: "2027-03-01T10:00:00.000Z",
           reason: "Revisão pelo portal",
@@ -777,7 +784,7 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
 
       expect(response.status).toBe(200);
       const listResponse = await followUpsRoute.GET(
-        jsonRequest("/api/follow-ups?status=scheduled", "GET"),
+        staffRequest("/api/follow-ups?status=scheduled", "GET"),
       );
       const listBody = (await listResponse.json()) as Envelope<Array<{ id: string }>>;
       expect(listBody.data.some((item) => item.id === followUpId)).toBe(true);
@@ -785,7 +792,7 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
 
     it("Dado followUpId de outro paciente, Quando POST, Então retorna 404 (PORT4-07)", async () => {
       const followUpResponse = await followUpsRoute.POST(
-        jsonRequest("/api/follow-ups", "POST", {
+        staffRequest("/api/follow-ups", "POST", {
           patientId: otherPatientId,
           dueDate: "2027-03-01T10:00:00.000Z",
           reason: "Retorno de outro paciente",

@@ -1,14 +1,7 @@
 import { describe, it, expect, beforeAll, vi } from "vitest";
-import { NextRequest } from "next/server";
+import { jsonRequest } from "../support/request";
 
 process.env.VITTA_DB_DRIVER = "pglite";
-
-const jsonRequest = (url: string, method: string, body?: unknown) =>
-  new NextRequest(`http://localhost${url}`, {
-    method,
-    body: body === undefined ? undefined : JSON.stringify(body),
-    headers: { "Content-Type": "application/json" },
-  });
 
 interface Envelope<T> {
   success: boolean;

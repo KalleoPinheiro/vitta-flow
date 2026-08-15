@@ -2,7 +2,13 @@
 
 import { use, useState } from "react";
 import Link from "next/link";
-import type { AnamnesisDto, ConditionDto, EvolutionNoteDto, PatientDto } from "@/lib/dto";
+import type {
+  AnamnesisDto,
+  CarePlanDto,
+  ConditionDto,
+  EvolutionNoteDto,
+  PatientDto,
+} from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import { formatDate } from "@/lib/format";
 import { StatusBadge } from "@/components/status-badge";
@@ -10,22 +16,30 @@ import { ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import { AnamnesisSection } from "./anamnesis-section";
 import { ConditionsSection } from "./conditions-section";
 import { EvolutionsSection } from "./evolutions-section";
+import { CarePlansSection } from "./care-plans-section";
 import { PackagesSection } from "./packages-section";
 
 const TABS = [
   { key: "anamnese", label: "Anamnese" },
   { key: "condicoes", label: "Estomias e feridas" },
   { key: "evolucoes", label: "Evoluções (SOAP)" },
+  { key: "planoCuidados", label: "Plano de Cuidados (SAE)" },
   { key: "pacotes", label: "Pacotes" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
 type Tab = (typeof TABS)[number];
 
-function tabLabel(tab: Tab, conditions: ConditionDto[], evolutions: EvolutionNoteDto[]): string {
+function tabLabel(
+  tab: Tab,
+  conditions: ConditionDto[],
+  evolutions: EvolutionNoteDto[],
+  carePlans: CarePlanDto[],
+): string {
   const counts: Partial<Record<TabKey, number>> = {
     condicoes: conditions.length,
     evolucoes: evolutions.length,
+    planoCuidados: carePlans.length,
   };
   const count = counts[tab.key] ?? 0;
   return count > 0 ? `${tab.label} (${count})` : tab.label;
@@ -109,6 +123,9 @@ export default function PatientRecordPage({ params }: { params: Promise<{ id: st
   const { data: evolutions, refresh: refreshEvolutions } = useApiQuery<EvolutionNoteDto[]>(
     `/api/patients/${id}/evolutions`,
   );
+  const { data: carePlans, refresh: refreshCarePlans } = useApiQuery<CarePlanDto[]>(
+    `/api/patients/${id}/care-plans`,
+  );
 
   if (error) return <ErrorAlert message={error} />;
   if (!patient) return <LoadingIndicator />;
@@ -127,7 +144,7 @@ export default function PatientRecordPage({ params }: { params: Promise<{ id: st
         {TABS.map((item) => (
           <TabButton
             key={item.key}
-            label={tabLabel(item, conditions ?? [], evolutions ?? [])}
+            label={tabLabel(item, conditions ?? [], evolutions ?? [], carePlans ?? [])}
             isActive={tab === item.key}
             onClick={() => setTab(item.key)}
           />
@@ -141,9 +158,11 @@ export default function PatientRecordPage({ params }: { params: Promise<{ id: st
           anamnesis={anamnesis ?? null}
           conditions={conditions ?? []}
           evolutions={evolutions ?? []}
+          carePlans={carePlans ?? []}
           refreshAnamnesis={refreshAnamnesis}
           refreshConditions={refreshConditions}
           refreshEvolutions={refreshEvolutions}
+          refreshCarePlans={refreshCarePlans}
         />
       </div>
     </div>
@@ -156,9 +175,11 @@ interface RecordTabPanelProps {
   anamnesis: AnamnesisDto | null;
   conditions: ConditionDto[];
   evolutions: EvolutionNoteDto[];
+  carePlans: CarePlanDto[];
   refreshAnamnesis: () => void;
   refreshConditions: () => void;
   refreshEvolutions: () => void;
+  refreshCarePlans: () => void;
 }
 
 function RecordTabPanel({
@@ -167,9 +188,11 @@ function RecordTabPanel({
   anamnesis,
   conditions,
   evolutions,
+  carePlans,
   refreshAnamnesis,
   refreshConditions,
   refreshEvolutions,
+  refreshCarePlans,
 }: RecordTabPanelProps) {
   if (tab === "condicoes") {
     return (
@@ -187,6 +210,16 @@ function RecordTabPanel({
   }
   if (tab === "pacotes") {
     return <PackagesSection patientId={patientId} />;
+  }
+  if (tab === "planoCuidados") {
+    return (
+      <CarePlansSection
+        patientId={patientId}
+        conditions={conditions}
+        plans={carePlans}
+        onChanged={refreshCarePlans}
+      />
+    );
   }
   return (
     <AnamnesisSection

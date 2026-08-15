@@ -1,14 +1,7 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { NextRequest } from "next/server";
+import { jsonRequest, multipartRequest } from "../support/request";
 
 process.env.VITTA_DB_DRIVER = "pglite";
-
-const jsonRequest = (url: string, method: string, body?: unknown) =>
-  new NextRequest(`http://localhost${url}`, {
-    method,
-    body: body === undefined ? undefined : JSON.stringify(body),
-    headers: { "Content-Type": "application/json" },
-  });
 
 const PNG_HEADER = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 const SMALL_PNG_BYTES = new Uint8Array([...PNG_HEADER, 0x00, 0x00, 0x00, 0x0d]);
@@ -16,10 +9,7 @@ const OVERSIZED_PNG_BYTES = new Uint8Array(5 * 1024 * 1024 + 1);
 OVERSIZED_PNG_BYTES.set(PNG_HEADER, 0);
 
 const photoUploadRequest = (conditionId: string, formData: FormData) =>
-  new NextRequest(`http://localhost/api/conditions/${conditionId}/photos`, {
-    method: "POST",
-    body: formData,
-  });
+  multipartRequest(`/api/conditions/${conditionId}/photos`, formData);
 
 interface Envelope<T> {
   success: boolean;

@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { getRepositories } from "@/infrastructure/container";
-import { requireRole } from "@/lib/auth/guard";
+import { requirePortalSession } from "@/lib/auth/require-session";
 import { fail } from "@/lib/api-response";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -10,10 +10,9 @@ type RouteContext = { params: Promise<{ id: string }> };
  * pertencer ao paciente autenticado. Parceiro nunca acessa fotos (minimização).
  */
 export async function GET(request: NextRequest, context: RouteContext) {
-  const { session, error } = requireRole(request, "patient");
-  if (error) {
-    return error;
-  }
+  const guard = requirePortalSession(request, "patient");
+  if (!guard.ok) return guard.response;
+  const { session } = guard;
 
   const { id } = await context.params;
   const { conditionPhotos, conditions, patients, photoStorage } = await getRepositories();

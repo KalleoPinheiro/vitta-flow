@@ -12,6 +12,20 @@ import {
 } from "./persistence/drizzle/drizzle-clinical-repositories";
 import type { ConsentRecordRepository } from "@/domain/consent/consent-record";
 import {
+  DrizzleCarePlanDiagnosisRepository,
+  DrizzleCarePlanInterventionRepository,
+  DrizzleCarePlanOutcomeRepository,
+  DrizzleCarePlanRepository,
+  DrizzleInterventionRecordRepository,
+  DrizzleOutcomeEvaluationRepository,
+} from "./persistence/drizzle/drizzle-care-plan-repositories";
+import {
+  DrizzleNursingDiagnosisRepository,
+  DrizzleNursingInterventionRepository,
+  DrizzleNursingOutcomeRepository,
+  DrizzleTaxonomyLinkageRepository,
+} from "./persistence/drizzle/drizzle-taxonomy-repositories";
+import {
   DrizzleFollowUpRepository,
   DrizzleStockMovementRepository,
   DrizzleSupplyBatchRepository,
@@ -63,11 +77,23 @@ import type { AppointmentRepository } from "@/domain/scheduling/appointment-repo
 import type { InvoiceRepository } from "@/domain/billing/invoice-repository";
 import type {
   AnamnesisRepository,
+  CarePlanDiagnosisRepository,
+  CarePlanInterventionRepository,
+  CarePlanOutcomeRepository,
+  CarePlanRepository,
   ClinicalConditionRepository,
   ConditionAssessmentRepository,
   ConditionPhotoRepository,
   EvolutionNoteRepository,
+  InterventionRecordRepository,
+  OutcomeEvaluationRepository,
 } from "@/domain/clinical/clinical-repositories";
+import type {
+  NursingDiagnosisRepository,
+  NursingInterventionRepository,
+  NursingOutcomeRepository,
+  TaxonomyLinkageRepository,
+} from "@/domain/taxonomy/taxonomy-repositories";
 import type {
   StockMovementRepository,
   SupplyBatchRepository,
@@ -97,6 +123,16 @@ export interface Services {
   assessments: ConditionAssessmentRepository;
   conditionPhotos: ConditionPhotoRepository;
   consentRecords: ConsentRecordRepository;
+  nursingDiagnoses: NursingDiagnosisRepository;
+  nursingOutcomes: NursingOutcomeRepository;
+  nursingInterventions: NursingInterventionRepository;
+  taxonomyLinkages: TaxonomyLinkageRepository;
+  carePlans: CarePlanRepository;
+  carePlanDiagnoses: CarePlanDiagnosisRepository;
+  carePlanOutcomes: CarePlanOutcomeRepository;
+  carePlanInterventions: CarePlanInterventionRepository;
+  outcomeEvaluations: OutcomeEvaluationRepository;
+  interventionRecords: InterventionRecordRepository;
   photoStorage: PhotoStorage;
   supplies: SupplyRepository;
   stockMovements: StockMovementRepository;
@@ -187,6 +223,16 @@ export async function getRepositories(): Promise<Services> {
     assessments: new DrizzleConditionAssessmentRepository(db),
     conditionPhotos: new DrizzleConditionPhotoRepository(db),
     consentRecords: new DrizzleConsentRecordRepository(db),
+    nursingDiagnoses: new DrizzleNursingDiagnosisRepository(db),
+    nursingOutcomes: new DrizzleNursingOutcomeRepository(db),
+    nursingInterventions: new DrizzleNursingInterventionRepository(db),
+    taxonomyLinkages: new DrizzleTaxonomyLinkageRepository(db),
+    carePlans: new DrizzleCarePlanRepository(db),
+    carePlanDiagnoses: new DrizzleCarePlanDiagnosisRepository(db),
+    carePlanOutcomes: new DrizzleCarePlanOutcomeRepository(db),
+    carePlanInterventions: new DrizzleCarePlanInterventionRepository(db),
+    outcomeEvaluations: new DrizzleOutcomeEvaluationRepository(db),
+    interventionRecords: new DrizzleInterventionRecordRepository(db),
     photoStorage: new LocalPhotoStorage(),
     supplies: new DrizzleSupplyRepository(db),
     stockMovements: new DrizzleStockMovementRepository(db),

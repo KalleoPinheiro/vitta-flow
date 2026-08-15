@@ -1,17 +1,16 @@
 import type { NextRequest } from "next/server";
 import { getRepositories } from "@/infrastructure/container";
 import { ConfirmOwnAppointment } from "@/application/portal/confirm-own-appointment";
-import { requireRole } from "@/lib/auth/guard";
+import { requirePortalSession } from "@/lib/auth/require-session";
 import { handleRequest } from "@/lib/api-response";
 import { toPortalAppointmentDto } from "@/lib/dto";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(request: NextRequest, context: RouteContext) {
-  const { session, error } = requireRole(request, "patient");
-  if (error) {
-    return error;
-  }
+  const guard = requirePortalSession(request, "patient");
+  if (!guard.ok) return guard.response;
+  const { session } = guard;
 
   return handleRequest(async () => {
     const { id } = await context.params;

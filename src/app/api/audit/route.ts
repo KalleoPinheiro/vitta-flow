@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getRepositories } from "@/infrastructure/container";
 import { handleRequest } from "@/lib/api-response";
 import { toAuditEventDto } from "@/lib/dto";
+import { requireStaffSession } from "@/lib/auth/require-session";
 
 const querySchema = z.object({
   patientId: z.string().max(100).optional(),
@@ -13,6 +14,9 @@ const querySchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const params = request.nextUrl.searchParams;
     const query = querySchema.parse({

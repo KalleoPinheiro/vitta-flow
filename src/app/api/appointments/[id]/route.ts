@@ -12,6 +12,7 @@ import { DispenseProcedureKit } from "@/application/inventory/dispense-procedure
 import { handleRequest } from "@/lib/api-response";
 import { scheduleCalendarSync } from "@/lib/calendar-sync";
 import { toAppointmentDto } from "@/lib/dto";
+import { requireStaffSession } from "@/lib/auth/require-session";
 
 const actionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.enum(["confirm", "cancel", "no_show"]) }),
@@ -28,7 +29,10 @@ const actionSchema = z.discriminatedUnion("action", [
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(_request: NextRequest, context: RouteContext) {
+export async function GET(request: NextRequest, context: RouteContext) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { id } = await context.params;
     const { appointments, patients } = await getRepositories();
@@ -42,6 +46,9 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = actionSchema.parse(await request.json());

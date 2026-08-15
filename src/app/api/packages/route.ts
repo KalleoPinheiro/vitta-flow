@@ -6,6 +6,7 @@ import { Invoice } from "@/domain/billing/invoice";
 import { Money } from "@/domain/shared/money";
 import { NotFoundError } from "@/domain/shared/errors";
 import { handleRequest } from "@/lib/api-response";
+import { requireStaffSession } from "@/lib/auth/require-session";
 
 const createSchema = z.object({
   patientId: z.string().min(1),
@@ -31,6 +32,9 @@ const toPackageDto = (pkg: SessionPackage, procedureName?: string) => ({
 });
 
 export async function GET(request: NextRequest) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const patientId = request.nextUrl.searchParams.get("patientId");
     if (!patientId) {
@@ -45,6 +49,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const body = createSchema.parse(await request.json());
     const { sessionPackages, patients, procedures, invoices } = await getRepositories();

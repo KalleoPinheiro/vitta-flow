@@ -1,15 +1,14 @@
 import type { NextRequest } from "next/server";
 import { getRepositories } from "@/infrastructure/container";
 import { ListAvailableSlots } from "@/application/portal/list-available-slots";
-import { requireRole } from "@/lib/auth/guard";
+import { requirePortalSession } from "@/lib/auth/require-session";
 import { handleRequest, fail } from "@/lib/api-response";
 
 /** Horários livres para o paciente agendar seu retorno (PORT4-01..03). */
 export async function GET(request: NextRequest) {
-  const { session, error } = requireRole(request, "patient");
-  if (error) {
-    return error;
-  }
+  const guard = requirePortalSession(request, "patient");
+  if (!guard.ok) return guard.response;
+  const { session } = guard;
 
   const procedureId = request.nextUrl.searchParams.get("procedureId");
   const date = request.nextUrl.searchParams.get("date");

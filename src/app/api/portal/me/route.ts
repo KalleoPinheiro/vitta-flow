@@ -1,11 +1,12 @@
 import type { NextRequest } from "next/server";
-import { getRequestSession } from "@/lib/auth/request-session";
-import { fail, ok } from "@/lib/api-response";
+import { USER_ROLES } from "@/domain/auth/user-role";
+import { requirePortalSession } from "@/lib/auth/require-session";
+import { ok } from "@/lib/api-response";
 
+/** Identidade da sessão atual — qualquer papel autenticado. */
 export async function GET(request: NextRequest) {
-  const session = getRequestSession(request);
-  if (!session) {
-    return fail("Não autenticado", 401);
-  }
-  return ok({ subject: session.subject, role: session.role });
+  const guard = requirePortalSession(request, USER_ROLES);
+  if (!guard.ok) return guard.response;
+
+  return ok({ subject: guard.session.subject, role: guard.session.role });
 }

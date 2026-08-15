@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { getRepositories } from "@/infrastructure/container";
 import { ScheduleOwnAppointment } from "@/application/portal/schedule-own-appointment";
-import { requireRole } from "@/lib/auth/guard";
+import { requirePortalSession } from "@/lib/auth/require-session";
 import { handleRequest } from "@/lib/api-response";
 import { recordAudit } from "@/lib/audit";
 import { scheduleCalendarSync } from "@/lib/calendar-sync";
@@ -16,10 +16,9 @@ const scheduleSchema = z.object({
 
 /** Auto-agendamento de retorno pelo paciente (PORT4-04..08). */
 export async function POST(request: NextRequest) {
-  const { session, error } = requireRole(request, "patient");
-  if (error) {
-    return error;
-  }
+  const guard = requirePortalSession(request, "patient");
+  if (!guard.ok) return guard.response;
+  const { session } = guard;
 
   return handleRequest(async () => {
     const body = scheduleSchema.parse(await request.json());

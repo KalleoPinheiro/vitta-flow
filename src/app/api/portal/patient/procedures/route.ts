@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { getRepositories } from "@/infrastructure/container";
-import { requireRole } from "@/lib/auth/guard";
+import { requirePortalSession } from "@/lib/auth/require-session";
 import { handleRequest } from "@/lib/api-response";
 import { toProcedureDto } from "@/lib/dto";
 
@@ -9,10 +9,8 @@ import { toProcedureDto } from "@/lib/dto";
  * o RBAC do proxy é por prefixo e /api/procedures é exclusiva da equipe.
  */
 export async function GET(request: NextRequest) {
-  const { error } = requireRole(request, "patient");
-  if (error) {
-    return error;
-  }
+  const guard = requirePortalSession(request, "patient");
+  if (!guard.ok) return guard.response;
 
   return handleRequest(async () => {
     const { procedures } = await getRepositories();

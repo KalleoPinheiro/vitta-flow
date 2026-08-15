@@ -5,6 +5,7 @@ import { CreatePatient } from "@/application/patients/create-patient";
 import { ListPatients } from "@/application/patients/list-patients";
 import { handleRequest } from "@/lib/api-response";
 import { toPatientDto } from "@/lib/dto";
+import { requireStaffSession } from "@/lib/auth/require-session";
 
 const paginationSchema = z.object({
   limit: z.coerce.number().int().min(1).max(500).default(100),
@@ -21,6 +22,9 @@ const createPatientSchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const params = request.nextUrl.searchParams;
     const search = params.get("search") ?? undefined;
@@ -35,6 +39,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const body = createPatientSchema.parse(await request.json());
     const { patients, partners } = await getRepositories();

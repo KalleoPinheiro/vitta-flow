@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { getRepositories } from "@/infrastructure/container";
 import { AddConditionPhoto } from "@/application/clinical/add-condition-photo";
 import { MAX_PHOTO_BYTES } from "@/domain/clinical/condition-photo";
-import { requireRole } from "@/lib/auth/guard";
+import { requirePortalSession } from "@/lib/auth/require-session";
 import { handleRequest, fail } from "@/lib/api-response";
 import { recordAudit } from "@/lib/audit";
 import {
@@ -18,10 +18,9 @@ import { CONSENT_TEXT } from "@/lib/consent-text";
  * triagem da equipe como origem "patient".
  */
 export async function POST(request: NextRequest) {
-  const { session, error } = requireRole(request, "patient");
-  if (error) {
-    return error;
-  }
+  const guard = requirePortalSession(request, "patient");
+  if (!guard.ok) return guard.response;
+  const { session } = guard;
 
   const form = await request.formData().catch(() => null);
   const file = form?.get("file");

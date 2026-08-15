@@ -6,6 +6,7 @@ import { ListFollowUps } from "@/application/followups/list-follow-ups";
 import { FOLLOW_UP_STATUSES } from "@/domain/followup/follow-up";
 import { handleRequest } from "@/lib/api-response";
 import { toFollowUpDto } from "@/lib/dto";
+import { requireStaffSession } from "@/lib/auth/require-session";
 
 const createSchema = z.object({
   patientId: z.string().min(1),
@@ -17,6 +18,9 @@ const createSchema = z.object({
 const statusSchema = z.enum(FOLLOW_UP_STATUSES).optional();
 
 export async function GET(request: NextRequest) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const status = statusSchema.parse(request.nextUrl.searchParams.get("status") ?? undefined);
     const patientId = request.nextUrl.searchParams.get("patientId") ?? undefined;
@@ -29,6 +33,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+
   return handleRequest(async () => {
     const body = createSchema.parse(await request.json());
     const { followUps, patients } = await getRepositories();

@@ -178,4 +178,6 @@ export default async function globalSetup(): Promise<void> {
   const seed = await seedBaseData(cookie);
   await mkdir(path.dirname(SEED_DATA_PATH), { recursive: true });
   await writeFile(SEED_DATA_PATH, JSON.stringify(seed, null, 2));
+  // Catálogo de taxonomias (NANDA-I/NOC/NIC) — subset curado de estomaterapia.
+  await post(cookie, "/api/admin/taxonomy/import", {});
 }

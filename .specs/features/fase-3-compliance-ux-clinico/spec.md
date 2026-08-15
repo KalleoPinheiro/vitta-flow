@@ -63,6 +63,6 @@ prática de mercado.
 
 | Requirement ID | Story | Status |
 |----------------|-------|--------|
-| COMP3-01..03 | consentimento | Pending |
-| COMP3-04..06 | triagem | Pending |
-| COMP3-07..10 | validade pacote | Pending |
+| COMP3-01..03 | consentimento | Implemented |
+| COMP3-04..06 | triagem | Implemented |
+| COMP3-07..10 | validade pacote | Implemented |

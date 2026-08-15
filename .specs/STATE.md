@@ -36,11 +36,11 @@
 
 ## Handoff
 
-- **Feature**: fase-2-consistencia-performance (re-verificação) → fase-3 na sequência
-- **Phase / Task**: fase 1 PASS; fase 2 implementada + fix iteração 1 (6454f64) — aguardando re-verificação
-- **Completed**: F1 T1–T6; F2 T1–T5 + fix do mutante M5
+- **Feature**: fase-3-compliance-ux-clinico (aguardando Verifier) → fase-4 na sequência
+- **Phase / Task**: F1 PASS, F2 PASS (iteração 1), F3 T1–T3 implementados (628ea3d, 867e223, c9132f8)
+- **Completed**: F1 T1–T6; F2 T1–T5 + fix; F3 T1–T3
 - **In-progress** (file:line): —
-- **Next step**: receber veredito da re-verificação da fase 2; PASS → executar fase 3 (T1 gate consentimento, T2 validade pacotes, T3 triagem enriquecida), depois fase 4
+- **Next step**: veredito do Verifier da fase 3; depois executar fase 4 (T1 slots, T2 agendar+recall, T3 UI)
 - **Blockers**: none
-- **Uncommitted files**: .specs/STATE.md (este handoff)
+- **Uncommitted files**: .specs (status)
 - **Branch**: claude/code-analysis-product-evolution-a4c0f1

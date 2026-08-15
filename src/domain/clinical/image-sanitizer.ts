@@ -9,20 +9,26 @@ import { detectImageType } from "./condition-photo";
  * Fail-safe: qualquer estrutura malformada devolve os bytes ORIGINAIS sem
  * lançar — nunca corromper; a validação existente do pipeline decide depois.
  */
-export function stripImageMetadata(data: Uint8Array): Uint8Array {
+export interface StripResult {
+  data: Uint8Array;
+  /** false → bytes originais mantidos; metadados podem ter sobrevivido. */
+  stripped: boolean;
+}
+
+export function stripImageMetadata(data: Uint8Array): StripResult {
   try {
     switch (detectImageType(data)) {
       case "image/jpeg":
-        return stripJpeg(data);
+        return { data: stripJpeg(data), stripped: true };
       case "image/png":
-        return stripPng(data);
+        return { data: stripPng(data), stripped: true };
       case "image/webp":
-        return stripWebp(data);
+        return { data: stripWebp(data), stripped: true };
       default:
-        return data;
+        return { data, stripped: false };
     }
   } catch {
-    return data;
+    return { data, stripped: false };
   }
 }
 
@@ -33,6 +39,8 @@ const JPEG_SOS = 0xda;
 const JPEG_APP1 = 0xe1;
 const JPEG_APP15 = 0xef;
 const JPEG_COM = 0xfe;
+/** APP2 = perfil ICC, APP14 = transformação de cor Adobe: preservam a cor. */
+const JPEG_COLOR_MARKERS = new Set([0xe2, 0xee]);
 /** Marcadores sem payload de comprimento (standalone). */
 const JPEG_STANDALONE = new Set([0x01, 0xd0, 0xd1, 0xd2, 0xd3, 0xd4, 0xd5, 0xd6, 0xd7]);
 
@@ -47,7 +55,12 @@ function readJpegSegment(data: Uint8Array, offset: number): JpegSegment | null {
   if (data[offset] !== 0xff) {
     return null;
   }
-  const marker = data[offset + 1];
+  // Qualquer número de bytes 0xFF pode preceder o marcador (ITU-T T.81).
+  let markerAt = offset + 1;
+  while (markerAt < data.length && data[markerAt] === 0xff) {
+    markerAt += 1;
+  }
+  const marker = data[markerAt];
   if (marker === undefined) {
     return null;
   }
@@ -55,21 +68,27 @@ function readJpegSegment(data: Uint8Array, offset: number): JpegSegment | null {
     return { end: data.length, keep: true, copyRest: true };
   }
   if (marker === JPEG_SOI || JPEG_STANDALONE.has(marker)) {
-    return { end: offset + 2, keep: true };
+    return { end: markerAt + 1, keep: true };
   }
-  if (offset + 4 > data.length) {
+  if (markerAt + 3 > data.length) {
     return null;
   }
-  const length = (data[offset + 2] << 8) | data[offset + 3];
-  const end = offset + 2 + length;
+  const length = (data[markerAt + 1] << 8) | data[markerAt + 2];
+  const end = markerAt + 1 + length;
   if (length < 2 || end > data.length) {
     return null;
   }
   return { end, keep: !isJpegMetadataMarker(marker) };
 }
 
-/** APP1..APP15 (EXIF/XMP/ICC extra) e COM são metadados; APP0 (JFIF) fica. */
+/**
+ * APP1..APP15 (EXIF/XMP) e COM são metadados. Ficam de fora: APP0 (JFIF),
+ * APP2 (ICC) e APP14 (Adobe) — removê-los altera a cor renderizada da foto.
+ */
 function isJpegMetadataMarker(marker: number): boolean {
+  if (JPEG_COLOR_MARKERS.has(marker)) {
+    return false;
+  }
   return (marker >= JPEG_APP1 && marker <= JPEG_APP15) || marker === JPEG_COM;
 }
 

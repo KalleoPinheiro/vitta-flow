@@ -4,10 +4,12 @@ import type { PatientRepository } from "@/domain/patient/patient-repository";
 import type { ProcedureRepository } from "@/domain/catalog/procedure-repository";
 import type { FollowUpRepository } from "@/domain/followup/follow-up-repository";
 import type { ScheduleConfigRepository } from "@/domain/scheduling/schedule-config";
-import { NotFoundError } from "@/domain/shared/errors";
+import { NotFoundError, ValidationError } from "@/domain/shared/errors";
 import { ScheduleAppointment } from "@/application/appointments/schedule-appointment";
 
 export interface ScheduleOwnAppointmentInput {
+  /** Relógio da operação — injetável para teste. */
+  now?: Date;
   /** Email da sessão — define o paciente, nunca vem do corpo da requisição. */
   email: string;
   procedureId: string;
@@ -42,6 +44,12 @@ export class ScheduleOwnAppointment {
     const procedure = await this.procedures.findById(input.procedureId);
     if (!procedure || !procedure.isActive) {
       throw new NotFoundError("Procedimento", input.procedureId);
+    }
+
+    // A listagem de horários não oferta o passado; o POST é alcançável direto,
+    // então a regra também vale aqui (PORT4-04).
+    if (input.startsAt.getTime() <= (input.now ?? new Date()).getTime()) {
+      throw new ValidationError("Escolha um horário futuro para o retorno");
     }
 
     const followUp = await this.resolveOwnFollowUp(input.followUpId ?? null, patient.id);

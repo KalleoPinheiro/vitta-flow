@@ -50,7 +50,7 @@ build` não verifica `tests/**`, então o projeto ganhou `npm run typecheck` (`t
 
 ---
 
-## Fase 1 — Hardening de segurança (executar)
+## Fase 1 — Hardening de segurança (entregue)
 
 Fecha as brechas de maior risco com mudanças cirúrgicas, sem depender de decisão de negócio.
 
@@ -68,7 +68,7 @@ matriz de permissões definida pelo negócio → Fase 6. A revogação de sessã
 deny-list (só bloqueia conta que **existe e está inativa**) para não quebrar login Google
 (allowlist sem linha em `user_accounts`) nem sessões E2E forjadas.
 
-## Fase 2 — Consistência transacional e performance (executar)
+## Fase 2 — Consistência transacional e performance (entregue)
 
 | Item | Origem na análise | Severidade |
 |------|-------------------|------------|
@@ -77,7 +77,7 @@ deny-list (só bloqueia conta que **existe e está inativa**) para não quebrar 
 | Batch na fila de triagem (eliminar `findById` por condição) | Performance — N+1 destoando do padrão do projeto | Baixa |
 | Cache de relatório mensal para meses encerrados (imutáveis) | Performance — recálculo integral a cada acesso | Baixa |
 
-## Fase 3 — Compliance e UX clínico (executar)
+## Fase 3 — Compliance e UX clínico (entregue)
 
 | Item | Origem na análise | Severidade |
 |------|-------------------|------------|
@@ -88,7 +88,7 @@ deny-list (só bloqueia conta que **existe e está inativa**) para não quebrar 
 **Fora desta fase (consciente):** política de cancelamento tardio/taxa exige decisão de negócio
 (janela, cobrança) → Fase 6/backlog.
 
-## Fase 4 — Portal: auto-agendamento e recall (executar)
+## Fase 4 — Portal: auto-agendamento e recall (entregue)
 
 Fecha o loop follow-up → agendamento sem intervenção da recepção.
 

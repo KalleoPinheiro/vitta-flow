@@ -44,9 +44,10 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
 
     const photo = await conditionPhotos.findById(id);
     const condition = photo ? await conditions.findById(photo.conditionId) : null;
-    await new DeleteConditionPhoto(conditionPhotos, photoStorage).execute({ id });
 
-    // Write-ahead (SEC1-21): exclusão de dado clínico exige trilha antes do sucesso.
+    // Trilha ANTES do destrutivo (SEC1-21): sem transação entre storage e banco,
+    // auditar depois arriscaria apagar o dado clínico e perder o registro. Auditar
+    // antes pode registrar uma exclusão que falhou — falha preferível.
     await recordAuditNow(auditEvents, guard.session, {
       action: "delete",
       resourceType: "photo",
@@ -54,6 +55,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       patientId: condition?.patientId ?? null,
       detail: "correção de upload",
     });
+    await new DeleteConditionPhoto(conditionPhotos, photoStorage).execute({ id });
     return { deleted: true };
   });
 }

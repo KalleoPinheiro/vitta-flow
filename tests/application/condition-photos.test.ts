@@ -83,7 +83,11 @@ describe("Feature: Fotos de evolução de ferida", () => {
     const stored = storage.files.get(photo.id);
 
     expect(stored).toBeDefined();
-    expect(Array.from(stored ?? [])).not.toContain(0xe1);
+    // Marcador APP1 (0xFF 0xE1), não qualquer byte 0xE1 solto.
+    const hasApp1 = Array.from(stored ?? []).some(
+      (byte, i) => byte === 0xff && (stored ?? [])[i + 1] === 0xe1,
+    );
+    expect(hasApp1).toBe(false);
     expect(stored?.byteLength).toBe(jpegWithExif.byteLength - 11);
     expect(photo.sizeBytes).toBe(stored?.byteLength);
   });

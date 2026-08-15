@@ -10,7 +10,7 @@ import { InMemoryFollowUpRepository } from "@/infrastructure/persistence/in-memo
 import { FollowUp } from "@/domain/followup/follow-up";
 import { Procedure } from "@/domain/catalog/procedure";
 import type { Patient } from "@/domain/patient/patient";
-import { NotFoundError } from "@/domain/shared/errors";
+import { NotFoundError, ValidationError } from "@/domain/shared/errors";
 
 // 2026-07-20 = segunda; 2026-07-25 = sábado. Testes rodam com TZ=UTC.
 describe("Feature: Horários disponíveis para o paciente agendar (PORT4-01..03)", () => {
@@ -175,6 +175,9 @@ describe("Feature: Paciente agenda o próprio retorno (PORT4-04..07)", () => {
       procedureId: input.procedureId ?? curativo.id,
       startsAt: new Date(input.startsAt ?? "2026-07-20T09:00:00Z"),
       followUpId: input.followUpId ?? null,
+      // Fixtures vivem em julho/2026; o relógio acompanha para o cenário ser
+      // sempre "horário futuro" (a rejeição de passado tem teste próprio).
+      now: new Date("2026-07-19T12:00:00Z"),
     });
 
   it("Dado slot livre, Quando agendar, Então cria consulta do paciente com preço e duração do catálogo (PORT4-04)", async () => {
@@ -186,6 +189,24 @@ describe("Feature: Paciente agenda o próprio retorno (PORT4-04..07)", () => {
     expect(appointment.procedureId).toBe(curativo.id);
     expect(appointment.slot.end.toISOString()).toBe("2026-07-20T10:00:00.000Z");
     expect(appointment.status).toBe("scheduled");
+  });
+
+  it("Dado horário no passado, Quando agendar pelo portal, Então rejeita e nada é criado (PORT4-04)", async () => {
+    await expect(
+      new ScheduleOwnAppointment(
+        patientRepo,
+        appointmentRepo,
+        procedureRepo,
+        followUpRepo,
+      ).execute({
+        email: "maria@example.com",
+        procedureId: curativo.id,
+        startsAt: new Date("2026-07-20T09:00:00Z"),
+        now: new Date("2026-07-20T14:00:00Z"),
+      }),
+    ).rejects.toThrow(ValidationError);
+
+    expect(await appointmentRepo.findByPatientId(maria.id)).toHaveLength(0);
   });
 
   it("Dado horário conflitante, Quando agendar, Então erro de conflito e nenhuma consulta nova (PORT4-05)", async () => {

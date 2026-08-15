@@ -6,6 +6,13 @@ import type { MonthlyReport } from "@/application/reports/get-monthly-report";
  * meses de história; mês corrente nunca entra (CONS2-12). Para múltiplas
  * réplicas (era SaaS), trocar por cache compartilhado — anotado na Fase 6.
  */
+/**
+ * Limite real: o parâmetro `month` é livre (`0001-01`…`9999-12`), então sem teto
+ * o cache cresceria com requisições arbitrárias. 240 meses = 20 anos de
+ * histórico, muito além do uso real da clínica. Descarta o mais antigo (FIFO).
+ */
+const MAX_CACHED_MONTHS = 240;
+
 const closedMonthCache = new Map<string, MonthlyReport>();
 
 export function getCachedReport(monthKey: string): MonthlyReport | undefined {
@@ -13,6 +20,12 @@ export function getCachedReport(monthKey: string): MonthlyReport | undefined {
 }
 
 export function cacheReport(monthKey: string, report: MonthlyReport): void {
+  if (closedMonthCache.size >= MAX_CACHED_MONTHS) {
+    const oldest = closedMonthCache.keys().next();
+    if (!oldest.done) {
+      closedMonthCache.delete(oldest.value);
+    }
+  }
   closedMonthCache.set(monthKey, report);
 }
 

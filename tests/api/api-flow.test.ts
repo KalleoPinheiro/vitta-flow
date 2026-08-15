@@ -138,25 +138,29 @@ describe("Feature: Fluxo completo da API (paciente → consulta → fatura → r
       .spyOn(DrizzleInvoiceRepository.prototype, "save")
       .mockRejectedValueOnce(new Error("falha simulada na fatura"));
 
-    const response = await appointmentByIdRoute.PATCH(
-      jsonRequest(`/api/appointments/${appointmentId}`, "PATCH", { action: "complete" }),
-      context(appointmentId),
-    );
-    expect(response.status).toBe(500);
+    try {
+      const response = await appointmentByIdRoute.PATCH(
+        jsonRequest(`/api/appointments/${appointmentId}`, "PATCH", { action: "complete" }),
+        context(appointmentId),
+      );
+      expect(response.status).toBe(500);
 
-    const after = await appointmentByIdRoute.GET(
-      jsonRequest(`/api/appointments/${appointmentId}`, "GET"),
-      context(appointmentId),
-    );
-    const afterBody = (await after.json()) as Envelope<{ status: string }>;
-    expect(afterBody.data.status).toBe("scheduled");
+      const after = await appointmentByIdRoute.GET(
+        jsonRequest(`/api/appointments/${appointmentId}`, "GET"),
+        context(appointmentId),
+      );
+      const afterBody = (await after.json()) as Envelope<{ status: string }>;
+      expect(afterBody.data.status).toBe("scheduled");
 
-    const invoicesResponse = await invoicesRoute.GET(
-      jsonRequest("/api/invoices?status=pending", "GET"),
-    );
-    const invoices = (await invoicesResponse.json()) as Envelope<unknown[]>;
-    expect(invoices.data).toHaveLength(0);
-    saveSpy.mockRestore();
+      const invoicesResponse = await invoicesRoute.GET(
+        jsonRequest("/api/invoices?status=pending", "GET"),
+      );
+      const invoices = (await invoicesResponse.json()) as Envelope<unknown[]>;
+      expect(invoices.data).toHaveLength(0);
+    } finally {
+      // Spy de prototype vaza para os testes seguintes se um expect falhar antes.
+      saveSpy.mockRestore();
+    }
   });
 
   it("Dado consulta agendada, Quando PATCH complete, Então conclui e gera fatura pendente", async () => {

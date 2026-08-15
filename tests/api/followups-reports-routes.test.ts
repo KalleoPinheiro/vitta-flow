@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, vi } from "vitest";
+import { describe, it, expect, beforeAll, afterEach, vi } from "vitest";
 import { jsonRequest } from "../support/request";
 
 process.env.VITTA_DB_DRIVER = "pglite";
@@ -112,6 +112,11 @@ describe("Feature: Retornos (follow-ups), relatórios e resumo", () => {
   });
 
   const context = (id: string) => ({ params: Promise.resolve({ id }) });
+
+  // Restaura spies mesmo quando um expect falha antes do mockRestore.
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   describe("Cenário: POST /api/follow-ups", () => {
     it("Dado paciente existente, Quando POST /api/follow-ups, Então cria retorno pendente", async () => {

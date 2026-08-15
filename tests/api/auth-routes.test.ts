@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, vi } from "vitest";
+import { describe, it, expect, beforeAll, afterEach, vi } from "vitest";
 import { NextRequest } from "next/server";
 
 process.env.VITTA_DB_DRIVER = "pglite";
@@ -40,6 +40,10 @@ describe("Feature: Rotas de autenticação (login, logout, provedores, Google OA
     providersRoute = await import("@/app/api/auth/providers/route");
     googleRoute = await import("@/app/api/auth/google/route");
     googleCallbackRoute = await import("@/app/api/auth/google/callback/route");
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe("POST /api/auth/login", () => {

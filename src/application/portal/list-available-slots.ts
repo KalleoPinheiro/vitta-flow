@@ -6,7 +6,11 @@ import {
   type ScheduleConfigRepository,
 } from "@/domain/scheduling/schedule-config";
 import { TimeSlot } from "@/domain/shared/time-slot";
-import { NotFoundError } from "@/domain/shared/errors";
+import {
+  NotFoundError,
+  SchedulingConflictError,
+  ValidationError,
+} from "@/domain/shared/errors";
 import { assertSlotAvailable } from "@/application/appointments/assert-slot-available";
 
 export interface ListAvailableSlotsInput {
@@ -96,8 +100,14 @@ export class ListAvailableSlots {
         null,
       );
       return true;
-    } catch {
-      return false;
+    } catch (error) {
+      // Só indisponibilidade de negócio significa "ocupado". Falha de
+      // infraestrutura propaga — agenda vazia por erro de banco esconderia o
+      // problema e faria o paciente achar que não há horário.
+      if (error instanceof SchedulingConflictError || error instanceof ValidationError) {
+        return false;
+      }
+      throw error;
     }
   }
 }
@@ -131,6 +141,10 @@ function parseLocalDate(date: string): Date | null {
   if (!match) {
     return null;
   }
-  const parsed = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+  const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  const parsed = new Date(year, month - 1, day);
+  // 2026-02-31 viraria 3 de março: rejeita em vez de ofertar o dia errado.
+  const isRealDate =
+    parsed.getFullYear() === year && parsed.getMonth() === month - 1 && parsed.getDate() === day;
+  return isRealDate ? parsed : null;
 }

@@ -80,7 +80,7 @@ describe("Feature: Remoção de metadados de imagem (SEC1-05..09)", () => {
   it("Dado JPEG com APP1 (EXIF) e COM, Quando sanitizar, Então remove metadados e preserva APP0/DQT/SOS (SEC1-05)", () => {
     const input = jpegBytes([EXIF_APP1, JFIF_APP0, COMMENT, DQT]);
 
-    const output = stripImageMetadata(input);
+    const output = stripImageMetadata(input).data;
 
     expect(includesSubsequence(output, EXIF_APP1)).toBe(false);
     expect(includesSubsequence(output, COMMENT)).toBe(false);
@@ -93,7 +93,7 @@ describe("Feature: Remoção de metadados de imagem (SEC1-05..09)", () => {
   it("Dado PNG com tEXt, Quando sanitizar, Então remove o chunk e preserva IHDR/IDAT/IEND (SEC1-06)", () => {
     const input = pngBytes([IHDR, TEXT, IDAT, IEND]);
 
-    const output = stripImageMetadata(input);
+    const output = stripImageMetadata(input).data;
 
     expect(includesSubsequence(output, TEXT)).toBe(false);
     expect(includesSubsequence(output, IHDR)).toBe(true);
@@ -109,7 +109,7 @@ describe("Feature: Remoção de metadados de imagem (SEC1-05..09)", () => {
     const xmp = webpChunk("XMP ", [8, 8]);
     const input = webpBytes([vp8x, vp8, exif, xmp]);
 
-    const output = stripImageMetadata(input);
+    const output = stripImageMetadata(input).data;
 
     expect(includesSubsequence(output, [0x45, 0x58, 0x49, 0x46])).toBe(false); // "EXIF"
     expect(includesSubsequence(output, [0x58, 0x4d, 0x50, 0x20])).toBe(false); // "XMP "
@@ -125,7 +125,7 @@ describe("Feature: Remoção de metadados de imagem (SEC1-05..09)", () => {
     const vp8 = webpChunk("VP8 ", [1, 2, 3, 4]);
     const input = webpBytes([vp8]);
 
-    const output = stripImageMetadata(input);
+    const output = stripImageMetadata(input).data;
 
     expect(includesSubsequence(output, vp8)).toBe(true);
     expect(detectImageType(output)).toBe("image/webp");
@@ -134,7 +134,7 @@ describe("Feature: Remoção de metadados de imagem (SEC1-05..09)", () => {
   it("Dado imagem sem metadados, Quando sanitizar, Então conteúdo de imagem intacto (SEC1-08)", () => {
     const input = jpegBytes([JFIF_APP0, DQT]);
 
-    const output = stripImageMetadata(input);
+    const output = stripImageMetadata(input).data;
 
     expect(Array.from(output)).toEqual(Array.from(input));
   });
@@ -142,13 +142,46 @@ describe("Feature: Remoção de metadados de imagem (SEC1-05..09)", () => {
   it("Dado bytes que não são imagem suportada, Quando sanitizar, Então devolve original (SEC1-09)", () => {
     const input = new Uint8Array([1, 2, 3, 4]);
 
-    expect(stripImageMetadata(input)).toBe(input);
+    expect(stripImageMetadata(input).data).toBe(input);
+  });
+
+  it("Dado JPEG com bytes de preenchimento 0xFF antes do marcador, Quando sanitizar, Então ainda remove o EXIF", () => {
+    // ITU-T T.81 permite qualquer número de 0xFF antes do marcador.
+    const input = new Uint8Array([
+      0xff, 0xd8,
+      0xff, 0xff, 0xff, ...EXIF_APP1.slice(1),
+      ...jpegSegment(0xda, [0x01, 0x02]),
+      0xaa, 0xbb,
+      0xff, 0xd9,
+    ]);
+
+    const output = stripImageMetadata(input).data;
+
+    expect(includesSubsequence(output, [0x45, 0x78, 0x69, 0x66])).toBe(false); // "Exif"
+    expect(detectImageType(output)).toBe("image/jpeg");
+  });
+
+  it("Dado JPEG com ICC (APP2) e Adobe (APP14), Quando sanitizar, Então preserva a cor e remove só o EXIF", () => {
+    const icc = jpegSegment(0xe2, [0x49, 0x43, 0x43, 0x5f]); // "ICC_"
+    const adobe = jpegSegment(0xee, [0x41, 0x64, 0x6f, 0x62, 0x65]); // "Adobe"
+    const input = jpegBytes([EXIF_APP1, icc, adobe]);
+
+    const output = stripImageMetadata(input).data;
+
+    expect(includesSubsequence(output, icc)).toBe(true);
+    expect(includesSubsequence(output, adobe)).toBe(true);
+    expect(includesSubsequence(output, EXIF_APP1)).toBe(false);
+  });
+
+  it("Dado bytes sem estrutura reconhecida, Quando sanitizar, Então sinaliza que não sanitizou", () => {
+    expect(stripImageMetadata(new Uint8Array([1, 2, 3, 4])).stripped).toBe(false);
+    expect(stripImageMetadata(jpegBytes([EXIF_APP1])).stripped).toBe(true);
   });
 
   it("Dado JPEG truncado no meio de um segmento, Quando sanitizar, Então devolve original sem lançar (edge case)", () => {
     const input = new Uint8Array([0xff, 0xd8, 0xff, 0xe1, 0x7f, 0xff, 0x01]);
 
-    expect(Array.from(stripImageMetadata(input))).toEqual(Array.from(input));
+    expect(Array.from(stripImageMetadata(input).data)).toEqual(Array.from(input));
   });
 
   it("Dado PNG com chunk que ultrapassa o buffer, Quando sanitizar, Então devolve original sem lançar (edge case)", () => {
@@ -157,6 +190,6 @@ describe("Feature: Remoção de metadados de imagem (SEC1-05..09)", () => {
       0x00, 0x00, 0xff, 0xff, 0x74, 0x45, 0x58, 0x74, 0x01,
     ]);
 
-    expect(Array.from(stripImageMetadata(input))).toEqual(Array.from(input));
+    expect(Array.from(stripImageMetadata(input).data)).toEqual(Array.from(input));
   });
 });

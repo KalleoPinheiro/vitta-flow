@@ -28,8 +28,18 @@ describe("Feature: Proxy barra sessão staff revogada (SEC1-01)", () => {
   });
 
   afterEach(() => {
-    process.env.AUTH_SECRET = savedEnv.secret;
-    process.env.AUTH_PASSWORD = savedEnv.password;
+    // Variável originalmente ausente precisa voltar a ausente — atribuir
+    // undefined viraria a string "undefined" e vazaria para outros arquivos.
+    for (const [key, value] of [
+      ["AUTH_SECRET", savedEnv.secret],
+      ["AUTH_PASSWORD", savedEnv.password],
+    ] as const) {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
   });
 
   it("Dado sessão revogada em rota de API, Quando requisitar, Então 401 com envelope padrão", async () => {

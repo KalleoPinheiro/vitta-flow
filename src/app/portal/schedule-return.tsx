@@ -154,7 +154,7 @@ function SlotPicker({
   onPick: (slot: AvailableSlotDto) => void;
 }) {
   const { data: slots } = useApiQuery<AvailableSlotDto[]>(
-    `/api/portal/patient/slots?procedureId=${procedureId}&date=${date}`,
+    `/api/portal/patient/slots?procedureId=${encodeURIComponent(procedureId)}&date=${encodeURIComponent(date)}`,
   );
 
   if (!slots) return null;

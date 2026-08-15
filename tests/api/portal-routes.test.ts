@@ -724,23 +724,32 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
         ),
       );
       const created = (await response.json()) as Envelope<{ id: string }>;
-      // `after()` roda imediato no setup de teste; dá um respiro pro microtask.
-      await new Promise((resolve) => setTimeout(resolve, 20));
 
-      const auditResponse = await auditRoute.GET(
-        staffRequest(`/api/audit?patientId=${patientId}`, "GET"),
-      );
-      const auditBody = (await auditResponse.json()) as Envelope<
-        Array<{
-          action: string;
-          resourceType: string;
-          resourceId: string;
-          actorRole: string;
-          actorId: string;
-          detail: string | null;
-        }>
-      >;
-      const event = auditBody.data.find((item) => item.resourceId === created.data.id);
+      // `after()` roda fire-and-forget: espera o evento aparecer em vez de
+      // apostar num sleep fixo (que ora atrasa a suíte, ora falha em máquina lenta).
+      type AuditEventDto = {
+        action: string;
+        resourceType: string;
+        resourceId: string;
+        actorRole: string;
+        actorId: string;
+        detail: string | null;
+      };
+      const findAuditEvent = async (): Promise<AuditEventDto | undefined> => {
+        for (let attempt = 0; attempt < 20; attempt += 1) {
+          const auditResponse = await auditRoute.GET(
+            staffRequest(`/api/audit?patientId=${patientId}`, "GET"),
+          );
+          const auditBody = (await auditResponse.json()) as Envelope<AuditEventDto[]>;
+          const match = auditBody.data.find((item) => item.resourceId === created.data.id);
+          if (match) {
+            return match;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 10));
+        }
+        return undefined;
+      };
+      const event = await findAuditEvent();
 
       expect(event).toBeDefined();
       expect(event?.action).toBe("create");

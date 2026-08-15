@@ -12,6 +12,7 @@ import type {
 } from "@/lib/dto";
 import { formatDate, formatDateTime } from "@/lib/format";
 import PatientRecordPage from "@/app/(staff)/pacientes/[id]/page";
+import type { PackageDto } from "@/app/(staff)/pacientes/[id]/packages-section";
 
 interface FetchCall {
   url: string;
@@ -191,7 +192,7 @@ interface RouterOptions {
   professionals?: ProfessionalDto[];
   assessmentsByCondition?: Record<string, AssessmentDto[]>;
   photosByCondition?: Record<string, ConditionPhotoDto[]>;
-  packages?: unknown[];
+  packages?: PackageDto[];
   extra?: (call: FetchCall) => MockedResponse | Promise<MockedResponse> | undefined;
 }
 
@@ -219,7 +220,7 @@ function buildRouter({
   professionals = [],
   assessmentsByCondition = {},
   photosByCondition = {},
-  packages = [],
+  packages = [] as PackageDto[],
   extra,
 }: RouterOptions = {}) {
   const exactRoutes: Record<string, () => MockedResponse> = {

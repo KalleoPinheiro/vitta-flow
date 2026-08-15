@@ -3,6 +3,7 @@ import { getAuthConfig, verifySessionToken, SESSION_COOKIE } from "@/lib/auth/se
 import { googleOAuthConfigFromEnv } from "@/lib/auth/google-oauth";
 import { RateLimiter } from "@/lib/auth/rate-limit";
 import { clientIp } from "@/lib/auth/client-ip";
+import { isStaffSessionRevoked } from "@/lib/auth/staff-revocation";
 
 // Configurável via env para permitir relaxar em ambientes de teste E2E (muitas
 // chamadas de setup em sequência) sem afetar o padrão de produção.
@@ -34,7 +35,7 @@ function unauthorized(request: NextRequest): NextResponse {
   return NextResponse.redirect(loginUrl);
 }
 
-export function proxy(request: NextRequest): NextResponse {
+export async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith("/api/") && !API_RATE_LIMIT.allow(clientIp(request))) {
@@ -56,6 +57,10 @@ export function proxy(request: NextRequest): NextResponse {
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   const session = verifySessionToken(auth.secret, token);
   if (!session) {
+    return unauthorized(request);
+  }
+  // Conta staff desativada perde o acesso em ≤ 60s, mesmo com cookie válido.
+  if (await isStaffSessionRevoked(session)) {
     return unauthorized(request);
   }
   if (!isAllowedForRole(pathname, session.role)) {

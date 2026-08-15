@@ -90,6 +90,7 @@ describe("Feature: Fechamento de branches — auth Google, login e rotas do port
   let photosRoute: typeof import("@/app/api/portal/patient/photos/route");
   let photoByIdPortalRoute: typeof import("@/app/api/portal/patient/photos/[id]/route");
   let consentRoute: typeof import("@/app/api/portal/patient/consent/route");
+  let conditionPhotosListRoute: typeof import("@/app/api/conditions/[id]/photos/route");
   let confirmRoute: typeof import(
     "@/app/api/portal/patient/appointments/[id]/confirm/route"
   );
@@ -117,6 +118,7 @@ describe("Feature: Fechamento de branches — auth Google, login e rotas do port
     photosRoute = await import("@/app/api/portal/patient/photos/route");
     photoByIdPortalRoute = await import("@/app/api/portal/patient/photos/[id]/route");
     consentRoute = await import("@/app/api/portal/patient/consent/route");
+    conditionPhotosListRoute = await import("@/app/api/conditions/[id]/photos/route");
     confirmRoute = await import("@/app/api/portal/patient/appointments/[id]/confirm/route");
 
     ({ createSessionToken } = await import("@/lib/auth/session"));
@@ -350,6 +352,51 @@ describe("Feature: Fechamento de branches — auth Google, login e rotas do port
   });
 
   describe("GET /api/portal/patient — fluxo completo com fatura, retorno e fotos", () => {
+    it("Dado paciente sem consentimento vigente, Quando POST photos no portal, Então 403 e nada é gravado (COMP3-01)", async () => {
+      const patientEmail = "paciente.sem.consent@example.com";
+      const patientResponse = await patientsRoute.POST(
+        jsonRequest("/api/patients", "POST", {
+          fullName: "Paciente Sem Consentimento",
+          email: patientEmail,
+          phone: "11933332222",
+        }),
+      );
+      const patientBody = (await patientResponse.json()) as Envelope<{ id: string }>;
+      const conditionResponse = await conditionsRoute.POST(
+        jsonRequest(`/api/patients/${patientBody.data.id}/conditions`, "POST", {
+          kind: "wound",
+          title: "Ferida sem consentimento",
+        }),
+        context(patientBody.data.id),
+      );
+      const conditionBody = (await conditionResponse.json()) as Envelope<{ id: string }>;
+
+      const png = new Uint8Array([
+        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
+      ]);
+      const form = new FormData();
+      form.set("file", new File([png], "foto.png", { type: "image/png" }));
+      form.set("conditionId", conditionBody.data.id);
+      const response = await photosRoute.POST(
+        new NextRequest("http://localhost/api/portal/patient/photos", {
+          method: "POST",
+          body: form,
+          headers: cookieHeader(sessionFor(patientEmail, "patient")),
+        }),
+      );
+      const body = (await response.json()) as Envelope<null>;
+
+      expect(response.status).toBe(403);
+      expect(body.error).toContain("Consentimento pendente");
+
+      const photosResponse = await conditionPhotosListRoute.GET(
+        jsonRequest(`/api/conditions/${conditionBody.data.id}/photos`, "GET"),
+        context(conditionBody.data.id),
+      );
+      const photosBody = (await photosResponse.json()) as Envelope<unknown[]>;
+      expect(photosBody.data).toHaveLength(0);
+    });
+
     it("Dado paciente com fatura pendente, follow-up e foto, Quando GET portal do paciente, Então retorna tudo agregado", async () => {
       const patientEmail = "paciente.completo.gaps@example.com";
       const patientResponse = await patientsRoute.POST(
@@ -389,6 +436,11 @@ describe("Feature: Fechamento de branches — auth Google, login e rotas do port
       const conditionBody = (await conditionResponse.json()) as Envelope<{ id: string }>;
 
       const patientToken = sessionFor(patientEmail, "patient");
+
+      // Gate de consentimento (COMP3-01): envio remoto exige aceite vigente.
+      await consentRoute.POST(
+        jsonRequest("/api/portal/patient/consent", "POST", undefined, cookieHeader(patientToken)),
+      );
 
       const pngBytes = new Uint8Array([
         0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,

@@ -109,6 +109,15 @@ describe("Feature: Rotas de auditoria, export LGPD, fotos (staff) e cron de lemb
       "patient",
     );
 
+    // Gate de consentimento (COMP3-01): envio remoto de foto exige aceite vigente.
+    const consentRoute = await import("@/app/api/portal/patient/consent/route");
+    await consentRoute.POST(
+      new NextRequest("http://localhost/api/portal/patient/consent", {
+        method: "POST",
+        headers: cookieHeader(patientCookieToken),
+      }),
+    );
+
     await anamnesisRoute.PUT(
       jsonRequest(`/api/patients/${patientId}/anamnesis`, "PUT", {
         comorbidities: "Diabetes tipo 2",

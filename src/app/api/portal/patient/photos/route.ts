@@ -5,7 +5,12 @@ import { MAX_PHOTO_BYTES } from "@/domain/clinical/condition-photo";
 import { requireRole } from "@/lib/auth/guard";
 import { handleRequest, fail } from "@/lib/api-response";
 import { recordAudit } from "@/lib/audit";
-import { NotFoundError, ValidationError } from "@/domain/shared/errors";
+import {
+  ConsentRequiredError,
+  NotFoundError,
+  ValidationError,
+} from "@/domain/shared/errors";
+import { CONSENT_TEXT } from "@/lib/consent-text";
 
 /**
  * Monitoramento remoto (O4.2): paciente envia foto da própria condição ativa.
@@ -30,7 +35,7 @@ export async function POST(request: NextRequest) {
   const note = form?.get("note");
 
   return handleRequest(async () => {
-    const { patients, conditions, conditionPhotos, photoStorage, auditEvents } =
+    const { patients, conditions, conditionPhotos, consentRecords, photoStorage, auditEvents } =
       await getRepositories();
 
     const patient = await patients.findByEmail(session.subject);
@@ -41,6 +46,15 @@ export async function POST(request: NextRequest) {
     }
     if (condition.status !== "active") {
       throw new ValidationError("Condição já resolvida — fale com a clínica");
+    }
+
+    // Gate de consentimento (COMP3-01): tratamento de imagem exige base legal
+    // registrada — sem aceite vigente do termo atual, nada é gravado.
+    const consents = await consentRecords.findByPatientId(patient.id);
+    if (!consents.some((record) => record.covers(CONSENT_TEXT))) {
+      throw new ConsentRequiredError(
+        "Consentimento pendente — aceite o termo de consentimento no portal antes de enviar fotos",
+      );
     }
 
     const photo = await new AddConditionPhoto(

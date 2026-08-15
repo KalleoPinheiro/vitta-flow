@@ -35,6 +35,11 @@ export class SchedulingConflictError extends DomainError {
   readonly code = "SCHEDULING_CONFLICT";
 }
 
+/** Ação exige consentimento vigente do titular (LGPD) — mapeado para 403. */
+export class ConsentRequiredError extends DomainError {
+  readonly code = "CONSENT_REQUIRED";
+}
+
 export class InsufficientStockError extends DomainError {
   readonly code = "INSUFFICIENT_STOCK";
 }

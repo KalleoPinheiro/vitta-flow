@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getAuthConfig, verifySessionToken, SESSION_COOKIE } from "@/lib/auth/session";
 import { googleOAuthConfigFromEnv } from "@/lib/auth/google-oauth";
 import { RateLimiter } from "@/lib/auth/rate-limit";
+import { clientIp } from "@/lib/auth/client-ip";
 
 // Configurável via env para permitir relaxar em ambientes de teste E2E (muitas
 // chamadas de setup em sequência) sem afetar o padrão de produção.
@@ -21,9 +22,6 @@ const PUBLIC_PATHS = [
 const isProduction = () => process.env.NODE_ENV === "production";
 
 let warnedAuthDisabled = false;
-
-const clientIp = (request: NextRequest): string =>
-  request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
 
 function unauthorized(request: NextRequest): NextResponse {
   if (request.nextUrl.pathname.startsWith("/api/")) {

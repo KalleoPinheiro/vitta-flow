@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { InMemoryPatientRepository } from "@/infrastructure/persistence/in-memory/in-memory-patient-repository";
 import { InMemoryAppointmentRepository } from "@/infrastructure/persistence/in-memory/in-memory-appointment-repository";
 import { InMemoryInvoiceRepository } from "@/infrastructure/persistence/in-memory/in-memory-invoice-repository";
@@ -50,6 +50,10 @@ describe("Feature: Lembretes de confirmação (D-1) e recall de retornos", () =>
       email: "maria@example.com",
       phone: "11999990000",
     });
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   const run = (messaging: MessagingGateway = gateway) =>
@@ -111,9 +115,8 @@ describe("Feature: Lembretes de confirmação (D-1) e recall de retornos", () =>
     expect(gateway.sentMessages[0].message).toContain("retorno");
   });
 
-  it("Dado APP_URL configurada, Quando enviar recall, Então a mensagem aponta para o portal (PORT4-09)", async () => {
-    const savedAppUrl = process.env.APP_URL;
-    process.env.APP_URL = "https://clinica.example.com/";
+  /** Consulta passada concluída com retorno em 7 dias → recall vencido. */
+  const overdueFollowUp = async () => {
     const invoiceRepo = new InMemoryInvoiceRepository();
     const past = await new ScheduleAppointment(appointmentRepo, patientRepo).execute({
       patientId: maria.id,
@@ -126,42 +129,39 @@ describe("Feature: Lembretes de confirmação (D-1) e recall de retornos", () =>
       id: past.id,
       followUpInDays: 7,
     });
+  };
+
+  it("Dado APP_URL configurada, Quando enviar recall, Então a mensagem aponta para o portal (PORT4-09)", async () => {
+    // stubEnv restaura sozinho no unstubAllEnvs, mesmo se um expect falhar antes.
+    vi.stubEnv("APP_URL", "https://clinica.example.com//");
+    await overdueFollowUp();
 
     await run();
 
+    // Barras extras normalizadas — link quebrado numa mensagem ao paciente.
     expect(gateway.sentMessages[0].message).toContain(
       "Agende seu retorno no portal: https://clinica.example.com/portal.",
     );
     expect(gateway.sentMessages[0].message).not.toContain("Entre em contato com a clínica");
-    if (savedAppUrl === undefined) {
-      delete process.env.APP_URL;
-    } else {
-      process.env.APP_URL = savedAppUrl;
-    }
   });
 
   it("Dado APP_URL ausente, Quando enviar recall, Então mantém a orientação de contato (PORT4-09)", async () => {
-    const savedAppUrl = process.env.APP_URL;
-    delete process.env.APP_URL;
-    const invoiceRepo = new InMemoryInvoiceRepository();
-    const past = await new ScheduleAppointment(appointmentRepo, patientRepo).execute({
-      patientId: maria.id,
-      startsAt: new Date("2026-06-01T09:00:00Z"),
-      endsAt: new Date("2026-06-01T10:00:00Z"),
-      procedure: "Curativo",
-      priceCents: 15000,
-    });
-    await new CompleteAppointment(appointmentRepo, invoiceRepo, followUpRepo).execute({
-      id: past.id,
-      followUpInDays: 7,
-    });
+    vi.stubEnv("APP_URL", "");
+    await overdueFollowUp();
 
     await run();
 
     expect(gateway.sentMessages[0].message).toContain("Entre em contato com a clínica para agendar.");
-    if (savedAppUrl !== undefined) {
-      process.env.APP_URL = savedAppUrl;
-    }
+  });
+
+  it("Dado APP_URL sem esquema, Quando enviar recall, Então não monta link quebrado (PORT4-09)", async () => {
+    vi.stubEnv("APP_URL", "clinica.example.com");
+    await overdueFollowUp();
+
+    await run();
+
+    expect(gateway.sentMessages[0].message).toContain("Entre em contato com a clínica para agendar.");
+    expect(gateway.sentMessages[0].message).not.toContain("clinica.example.com/portal");
   });
 
   it("Dado falha de envio em um lembrete, Quando rodar, Então lote continua e conta failed", async () => {

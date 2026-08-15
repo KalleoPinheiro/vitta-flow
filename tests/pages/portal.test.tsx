@@ -434,7 +434,9 @@ describe("Feature: Visão do paciente no portal", () => {
         followUpId: "fu-1",
       });
       // Portal recarregado: a consulta nova aparece e a pendência sai da lista.
-      expect(await screen.findByText(/Curativo/)).toBeInTheDocument();
+      // Ancorado na data/hora da consulta — "Curativo" sozinho também casaria a
+      // <option> do select de procedimento, passando sem a consulta renderizar.
+      expect(await screen.findByText(formatDateTime(scheduled.startsAt))).toBeInTheDocument();
       await waitFor(() => {
         expect(screen.queryByText("Retornos recomendados")).not.toBeInTheDocument();
       });

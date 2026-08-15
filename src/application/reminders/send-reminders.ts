@@ -32,11 +32,24 @@ const formatDay = (date: Date): string => date.toLocaleDateString("pt-BR");
  * Recall precisa de destino (PORT4-09): com o portal publicado, o paciente
  * agenda sozinho; sem APP_URL configurada, mantém a orientação anterior.
  */
+const FALLBACK_CALL_TO_ACTION = "Entre em contato com a clínica para agendar.";
+
 const schedulingCallToAction = (): string => {
-  const appUrl = process.env.APP_URL;
-  return appUrl
-    ? `Agende seu retorno no portal: ${appUrl.replace(/\/$/, "")}/portal.`
-    : "Entre em contato com a clínica para agendar.";
+  const appUrl = process.env.APP_URL?.trim();
+  if (!appUrl) {
+    return FALLBACK_CALL_TO_ACTION;
+  }
+  // A mensagem vai para o paciente: valor sem esquema ou com barras extras
+  // viraria link quebrado. Sem URL absoluta http(s), mantém a orientação antiga.
+  try {
+    const parsed = new URL(appUrl);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return FALLBACK_CALL_TO_ACTION;
+    }
+  } catch {
+    return FALLBACK_CALL_TO_ACTION;
+  }
+  return `Agende seu retorno no portal: ${appUrl.replace(/\/+$/, "")}/portal.`;
 };
 
 /**

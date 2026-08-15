@@ -760,11 +760,23 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
     });
 
     it("Dado horário já ocupado, Quando POST, Então retorna 409 (PORT4-05)", async () => {
+      // Cria o próprio bloqueio: depender da consulta de outro teste quebraria
+      // com reordenação, `.only` ou isolamento por teste.
+      const blocking = await portalAppointmentsRoute.POST(
+        jsonRequest(
+          "/api/portal/patient/appointments",
+          "POST",
+          { procedureId, startsAt: "2027-04-12T12:00:00.000Z" },
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      expect(blocking.status).toBe(200);
+
       const response = await portalAppointmentsRoute.POST(
         jsonRequest(
           "/api/portal/patient/appointments",
           "POST",
-          { procedureId, startsAt: "2027-04-05T12:30:00.000Z" },
+          { procedureId, startsAt: "2027-04-12T12:30:00.000Z" },
           cookieHeader(patientCookieToken),
         ),
       );

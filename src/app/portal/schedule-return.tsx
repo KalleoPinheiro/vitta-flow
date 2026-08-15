@@ -97,6 +97,7 @@ function SchedulePanel({
           Procedimento
           <select
             value={procedureId}
+            disabled={saving}
             onChange={(e) => setProcedureId(e.target.value)}
             className={inputClass}
           >
@@ -113,6 +114,7 @@ function SchedulePanel({
           <input
             type="date"
             value={date}
+            disabled={saving}
             min={today}
             max={maxDate}
             onChange={(e) => setDate(e.target.value)}
@@ -153,11 +155,18 @@ function SlotPicker({
   disabled: boolean;
   onPick: (slot: AvailableSlotDto) => void;
 }) {
-  const { data: slots } = useApiQuery<AvailableSlotDto[]>(
+  const { data: slots, error } = useApiQuery<AvailableSlotDto[]>(
     `/api/portal/patient/slots?procedureId=${encodeURIComponent(procedureId)}&date=${encodeURIComponent(date)}`,
   );
 
-  if (!slots) return null;
+  // Sem estes dois ramos a falha era silenciosa: o paciente via a área vazia e
+  // concluía que não havia horário, quando na verdade a busca falhou.
+  if (error) {
+    return <ErrorAlert message={error} />;
+  }
+  if (!slots) {
+    return <p className="mt-3 text-xs text-slate-500">Buscando horários…</p>;
+  }
   if (slots.length === 0) {
     return (
       <p className="mt-3 text-xs text-slate-500">

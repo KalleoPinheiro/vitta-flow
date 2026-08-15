@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { InMemoryPatientRepository } from "@/infrastructure/persistence/in-memory/in-memory-patient-repository";
 import { InMemoryAppointmentRepository } from "@/infrastructure/persistence/in-memory/in-memory-appointment-repository";
-import { InMemoryProcedureRepository } from "@/infrastructure/persistence/in-memory/in-memory-foundation-repositories";
+import {
+  InMemoryProcedureRepository,
+  InMemoryScheduleConfigRepository,
+} from "@/infrastructure/persistence/in-memory/in-memory-foundation-repositories";
 import { CreatePatient } from "@/application/patients/create-patient";
 import { ScheduleAppointment } from "@/application/appointments/schedule-appointment";
 import { ListAvailableSlots } from "@/application/portal/list-available-slots";
@@ -70,6 +73,34 @@ describe("Feature: Horários disponíveis para o paciente agendar (PORT4-01..03)
     expect(starts).not.toContain("2026-07-20T11:00:00.000Z");
     expect(starts).toContain("2026-07-20T08:00:00.000Z");
     expect(starts).toContain("2026-07-20T12:00:00.000Z");
+  });
+
+  it("Dado grade configurada pela clínica, Quando listar, Então o portal segue a configuração (PORT4-01)", async () => {
+    const scheduleConfig = new InMemoryScheduleConfigRepository();
+    // Sábado ativo, 10h–12h: nada disso vem do default.
+    await scheduleConfig.save({
+      weekdays: [1, 2, 3, 4, 5, 6],
+      startHour: 10,
+      endHour: 12,
+      minGapMinutes: 15,
+    });
+
+    const slots = await new ListAvailableSlots(
+      patientRepo,
+      appointmentRepo,
+      procedureRepo,
+      scheduleConfig,
+    ).execute({
+      email: "maria@example.com",
+      procedureId: curativo.id,
+      date: "2026-07-25", // sábado
+      now,
+    });
+
+    expect(slots.map((slot) => slot.startsAt.toISOString())).toEqual([
+      "2026-07-25T10:00:00.000Z",
+      "2026-07-25T11:00:00.000Z",
+    ]);
   });
 
   it("Dado sábado (fora da grade), Quando listar, Então lista vazia (PORT4-02)", async () => {
@@ -189,6 +220,33 @@ describe("Feature: Paciente agenda o próprio retorno (PORT4-04..07)", () => {
     expect(appointment.procedureId).toBe(curativo.id);
     expect(appointment.slot.end.toISOString()).toBe("2026-07-20T10:00:00.000Z");
     expect(appointment.status).toBe("scheduled");
+  });
+
+  it("Dado grade configurada, Quando agendar fora dela pelo portal, Então rejeita (PORT4-04)", async () => {
+    const scheduleConfig = new InMemoryScheduleConfigRepository();
+    await scheduleConfig.save({
+      weekdays: [1, 2, 3, 4, 5],
+      startHour: 10,
+      endHour: 12,
+      minGapMinutes: 15,
+    });
+
+    await expect(
+      new ScheduleOwnAppointment(
+        patientRepo,
+        appointmentRepo,
+        procedureRepo,
+        followUpRepo,
+        scheduleConfig,
+      ).execute({
+        email: "maria@example.com",
+        procedureId: curativo.id,
+        startsAt: new Date("2026-07-20T09:00:00Z"), // antes da abertura configurada
+        now: new Date("2026-07-19T12:00:00Z"),
+      }),
+    ).rejects.toThrow(ValidationError);
+
+    expect(await appointmentRepo.findByPatientId(maria.id)).toHaveLength(0);
   });
 
   it("Dado horário no passado, Quando agendar pelo portal, Então rejeita e nada é criado (PORT4-04)", async () => {

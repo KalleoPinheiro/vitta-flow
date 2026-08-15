@@ -1421,6 +1421,7 @@ describe("Feature: Pacotes no prontuário (COMP3-10)", () => {
       }),
     );
     await renderDetail();
+    await screen.findByText("Maria Souza");
 
     fireEvent.click(screen.getByText("Pacotes"));
 
@@ -1449,6 +1450,7 @@ describe("Feature: Pacotes no prontuário (COMP3-10)", () => {
       }),
     );
     await renderDetail();
+    await screen.findByText("Maria Souza");
 
     fireEvent.click(screen.getByText("Pacotes"));
 
@@ -1459,6 +1461,7 @@ describe("Feature: Pacotes no prontuário (COMP3-10)", () => {
   it("Dado paciente sem pacotes, Quando abrir a aba, Então exibe estado vazio", async () => {
     mockFetch(buildRouter());
     await renderDetail();
+    await screen.findByText("Maria Souza");
 
     fireEvent.click(screen.getByText("Pacotes"));
 

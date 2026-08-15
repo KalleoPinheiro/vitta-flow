@@ -216,6 +216,33 @@ describe("Feature: Persistência PostgreSQL — auditoria, pacotes, equipe e int
       expect(await repo.findUsable(patient.id, procedure.id)).toBeNull();
     });
 
+    it("Dado pacote com validade, Quando salvar e buscar, Então expiresAt preservado e expirado não é usável (COMP3-07/08)", async () => {
+      const repo = packageRepo();
+      const expired = SessionPackage.create({
+        patientId: patient.id,
+        procedureId: procedure.id,
+        totalSessions: 3,
+        priceCents: 90000,
+        expiresAt: new Date("2020-01-01T00:00:00Z"),
+      });
+      await repo.save(expired);
+
+      expect((await repo.findById(expired.id))?.expiresAt?.toISOString()).toBe(
+        "2020-01-01T00:00:00.000Z",
+      );
+      expect(await repo.findUsable(patient.id, procedure.id)).toBeNull();
+
+      const valid = SessionPackage.create({
+        patientId: patient.id,
+        procedureId: procedure.id,
+        totalSessions: 3,
+        priceCents: 90000,
+        expiresAt: new Date("2030-01-01T00:00:00Z"),
+      });
+      await repo.save(valid);
+      expect((await repo.findUsable(patient.id, procedure.id))?.id).toBe(valid.id);
+    });
+
     it("Dado consumo registrado, Quando verificar por consulta, Então idempotente e rastreável", async () => {
       const repo = packageRepo();
       const pkg = createPackage();

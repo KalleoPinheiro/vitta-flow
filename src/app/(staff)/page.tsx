@@ -183,7 +183,11 @@ interface TriagePhotoDto {
   patientName: string;
   patientNote: string | null;
   createdAt: string;
+  waitingHours: number;
+  latestScore: { kind: "push" | "det"; value: number } | null;
 }
+
+const TRIAGE_ATTENTION_HOURS = 24;
 
 /** Fila de triagem (O4.2): fotos enviadas por pacientes entre consultas. */
 function TriageQueue() {
@@ -224,9 +228,23 @@ function TriageQueue() {
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium">
                 {photo.patientName} — {photo.conditionTitle}
+                {photo.latestScore && (
+                  <span className="ml-2 rounded bg-white px-1.5 py-0.5 text-xs font-semibold text-violet-800">
+                    {photo.latestScore.kind === "push" ? "PUSH" : "DET"} {photo.latestScore.value}
+                  </span>
+                )}
               </p>
               <p className="truncate text-xs text-slate-500">
-                {photo.patientNote ?? "sem observação"} · {formatDate(photo.createdAt)}
+                {photo.patientNote ?? "sem observação"} · {formatDate(photo.createdAt)} ·{" "}
+                <span
+                  className={
+                    photo.waitingHours >= TRIAGE_ATTENTION_HOURS
+                      ? "font-semibold text-red-700"
+                      : undefined
+                  }
+                >
+                  aguardando há {photo.waitingHours}h
+                </span>
               </p>
             </div>
             <button

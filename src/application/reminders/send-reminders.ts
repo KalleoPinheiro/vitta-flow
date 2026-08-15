@@ -29,6 +29,30 @@ const formatTime = (date: Date): string =>
 const formatDay = (date: Date): string => date.toLocaleDateString("pt-BR");
 
 /**
+ * Recall precisa de destino (PORT4-09): com o portal publicado, o paciente
+ * agenda sozinho; sem APP_URL configurada, mantém a orientação anterior.
+ */
+const FALLBACK_CALL_TO_ACTION = "Entre em contato com a clínica para agendar.";
+
+const schedulingCallToAction = (): string => {
+  const appUrl = process.env.APP_URL?.trim();
+  if (!appUrl) {
+    return FALLBACK_CALL_TO_ACTION;
+  }
+  // A mensagem vai para o paciente: valor sem esquema ou com barras extras
+  // viraria link quebrado. Sem URL absoluta http(s), mantém a orientação antiga.
+  try {
+    const parsed = new URL(appUrl);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return FALLBACK_CALL_TO_ACTION;
+    }
+  } catch {
+    return FALLBACK_CALL_TO_ACTION;
+  }
+  return `Agende seu retorno no portal: ${appUrl.replace(/\/+$/, "")}/portal.`;
+};
+
+/**
  * Job de lembretes: confirmação D-1 (consultas de amanhã ainda "scheduled") e
  * recall de retornos vencidos. Idempotente por dia via ReminderLog; falha de
  * envio individual não aborta o lote.
@@ -126,7 +150,7 @@ export class SendReminders {
       patientId: followUp.patientId,
       message: (name: string) =>
         `Olá, ${name}! Seu retorno (${followUp.reason}) estava previsto para ` +
-        `${formatDay(followUp.dueDate)}. Entre em contato com a clínica para agendar. ` +
+        `${formatDay(followUp.dueDate)}. ${schedulingCallToAction()} ` +
         `Cuidar da continuidade faz toda a diferença!`,
     }));
   }

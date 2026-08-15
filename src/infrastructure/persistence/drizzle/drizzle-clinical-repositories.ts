@@ -142,6 +142,18 @@ export class DrizzleClinicalConditionRepository implements ClinicalConditionRepo
     return rows.map((row) => this.toEntity(row));
   }
 
+  async findByIds(ids: string[]): Promise<ClinicalCondition[]> {
+    const unique = [...new Set(ids)];
+    if (unique.length === 0) {
+      return [];
+    }
+    const rows = await this.db
+      .select()
+      .from(clinicalConditions)
+      .where(inArray(clinicalConditions.id, unique));
+    return rows.map((row) => this.toEntity(row));
+  }
+
   async findByPatientIds(patientIds: string[]): Promise<ClinicalCondition[]> {
     const unique = [...new Set(patientIds)];
     if (unique.length === 0) {

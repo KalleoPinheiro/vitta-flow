@@ -17,12 +17,14 @@ import { AnamnesisSection } from "./anamnesis-section";
 import { ConditionsSection } from "./conditions-section";
 import { EvolutionsSection } from "./evolutions-section";
 import { CarePlansSection } from "./care-plans-section";
+import { PackagesSection } from "./packages-section";
 
 const TABS = [
   { key: "anamnese", label: "Anamnese" },
   { key: "condicoes", label: "Estomias e feridas" },
   { key: "evolucoes", label: "Evoluções (SOAP)" },
   { key: "planoCuidados", label: "Plano de Cuidados (SAE)" },
+  { key: "pacotes", label: "Pacotes" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -205,6 +207,9 @@ function RecordTabPanel({
     return (
       <EvolutionsSection patientId={patientId} evolutions={evolutions} onSaved={refreshEvolutions} />
     );
+  }
+  if (tab === "pacotes") {
+    return <PackagesSection patientId={patientId} />;
   }
   if (tab === "planoCuidados") {
     return (

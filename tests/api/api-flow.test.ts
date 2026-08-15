@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, vi } from "vitest";
 import { jsonRequest } from "../support/request";
 
 process.env.VITTA_DB_DRIVER = "pglite";
@@ -128,6 +128,39 @@ describe("Feature: Fluxo completo da API (paciente → consulta → fatura → r
     const response = await appointmentsRoute.GET(jsonRequest("/api/appointments", "GET"));
 
     expect(response.status).toBe(400);
+  });
+
+  it("Dado falha ao gravar a fatura, Quando PATCH complete, Então rollback total — consulta segue agendada (CONS2-01)", async () => {
+    const { DrizzleInvoiceRepository } = await import(
+      "@/infrastructure/persistence/drizzle/drizzle-invoice-repository"
+    );
+    const saveSpy = vi
+      .spyOn(DrizzleInvoiceRepository.prototype, "save")
+      .mockRejectedValueOnce(new Error("falha simulada na fatura"));
+
+    try {
+      const response = await appointmentByIdRoute.PATCH(
+        jsonRequest(`/api/appointments/${appointmentId}`, "PATCH", { action: "complete" }),
+        context(appointmentId),
+      );
+      expect(response.status).toBe(500);
+
+      const after = await appointmentByIdRoute.GET(
+        jsonRequest(`/api/appointments/${appointmentId}`, "GET"),
+        context(appointmentId),
+      );
+      const afterBody = (await after.json()) as Envelope<{ status: string }>;
+      expect(afterBody.data.status).toBe("scheduled");
+
+      const invoicesResponse = await invoicesRoute.GET(
+        jsonRequest("/api/invoices?status=pending", "GET"),
+      );
+      const invoices = (await invoicesResponse.json()) as Envelope<unknown[]>;
+      expect(invoices.data).toHaveLength(0);
+    } finally {
+      // Spy de prototype vaza para os testes seguintes se um expect falhar antes.
+      saveSpy.mockRestore();
+    }
   });
 
   it("Dado consulta agendada, Quando PATCH complete, Então conclui e gera fatura pendente", async () => {

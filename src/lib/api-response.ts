@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import {
+  ConsentRequiredError,
   DomainError,
   InvalidStatusTransitionError,
   NotFoundError,
@@ -23,6 +24,7 @@ export function fail(message: string, status: number): NextResponse<ApiEnvelope<
 
 function statusForDomainError(error: DomainError): number {
   if (error instanceof NotFoundError) return 404;
+  if (error instanceof ConsentRequiredError) return 403;
   if (error instanceof SchedulingConflictError) return 409;
   if (error instanceof InvalidStatusTransitionError) return 409;
   return 400;

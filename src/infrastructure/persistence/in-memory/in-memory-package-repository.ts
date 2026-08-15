@@ -18,11 +18,15 @@ export class InMemorySessionPackageRepository implements SessionPackageRepositor
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
-  async findUsable(patientId: string, procedureId: string): Promise<SessionPackage | null> {
+  async findUsable(
+    patientId: string,
+    procedureId: string,
+    now: Date = new Date(),
+  ): Promise<SessionPackage | null> {
     return (
       [...this.items.values()]
         .filter(
-          (p) => p.patientId === patientId && p.procedureId === procedureId && p.hasBalance,
+          (p) => p.patientId === patientId && p.procedureId === procedureId && p.isUsableAt(now),
         )
         .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())[0] ?? null
     );

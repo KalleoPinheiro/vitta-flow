@@ -6,7 +6,7 @@ import { FollowUp } from "@/domain/followup/follow-up";
 import { NotFoundError } from "@/domain/shared/errors";
 import { handleRequest, fail } from "@/lib/api-response";
 import { requireStaffSession } from "@/lib/auth/require-session";
-import { recordAudit } from "@/lib/audit";
+import { recordAudit, recordAuditNow } from "@/lib/audit";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -44,15 +44,18 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
 
     const photo = await conditionPhotos.findById(id);
     const condition = photo ? await conditions.findById(photo.conditionId) : null;
-    await new DeleteConditionPhoto(conditionPhotos, photoStorage).execute({ id });
 
-    recordAudit(auditEvents, guard.session, {
+    // Trilha ANTES do destrutivo (SEC1-21): sem transação entre storage e banco,
+    // auditar depois arriscaria apagar o dado clínico e perder o registro. Auditar
+    // antes pode registrar uma exclusão que falhou — falha preferível.
+    await recordAuditNow(auditEvents, guard.session, {
       action: "delete",
       resourceType: "photo",
       resourceId: id,
       patientId: condition?.patientId ?? null,
       detail: "correção de upload",
     });
+    await new DeleteConditionPhoto(conditionPhotos, photoStorage).execute({ id });
     return { deleted: true };
   });
 }

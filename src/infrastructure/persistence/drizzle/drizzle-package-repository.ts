@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, isNull, or, sql } from "drizzle-orm";
 import {
   SessionPackage,
   type SessionPackageRepository,
@@ -17,6 +17,7 @@ export class DrizzleSessionPackageRepository implements SessionPackageRepository
       totalSessions: pkg.totalSessions,
       usedSessions: pkg.usedSessions,
       priceCents: pkg.priceCents,
+      expiresAt: pkg.expiresAt,
       active: pkg.isActive,
       createdAt: pkg.createdAt,
     };
@@ -44,7 +45,11 @@ export class DrizzleSessionPackageRepository implements SessionPackageRepository
     return rows.map((row) => SessionPackage.restore(row));
   }
 
-  async findUsable(patientId: string, procedureId: string): Promise<SessionPackage | null> {
+  async findUsable(
+    patientId: string,
+    procedureId: string,
+    now: Date = new Date(),
+  ): Promise<SessionPackage | null> {
     const rows = await this.db
       .select()
       .from(sessionPackages)
@@ -57,6 +62,8 @@ export class DrizzleSessionPackageRepository implements SessionPackageRepository
             sql`${sessionPackages.totalSessions} - ${sessionPackages.usedSessions}`,
             0,
           ),
+          // Validade (COMP3-08): expirado não consome; null = sem validade.
+          or(isNull(sessionPackages.expiresAt), gt(sessionPackages.expiresAt, now)),
         ),
       )
       .orderBy(asc(sessionPackages.createdAt))

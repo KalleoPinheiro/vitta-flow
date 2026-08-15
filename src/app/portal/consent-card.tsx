@@ -70,10 +70,13 @@ export function PatientPhotoUpload({
   conditionId: string;
   onSent: () => void;
 }) {
+  const { data: consent } = useApiQuery<ConsentStatusDto>("/api/portal/patient/consent");
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  // Envio exige consentimento vigente (COMP3-01) — avisa antes de escolher o arquivo.
+  const consentPending = consent !== null && consent.accepted === false;
 
   const upload = async (file: File) => {
     setSending(true);
@@ -97,6 +100,14 @@ export function PatientPhotoUpload({
       setSending(false);
     }
   };
+
+  if (consentPending) {
+    return (
+      <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+        Aceite o termo de consentimento acima para enviar fotos à equipe.
+      </p>
+    );
+  }
 
   return (
     <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3">

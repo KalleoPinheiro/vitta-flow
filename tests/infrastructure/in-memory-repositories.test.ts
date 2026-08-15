@@ -425,6 +425,17 @@ describe("Feature: Doubles em memória de infraestrutura", () => {
 
       expect(found.map((c) => c.id).sort()).toEqual(["cond-1", "cond-2"]);
     });
+
+    it("Dado ids de condição, Quando findByIds, Então retorna o lote correspondente (CONS2-09)", async () => {
+      const repo = new InMemoryClinicalConditionRepository();
+      await repo.save(ClinicalCondition.restore(conditionState({ id: "cond-1", patientId: "p1" })));
+      await repo.save(ClinicalCondition.restore(conditionState({ id: "cond-2", patientId: "p2" })));
+
+      const found = await repo.findByIds(["cond-2", "cond-2", "inexistente"]);
+
+      expect(found.map((c) => c.id)).toEqual(["cond-2"]);
+      expect(await repo.findByIds([])).toEqual([]);
+    });
   });
 
   describe("Cenário: InMemoryConditionAssessmentRepository", () => {
@@ -616,6 +627,18 @@ describe("Feature: Doubles em memória de infraestrutura", () => {
       await repo.save(Supply.create({ name: "Alfa", unit: "un", minQty: 1, priceCents: 100 }));
 
       expect((await repo.findAll()).map((s) => s.name)).toEqual(["Alfa", "Zeta"]);
+    });
+
+    it("Dado ajuste condicional, Quando saldo permite aplica; senão null (CONS2-05..08)", async () => {
+      const repo = new InMemorySupplyRepository();
+      const supply = Supply.create({ name: "Gaze", unit: "un", minQty: 1, priceCents: 100 });
+      await repo.save(supply.registerEntry(5));
+
+      expect((await repo.adjustStock(supply.id, -3))?.stockQty).toBe(2);
+      expect((await repo.adjustStock(supply.id, 1))?.stockQty).toBe(3);
+      expect(await repo.adjustStock(supply.id, -4)).toBeNull();
+      expect((await repo.findById(supply.id))?.stockQty).toBe(3);
+      expect(await repo.adjustStock("nao-existe", 1)).toBeNull();
     });
   });
 

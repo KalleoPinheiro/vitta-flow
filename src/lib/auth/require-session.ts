@@ -48,6 +48,13 @@ const roleMessage = (roles: readonly UserRole[]): string => {
 /**
  * Rotas da equipe (papel `admin`).
  *
+ * LIMITAÇÃO CONHECIDA — revogação de conta desativada roda só na camada 1
+ * (`src/proxy.ts`, via `isStaffSessionRevoked`). Esta guarda é síncrona e a
+ * checagem exige I/O; torná-la assíncrona muda a assinatura consumida por ~75
+ * handlers. Consequência: nos cenários em que a camada 1 é contornada (matcher
+ * alterado, chamada fora do pipeline HTTP), uma sessão de conta desativada
+ * ainda passaria aqui. No fluxo HTTP normal a camada 1 barra em ≤ 60s.
+ *
  * Espelha a semântica do proxy: em "modo aberto" (sem autenticação configurada
  * e com `VITTA_ALLOW_OPEN_MODE=true`, nunca em produção) a rota executa com
  * `session: null` — a auditoria registra o ator `anonymous`, como já fazia.

@@ -70,6 +70,28 @@ describe("Feature: Fotos de evolução de ferida", () => {
     expect(await photoRepo.findByConditionId(condition.id)).toHaveLength(1);
   });
 
+  it("Dado JPEG com EXIF, Quando enviar, Então grava arquivo sem APP1 e sizeBytes reflete o arquivo limpo (SEC1-05/08)", async () => {
+    // SOI + APP1 "Exif" (9 bytes) + SOS + dados + EOI — sanitizer remove o APP1.
+    const jpegWithExif = new Uint8Array([
+      0xff, 0xd8,
+      0xff, 0xe1, 0x00, 0x09, 0x45, 0x78, 0x69, 0x66, 0x00, 0x00, 0x99,
+      0xff, 0xda, 0x00, 0x02, 0xaa,
+      0xff, 0xd9,
+    ]);
+
+    const photo = await add(jpegWithExif);
+    const stored = storage.files.get(photo.id);
+
+    expect(stored).toBeDefined();
+    // Marcador APP1 (0xFF 0xE1), não qualquer byte 0xE1 solto.
+    const hasApp1 = Array.from(stored ?? []).some(
+      (byte, i) => byte === 0xff && (stored ?? [])[i + 1] === 0xe1,
+    );
+    expect(hasApp1).toBe(false);
+    expect(stored?.byteLength).toBe(jpegWithExif.byteLength - 11);
+    expect(photo.sizeBytes).toBe(stored?.byteLength);
+  });
+
   it("Dado arquivo que não é imagem, Quando enviar, Então ValidationError por magic bytes", async () => {
     await expect(add(TEXT_BYTES)).rejects.toThrow(ValidationError);
     expect(storage.files.size).toBe(0);

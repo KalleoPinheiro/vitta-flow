@@ -580,6 +580,47 @@ describe("Feature: Faturamento", () => {
               procedureId: "proc-1",
               totalSessions: 5,
               priceCents: 100000,
+              expiresAt: null,
+            }),
+          }),
+        ]);
+      });
+    });
+
+    it("Dado validade preenchida, Quando vender pacote, Então envia expiresAt no fim do dia (COMP3-07)", async () => {
+      const fetchMock = mockFetch(({ url, init }) => {
+        const method = init?.method ?? "GET";
+        if (url === "/api/packages" && method === "POST") {
+          return jsonResponse({ id: "pkg-2" });
+        }
+        if (url.startsWith("/api/invoices")) return jsonResponse([]);
+        if (url.startsWith("/api/patients")) return jsonResponse([patientFixture]);
+        if (url.startsWith("/api/procedures")) return jsonResponse([procedureFixture]);
+        return jsonResponse(null, false);
+      });
+
+      render(<BillingPage />);
+      await screen.findByText("Nenhuma fatura encontrada.");
+
+      fireEvent.click(screen.getByText("Vender pacote"));
+      fireEvent.change(await screen.findByLabelText(/Paciente/), { target: { value: "pat-1" } });
+      fireEvent.change(screen.getByLabelText(/Procedimento/), { target: { value: "proc-1" } });
+      fireEvent.change(screen.getByLabelText(/Sessões/), { target: { value: "5" } });
+      fireEvent.change(screen.getByLabelText(/Preço total/), { target: { value: "1000" } });
+      fireEvent.change(screen.getByLabelText(/Validade/), { target: { value: "2030-06-30" } });
+      fireEvent.click(screen.getByText("Vender pacote", { selector: "button[type=submit]" }));
+
+      await waitFor(() => {
+        expect(fetchMock.mock.calls).toContainEqual([
+          "/api/packages",
+          expect.objectContaining({
+            method: "POST",
+            body: JSON.stringify({
+              patientId: "pat-1",
+              procedureId: "proc-1",
+              totalSessions: 5,
+              priceCents: 100000,
+              expiresAt: "2030-06-30T23:59:59.000Z",
             }),
           }),
         ]);

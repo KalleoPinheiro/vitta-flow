@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, afterEach, vi } from "vitest";
 import { jsonRequest } from "../support/request";
 
 process.env.VITTA_DB_DRIVER = "pglite";
@@ -112,6 +112,11 @@ describe("Feature: Retornos (follow-ups), relatórios e resumo", () => {
   });
 
   const context = (id: string) => ({ params: Promise.resolve({ id }) });
+
+  // Restaura spies mesmo quando um expect falha antes do mockRestore.
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   describe("Cenário: POST /api/follow-ups", () => {
     it("Dado paciente existente, Quando POST /api/follow-ups, Então cria retorno pendente", async () => {
@@ -292,8 +297,14 @@ describe("Feature: Retornos (follow-ups), relatórios e resumo", () => {
     // relatório precisa ser o mês corrente para capturar a fatura paga no summarize.
     const now = new Date();
     const reportMonth = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
-    const reportApptStart = `${reportMonth}-01T12:00:00.000Z`;
-    const reportApptEnd = `${reportMonth}-01T13:00:00.000Z`;
+    // Primeiro DIA ÚTIL do mês — dia 01 fixo cai fora do horário comercial
+    // sempre que o mês começa em fim de semana.
+    const firstBusinessDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 12));
+    while (firstBusinessDay.getUTCDay() === 0 || firstBusinessDay.getUTCDay() === 6) {
+      firstBusinessDay.setUTCDate(firstBusinessDay.getUTCDate() + 1);
+    }
+    const reportApptStart = firstBusinessDay.toISOString();
+    const reportApptEnd = new Date(firstBusinessDay.getTime() + 60 * 60_000).toISOString();
 
     beforeAll(async () => {
       const patientResponse = await patientsRoute.POST(
@@ -382,6 +393,36 @@ describe("Feature: Retornos (follow-ups), relatórios e resumo", () => {
         }),
         context(reportInvoiceId),
       );
+    });
+
+    it("Dado mês encerrado requisitado duas vezes, Quando GET /api/reports, Então a segunda vem do cache com payload idêntico (CONS2-11/13)", async () => {
+      const { clearReportCache } = await import("@/lib/report-cache");
+      const { GetMonthlyReport } = await import("@/application/reports/get-monthly-report");
+      clearReportCache();
+      const executeSpy = vi.spyOn(GetMonthlyReport.prototype, "execute");
+
+      const first = await reportsRoute.GET(jsonRequest("/api/reports?month=2020-01", "GET"));
+      const second = await reportsRoute.GET(jsonRequest("/api/reports?month=2020-01", "GET"));
+      const firstBody = (await first.json()) as Envelope<MonthlyReportDto>;
+      const secondBody = (await second.json()) as Envelope<MonthlyReportDto>;
+
+      expect(executeSpy).toHaveBeenCalledTimes(1);
+      expect(secondBody).toEqual(firstBody);
+      executeSpy.mockRestore();
+      clearReportCache();
+    });
+
+    it("Dado mês corrente requisitado duas vezes, Quando GET /api/reports, Então recalcula a cada acesso (CONS2-12)", async () => {
+      const { clearReportCache } = await import("@/lib/report-cache");
+      const { GetMonthlyReport } = await import("@/application/reports/get-monthly-report");
+      clearReportCache();
+      const executeSpy = vi.spyOn(GetMonthlyReport.prototype, "execute");
+
+      await reportsRoute.GET(jsonRequest(`/api/reports?month=${reportMonth}`, "GET"));
+      await reportsRoute.GET(jsonRequest(`/api/reports?month=${reportMonth}`, "GET"));
+
+      expect(executeSpy).toHaveBeenCalledTimes(2);
+      executeSpy.mockRestore();
     });
 
     it("Dado mês sem parâmetro, Quando GET /api/reports, Então usa mês atual e retorna 200", async () => {

@@ -1,4 +1,17 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, beforeAll, afterAll, vi } from "vitest";
+
+// Fixtures do arquivo vivem em julho/2026, mas faturas e movimentos nascem com
+// createdAt = "agora" (Invoice.create/StockMovement.create). Sem pinar o relógio,
+// o relatório do mês fixo deixa de capturá-los a partir de agosto — suíte
+// quebrava por sensibilidade à data corrente.
+beforeAll(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-07-15T12:00:00Z"));
+});
+
+afterAll(() => {
+  vi.useRealTimers();
+});
 import { InMemoryPatientRepository } from "@/infrastructure/persistence/in-memory/in-memory-patient-repository";
 import { InMemoryAppointmentRepository } from "@/infrastructure/persistence/in-memory/in-memory-appointment-repository";
 import { InMemoryInvoiceRepository } from "@/infrastructure/persistence/in-memory/in-memory-invoice-repository";

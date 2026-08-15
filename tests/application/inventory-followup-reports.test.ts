@@ -1,4 +1,17 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, beforeAll, afterAll, vi } from "vitest";
+
+// Fixtures do arquivo vivem em julho/2026, mas faturas e movimentos nascem com
+// createdAt = "agora" (Invoice.create/StockMovement.create). Sem pinar o relógio,
+// o relatório do mês fixo deixa de capturá-los a partir de agosto — suíte
+// quebrava por sensibilidade à data corrente.
+beforeAll(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-07-15T12:00:00Z"));
+});
+
+afterAll(() => {
+  vi.useRealTimers();
+});
 import { InMemoryPatientRepository } from "@/infrastructure/persistence/in-memory/in-memory-patient-repository";
 import { InMemoryAppointmentRepository } from "@/infrastructure/persistence/in-memory/in-memory-appointment-repository";
 import { InMemoryInvoiceRepository } from "@/infrastructure/persistence/in-memory/in-memory-invoice-repository";
@@ -23,6 +36,7 @@ import { GetMonthlyReport } from "@/application/reports/get-monthly-report";
 import { Professional } from "@/domain/professional/professional";
 import type { Patient } from "@/domain/patient/patient";
 import { InsufficientStockError, NotFoundError } from "@/domain/shared/errors";
+import { Supply } from "@/domain/inventory/supply";
 
 describe("Feature: Estoque de insumos", () => {
   let supplyRepo: InMemorySupplyRepository;
@@ -187,6 +201,31 @@ describe("Feature: Recall de retornos", () => {
     await expect(
       new SetFollowUpStatus(followUpRepo).execute({ id: "ghost", status: "done" }),
     ).rejects.toThrow(NotFoundError);
+  });
+});
+
+describe("Feature: Baixa de estoque anti-corrida (CONS2-06/08)", () => {
+  it("Dado snapshot com saldo mas adjustStock nulo (corrida), Quando registrar saída, Então InsufficientStockError e nenhuma movimentação salva", async () => {
+    // Cenário de corrida: entre o findById (snapshot com saldo) e a aplicação
+    // atômica, outro processo consumiu o estoque — adjustStock retorna null.
+    const supplyRepo = new InMemorySupplyRepository();
+    const movementRepo = new InMemoryStockMovementRepository();
+    const supply = Supply.create({ name: "Gaze corrida", unit: "un", minQty: 1, priceCents: 100 });
+    await supplyRepo.save(supply.registerEntry(10));
+    const adjustSpy = vi.spyOn(supplyRepo, "adjustStock").mockResolvedValue(null);
+
+    await expect(
+      new RegisterStockMovement(supplyRepo, movementRepo).execute({
+        supplyId: supply.id,
+        type: "out",
+        quantity: 3,
+        reason: "Kit do procedimento",
+      }),
+    ).rejects.toThrow(InsufficientStockError);
+
+    expect(await movementRepo.findBySupplyId(supply.id)).toHaveLength(0);
+    expect((await supplyRepo.findById(supply.id))?.stockQty).toBe(10);
+    adjustSpy.mockRestore();
   });
 });
 

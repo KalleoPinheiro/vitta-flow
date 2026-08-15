@@ -244,6 +244,47 @@ describe("Feature: Faturamento e catálogo de procedimentos (API)", () => {
       expect(procedureBody.data.name).toBe("Fisioterapia");
     });
 
+    it("Dado expiresAt no POST /api/packages, Quando criar, Então DTO expõe a validade (COMP3-07/10)", async () => {
+      // Paciente e procedimento próprios — não interfere nas contagens dos demais cenários.
+      const patientResponse = await patientsRoute.POST(
+        jsonRequest("/api/patients", "POST", {
+          fullName: "Paciente Validade Pacote",
+          email: "validade.pacote@example.com",
+          phone: "11922221111",
+        }),
+      );
+      const expiryPatientId = ((await patientResponse.json()) as Envelope<PatientResponse>).data.id;
+      const procedureResponse = await proceduresRoute.POST(
+        jsonRequest("/api/procedures", "POST", {
+          name: "Sessão com validade",
+          priceCents: 5000,
+          durationMinutes: 30,
+        }),
+      );
+      const expiryProcedureId = ((await procedureResponse.json()) as Envelope<ProcedureResponse>)
+        .data.id;
+
+      const response = await packagesRoute.POST(
+        jsonRequest("/api/packages", "POST", {
+          patientId: expiryPatientId,
+          procedureId: expiryProcedureId,
+          totalSessions: 5,
+          priceCents: 25000,
+          expiresAt: "2030-06-30T00:00:00.000Z",
+        }),
+      );
+      const body = (await response.json()) as Envelope<{ expiresAt: string | null }>;
+
+      expect(response.status).toBe(200);
+      expect(body.data.expiresAt).toBe("2030-06-30T00:00:00.000Z");
+
+      const listResponse = await packagesRoute.GET(
+        jsonRequest(`/api/packages?patientId=${expiryPatientId}`, "GET"),
+      );
+      const listBody = (await listResponse.json()) as Envelope<Array<{ expiresAt: string | null }>>;
+      expect(listBody.data.some((p) => p.expiresAt === "2030-06-30T00:00:00.000Z")).toBe(true);
+    });
+
     it("Dado paciente inexistente, Quando POST /api/packages, Então retorna 404", async () => {
       const response = await packagesRoute.POST(
         jsonRequest("/api/packages", "POST", {

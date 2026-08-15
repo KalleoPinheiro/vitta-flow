@@ -377,6 +377,8 @@ export const sessionPackages = pgTable(
     totalSessions: integer("total_sessions").notNull(),
     usedSessions: integer("used_sessions").notNull().default(0),
     priceCents: integer("price_cents").notNull(),
+    // Validade opcional (COMP3-07) — null = sem validade (histórico preservado).
+    expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }),
     active: boolean("active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
   },

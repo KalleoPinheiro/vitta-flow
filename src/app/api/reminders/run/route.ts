@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { getRepositories } from "@/infrastructure/container";
 import { SendReminders } from "@/application/reminders/send-reminders";
 import { handleRequest, fail } from "@/lib/api-response";
+import { passwordMatches } from "@/lib/auth/session";
 
 /**
  * Disparo do job de lembretes (cron externo):
@@ -13,7 +14,8 @@ export async function POST(request: NextRequest) {
   if (!secret) {
     return fail("CRON_SECRET não configurado — job de lembretes desativado", 503);
   }
-  if (request.headers.get("x-cron-secret") !== secret) {
+  // Comparação em tempo constante — mesmo tratamento das demais credenciais.
+  if (!passwordMatches(secret, request.headers.get("x-cron-secret") ?? "")) {
     return fail("Não autorizado", 401);
   }
 

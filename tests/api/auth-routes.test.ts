@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, afterEach, vi } from "vitest";
 import { NextRequest } from "next/server";
 
 process.env.VITTA_DB_DRIVER = "pglite";
@@ -40,6 +40,10 @@ describe("Feature: Rotas de autenticação (login, logout, provedores, Google OA
     providersRoute = await import("@/app/api/auth/providers/route");
     googleRoute = await import("@/app/api/auth/google/route");
     googleCallbackRoute = await import("@/app/api/auth/google/callback/route");
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe("POST /api/auth/login", () => {
@@ -112,6 +116,22 @@ describe("Feature: Rotas de autenticação (login, logout, provedores, Google OA
       expect(response.status).toBe(200);
       expect(body.data.ok).toBe(true);
       expect(response.headers.get("set-cookie")).toContain("vitta_session=");
+    });
+
+    it("Dado senha master correta, Quando POST login, Então loga aviso de credencial compartilhada (SEC1-19)", async () => {
+      resetAuthEnv();
+      process.env.AUTH_SECRET = "test-secret-e2e";
+      process.env.AUTH_PASSWORD = "senha-correta";
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
+      await loginRoute.POST(
+        jsonRequest("/api/auth/login", "POST", { password: "senha-correta" }, {
+          "x-forwarded-for": "10.0.0.44",
+        }),
+      );
+
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("senha master"));
+      warnSpy.mockRestore();
     });
 
     it("Dado conta individual inexistente, Quando POST login com email, Então retorna 401", async () => {

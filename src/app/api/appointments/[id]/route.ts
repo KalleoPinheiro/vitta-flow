@@ -53,18 +53,23 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const { id } = await context.params;
     const body = actionSchema.parse(await request.json());
     const services = await getRepositories();
-    const { appointments, invoices, followUps } = services;
+    const { appointments } = services;
 
     if (body.action === "complete") {
-      const completed = await new CompleteAppointment(
-        appointments,
-        invoices,
-        followUps,
-        services.sessionPackages,
-      ).execute({
-        id,
-        followUpInDays: body.followUpInDays ?? null,
-      });
+      // Unidade de trabalho (CONS2-01): consulta, fatura e consumo de pacote
+      // persistem juntos ou nada persiste. O kit permanece fora — best-effort
+      // por contrato (PRD O2.4, "nunca bloqueia a conclusão").
+      const completed = await services.transactions.run((tx) =>
+        new CompleteAppointment(
+          tx.appointments,
+          tx.invoices,
+          tx.followUps,
+          tx.sessionPackages,
+        ).execute({
+          id,
+          followUpInDays: body.followUpInDays ?? null,
+        }),
+      );
       // Kit do procedimento: baixa automática, nunca bloqueia a conclusão.
       let kitWarnings: string[] = [];
       if (completed.procedureId) {

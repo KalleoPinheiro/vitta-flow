@@ -127,6 +127,13 @@
       "when": 1785691801628,
       "tag": "0017_nursing-process-taxonomies",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1786792462461,
+      "tag": "0018_package-expiry",
+      "breakpoints": true
     }
   ]
 }

@@ -23,6 +23,7 @@ export interface EvolutionNoteRepository {
 export interface ClinicalConditionRepository {
   save(condition: ClinicalCondition): Promise<void>;
   findById(id: string): Promise<ClinicalCondition | null>;
+  findByIds(ids: string[]): Promise<ClinicalCondition[]>;
   findByPatientId(patientId: string): Promise<ClinicalCondition[]>;
   /** Busca em lote — evita N+1 ao montar dados de vários pacientes. */
   findByPatientIds(patientIds: string[]): Promise<ClinicalCondition[]>;

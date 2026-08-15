@@ -58,6 +58,19 @@ const appointmentFixture: AppointmentDto = {
   professionalId: null,
 };
 
+// Fixture com data fixa para os cenários do CalendarGrid, que renderizam o mês
+// de julho/2026 — fixture relativa a "agora" some da grade em qualquer outro mês.
+const julyAppointmentFixture: AppointmentDto = {
+  ...appointmentFixture,
+  startsAt: new Date(2026, 6, 15, 9).toISOString(),
+  endsAt: new Date(2026, 6, 15, 10).toISOString(),
+  procedure: "Troca de bolsa",
+  priceCents: 12000,
+  notes: "Observação clínica",
+  status: "scheduled",
+  professionalId: null,
+};
+
 interface AgendaFetchOptions {
   appointments?: AppointmentDto[];
   patients?: PatientDto[];
@@ -1002,7 +1015,7 @@ describe("Feature: Grade do calendário", () => {
       render(
         <CalendarGrid
           monthDate={monthDate}
-          appointments={[appointmentFixture]}
+          appointments={[julyAppointmentFixture]}
           onDayClick={vi.fn()}
           onAppointmentClick={vi.fn()}
         />,
@@ -1036,7 +1049,7 @@ describe("Feature: Grade do calendário", () => {
       render(
         <CalendarGrid
           monthDate={monthDate}
-          appointments={[appointmentFixture]}
+          appointments={[julyAppointmentFixture]}
           onDayClick={onDayClick}
           onAppointmentClick={onAppointmentClick}
         />,
@@ -1044,23 +1057,23 @@ describe("Feature: Grade do calendário", () => {
 
       fireEvent.click(screen.getByText(/Maria Souza/));
 
-      expect(onAppointmentClick).toHaveBeenCalledWith(appointmentFixture);
+      expect(onAppointmentClick).toHaveBeenCalledWith(julyAppointmentFixture);
       expect(onDayClick).not.toHaveBeenCalled();
     });
 
     it("Dado duas consultas no mesmo dia, uma com status não mapeado e sem nome do paciente, Quando renderizar, Então ordena por horário e aplica estilo padrão", () => {
       const monthDate = new Date(2026, 6, 1);
       const secondAppointment: AppointmentDto = {
-        ...appointmentFixture,
+        ...julyAppointmentFixture,
         id: "appt-2",
         patientName: undefined,
         status: "rescheduled",
-        startsAt: new Date(new Date(appointmentFixture.startsAt).getTime() + 30 * 60_000).toISOString(),
+        startsAt: new Date(new Date(julyAppointmentFixture.startsAt).getTime() + 30 * 60_000).toISOString(),
       };
       render(
         <CalendarGrid
           monthDate={monthDate}
-          appointments={[secondAppointment, appointmentFixture]}
+          appointments={[secondAppointment, julyAppointmentFixture]}
           onDayClick={vi.fn()}
           onAppointmentClick={vi.fn()}
         />,

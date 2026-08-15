@@ -9,6 +9,8 @@ import {
 } from "@/lib/auth/access-policy";
 import { getRequestSession } from "@/lib/auth/request-session";
 import { RateLimiter } from "@/lib/auth/rate-limit";
+import { clientIp } from "@/lib/auth/client-ip";
+import { isStaffSessionRevoked } from "@/lib/auth/staff-revocation";
 import { fail } from "@/lib/api-response";
 
 /**
@@ -26,9 +28,6 @@ import { fail } from "@/lib/api-response";
 // chamadas de setup em sequência) sem afetar o padrão de produção.
 const API_RATE_LIMIT_MAX = Number(process.env.API_RATE_LIMIT_MAX) || 120;
 const API_RATE_LIMIT = new RateLimiter(API_RATE_LIMIT_MAX, 60_000);
-
-const clientIp = (request: NextRequest): string =>
-  request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
 
 const isApiPath = (pathname: string): boolean => pathname.startsWith("/api/");
 
@@ -50,7 +49,7 @@ function authNotConfiguredResponse(): NextResponse {
   return fail(AUTH_NOT_CONFIGURED_MESSAGE, 503);
 }
 
-export function proxy(request: NextRequest): NextResponse {
+export async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
 
   if (isApiPath(pathname) && !API_RATE_LIMIT.allow(clientIp(request))) {
@@ -71,6 +70,10 @@ export function proxy(request: NextRequest): NextResponse {
 
   const session = getRequestSession(request);
   if (!session) {
+    return unauthorized(request);
+  }
+  // Conta staff desativada perde o acesso em ≤ 60s, mesmo com cookie válido.
+  if (await isStaffSessionRevoked(session)) {
     return unauthorized(request);
   }
   if (!isAllowedForRole(pathname, session.role)) {

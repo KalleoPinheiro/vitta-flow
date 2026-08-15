@@ -23,19 +23,40 @@ export function recordAudit(
 ): void {
   after(async () => {
     try {
-      await auditEvents.save(
-        AuditEvent.create({
-          actorRole: session?.role ?? "anonymous",
-          actorId: session?.subject ?? "anonymous",
-          action: input.action,
-          resourceType: input.resourceType,
-          resourceId: input.resourceId,
-          patientId: input.patientId ?? null,
-          detail: input.detail ?? null,
-        }),
-      );
+      await persistAuditEvent(auditEvents, session, input);
     } catch (error) {
       console.error("Auditoria: falha ao registrar evento", error);
     }
   });
+}
+
+/**
+ * Variante write-ahead para ações críticas (exportação LGPD, exclusão de foto):
+ * o evento é persistido ANTES da resposta e uma falha de auditoria falha a
+ * requisição — sucesso silencioso sem trilha não é aceitável nesses fluxos.
+ */
+export async function recordAuditNow(
+  auditEvents: AuditEventRepository,
+  session: Session | null,
+  input: AuditInput,
+): Promise<void> {
+  await persistAuditEvent(auditEvents, session, input);
+}
+
+async function persistAuditEvent(
+  auditEvents: AuditEventRepository,
+  session: Session | null,
+  input: AuditInput,
+): Promise<void> {
+  await auditEvents.save(
+    AuditEvent.create({
+      actorRole: session?.role ?? "anonymous",
+      actorId: session?.subject ?? "anonymous",
+      action: input.action,
+      resourceType: input.resourceType,
+      resourceId: input.resourceId,
+      patientId: input.patientId ?? null,
+      detail: input.detail ?? null,
+    }),
+  );
 }

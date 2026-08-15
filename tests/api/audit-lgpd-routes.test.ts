@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, afterEach, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { adminCookieHeader } from "../support/session";
 import { jsonRequest } from "../support/request";
@@ -27,6 +27,7 @@ describe("Feature: Rotas de auditoria, export LGPD, fotos (staff) e cron de lemb
   let exportRoute: typeof import("@/app/api/patients/[id]/export/route");
   let photoByIdRoute: typeof import("@/app/api/photos/[id]/route");
   let triageRoute: typeof import("@/app/api/photos/triage/route");
+  let assessmentsRoute: typeof import("@/app/api/conditions/[id]/assessments/route");
   let remindersRunRoute: typeof import("@/app/api/reminders/run/route");
   let clinicInfoRoute: typeof import("@/app/api/clinic-info/route");
 
@@ -83,6 +84,7 @@ describe("Feature: Rotas de auditoria, export LGPD, fotos (staff) e cron de lemb
     exportRoute = await import("@/app/api/patients/[id]/export/route");
     photoByIdRoute = await import("@/app/api/photos/[id]/route");
     triageRoute = await import("@/app/api/photos/triage/route");
+    assessmentsRoute = await import("@/app/api/conditions/[id]/assessments/route");
     remindersRunRoute = await import("@/app/api/reminders/run/route");
     clinicInfoRoute = await import("@/app/api/clinic-info/route");
 
@@ -101,6 +103,15 @@ describe("Feature: Rotas de auditoria, export LGPD, fotos (staff) e cron de lemb
       Date.now() + 3_600_000,
       patientEmail,
       "patient",
+    );
+
+    // Gate de consentimento (COMP3-01): envio remoto de foto exige aceite vigente.
+    const consentRoute = await import("@/app/api/portal/patient/consent/route");
+    await consentRoute.POST(
+      new NextRequest("http://localhost/api/portal/patient/consent", {
+        method: "POST",
+        headers: cookieHeader(patientCookieToken),
+      }),
     );
 
     await anamnesisRoute.PUT(
@@ -194,6 +205,25 @@ describe("Feature: Rotas de auditoria, export LGPD, fotos (staff) e cron de lemb
       expect(response.status).toBe(404);
     });
 
+    it("Dado falha ao gravar a auditoria, Quando GET export, Então falha a requisição (write-ahead, SEC1-20)", async () => {
+      const { DrizzleAuditEventRepository } = await import(
+        "@/infrastructure/persistence/drizzle/drizzle-audit-event-repository"
+      );
+      const saveSpy = vi
+        .spyOn(DrizzleAuditEventRepository.prototype, "save")
+        .mockRejectedValueOnce(new Error("auditoria indisponível"));
+
+      const response = await exportRoute.GET(
+        jsonRequest(`/api/patients/${patientId}/export`, "GET"),
+        context(patientId),
+      );
+
+      // Exportação de titular não responde sucesso sem trilha gravada.
+      expect(response.status).toBe(500);
+      const body = (await response.json()) as Envelope<null>;
+      expect(body.success).toBe(false);
+    });
+
     it("Dado paciente com anamnese, condição e foto, Quando GET export, Então retorna JSON completo", async () => {
       const response = await exportRoute.GET(
         jsonRequest(`/api/patients/${patientId}/export`, "GET"),
@@ -233,6 +263,23 @@ describe("Feature: Rotas de auditoria, export LGPD, fotos (staff) e cron de lemb
 
       expect(response.status).toBe(200);
       expect(response.headers.get("content-type")).toBe("image/png");
+    });
+
+    it("Dado falha ao gravar a auditoria, Quando DELETE photos/:id, Então falha a requisição (write-ahead, SEC1-21)", async () => {
+      const deletablePhotoId = await uploadPatientOriginPhoto("para exclusão auditada");
+      const { DrizzleAuditEventRepository } = await import(
+        "@/infrastructure/persistence/drizzle/drizzle-audit-event-repository"
+      );
+      const saveSpy = vi
+        .spyOn(DrizzleAuditEventRepository.prototype, "save")
+        .mockRejectedValueOnce(new Error("auditoria indisponível"));
+
+      const response = await photoByIdRoute.DELETE(
+        jsonRequest(`/api/photos/${deletablePhotoId}`, "DELETE"),
+        context(deletablePhotoId),
+      );
+
+      expect(response.status).toBe(500);
     });
 
     it("Dado foto inexistente, Quando GET photos/:id, Então retorna 404", async () => {
@@ -339,6 +386,75 @@ describe("Feature: Rotas de auditoria, export LGPD, fotos (staff) e cron de lemb
       expect(entry?.patientId).toBe(patientId);
       expect(entry?.patientName).toBe("Beatriz Auditoria");
       expect(entry?.conditionTitle).toBe("Ferida sacral");
+    });
+
+    it("Dado condição sem avaliação pontuável, Quando GET triage, Então latestScore null e idade da pendência (COMP3-04/05)", async () => {
+      const photoId = await uploadPatientOriginPhoto("sem score ainda");
+
+      const response = await triageRoute.GET(jsonRequest("/api/photos/triage", "GET"));
+      const body = (await response.json()) as Envelope<
+        Array<{ id: string; waitingHours: number; latestScore: unknown }>
+      >;
+      const entry = body.data.find((item) => item.id === photoId);
+
+      expect(entry?.latestScore).toBeNull();
+      expect(entry?.waitingHours).toBe(0);
+    });
+
+    it("Dado foto enviada há 30h, Quando GET triage, Então waitingHours reflete a idade real da pendência (COMP3-04/06)", async () => {
+      const photoId = await uploadPatientOriginPhoto("pendência antiga");
+
+      // Envelhece a pendência no banco — o cálculo precisa vir do createdAt real,
+      // não de um valor fixo (foto recém-criada não discrimina o cálculo).
+      const { getRepositories } = await import("@/infrastructure/container");
+      const { ConditionPhoto } = await import("@/domain/clinical/condition-photo");
+      const repos = await getRepositories();
+      const stored = await repos.conditionPhotos.findById(photoId);
+      const thirtyHoursAgo = new Date(Date.now() - 30 * 3_600_000);
+      await repos.conditionPhotos.save(
+        ConditionPhoto.restore({
+          id: stored!.id,
+          conditionId: stored!.conditionId,
+          assessmentId: stored!.assessmentId,
+          contentType: stored!.contentType,
+          sizeBytes: stored!.sizeBytes,
+          origin: stored!.origin,
+          patientNote: stored!.patientNote,
+          triageStatus: stored!.triageStatus,
+          createdAt: thirtyHoursAgo,
+        }),
+      );
+
+      const response = await triageRoute.GET(jsonRequest("/api/photos/triage", "GET"));
+      const body = (await response.json()) as Envelope<
+        Array<{ id: string; waitingHours: number; createdAt: string }>
+      >;
+      const entry = body.data.find((item) => item.id === photoId);
+
+      expect(entry?.waitingHours).toBe(30);
+      expect(entry?.createdAt).toBe(thirtyHoursAgo.toISOString());
+    });
+
+    it("Dado avaliação de ferida com componentes do PUSH, Quando GET triage, Então latestScore traz o score da condição (COMP3-04)", async () => {
+      // 20mm x 15mm = 3,0 cm² → subscore de área 5; exsudato moderado 2; granulação 2 → PUSH 9.
+      await assessmentsRoute.POST(
+        jsonRequest(`/api/conditions/${conditionId}/assessments`, "POST", {
+          lengthMm: 20,
+          widthMm: 15,
+          tissueType: "granulation",
+          exudate: "moderate",
+        }),
+        context(conditionId),
+      );
+      const photoId = await uploadPatientOriginPhoto("com score");
+
+      const response = await triageRoute.GET(jsonRequest("/api/photos/triage", "GET"));
+      const body = (await response.json()) as Envelope<
+        Array<{ id: string; latestScore: { kind: string; value: number } | null }>
+      >;
+      const entry = body.data.find((item) => item.id === photoId);
+
+      expect(entry?.latestScore).toEqual({ kind: "push", value: 9 });
     });
   });
 

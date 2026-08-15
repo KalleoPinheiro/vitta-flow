@@ -150,6 +150,25 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
     expect(await supplyRepo.findAll()).toHaveLength(1);
   });
 
+  it("Dado ajuste condicional de estoque, Quando o saldo permite, Então aplica; senão retorna null (CONS2-05..08)", async () => {
+    const supplyRepo = new DrizzleSupplyRepository(appDb);
+    const supply = Supply.create({ name: "Gaze atômica", unit: "un", minQty: 1, priceCents: 100 });
+    await supplyRepo.save(supply.registerEntry(10));
+
+    // Saída dentro do saldo (CONS2-05) e entrada (CONS2-07) pelo mesmo caminho.
+    const afterExit = await supplyRepo.adjustStock(supply.id, -4);
+    expect(afterExit?.stockQty).toBe(6);
+    const afterEntry = await supplyRepo.adjustStock(supply.id, 4);
+    expect(afterEntry?.stockQty).toBe(10);
+
+    // Saída que deixaria negativo → null e nada muda (CONS2-06/08).
+    expect(await supplyRepo.adjustStock(supply.id, -11)).toBeNull();
+    expect((await supplyRepo.findById(supply.id))?.stockQty).toBe(10);
+
+    // Id inexistente → null.
+    expect(await supplyRepo.adjustStock("nao-existe", -1)).toBeNull();
+  });
+
   it("Dado parceiro salvo e paciente indicado, Quando buscar, Então roundtrip e escopo por indicação", async () => {
     const partnerRepo = new DrizzlePartnerRepository(appDb);
     const patientRepo = new PatientRepo(appDb);
@@ -233,6 +252,12 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
     const byPatients = await conditionRepo.findByPatientIds([patient.id, patient.id]);
     expect(byPatients).toHaveLength(1);
     expect(byPatients[0].id).toBe(condition.id);
+
+    // Lote por id (CONS2-09): uma chamada, ids duplicados deduplicados, vazio → [].
+    expect(await conditionRepo.findByIds([])).toEqual([]);
+    const byIds = await conditionRepo.findByIds([condition.id, condition.id, "inexistente"]);
+    expect(byIds).toHaveLength(1);
+    expect(byIds[0].id).toBe(condition.id);
   });
 
   it("Dado fotos de condição, Quando salvar, triar e buscar, Então fluxo completo preservado", async () => {

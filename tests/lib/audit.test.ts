@@ -11,7 +11,7 @@ vi.mock("next/server", () => ({
 }));
 
 // Import após o mock de "next/server", como exigido pelo hoisting do vi.mock.
-const { recordAudit } = await import("@/lib/audit");
+const { recordAudit, recordAuditNow } = await import("@/lib/audit");
 
 function createRepositoryStub(): AuditEventRepository & { save: ReturnType<typeof vi.fn> } {
   return {
@@ -89,5 +89,39 @@ describe("Feature: Registro de auditoria best-effort (após a resposta)", () => 
       "Auditoria: falha ao registrar evento",
       expect.any(Error),
     );
+  });
+});
+
+describe("Feature: Auditoria write-ahead em ações críticas (SEC1-20..21)", () => {
+  it("Dado sessão autenticada, Quando recordAuditNow, Então persiste antes de resolver com ator da sessão", async () => {
+    const auditEvents = createRepositoryStub();
+    const session: Session = { expiresAtMs: Date.now() + 60_000, subject: "maria@clinica.com", role: "admin" };
+
+    await recordAuditNow(auditEvents, session, {
+      action: "read",
+      resourceType: "export",
+      resourceId: "patient-1",
+      patientId: "patient-1",
+      detail: "exportação LGPD do titular",
+    });
+
+    expect(auditEvents.save).toHaveBeenCalledTimes(1);
+    const saved = auditEvents.save.mock.calls[0][0];
+    expect(saved.actorId).toBe("maria@clinica.com");
+    expect(saved.resourceType).toBe("export");
+  });
+
+  it("Dado falha ao persistir, Quando recordAuditNow, Então rejeita (requisição falha)", async () => {
+    const auditEvents = createRepositoryStub();
+    auditEvents.save.mockRejectedValue(new Error("banco indisponível"));
+    const session: Session = { expiresAtMs: Date.now() + 60_000, subject: "maria@clinica.com", role: "admin" };
+
+    await expect(
+      recordAuditNow(auditEvents, session, {
+        action: "delete",
+        resourceType: "photo",
+        resourceId: "photo-1",
+      }),
+    ).rejects.toThrow("banco indisponível");
   });
 });

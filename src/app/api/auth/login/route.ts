@@ -9,6 +9,7 @@ import {
   SESSION_TTL_MS,
 } from "@/lib/auth/session";
 import { RateLimiter } from "@/lib/auth/rate-limit";
+import { clientIp } from "@/lib/auth/client-ip";
 import { verifyPassword } from "@/lib/auth/password";
 import { getRepositories } from "@/infrastructure/container";
 import { fail } from "@/lib/api-response";
@@ -22,7 +23,7 @@ const loginSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const ip = clientIp(request);
   if (!LOGIN_RATE_LIMIT.allow(ip)) {
     return fail("Muitas tentativas de login, aguarde um minuto", 429);
   }
@@ -45,6 +46,13 @@ export async function POST(request: NextRequest) {
     return fail(identity.error, identity.status);
   }
   const subject = identity.subject;
+  if (subject === "local") {
+    // Credencial compartilhada corrói a trilha de auditoria (ator "local") —
+    // caminho de descontinuação registrado no plano de evolução (Fase 6).
+    console.warn(
+      "Login com a senha master da clínica — prefira contas individuais para auditoria nominal",
+    );
+  }
 
   const expiresAtMs = Date.now() + SESSION_TTL_MS;
   const response = NextResponse.json({ success: true, data: { ok: true }, error: null });

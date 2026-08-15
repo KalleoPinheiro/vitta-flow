@@ -42,6 +42,15 @@ export class DrizzleSupplyRepository implements SupplyRepository {
     return rows[0] ? Supply.restore(rows[0]) : null;
   }
 
+  async adjustStock(id: string, delta: number): Promise<Supply | null> {
+    const rows = await this.db
+      .update(supplies)
+      .set({ stockQty: sql`${supplies.stockQty} + ${delta}` })
+      .where(and(eq(supplies.id, id), sql`${supplies.stockQty} + ${delta} >= 0`))
+      .returning();
+    return rows[0] ? Supply.restore(rows[0]) : null;
+  }
+
   async findAll(): Promise<Supply[]> {
     const rows = await this.db
       .select()

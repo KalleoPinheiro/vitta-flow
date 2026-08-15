@@ -7,7 +7,7 @@ import type {
 } from "@/domain/inventory/inventory-repositories";
 import type { AppointmentRepository } from "@/domain/scheduling/appointment-repository";
 import type { Supply } from "@/domain/inventory/supply";
-import { NotFoundError } from "@/domain/shared/errors";
+import { InsufficientStockError, NotFoundError } from "@/domain/shared/errors";
 
 export interface RegisterStockMovementInput {
   supplyId: string;
@@ -45,10 +45,7 @@ export class RegisterStockMovement {
       }
     }
 
-    const updated =
-      input.type === "in"
-        ? supply.registerEntry(input.quantity)
-        : supply.registerExit(input.quantity);
+    assertMovementAllowed(supply, input.type, input.quantity);
     const movement = StockMovement.create({
       supplyId: input.supplyId,
       type: input.type,
@@ -59,7 +56,15 @@ export class RegisterStockMovement {
       unitPriceCents: input.type === "out" ? supply.priceCents : null,
     });
 
-    await this.supplies.save(updated);
+    // Aplicação atômica (CONS2-05): a condição é re-checada no banco — corrida
+    // entre o findById acima e a baixa não deixa estoque negativo (CONS2-08).
+    const delta = input.type === "in" ? input.quantity : -input.quantity;
+    const updated = await this.supplies.adjustStock(supply.id, delta);
+    if (!updated) {
+      throw new InsufficientStockError(
+        `Estoque insuficiente de "${supply.name}": disponível ${supply.stockQty}, solicitado ${input.quantity}`,
+      );
+    }
     await this.movements.save(movement);
     await this.syncBatches(input);
     return updated;
@@ -95,5 +100,18 @@ export class RegisterStockMovement {
       await this.batches.save(consumed);
       toConsume = leftover;
     }
+  }
+}
+
+/**
+ * Valida a movimentação no snapshot lido — mensagens do domínio preservadas
+ * (quantidade positiva; estoque suficiente). A condição definitiva é aplicada
+ * no banco por `adjustStock` (anti-corrida).
+ */
+function assertMovementAllowed(supply: Supply, type: MovementType, quantity: number): void {
+  if (type === "in") {
+    supply.registerEntry(quantity);
+  } else {
+    supply.registerExit(quantity);
   }
 }

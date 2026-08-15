@@ -307,6 +307,7 @@ function PackageForm({
   const [procedureId, setProcedureId] = useState("");
   const [sessions, setSessions] = useState("10");
   const [price, setPrice] = useState("");
+  const [expiresAt, setExpiresAt] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -326,6 +327,9 @@ function PackageForm({
           procedureId,
           totalSessions: Number(sessions),
           priceCents: Math.round(Number(price) * 100),
+          // Validade opcional: fim do dia escolhido no fuso local da clínica —
+          // forçar UTC encurtaria o último dia em fusos a oeste (UTC-3: 20:59).
+          expiresAt: expiresAt ? new Date(`${expiresAt}T23:59:59`).toISOString() : null,
         }),
       });
       onSaved();
@@ -375,6 +379,18 @@ function PackageForm({
           <input required type="number" min="0" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className={`mt-1 ${inputClass}`} />
         </label>
       </div>
+      <label className="text-sm font-medium">
+        Validade
+        <input
+          type="date"
+          value={expiresAt}
+          onChange={(e) => setExpiresAt(e.target.value)}
+          className={`mt-1 ${inputClass}`}
+        />
+        <span className="mt-1 block text-xs font-normal text-slate-500">
+          Opcional — sem data, o pacote não expira.
+        </span>
+      </label>
       <button
         type="submit"
         disabled={saving}

@@ -8,6 +8,7 @@ import type {
   ClinicalConditionRepository,
   ConditionPhotoRepository,
 } from "@/domain/clinical/clinical-repositories";
+import { stripImageMetadata } from "@/domain/clinical/image-sanitizer";
 import type { PhotoStorage } from "@/application/ports/photo-storage";
 import { NotFoundError, ValidationError } from "@/domain/shared/errors";
 
@@ -41,16 +42,28 @@ export class AddConditionPhoto {
       throw new ValidationError("Arquivo não é uma imagem JPEG, PNG ou WebP válida");
     }
 
+    // Privacidade (SEC1-05..08): EXIF/XMP/comentários nunca chegam ao storage —
+    // foto de celular carrega GPS da casa do paciente.
+    const sanitized = stripImageMetadata(input.data);
+    if (!sanitized.stripped) {
+      // Estrutura inesperada: os bytes originais seguem para o storage e podem
+      // conter EXIF. Registrar é o que permite a clínica detectar o caso em vez
+      // de supor que a remoção sempre funcionou.
+      console.warn(
+        `Sanitização de imagem não aplicada (condição ${input.conditionId}) — metadados podem ter sido preservados`,
+      );
+    }
+
     const photo = ConditionPhoto.create({
       conditionId: input.conditionId,
       contentType,
-      sizeBytes: input.data.byteLength,
+      sizeBytes: sanitized.data.byteLength,
       assessmentId: input.assessmentId ?? null,
       origin: input.origin ?? "staff",
       patientNote: input.patientNote ?? null,
     });
 
-    await this.storage.write(photo.id, input.data);
+    await this.storage.write(photo.id, sanitized.data);
     try {
       await this.photos.save(photo);
     } catch (error) {

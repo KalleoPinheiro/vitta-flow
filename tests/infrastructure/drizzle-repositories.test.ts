@@ -65,6 +65,8 @@ describe("Feature: Persistência PostgreSQL (Drizzle)", () => {
     await db.delete(schema.scheduleSettings);
     await db.delete(schema.appointments);
     await db.delete(schema.professionals);
+    await db.delete(schema.packageConsumptions);
+    await db.delete(schema.sessionPackages);
     await db.delete(schema.procedures);
     await db.delete(schema.patients);
   });
@@ -243,6 +245,86 @@ describe("Feature: Persistência PostgreSQL (Drizzle)", () => {
       await appointmentRepo.save(appointment);
 
       await expect(appointmentRepo.save(appointment.confirm())).resolves.toBeUndefined();
+    });
+  });
+
+  describe("Cenário: transação (DrizzleTransactionManager)", () => {
+    it("Dado erro dentro da transação, Quando run, Então nada persiste (CONS2-01); sem erro, tudo persiste (CONS2-02)", async () => {
+      const { DrizzleTransactionManager } = await import(
+        "@/infrastructure/persistence/drizzle/drizzle-transaction-manager"
+      );
+      const manager = new DrizzleTransactionManager(appDb);
+      const patient = await savedPatient();
+      const failing = Appointment.create({
+        patientId: patient.id,
+        slot: slot("2026-07-21T09:00:00Z", "2026-07-21T10:00:00Z"),
+        procedure: "Troca de bolsa",
+        price: Money.fromCents(25000),
+      });
+
+      await expect(
+        manager.run(async (repos) => {
+          await repos.appointments.save(failing);
+          throw new Error("falha simulada após o save");
+        }),
+      ).rejects.toThrow("falha simulada após o save");
+      expect(await appointmentRepo.findById(failing.id)).toBeNull();
+
+      const committed = Appointment.create({
+        patientId: patient.id,
+        slot: slot("2026-07-22T09:00:00Z", "2026-07-22T10:00:00Z"),
+        procedure: "Troca de bolsa",
+        price: Money.fromCents(25000),
+      });
+      const invoice = Invoice.create({
+        patientId: patient.id,
+        description: "Consulta",
+        amount: Money.fromCents(25000),
+        appointmentId: committed.id,
+      });
+      await manager.run(async (repos) => {
+        await repos.appointments.save(committed);
+        await repos.invoices.save(invoice);
+      });
+      expect(await appointmentRepo.findById(committed.id)).not.toBeNull();
+      expect(await invoiceRepo.findById(invoice.id)).not.toBeNull();
+    });
+
+    it("Dado consumo de pacote dentro de transação que falha, Quando run, Então o consumo é revertido (edge case CONS2-01)", async () => {
+      const { DrizzleTransactionManager } = await import(
+        "@/infrastructure/persistence/drizzle/drizzle-transaction-manager"
+      );
+      const { DrizzleSessionPackageRepository } = await import(
+        "@/infrastructure/persistence/drizzle/drizzle-package-repository"
+      );
+      const { SessionPackage } = await import("@/domain/billing/package");
+      const manager = new DrizzleTransactionManager(appDb);
+      const packageRepo = new DrizzleSessionPackageRepository(appDb);
+      const patient = await savedPatient();
+      const procedure = Procedure.create({
+        name: "Curativo pacote tx",
+        priceCents: 10000,
+        durationMinutes: 30,
+      });
+      await procedureRepo.save(procedure);
+      const pkg = SessionPackage.create({
+        patientId: patient.id,
+        procedureId: procedure.id,
+        totalSessions: 5,
+        priceCents: 40000,
+      });
+      await packageRepo.save(pkg);
+
+      await expect(
+        manager.run(async (repos) => {
+          await repos.sessionPackages.save(pkg.consumeSession());
+          await repos.sessionPackages.recordConsumption(pkg.id, "appt-tx-falha");
+          throw new Error("falha após consumir pacote");
+        }),
+      ).rejects.toThrow("falha após consumir pacote");
+
+      expect((await packageRepo.findById(pkg.id))?.usedSessions).toBe(0);
+      expect(await packageRepo.wasConsumedBy("appt-tx-falha")).toBe(false);
     });
   });
 

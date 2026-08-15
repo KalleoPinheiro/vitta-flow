@@ -6,6 +6,8 @@ export interface SessionPackageProps {
   procedureId: string;
   totalSessions: number;
   priceCents: number;
+  /** Validade opcional (COMP3-07): null = sem validade (comportamento histórico). */
+  expiresAt?: Date | null;
 }
 
 export interface SessionPackageState extends SessionPackageProps {
@@ -37,6 +39,7 @@ export class SessionPackage {
     }
     return new SessionPackage({
       ...props,
+      expiresAt: props.expiresAt ?? null,
       id: newId(),
       usedSessions: 0,
       active: true,
@@ -61,6 +64,16 @@ export class SessionPackage {
 
   get hasBalance(): boolean {
     return this.state.active && this.state.usedSessions < this.state.totalSessions;
+  }
+
+  get expiresAt(): Date | null {
+    return this.state.expiresAt ?? null;
+  }
+
+  /** Elegível para consumo (COMP3-08): ativo, com saldo e dentro da validade. */
+  isUsableAt(now: Date): boolean {
+    const expiresAt = this.state.expiresAt ?? null;
+    return this.hasBalance && (expiresAt === null || expiresAt.getTime() > now.getTime());
   }
 
   get remainingSessions(): number {
@@ -104,8 +117,8 @@ export interface SessionPackageRepository {
   save(pkg: SessionPackage): Promise<void>;
   findById(id: string): Promise<SessionPackage | null>;
   findByPatientId(patientId: string): Promise<SessionPackage[]>;
-  /** Pacote ativo com saldo para o par paciente+procedimento (mais antigo primeiro). */
-  findUsable(patientId: string, procedureId: string): Promise<SessionPackage | null>;
+  /** Pacote ativo, com saldo e não expirado para o par paciente+procedimento (mais antigo primeiro). */
+  findUsable(patientId: string, procedureId: string, now?: Date): Promise<SessionPackage | null>;
   /** Registra consumo por consulta — unique por consulta garante idempotência. */
   recordConsumption(packageId: string, appointmentId: string): Promise<void>;
   wasConsumedBy(appointmentId: string): Promise<boolean>;

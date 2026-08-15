@@ -12,6 +12,8 @@ const createSchema = z.object({
   procedureId: z.string().min(1),
   totalSessions: z.number().int().min(1).max(100),
   priceCents: z.number().int().min(0).max(1_000_000_000),
+  /** Validade opcional (COMP3-07). */
+  expiresAt: z.iso.datetime().nullish(),
 });
 
 const toPackageDto = (pkg: SessionPackage, procedureName?: string) => ({
@@ -23,6 +25,7 @@ const toPackageDto = (pkg: SessionPackage, procedureName?: string) => ({
   usedSessions: pkg.usedSessions,
   remainingSessions: pkg.remainingSessions,
   priceCents: pkg.priceCents,
+  expiresAt: pkg.expiresAt?.toISOString() ?? null,
   active: pkg.isActive,
   createdAt: pkg.createdAt.toISOString(),
 });
@@ -57,7 +60,10 @@ export async function POST(request: NextRequest) {
       throw new NotFoundError("Procedimento", body.procedureId);
     }
 
-    const pkg = SessionPackage.create(body);
+    const pkg = SessionPackage.create({
+      ...body,
+      expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
+    });
     await sessionPackages.save(pkg);
 
     // Venda do pacote fatura uma única vez; as sessões consomem saldo (O3.3).

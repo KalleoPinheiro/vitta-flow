@@ -185,6 +185,52 @@ describe("Onda 3 — operação multi-profissional", () => {
       expect(await invoiceRepo.findByAppointmentId(appointment.id)).toBeNull();
     });
 
+    it("Dado pacote expirado, Quando concluir, Então não consome e fatura avulso (COMP3-08)", async () => {
+      const pkg = SessionPackage.create({
+        patientId: maria.id,
+        procedureId: "proc-curativo",
+        totalSessions: 10,
+        priceCents: 120000,
+        expiresAt: new Date("2026-01-01T00:00:00Z"),
+      });
+      await packageRepo.save(pkg);
+
+      const appointment = await scheduleWithProcedure(13);
+      await complete(appointment.id);
+
+      expect((await packageRepo.findById(pkg.id))?.usedSessions).toBe(0);
+      expect(await invoiceRepo.findByAppointmentId(appointment.id)).not.toBeNull();
+    });
+
+    it("Dado pacote sem validade (null), Quando checar elegibilidade, Então comportamento atual preservado (COMP3-09)", () => {
+      const semValidade = SessionPackage.create({
+        patientId: maria.id,
+        procedureId: "proc-curativo",
+        totalSessions: 2,
+        priceCents: 20000,
+      });
+      const noPrazo = SessionPackage.create({
+        patientId: maria.id,
+        procedureId: "proc-curativo",
+        totalSessions: 2,
+        priceCents: 20000,
+        expiresAt: new Date("2030-01-01T00:00:00Z"),
+      });
+      const vencido = SessionPackage.create({
+        patientId: maria.id,
+        procedureId: "proc-curativo",
+        totalSessions: 2,
+        priceCents: 20000,
+        expiresAt: new Date("2020-01-01T00:00:00Z"),
+      });
+      const now = new Date("2026-07-20T12:00:00Z");
+
+      expect(semValidade.expiresAt).toBeNull();
+      expect(semValidade.isUsableAt(now)).toBe(true);
+      expect(noPrazo.isUsableAt(now)).toBe(true);
+      expect(vencido.isUsableAt(now)).toBe(false);
+    });
+
     it("Dado pacote esgotado, Quando concluir, Então volta a faturar avulso", async () => {
       const pkg = SessionPackage.create({
         patientId: maria.id,

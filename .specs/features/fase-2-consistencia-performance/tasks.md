@@ -5,7 +5,7 @@
 Implement these tasks with the `tlc-spec-driven` skill (Execute flow + Critical Rules).
 
 **Design**: `.specs/features/fase-2-consistencia-performance/design.md`
-**Status**: In Progress
+**Status**: Done — commits 59e19fe, 47baaf0, cc6ffdd, 3684089 + este
 
 ## Test Coverage Matrix
 

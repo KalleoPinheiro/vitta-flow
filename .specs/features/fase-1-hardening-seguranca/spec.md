@@ -119,12 +119,12 @@ para que um esquecimento de checagem não vire furo de escopo.
 
 | Requirement ID | Story | Phase | Status |
 |----------------|-------|-------|--------|
-| SEC1-01..04 | P1 revogação | Tasks | Pending |
-| SEC1-05..09 | P1 metadados | Tasks | Pending |
-| SEC1-10..13 | P1 rate limit | Tasks | Pending |
-| SEC1-14..17 | P2 guard | Tasks | Pending |
-| SEC1-18..19 | P2 credenciais | Tasks | Pending |
-| SEC1-20..22 | P2 auditoria | Tasks | Pending |
+| SEC1-01..04 | P1 revogação | Execute | Implemented |
+| SEC1-05..09 | P1 metadados | Execute | Implemented |
+| SEC1-10..13 | P1 rate limit | Execute | Implemented |
+| SEC1-14..17 | P2 guard | Execute | Implemented |
+| SEC1-18..19 | P2 credenciais | Execute | Implemented |
+| SEC1-20..22 | P2 auditoria | Execute | Implemented |
 
 ## Success Criteria
 

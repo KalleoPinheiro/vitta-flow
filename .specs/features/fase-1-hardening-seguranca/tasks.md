@@ -6,7 +6,7 @@ Implement these tasks with the `tlc-spec-driven` skill: activate it by name and 
 Execute flow and Critical Rules.
 
 **Design**: `.specs/features/fase-1-hardening-seguranca/design.md`
-**Status**: In Progress
+**Status**: Done — commits 0befade, 71da476 (fix não planejado), d482a28, 06581c8, 1580c1a, dda18d9, d5d0a42
 
 ---
 

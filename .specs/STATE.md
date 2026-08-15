@@ -37,10 +37,10 @@
 ## Handoff
 
 - **Feature**: fase-1-hardening-seguranca
-- **Phase / Task**: planejamento — specs sendo escritas
-- **Completed**: none
+- **Phase / Task**: Execute concluído (T1–T6 + fix de suíte sensível à data) — aguardando Verifier
+- **Completed**: T1..T6
 - **In-progress** (file:line): —
-- **Next step**: escrever spec/design/tasks da fase 1 e iniciar T1
+- **Next step**: receber veredito do Verifier da fase 1; em paralelo, especificar fase 2 (consistência transacional e performance)
 - **Blockers**: none
-- **Uncommitted files**: docs/PLANO-EVOLUCAO-FASEADO.md, .specs/*
+- **Uncommitted files**: .specs/* (status), a commitar com validation.md
 - **Branch**: claude/code-analysis-product-evolution-a4c0f1

@@ -5,7 +5,7 @@
 Implement these tasks with the `tlc-spec-driven` skill (Execute flow + Critical Rules).
 
 **Design**: `.specs/features/fase-4-portal-auto-agendamento/design.md`
-**Status**: Draft
+**Status**: Done — commits c7dd752 (T1), b33019e (T2), a7cf03d (T3)
 
 ## Test Coverage Matrix
 

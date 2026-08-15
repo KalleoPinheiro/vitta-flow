@@ -70,7 +70,7 @@ exposta ao paciente.
 
 | Requirement ID | Story | Status |
 |----------------|-------|--------|
-| PORT4-01..03 | slots | Pending |
-| PORT4-04..08 | agendar | Pending |
-| PORT4-09 | recall | Pending |
-| PORT4-10..11 | UI | Pending |
+| PORT4-01..03 | slots | Implemented |
+| PORT4-04..08 | agendar | Implemented |
+| PORT4-09 | recall | Implemented |
+| PORT4-10..11 | UI | Implemented |

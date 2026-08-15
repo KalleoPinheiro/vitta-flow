@@ -36,11 +36,11 @@
 
 ## Handoff
 
-- **Feature**: fase-3-compliance-ux-clinico (aguardando Verifier) → fase-4 na sequência
-- **Phase / Task**: F1 PASS, F2 PASS (iteração 1), F3 T1–T3 implementados (628ea3d, 867e223, c9132f8)
-- **Completed**: F1 T1–T6; F2 T1–T5 + fix; F3 T1–T3
+- **Feature**: fase-4-portal-auto-agendamento (aguardando Verifier)
+- **Phase / Task**: F1/F2/F3 PASS; F4 T1–T3 implementados (c7dd752, b33019e, a7cf03d)
+- **Completed**: todas as fases executáveis do plano (1–4)
 - **In-progress** (file:line): —
-- **Next step**: veredito do Verifier da fase 3; depois executar fase 4 (T1 slots, T2 agendar+recall, T3 UI)
+- **Next step**: veredito do Verifier da fase 4; fases 5–6 são backlog (dependem de decisão do usuário)
 - **Blockers**: none
 - **Uncommitted files**: .specs (status)
 - **Branch**: claude/code-analysis-product-evolution-a4c0f1

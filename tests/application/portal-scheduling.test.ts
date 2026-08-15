@@ -5,6 +5,9 @@ import { InMemoryProcedureRepository } from "@/infrastructure/persistence/in-mem
 import { CreatePatient } from "@/application/patients/create-patient";
 import { ScheduleAppointment } from "@/application/appointments/schedule-appointment";
 import { ListAvailableSlots } from "@/application/portal/list-available-slots";
+import { ScheduleOwnAppointment } from "@/application/portal/schedule-own-appointment";
+import { InMemoryFollowUpRepository } from "@/infrastructure/persistence/in-memory/in-memory-inventory-repositories";
+import { FollowUp } from "@/domain/followup/follow-up";
 import { Procedure } from "@/domain/catalog/procedure";
 import type { Patient } from "@/domain/patient/patient";
 import { NotFoundError } from "@/domain/shared/errors";
@@ -131,5 +134,132 @@ describe("Feature: Horários disponíveis para o paciente agendar (PORT4-01..03)
 
     expect(slots).toHaveLength(20);
     expect(slots[1].startsAt.toISOString()).toBe("2026-07-20T08:30:00.000Z");
+  });
+});
+
+describe("Feature: Paciente agenda o próprio retorno (PORT4-04..07)", () => {
+  let patientRepo: InMemoryPatientRepository;
+  let appointmentRepo: InMemoryAppointmentRepository;
+  let procedureRepo: InMemoryProcedureRepository;
+  let followUpRepo: InMemoryFollowUpRepository;
+  let maria: Patient;
+  let curativo: Procedure;
+
+  beforeEach(async () => {
+    patientRepo = new InMemoryPatientRepository();
+    appointmentRepo = new InMemoryAppointmentRepository();
+    procedureRepo = new InMemoryProcedureRepository();
+    followUpRepo = new InMemoryFollowUpRepository();
+    maria = await new CreatePatient(patientRepo).execute({
+      fullName: "Maria da Silva",
+      email: "maria@example.com",
+      phone: "11999990000",
+    });
+    curativo = Procedure.create({ name: "Curativo", priceCents: 15000, durationMinutes: 60 });
+    await procedureRepo.save(curativo);
+  });
+
+  const schedule = (input: {
+    email?: string;
+    procedureId?: string;
+    startsAt?: string;
+    followUpId?: string | null;
+  } = {}) =>
+    new ScheduleOwnAppointment(
+      patientRepo,
+      appointmentRepo,
+      procedureRepo,
+      followUpRepo,
+    ).execute({
+      email: input.email ?? "maria@example.com",
+      procedureId: input.procedureId ?? curativo.id,
+      startsAt: new Date(input.startsAt ?? "2026-07-20T09:00:00Z"),
+      followUpId: input.followUpId ?? null,
+    });
+
+  it("Dado slot livre, Quando agendar, Então cria consulta do paciente com preço e duração do catálogo (PORT4-04)", async () => {
+    const appointment = await schedule();
+
+    expect(appointment.patientId).toBe(maria.id);
+    expect(appointment.procedure).toBe("Curativo");
+    expect(appointment.price.cents).toBe(15000);
+    expect(appointment.procedureId).toBe(curativo.id);
+    expect(appointment.slot.end.toISOString()).toBe("2026-07-20T10:00:00.000Z");
+    expect(appointment.status).toBe("scheduled");
+  });
+
+  it("Dado horário conflitante, Quando agendar, Então erro de conflito e nenhuma consulta nova (PORT4-05)", async () => {
+    await schedule();
+
+    await expect(schedule({ startsAt: "2026-07-20T09:30:00Z" })).rejects.toThrow(
+      /Horário indisponível/,
+    );
+    expect(await appointmentRepo.findByPatientId(maria.id)).toHaveLength(1);
+  });
+
+  it("Dado followUpId do próprio paciente, Quando agendar, Então o retorno vira scheduled (PORT4-06)", async () => {
+    const followUp = FollowUp.create({
+      patientId: maria.id,
+      appointmentId: null,
+      dueDate: new Date("2026-07-15T00:00:00Z"),
+      reason: "Revisão do curativo",
+    });
+    await followUpRepo.save(followUp);
+
+    await schedule({ followUpId: followUp.id });
+
+    expect((await followUpRepo.findById(followUp.id))?.status).toBe("scheduled");
+  });
+
+  it("Dado followUp de outro paciente, Quando agendar, Então NotFoundError e nada é criado (PORT4-07)", async () => {
+    const outro = await new CreatePatient(patientRepo).execute({
+      fullName: "João Outro",
+      email: "joao@example.com",
+      phone: "11988887777",
+    });
+    const alheio = FollowUp.create({
+      patientId: outro.id,
+      appointmentId: null,
+      dueDate: new Date("2026-07-15T00:00:00Z"),
+      reason: "Retorno do João",
+    });
+    await followUpRepo.save(alheio);
+
+    await expect(schedule({ followUpId: alheio.id })).rejects.toThrow(NotFoundError);
+    expect(await appointmentRepo.findByPatientId(maria.id)).toHaveLength(0);
+    expect((await followUpRepo.findById(alheio.id))?.status).toBe("pending");
+  });
+
+  it("Dado conflito com followUp informado, Quando agendar, Então o retorno permanece pendente (edge case)", async () => {
+    const followUp = FollowUp.create({
+      patientId: maria.id,
+      appointmentId: null,
+      dueDate: new Date("2026-07-15T00:00:00Z"),
+      reason: "Revisão do curativo",
+    });
+    await followUpRepo.save(followUp);
+    await schedule();
+
+    await expect(
+      schedule({ startsAt: "2026-07-20T09:30:00Z", followUpId: followUp.id }),
+    ).rejects.toThrow(/Horário indisponível/);
+    expect((await followUpRepo.findById(followUp.id))?.status).toBe("pending");
+  });
+
+  it("Dado procedimento inativo, Quando agendar, Então NotFoundError", async () => {
+    const inativo = Procedure.create({
+      name: "Descontinuado",
+      priceCents: 1000,
+      durationMinutes: 30,
+    });
+    await procedureRepo.save(inativo.deactivate());
+
+    await expect(schedule({ procedureId: inativo.id })).rejects.toThrow(NotFoundError);
+  });
+
+  it("Dado paciente inativo, Quando agendar, Então NotFoundError (escopo da sessão)", async () => {
+    await patientRepo.save(maria.deactivate());
+
+    await expect(schedule()).rejects.toThrow(NotFoundError);
   });
 });

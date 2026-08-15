@@ -29,6 +29,17 @@ const formatTime = (date: Date): string =>
 const formatDay = (date: Date): string => date.toLocaleDateString("pt-BR");
 
 /**
+ * Recall precisa de destino (PORT4-09): com o portal publicado, o paciente
+ * agenda sozinho; sem APP_URL configurada, mantém a orientação anterior.
+ */
+const schedulingCallToAction = (): string => {
+  const appUrl = process.env.APP_URL;
+  return appUrl
+    ? `Agende seu retorno no portal: ${appUrl.replace(/\/$/, "")}/portal.`
+    : "Entre em contato com a clínica para agendar.";
+};
+
+/**
  * Job de lembretes: confirmação D-1 (consultas de amanhã ainda "scheduled") e
  * recall de retornos vencidos. Idempotente por dia via ReminderLog; falha de
  * envio individual não aborta o lote.
@@ -126,7 +137,7 @@ export class SendReminders {
       patientId: followUp.patientId,
       message: (name: string) =>
         `Olá, ${name}! Seu retorno (${followUp.reason}) estava previsto para ` +
-        `${formatDay(followUp.dueDate)}. Entre em contato com a clínica para agendar. ` +
+        `${formatDay(followUp.dueDate)}. ${schedulingCallToAction()} ` +
         `Cuidar da continuidade faz toda a diferença!`,
     }));
   }

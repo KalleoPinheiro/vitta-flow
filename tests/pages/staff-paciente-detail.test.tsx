@@ -191,6 +191,7 @@ interface RouterOptions {
   professionals?: ProfessionalDto[];
   assessmentsByCondition?: Record<string, AssessmentDto[]>;
   photosByCondition?: Record<string, ConditionPhotoDto[]>;
+  packages?: unknown[];
   extra?: (call: FetchCall) => MockedResponse | Promise<MockedResponse> | undefined;
 }
 
@@ -218,6 +219,7 @@ function buildRouter({
   professionals = [],
   assessmentsByCondition = {},
   photosByCondition = {},
+  packages = [],
   extra,
 }: RouterOptions = {}) {
   const exactRoutes: Record<string, () => MockedResponse> = {
@@ -226,6 +228,7 @@ function buildRouter({
     "/api/patients/pac-1/conditions": () => jsonResponse(conditions),
     "/api/patients/pac-1/evolutions": () => jsonResponse(evolutions),
     "/api/professionals": () => jsonResponse(professionals),
+    "/api/packages?patientId=pac-1": () => jsonResponse(packages),
   };
 
   return ({ url, init }: FetchCall): MockedResponse | Promise<MockedResponse> => {
@@ -1393,5 +1396,73 @@ describe("Feature: PatientRecordPage", () => {
 
       expect(await screen.findByText("Erro ao registrar evolução")).toBeInTheDocument();
     });
+  });
+});
+
+describe("Feature: Pacotes no prontuário (COMP3-10)", () => {
+  it("Dado pacote com validade, Quando abrir a aba Pacotes, Então exibe saldo e validade", async () => {
+    mockFetch(
+      buildRouter({
+        packages: [
+          {
+            id: "pkg-1",
+            procedureId: "proc-1",
+            procedureName: "Curativo especial",
+            totalSessions: 10,
+            usedSessions: 3,
+            remainingSessions: 7,
+            priceCents: 120000,
+            expiresAt: "2030-06-30T23:59:59.000Z",
+            active: true,
+            createdAt: "2026-01-01T00:00:00.000Z",
+          },
+        ],
+      }),
+    );
+    await renderDetail();
+
+    fireEvent.click(screen.getByText("Pacotes"));
+
+    expect(await screen.findByText("Curativo especial")).toBeInTheDocument();
+    expect(screen.getByText("7 de 10 sessões restantes")).toBeInTheDocument();
+    expect(screen.getByText(/Válido até 30\/06\/2030/)).toBeInTheDocument();
+  });
+
+  it("Dado pacote expirado, Quando abrir a aba Pacotes, Então destaca a expiração", async () => {
+    mockFetch(
+      buildRouter({
+        packages: [
+          {
+            id: "pkg-2",
+            procedureId: "proc-1",
+            procedureName: "Curativo especial",
+            totalSessions: 5,
+            usedSessions: 0,
+            remainingSessions: 5,
+            priceCents: 50000,
+            expiresAt: "2020-01-01T00:00:00.000Z",
+            active: true,
+            createdAt: "2019-01-01T00:00:00.000Z",
+          },
+        ],
+      }),
+    );
+    await renderDetail();
+
+    fireEvent.click(screen.getByText("Pacotes"));
+
+    const expired = await screen.findByText(/Expirado em 01\/01\/2020/);
+    expect(expired).toHaveClass("text-red-700");
+  });
+
+  it("Dado paciente sem pacotes, Quando abrir a aba, Então exibe estado vazio", async () => {
+    mockFetch(buildRouter());
+    await renderDetail();
+
+    fireEvent.click(screen.getByText("Pacotes"));
+
+    expect(
+      await screen.findByText("Nenhum pacote de sessões para este paciente."),
+    ).toBeInTheDocument();
   });
 });

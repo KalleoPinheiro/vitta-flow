@@ -676,6 +676,25 @@ describe("Feature: Envio de foto pelo paciente", () => {
     });
   });
 
+  describe("Cenário: consentimento pendente", () => {
+    it("Dado termo não aceito, Quando renderizar o envio, Então orienta o aceite e não oferece o arquivo (COMP3-01)", async () => {
+      mockFetch([
+        {
+          path: "/api/portal/patient/consent",
+          respond: () =>
+            jsonResponse(true, { consentText: "Termo", accepted: false, acceptedAt: null }),
+        },
+      ]);
+
+      render(<PatientPhotoUpload conditionId="cond-1" onSent={vi.fn()} />);
+
+      expect(
+        await screen.findByText("Aceite o termo de consentimento acima para enviar fotos à equipe."),
+      ).toBeInTheDocument();
+      expect(document.querySelector('input[type="file"]')).toBeNull();
+    });
+  });
+
   describe("Cenário: falha no envio de foto", () => {
     it("Dado erro retornado pela API, Quando enviar, Então exibe a mensagem de erro", async () => {
       const onSent = vi.fn();

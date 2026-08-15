@@ -3,6 +3,7 @@ import { getRepositories } from "@/infrastructure/container";
 import { ConsentRecord } from "@/domain/consent/consent-record";
 import { CONSENT_TEXT } from "@/lib/consent-text";
 import { requirePortalSession } from "@/lib/auth/require-session";
+import { clientIp } from "@/lib/auth/client-ip";
 import { handleRequest } from "@/lib/api-response";
 import { recordAudit } from "@/lib/audit";
 import { NotFoundError } from "@/domain/shared/errors";
@@ -49,7 +50,8 @@ export async function POST(request: NextRequest) {
     const record = ConsentRecord.create({
       patientId: patient.id,
       consentText: CONSENT_TEXT,
-      ipAddress: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+      // Evidência do aceite: mesma derivação confiável usada no rate limit (SEC1-10..13).
+      ipAddress: clientIp(request),
     });
     await consentRecords.save(record);
 

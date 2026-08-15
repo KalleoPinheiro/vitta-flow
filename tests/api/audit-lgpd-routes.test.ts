@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { adminCookieHeader } from "../support/session";
 import { jsonRequest } from "../support/request";
@@ -205,6 +205,26 @@ describe("Feature: Rotas de auditoria, export LGPD, fotos (staff) e cron de lemb
       expect(response.status).toBe(404);
     });
 
+    it("Dado falha ao gravar a auditoria, Quando GET export, Então falha a requisição (write-ahead, SEC1-20)", async () => {
+      const { DrizzleAuditEventRepository } = await import(
+        "@/infrastructure/persistence/drizzle/drizzle-audit-event-repository"
+      );
+      const saveSpy = vi
+        .spyOn(DrizzleAuditEventRepository.prototype, "save")
+        .mockRejectedValueOnce(new Error("auditoria indisponível"));
+
+      const response = await exportRoute.GET(
+        jsonRequest(`/api/patients/${patientId}/export`, "GET"),
+        context(patientId),
+      );
+
+      // Exportação de titular não responde sucesso sem trilha gravada.
+      expect(response.status).toBe(500);
+      const body = (await response.json()) as Envelope<null>;
+      expect(body.success).toBe(false);
+      saveSpy.mockRestore();
+    });
+
     it("Dado paciente com anamnese, condição e foto, Quando GET export, Então retorna JSON completo", async () => {
       const response = await exportRoute.GET(
         jsonRequest(`/api/patients/${patientId}/export`, "GET"),
@@ -244,6 +264,24 @@ describe("Feature: Rotas de auditoria, export LGPD, fotos (staff) e cron de lemb
 
       expect(response.status).toBe(200);
       expect(response.headers.get("content-type")).toBe("image/png");
+    });
+
+    it("Dado falha ao gravar a auditoria, Quando DELETE photos/:id, Então falha a requisição (write-ahead, SEC1-21)", async () => {
+      const deletablePhotoId = await uploadPatientOriginPhoto("para exclusão auditada");
+      const { DrizzleAuditEventRepository } = await import(
+        "@/infrastructure/persistence/drizzle/drizzle-audit-event-repository"
+      );
+      const saveSpy = vi
+        .spyOn(DrizzleAuditEventRepository.prototype, "save")
+        .mockRejectedValueOnce(new Error("auditoria indisponível"));
+
+      const response = await photoByIdRoute.DELETE(
+        jsonRequest(`/api/photos/${deletablePhotoId}`, "DELETE"),
+        context(deletablePhotoId),
+      );
+
+      expect(response.status).toBe(500);
+      saveSpy.mockRestore();
     });
 
     it("Dado foto inexistente, Quando GET photos/:id, Então retorna 404", async () => {

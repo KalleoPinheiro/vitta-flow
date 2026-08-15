@@ -22,7 +22,6 @@ function latestScoreFor(
   return { kind: condition.kind === "wound" ? "push" : "det", value };
 }
 
-
 /** Fila de triagem (staff): fotos enviadas por pacientes aguardando avaliação. */
 export async function GET(request: NextRequest) {
   const guard = requireStaffSession(request);

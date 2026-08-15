@@ -371,6 +371,40 @@ describe("Feature: Rotas de auditoria, export LGPD, fotos (staff) e cron de lemb
       expect(entry?.waitingHours).toBe(0);
     });
 
+    it("Dado foto enviada há 30h, Quando GET triage, Então waitingHours reflete a idade real da pendência (COMP3-04/06)", async () => {
+      const photoId = await uploadPatientOriginPhoto("pendência antiga");
+
+      // Envelhece a pendência no banco — o cálculo precisa vir do createdAt real,
+      // não de um valor fixo (foto recém-criada não discrimina o cálculo).
+      const { getRepositories } = await import("@/infrastructure/container");
+      const { ConditionPhoto } = await import("@/domain/clinical/condition-photo");
+      const repos = await getRepositories();
+      const stored = await repos.conditionPhotos.findById(photoId);
+      const thirtyHoursAgo = new Date(Date.now() - 30 * 3_600_000);
+      await repos.conditionPhotos.save(
+        ConditionPhoto.restore({
+          id: stored!.id,
+          conditionId: stored!.conditionId,
+          assessmentId: stored!.assessmentId,
+          contentType: stored!.contentType,
+          sizeBytes: stored!.sizeBytes,
+          origin: stored!.origin,
+          patientNote: stored!.patientNote,
+          triageStatus: stored!.triageStatus,
+          createdAt: thirtyHoursAgo,
+        }),
+      );
+
+      const response = await triageRoute.GET();
+      const body = (await response.json()) as Envelope<
+        Array<{ id: string; waitingHours: number; createdAt: string }>
+      >;
+      const entry = body.data.find((item) => item.id === photoId);
+
+      expect(entry?.waitingHours).toBe(30);
+      expect(entry?.createdAt).toBe(thirtyHoursAgo.toISOString());
+    });
+
     it("Dado avaliação de ferida com componentes do PUSH, Quando GET triage, Então latestScore traz o score da condição (COMP3-04)", async () => {
       // 20mm x 15mm = 3,0 cm² → subscore de área 5; exsudato moderado 2; granulação 2 → PUSH 9.
       await assessmentsRoute.POST(

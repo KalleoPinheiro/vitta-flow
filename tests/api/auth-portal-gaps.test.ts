@@ -397,6 +397,103 @@ describe("Feature: Fechamento de branches — auth Google, login e rotas do port
       expect(photosBody.data).toHaveLength(0);
     });
 
+    it("Dado aceite de texto defasado, Quando POST photos no portal, Então 403 — hash antigo não vale (COMP3-03)", async () => {
+      const patientEmail = "paciente.consent.antigo@example.com";
+      const patientResponse = await patientsRoute.POST(
+        jsonRequest("/api/patients", "POST", {
+          fullName: "Paciente Consentimento Antigo",
+          email: patientEmail,
+          phone: "11911110000",
+        }),
+      );
+      const consentPatientId = ((await patientResponse.json()) as Envelope<{ id: string }>).data.id;
+      const conditionResponse = await conditionsRoute.POST(
+        jsonRequest(`/api/patients/${consentPatientId}/conditions`, "POST", {
+          kind: "wound",
+          title: "Ferida com termo antigo",
+        }),
+        context(consentPatientId),
+      );
+      const conditionId = ((await conditionResponse.json()) as Envelope<{ id: string }>).data.id;
+
+      // Aceite de uma versão anterior do termo: hash não cobre o CONSENT_TEXT vigente.
+      const { getRepositories } = await import("@/infrastructure/container");
+      const { ConsentRecord } = await import("@/domain/consent/consent-record");
+      const repos = await getRepositories();
+      await repos.consentRecords.save(
+        ConsentRecord.create({
+          patientId: consentPatientId,
+          consentText: "Versão anterior do termo de consentimento da clínica.",
+        }),
+      );
+
+      const png = new Uint8Array([
+        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
+      ]);
+      const form = new FormData();
+      form.set("file", new File([png], "foto.png", { type: "image/png" }));
+      form.set("conditionId", conditionId);
+      const response = await photosRoute.POST(
+        new NextRequest("http://localhost/api/portal/patient/photos", {
+          method: "POST",
+          body: form,
+          headers: cookieHeader(sessionFor(patientEmail, "patient")),
+        }),
+      );
+      const body = (await response.json()) as Envelope<null>;
+
+      expect(response.status).toBe(403);
+      expect(body.error).toContain("Consentimento pendente");
+    });
+
+    it("Dado paciente com aceite vigente e duas condições, Quando enviar foto em ambas, Então o gate é por paciente (edge case)", async () => {
+      const patientEmail = "paciente.duas.condicoes@example.com";
+      const patientResponse = await patientsRoute.POST(
+        jsonRequest("/api/patients", "POST", {
+          fullName: "Paciente Duas Condições",
+          email: patientEmail,
+          phone: "11900001111",
+        }),
+      );
+      const twoPatientId = ((await patientResponse.json()) as Envelope<{ id: string }>).data.id;
+      const token = sessionFor(patientEmail, "patient");
+      await consentRoute.POST(
+        jsonRequest("/api/portal/patient/consent", "POST", undefined, cookieHeader(token)),
+      );
+
+      const conditionIds: string[] = [];
+      for (const title of ["Ferida A", "Ferida B"]) {
+        const response = await conditionsRoute.POST(
+          jsonRequest(`/api/patients/${twoPatientId}/conditions`, "POST", {
+            kind: "wound",
+            title,
+          }),
+          context(twoPatientId),
+        );
+        conditionIds.push(((await response.json()) as Envelope<{ id: string }>).data.id);
+      }
+
+      const png = new Uint8Array([
+        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
+      ]);
+      for (const conditionId of conditionIds) {
+        const form = new FormData();
+        form.set("file", new File([png], "foto.png", { type: "image/png" }));
+        form.set("conditionId", conditionId);
+        const response = await photosRoute.POST(
+          new NextRequest("http://localhost/api/portal/patient/photos", {
+            method: "POST",
+            body: form,
+            headers: cookieHeader(token),
+          }),
+        );
+        const body = (await response.json()) as Envelope<{ triageStatus: string }>;
+
+        expect(response.status).toBe(200);
+        expect(body.data.triageStatus).toBe("pending");
+      }
+    });
+
     it("Dado paciente com fatura pendente, follow-up e foto, Quando GET portal do paciente, Então retorna tudo agregado", async () => {
       const patientEmail = "paciente.completo.gaps@example.com";
       const patientResponse = await patientsRoute.POST(

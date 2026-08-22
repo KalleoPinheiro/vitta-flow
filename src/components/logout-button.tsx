@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { headerClasses } from "@still-void/ui";
+import { headerClasses } from "@still-void/ui/react";
 
 export function LogoutButton() {
   const router = useRouter();

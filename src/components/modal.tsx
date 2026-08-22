@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef } from "react";
-import { headerClasses } from "@still-void/ui";
+import { headerClasses } from "@still-void/ui/react";
 
 interface ModalProps {
   title: string;

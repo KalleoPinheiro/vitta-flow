@@ -1,6 +1,6 @@
 "use client";
 
-import { categoryPill } from "@still-void/ui";
+import { categoryPill } from "@still-void/ui/react";
 
 interface LoadMoreButtonProps {
   visible: boolean;

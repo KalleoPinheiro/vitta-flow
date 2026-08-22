@@ -4,6 +4,8 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiFetch } from "@/lib/client";
 import { useApiQuery } from "@/lib/use-api-query";
+import { Button, Input } from "@still-void/ui/react";
+import { accentButton } from "@/lib/ui";
 import { ErrorAlert } from "@/components/feedback";
 
 interface Providers {
@@ -48,10 +50,10 @@ function ProviderButtons({ providers }: { providers: Providers }) {
     <>
       {providers.google && <GoogleLoginButton />}
       {providers.google && providers.password && (
-        <div className="my-4 flex items-center gap-3 text-xs text-slate-400">
-          <span className="h-px flex-1 bg-slate-200" />
+        <div className="my-4 flex items-center gap-3 text-xs text-ink-3">
+          <span className="h-px flex-1 bg-surface-2" />
           ou
-          <span className="h-px flex-1 bg-slate-200" />
+          <span className="h-px flex-1 bg-surface-2" />
         </div>
       )}
       {providers.password && <PasswordForm />}
@@ -63,9 +65,9 @@ function GoogleLoginButton() {
   return (
     <>
       <GoogleAnchor />
-      <p className="mt-2 text-center text-xs text-slate-400">
+      <p className="mt-2 text-center text-xs text-ink-3">
         Equipe:{" "}
-        <a href="/api/auth/google?connect=calendar" className="text-teal-700 hover:underline">
+        <a href="/api/auth/google?connect=calendar" className="text-accent-ink hover:underline">
           entrar conectando o Google Agenda
         </a>
       </p>
@@ -77,7 +79,7 @@ function GoogleAnchor() {
   return (
     <a
       href="/api/auth/google"
-      className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+      className="flex w-full items-center justify-center gap-2 rounded-md border border-sv-border bg-sv-surface px-4 py-2 text-sm font-medium text-sv-text hover:bg-sv-surface-2"
     >
       <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
         <path
@@ -131,31 +133,27 @@ function PasswordForm() {
       {error && <ErrorAlert message={error} />}
       <label className="text-sm font-medium">
         Email (contas individuais — vazio para senha da clínica)
-        <input
+        <Input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="seu@email.com"
-          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none"
+          className="mt-1"
         />
       </label>
       <label className="mt-3 block text-sm font-medium">
         Senha
-        <input
+        <Input
           required
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none"
+          className="mt-1"
         />
       </label>
-      <button
-        type="submit"
-        disabled={submitting}
-        className="mt-4 w-full rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-50"
-      >
+      <Button type="submit" disabled={submitting} className={`mt-4 w-full ${accentButton}`}>
         {submitting ? "Entrando…" : "Entrar"}
-      </button>
+      </Button>
     </form>
   );
 }

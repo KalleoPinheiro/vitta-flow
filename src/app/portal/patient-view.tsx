@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Hero } from "@still-void/ui/react";
+import { Button, Card, Hero } from "@still-void/ui/react";
+import { accentButton } from "@/lib/ui";
 import { apiFetch } from "@/lib/client";
 import type {
   FollowUpDto,
@@ -87,7 +88,7 @@ export function PatientPortalView() {
         <Section title="Retornos recomendados">
           <ul className="flex flex-col gap-2 text-sm">
             {data.followUps.map((followUp) => (
-              <li key={followUp.id} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+              <li key={followUp.id} className="rounded-lg border border-warning-soft bg-warning-soft px-3 py-2">
                 {followUp.reason} — até <strong>{formatDate(followUp.dueDate)}</strong>
                 <ScheduleReturn followUpId={followUp.id} onScheduled={refresh} />
               </li>
@@ -125,12 +126,13 @@ export function PatientPortalView() {
         {data.invoices.length === 0 ? (
           <EmptyState message="Nenhuma fatura." />
         ) : (
-          <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white text-sm">
+          <Card>
+            <ul className="divide-y divide-border text-sm">
             {data.invoices.map((invoice) => (
               <li key={invoice.id} className="flex items-center gap-3 px-4 py-3">
                 <div className="min-w-0 flex-1">
                   <p className="truncate">{invoice.description}</p>
-                  <p className="text-xs text-slate-400">{formatDate(invoice.issuedAt)}</p>
+                  <p className="text-xs text-ink-3">{formatDate(invoice.issuedAt)}</p>
                 </div>
                 <span className="font-medium">{formatCurrency(invoice.amountCents)}</span>
                 <StatusBadge
@@ -140,6 +142,7 @@ export function PatientPortalView() {
               </li>
             ))}
           </ul>
+          </Card>
         )}
       </Section>
     </div>
@@ -162,21 +165,23 @@ interface AppointmentListProps {
 
 function AppointmentList({ appointments, onConfirm }: AppointmentListProps) {
   return (
-    <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white text-sm">
+    <Card>
+            <ul className="divide-y divide-border text-sm">
       {appointments.map((appointment) => (
         <li key={appointment.id} className="flex items-center gap-3 px-4 py-3">
           <div className="min-w-0 flex-1">
             <p className="font-medium">{formatDateTime(appointment.startsAt)}</p>
-            <p className="truncate text-slate-500">{appointment.procedure}</p>
+            <p className="truncate text-ink-3">{appointment.procedure}</p>
           </div>
           {onConfirm && appointment.status === "scheduled" && (
-            <button
+            <Button
               type="button"
+              size="sm"
               onClick={() => onConfirm(appointment)}
-              className="rounded-lg bg-teal-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-teal-800"
+              className={accentButton}
             >
               Confirmar presença
-            </button>
+            </Button>
           )}
           <StatusBadge
             status={appointment.status}
@@ -185,5 +190,6 @@ function AppointmentList({ appointments, onConfirm }: AppointmentListProps) {
         </li>
       ))}
     </ul>
+    </Card>
   );
 }

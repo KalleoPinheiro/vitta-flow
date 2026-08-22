@@ -4,7 +4,9 @@ import { useState } from "react";
 import { apiFetch } from "@/lib/client";
 import { useApiQuery } from "@/lib/use-api-query";
 import { formatDateTime } from "@/lib/format";
+import { Button, Input } from "@still-void/ui/react";
 import { ErrorAlert } from "@/components/feedback";
+import { accentButton } from "@/lib/ui";
 
 interface ConsentStatusDto {
   consentText: string;
@@ -22,7 +24,7 @@ export function ConsentCard() {
 
   if (data.accepted) {
     return (
-      <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+      <p className="rounded-lg border border-success-soft bg-success-soft px-4 py-3 text-sm text-success">
         ✓ Termo de consentimento aceito
         {data.acceptedAt ? ` em ${formatDateTime(data.acceptedAt)}` : ""}.
       </p>
@@ -42,22 +44,22 @@ export function ConsentCard() {
   };
 
   return (
-    <section className="rounded-xl border border-amber-300 bg-amber-50 p-4">
-      <h2 className="mb-2 text-sm font-bold text-amber-900">
+    <section className="rounded-xl border border-warning bg-warning-soft p-4">
+      <h2 className="mb-2 text-sm font-bold text-warning">
         Termo de consentimento pendente
       </h2>
       {error && <ErrorAlert message={error} />}
-      <pre className="mb-3 max-h-48 overflow-y-auto whitespace-pre-wrap rounded border border-amber-200 bg-white p-3 text-xs text-slate-700">
+      <pre className="mb-3 max-h-48 overflow-y-auto whitespace-pre-wrap rounded border border-warning-soft bg-sv-surface p-3 text-xs text-ink">
         {data.consentText}
       </pre>
-      <button
+      <Button
         type="button"
         disabled={accepting}
         onClick={() => void accept()}
-        className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-50"
+        className={accentButton}
       >
         {accepting ? "Registrando…" : "Li e aceito o termo"}
-      </button>
+      </Button>
     </section>
   );
 }
@@ -103,29 +105,30 @@ export function PatientPhotoUpload({
 
   if (consentPending) {
     return (
-      <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+      <p className="mt-2 rounded-lg border border-warning-soft bg-warning-soft px-3 py-2 text-xs text-warning">
         Aceite o termo de consentimento acima para enviar fotos à equipe.
       </p>
     );
   }
 
   return (
-    <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+    <div className="mt-2 rounded-lg border border-border bg-bg p-3">
       {error && <ErrorAlert message={error} />}
       {sent && (
-        <p className="mb-2 text-xs text-emerald-700">
+        <p className="mb-2 text-xs text-success">
           Foto enviada — a equipe vai avaliar e retorna se for preciso antecipar sua consulta.
         </p>
       )}
       <div className="flex flex-wrap items-center gap-2">
-        <input
+        <Input
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Observação (opcional): dor, vazamento, vermelhidão…"
-          className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs focus:border-teal-500 focus:outline-none"
+          className="h-8 min-w-0 flex-1 text-xs"
         />
-        <label className="cursor-pointer rounded-lg bg-teal-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-teal-800">
+        <label className={`cursor-pointer rounded-md px-3 py-1.5 text-xs font-medium ${accentButton}`}>
           {sending ? "Enviando…" : "Enviar foto"}
+          {/* sv-gap: file-input */}
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"

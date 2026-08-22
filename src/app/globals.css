@@ -71,6 +71,14 @@
   --color-warning: var(--sv-warning-ink);
   --color-info: var(--sv-info-ink);
 
+  /* Superfície suave de cada estado semântico: o token -ink pinta texto e borda,
+     e a superfície de trás precisa do par claro. Derivada do token não-ink por
+     mistura com o fundo, para acompanhar tema claro e escuro. */
+  --color-danger-soft: color-mix(in oklab, var(--sv-danger) 12%, var(--sv-bg));
+  --color-success-soft: color-mix(in oklab, var(--sv-success) 12%, var(--sv-bg));
+  --color-warning-soft: color-mix(in oklab, var(--sv-warning) 14%, var(--sv-bg));
+  --color-info-soft: color-mix(in oklab, var(--sv-info) 12%, var(--sv-bg));
+
   --font-sans: var(--sv-font-body); /* Manrope */
   --font-display: var(--sv-font-display); /* Sora */
   --font-mono: var(--sv-font-mono); /* JetBrains Mono */

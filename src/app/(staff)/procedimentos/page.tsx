@@ -8,9 +8,8 @@ import { formatCurrency } from "@/lib/format";
 import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
-
-const inputClass =
-  "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none";
+import { Button, Card, Input } from "@still-void/ui/react";
+import { accentButton, nativeField } from "@/lib/ui";
 
 export default function ProceduresPage() {
   const { data: procedures, error, refresh } = useApiQuery<ProcedureDto[]>("/api/procedures");
@@ -35,30 +34,31 @@ export default function ProceduresPage() {
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="sv-display text-2xl font-bold">Catálogo de procedimentos</h1>
-        <button
+        <Button
           type="button"
           onClick={() => setEditing("new")}
-          className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800"
+          className={accentButton}
         >
           + Novo procedimento
-        </button>
+        </Button>
       </div>
 
-      <p className="mb-4 text-sm text-slate-500">
+      <p className="mb-4 text-sm text-ink-3">
         Fonte única de nome, preço e duração — o agendamento preenche a partir daqui e a
         margem por procedimento fica consistente.
       </p>
 
       {(error || actionError) && <ErrorAlert message={actionError ?? error ?? ""} />}
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+      <Card className="overflow-x-auto">
         {!procedures ? (
           <LoadingIndicator />
         ) : procedures.length === 0 ? (
           <EmptyState message="Nenhum procedimento cadastrado — o agendamento continua com texto livre até o catálogo existir." />
         ) : (
+          // sv-gap: table
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
+            <thead className="border-b border-border bg-bg text-xs uppercase text-ink-3">
               <tr>
                 <th className="px-4 py-3">Procedimento</th>
                 <th className="px-4 py-3">Preço padrão</th>
@@ -67,12 +67,12 @@ export default function ProceduresPage() {
                 <th className="px-4 py-3 text-right">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-border">
               {procedures.map((procedure) => (
                 <tr key={procedure.id} className={procedure.active ? "" : "opacity-50"}>
                   <td className="px-4 py-3 font-medium">{procedure.name}</td>
                   <td className="px-4 py-3">{formatCurrency(procedure.priceCents)}</td>
-                  <td className="px-4 py-3 text-slate-600">{procedure.durationMinutes} min</td>
+                  <td className="px-4 py-3 text-ink-2">{procedure.durationMinutes} min</td>
                   <td className="px-4 py-3">
                     <StatusBadge
                       status={procedure.active ? "confirmed" : "cancelled"}
@@ -80,34 +80,37 @@ export default function ProceduresPage() {
                     />
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button
+                    <Button
                       type="button"
                       onClick={() => setKitFor(procedure)}
-                      className="mr-2 font-medium text-emerald-700 hover:underline"
+                      variant="link"
+                      className="h-auto p-0 mr-2 text-success"
                     >
                       Kit
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
                       onClick={() => setEditing(procedure)}
-                      className="mr-2 font-medium text-teal-700 hover:underline"
+                      variant="link"
+                      className="h-auto p-0 mr-2 text-accent-ink"
                     >
                       Editar
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
                       onClick={() => void toggleActive(procedure)}
-                      className="font-medium text-slate-500 hover:underline"
+                      variant="link"
+                      className="h-auto p-0 text-ink-3"
                     >
                       {procedure.active ? "Desativar" : "Reativar"}
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
-      </div>
+      </Card>
 
       <KitModal procedure={kitFor} onClose={() => setKitFor(null)} />
 
@@ -173,47 +176,47 @@ function ProcedureForm({
       {error && <ErrorAlert message={error} />}
       <label className="text-sm font-medium">
         Nome *
-        <input
+        <Input
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Ex.: Troca de bolsa de colostomia"
-          className={`mt-1 ${inputClass}`}
+          className="mt-1"
         />
       </label>
       <div className="grid grid-cols-2 gap-3">
         <label className="text-sm font-medium">
           Preço (R$) *
-          <input
+          <Input
             required
             type="number"
             min="0"
             step="0.01"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
-            className={`mt-1 ${inputClass}`}
+            className="mt-1"
           />
         </label>
         <label className="text-sm font-medium">
           Duração (min) *
-          <input
+          <Input
             required
             type="number"
             min="1"
             max="480"
             value={duration}
             onChange={(e) => setDuration(e.target.value)}
-            className={`mt-1 ${inputClass}`}
+            className="mt-1"
           />
         </label>
       </div>
-      <button
+      <Button
         type="submit"
         disabled={saving}
-        className="mt-1 rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-50"
+        className={`mt-1 ${accentButton}`}
       >
         {saving ? "Salvando…" : "Salvar"}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -279,21 +282,22 @@ function KitForm({ procedure, onSaved }: { procedure: ProcedureDto; onSaved: () 
   return (
     <div className="flex flex-col gap-3">
       {error && <ErrorAlert message={error} />}
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-ink-3">
         Ao concluir uma consulta deste procedimento, estes insumos são baixados
         automaticamente com custo vinculado ao atendimento.
       </p>
       {items.length === 0 && (
-        <p className="text-sm text-slate-400">Nenhum item — a conclusão não baixa estoque.</p>
+        <p className="text-sm text-ink-3">Nenhum item — a conclusão não baixa estoque.</p>
       )}
       {items.map((item, index) => (
         <div key={`${item.supplyId}-${index}`} className="flex items-center gap-2">
+          {/* sv-gap: native-select */}
           <select
             value={item.supplyId}
             onChange={(e) =>
               setEdits(items.map((it, i) => (i === index ? { ...it, supplyId: e.target.value } : it)))
             }
-            className={`flex-1 ${inputClass}`}
+            className={`flex-1 ${nativeField}`}
           >
             <option value="">Selecione o insumo…</option>
             {activeSupplies.map((supply) => (
@@ -305,39 +309,41 @@ function KitForm({ procedure, onSaved }: { procedure: ProcedureDto; onSaved: () 
               <option value={item.supplyId}>{supplyName(item.supplyId)}</option>
             )}
           </select>
-          <input
+          <Input
             type="number"
             min="1"
             value={item.quantity}
             onChange={(e) =>
               setEdits(items.map((it, i) => (i === index ? { ...it, quantity: e.target.value } : it)))
             }
-            className={`w-20 ${inputClass}`}
+            className="w-20"
           />
-          <button
+          <Button
             type="button"
             onClick={() => setEdits(items.filter((_, i) => i !== index))}
-            className="text-sm font-medium text-red-700 hover:underline"
+            variant="link"
+            className="h-auto p-0 text-danger"
           >
             remover
-          </button>
+          </Button>
         </div>
       ))}
-      <button
+      <Button
         type="button"
         onClick={() => setEdits([...items, { supplyId: "", quantity: "1" }])}
-        className="self-start text-sm font-medium text-teal-700 hover:underline"
+        variant="link"
+        className="h-auto p-0 self-start text-accent-ink"
       >
         + Adicionar insumo
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
         disabled={saving}
         onClick={() => void save()}
-        className="mt-1 self-start rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-50"
+        className={`mt-1 self-start ${accentButton}`}
       >
         {saving ? "Salvando…" : "Salvar kit"}
-      </button>
+      </Button>
     </div>
   );
 }

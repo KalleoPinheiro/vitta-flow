@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+#
+# Gate de adoção do @still-void/ui v2.
+#
+# Transforma os critérios "zero ocorrências" de
+# .specs/features/still-void-v2-migration/spec.md em verificação executável.
+# Sai com 0 quando limpo, 1 quando há achado (imprimindo arquivo:linha).
+#
+# Baseline no commit 9e87092, antes da fase 2 (o script nasce vermelho de
+# propósito — sair 0 aqui significaria que ele não está checando nada):
+#   [1] import bare @still-void/ui .......   0
+#   [2] <button> cru .....................  89
+#   [3] <input> textual cru ..............  71
+#   [4] utilitário de paleta crua ........ 339 linhas
+#   [5] apelido slate/teal no @theme .....  20
+#   [6] client-only fora de client .......   0
+#   [7] sv-gap órfão ..................... pulado (docs/still-void-gaps.md ainda não existe)
+#   total ................................ 519
+#
+# Um workaround que precisa sobreviver é marcado no código com
+# `// sv-gap: <slug>` na linha imediatamente acima, e o mesmo <slug> ganha uma
+# seção em docs/still-void-gaps.md. A checagem [7] mantém os dois em sincronia.
+
+set -uo pipefail
+cd "$(dirname "$0")/.."
+
+GAPS_DOC="docs/still-void-gaps.md"
+findings=0
+
+report() {
+  local label="$1" count="$2" body="$3"
+  if [ "$count" -gt 0 ]; then
+    printf '\n✗ [%s] %d achado(s)\n' "$label" "$count"
+    printf '%s\n' "$body" | sed 's/^/    /'
+    findings=$((findings + count))
+  else
+    printf '✓ [%s]\n' "$label"
+  fi
+}
+
+tsx_files() { find src -name '*.tsx' -o -name '*.ts' | sort; }
+
+# --- [1] entry point removido na v2 ------------------------------------------
+hits=$(grep -rn 'from "@still-void/ui"' src 2>/dev/null || true)
+report "import bare @still-void/ui" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
+
+# --- [2] <button> cru --------------------------------------------------------
+# Um <button> só sobrevive com `// sv-gap:` na linha imediatamente anterior.
+hits=$(tsx_files | while read -r f; do
+  awk -v F="$f" '
+    /<button/ && prev !~ /sv-gap:/ { printf "%s:%d: %s\n", F, NR, $0 }
+    { prev = $0 }
+  ' "$f"
+done)
+report "<button> cru" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
+
+# --- [3] <input> de tipo textual cru ----------------------------------------
+# checkbox/radio/file são lacunas conhecidas da lib e ficam fora desta checagem;
+# o que a lib entrega é o <Input> textual.
+hits=$(tsx_files | while read -r f; do
+  awk -v F="$f" '
+    /<input/ && $0 !~ /type="(checkbox|radio|file)"/ && prev !~ /sv-gap:/ { printf "%s:%d: %s\n", F, NR, $0 }
+    { prev = $0 }
+  ' "$f"
+done)
+report "<input> textual cru" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
+
+# --- [4] utilitário de paleta crua ------------------------------------------
+# Toda cor tem de resolver para um token --sv-* pela ponte do @theme.
+hits=$(grep -rnE '\b(slate|teal|amber|emerald|sky)-[0-9]{2,3}\b' src --include='*.tsx' 2>/dev/null || true)
+report "utilitário de paleta crua" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
+
+# --- [5] vocabulário de apelido sobrevivente no tema ------------------------
+hits=$(grep -nE '^\s*--color-(slate|teal)-[0-9]{2,3}:' src/app/globals.css 2>/dev/null || true)
+report "apelido slate/teal no @theme" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
+
+# --- [6] símbolo client-only em arquivo sem "use client" --------------------
+# Erro de fronteira do App Router: quebra o build, e é barato pegar antes dele.
+hits=$(grep -rln '@still-void/ui/react/client' src 2>/dev/null | while read -r f; do
+  head -3 "$f" | grep -q '"use client"' || echo "$f:1: importa de @still-void/ui/react/client sem a diretiva \"use client\""
+done)
+report "client-only fora de client component" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
+
+# --- [7] sv-gap órfão nos dois sentidos -------------------------------------
+if [ -f "$GAPS_DOC" ]; then
+  code_slugs=$(grep -rhoE '// sv-gap: [a-z0-9-]+' src 2>/dev/null | sed 's|// sv-gap: ||' | sort -u)
+  doc_slugs=$(grep -oE '^### `[a-z0-9-]+`' "$GAPS_DOC" 2>/dev/null | tr -d '#`' | tr -d ' ' | sort -u)
+  hits=$(
+    comm -23 <(printf '%s\n' "$code_slugs" | grep . || true) <(printf '%s\n' "$doc_slugs" | grep . || true) \
+      | sed "s|^|marcado no código, ausente de $GAPS_DOC: |"
+    comm -13 <(printf '%s\n' "$code_slugs" | grep . || true) <(printf '%s\n' "$doc_slugs" | grep . || true) \
+      | sed "s|^|documentado em $GAPS_DOC, sem marcação no código: |"
+  )
+  report "sv-gap órfão" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
+else
+  printf '· [sv-gap órfão] pulado — %s ainda não existe\n' "$GAPS_DOC"
+fi
+
+printf '\n'
+if [ "$findings" -gt 0 ]; then
+  printf 'FALHOU — %d achado(s). Ver .specs/features/still-void-v2-migration/spec.md\n' "$findings"
+  exit 1
+fi
+printf 'OK — adoção do @still-void/ui v2 completa.\n'

@@ -12,6 +12,8 @@ import { ErrorAlert } from "@/components/feedback";
 import { LoadMoreButton } from "@/components/load-more-button";
 import { PagedList } from "@/components/paged-list";
 import { PatientForm, type PatientFormValues } from "./patient-form";
+import { Button, Card, Input } from "@still-void/ui/react";
+import { accentButton } from "@/lib/ui";
 
 const PAGE_SIZE = 100;
 
@@ -25,8 +27,9 @@ interface PatientsTableProps {
 
 function PatientsTable({ patients, onEdit, onToggleActive }: PatientsTableProps) {
   return (
+    // sv-gap: table
     <table className="w-full text-left text-sm">
-      <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
+      <thead className="border-b border-border bg-bg text-xs uppercase text-ink-3">
         <tr>
           <th className="px-4 py-3">Nome</th>
           <th className="px-4 py-3">Contato</th>
@@ -35,15 +38,15 @@ function PatientsTable({ patients, onEdit, onToggleActive }: PatientsTableProps)
           <th className="px-4 py-3 text-right">Ações</th>
         </tr>
       </thead>
-      <tbody className="divide-y divide-slate-100">
+      <tbody className="divide-y divide-border">
         {patients.map((patient) => (
           <tr key={patient.id} className={patient.active ? "" : "opacity-50"}>
             <td className="px-4 py-3 font-medium">{patient.fullName}</td>
-            <td className="px-4 py-3 text-slate-600">
+            <td className="px-4 py-3 text-ink-2">
               <div>{patient.email}</div>
-              <div className="text-xs text-slate-400">{patient.phone}</div>
+              <div className="text-xs text-ink-3">{patient.phone}</div>
             </td>
-            <td className="px-4 py-3 text-slate-600">
+            <td className="px-4 py-3 text-ink-2">
               {patient.birthDate ? formatDate(patient.birthDate) : "—"}
             </td>
             <td className="px-4 py-3">
@@ -55,24 +58,26 @@ function PatientsTable({ patients, onEdit, onToggleActive }: PatientsTableProps)
             <td className="px-4 py-3 text-right">
               <a
                 href={`/pacientes/${patient.id}`}
-                className="mr-2 font-medium text-teal-700 hover:underline"
+                className="mr-2 font-medium text-accent-ink hover:underline"
               >
                 Prontuário
               </a>
-              <button
+              <Button
                 type="button"
                 onClick={() => onEdit(patient)}
-                className="mr-2 font-medium text-teal-700 hover:underline"
+                variant="link"
+                className="h-auto p-0 mr-2 text-accent-ink"
               >
                 Editar
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={() => onToggleActive(patient)}
-                className="font-medium text-slate-500 hover:underline"
+                variant="link"
+                className="h-auto p-0 text-ink-3"
               >
                 {patient.active ? "Desativar" : "Reativar"}
-              </button>
+              </Button>
             </td>
           </tr>
         ))}
@@ -146,26 +151,26 @@ export default function PatientsPage() {
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="sv-display text-2xl font-bold">Pacientes</h1>
-        <button
+        <Button
           type="button"
           onClick={() => setEditing("new")}
-          className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800"
+          className={accentButton}
         >
           + Novo paciente
-        </button>
+        </Button>
       </div>
 
       {error && <ErrorAlert message={error} />}
 
-      <input
+      <Input
         type="search"
         value={search}
         onChange={(event) => setSearch(event.target.value)}
         placeholder="Buscar por nome, email ou telefone…"
-        className="mb-4 w-full max-w-md rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none"
+        className="mb-4 w-full"
       />
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+      <Card className="overflow-x-auto">
         <PagedList
           items={patients}
           emptyMessage="Nenhum paciente encontrado."
@@ -177,7 +182,7 @@ export default function PatientsPage() {
             />
           )}
         />
-      </div>
+      </Card>
 
       <LoadMoreButton visible={Boolean(patients) && hasMore} onClick={loadMore} />
 

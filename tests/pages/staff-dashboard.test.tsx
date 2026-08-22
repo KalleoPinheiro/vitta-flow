@@ -299,7 +299,9 @@ describe("Feature: Dashboard do painel interno", () => {
         expect(screen.getByText("PUSH 9")).toBeInTheDocument();
       });
       const waiting = screen.getByText(/aguardando há 30h/);
-      expect(waiting).toHaveClass("text-red-700");
+      // `text-danger` é o token semântico do Still Void (var(--sv-danger-ink)),
+      // que substituiu o degrau cru text-red-700 na migração para a v2.
+      expect(waiting).toHaveClass("text-danger");
     });
 
     it("Dado pendência recente sem score, Quando renderizar, Então idade sem destaque e sem badge (COMP3-05)", async () => {

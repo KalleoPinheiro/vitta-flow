@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Hero } from "@still-void/ui/react";
+import { Button, Card, Hero } from "@still-void/ui/react";
 import type { AppointmentDto, FollowUpDto, SupplyDto } from "@/lib/dto";
 import type { BillingSummary } from "@/application/billing/get-billing-summary";
 import { apiFetch } from "@/lib/client";
@@ -55,33 +55,33 @@ export default function DashboardPage() {
 
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((card) => (
-          <div key={card.label} className="rounded-xl border border-slate-200 bg-white p-5">
-            <p className="text-sm text-slate-500">{card.label}</p>
-            <p className="mt-1 text-2xl font-bold text-teal-700">{card.value}</p>
-          </div>
+          <Card key={card.label} className="p-5">
+            <p className="text-sm text-ink-3">{card.label}</p>
+            <p className="mt-1 text-2xl font-bold text-accent-ink">{card.value}</p>
+          </Card>
         ))}
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold">Consultas de hoje</h2>
-            <Link href="/agenda" className="text-sm font-medium text-teal-700 hover:underline">
+            <Link href="/agenda" className="text-sm font-medium text-accent-ink hover:underline">
               Ver agenda completa →
             </Link>
           </div>
           {summary.today.length === 0 ? (
             <EmptyState message="Nenhuma consulta agendada para hoje." />
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-border">
               {summary.today.map((appointment) => (
                 <li key={appointment.id} className="flex items-center gap-4 py-3">
-                  <span className="w-24 shrink-0 font-mono text-sm text-slate-600">
+                  <span className="w-24 shrink-0 font-mono text-sm text-ink-2">
                     {formatTime(appointment.startsAt)}–{formatTime(appointment.endsAt)}
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{appointment.patientName}</p>
-                    <p className="truncate text-sm text-slate-500">{appointment.procedure}</p>
+                    <p className="truncate text-sm text-ink-3">{appointment.procedure}</p>
                   </div>
                   <StatusBadge
                     status={appointment.status}
@@ -91,16 +91,16 @@ export default function DashboardPage() {
               ))}
             </ul>
           )}
-        </div>
+        </Card>
 
         <div className="flex flex-col gap-6">
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <Card className="p-5">
             <TriageQueue />
             <h2 className="mb-4 text-lg font-semibold">Retornos pendentes</h2>
             {!followUps || followUps.length === 0 ? (
               <EmptyState message="Nenhum retorno pendente." />
             ) : (
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-border">
                 {followUps.slice(0, 8).map((followUp) => (
                   <li key={followUp.id} className="flex items-center gap-3 py-3 text-sm">
                     <div className="min-w-0 flex-1">
@@ -112,11 +112,11 @@ export default function DashboardPage() {
                           {followUp.patientName}
                         </Link>
                       </p>
-                      <p className="truncate text-slate-500">{followUp.reason}</p>
+                      <p className="truncate text-ink-3">{followUp.reason}</p>
                     </div>
                     <span
                       className={`shrink-0 text-xs font-medium ${
-                        followUp.isOverdue ? "text-red-700" : "text-slate-500"
+                        followUp.isOverdue ? "text-danger" : "text-ink-3"
                       }`}
                     >
                       {followUp.isOverdue ? "⚠ Atrasado — " : ""}
@@ -124,52 +124,54 @@ export default function DashboardPage() {
                     </span>
                     <Link
                       href={`/agenda?followUpId=${followUp.id}&patientId=${followUp.patientId}&procedure=${encodeURIComponent(followUp.reason.replace(/^Retorno: /, ""))}`}
-                      className="shrink-0 font-medium text-teal-700 hover:underline"
+                      className="shrink-0 font-medium text-accent-ink hover:underline"
                     >
                       Agendar
                     </Link>
-                    <button
+                    <Button
                       type="button"
                       onClick={() => void resolveFollowUp(followUp.id, "done")}
-                      className="shrink-0 font-medium text-emerald-700 hover:underline"
+                      variant="link"
+                      className="h-auto p-0 shrink-0 text-success"
                     >
                       Concluir
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
                       onClick={() => void resolveFollowUp(followUp.id, "cancelled")}
-                      className="shrink-0 font-medium text-slate-400 hover:underline"
+                      variant="link"
+                      className="h-auto p-0 shrink-0 text-ink-3"
                     >
                       Cancelar
-                    </button>
+                    </Button>
                   </li>
                 ))}
               </ul>
             )}
-          </div>
+          </Card>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <Card className="p-5">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold">Estoque baixo</h2>
-              <Link href="/materiais" className="text-sm font-medium text-teal-700 hover:underline">
+              <Link href="/materiais" className="text-sm font-medium text-accent-ink hover:underline">
                 Ver materiais →
               </Link>
             </div>
             {lowStock.length === 0 ? (
               <EmptyState message="Nenhum insumo abaixo do mínimo." />
             ) : (
-              <ul className="divide-y divide-slate-100 text-sm">
+              <ul className="divide-y divide-border text-sm">
                 {lowStock.slice(0, 6).map((supply) => (
                   <li key={supply.id} className="flex justify-between py-2">
                     <span className="truncate">{supply.name}</span>
-                    <span className="shrink-0 font-medium text-amber-700">
+                    <span className="shrink-0 font-medium text-warning">
                       {supply.stockQty}/{supply.minQty} {supply.unit}
                     </span>
                   </li>
                 ))}
               </ul>
             )}
-          </div>
+          </Card>
         </div>
       </div>
     </div>
@@ -211,8 +213,8 @@ function TriageQueue() {
     return null;
   }
   return (
-    <div className="mb-6 rounded-lg border border-violet-200 bg-violet-50 p-4">
-      <h3 className="mb-2 text-sm font-bold text-violet-900">
+    <Card className="mb-6 border-accent bg-accent-soft p-4">
+      <h3 className="mb-2 text-sm font-bold text-accent-ink">
         📷 Fotos de pacientes aguardando triagem ({queue.length})
       </h3>
       {error && <ErrorAlert message={error} />}
@@ -223,23 +225,23 @@ function TriageQueue() {
             <img
               src={`/api/photos/${photo.id}`}
               alt={`Foto de ${photo.patientName}`}
-              className="h-12 w-12 rounded border border-slate-200 object-cover"
+              className="h-12 w-12 rounded border border-border object-cover"
             />
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium">
                 {photo.patientName} — {photo.conditionTitle}
                 {photo.latestScore && (
-                  <span className="ml-2 rounded bg-white px-1.5 py-0.5 text-xs font-semibold text-violet-800">
+                  <span className="ml-2 rounded bg-sv-surface px-1.5 py-0.5 text-xs font-semibold text-accent-ink">
                     {photo.latestScore.kind === "push" ? "PUSH" : "DET"} {photo.latestScore.value}
                   </span>
                 )}
               </p>
-              <p className="truncate text-xs text-slate-500">
+              <p className="truncate text-xs text-ink-3">
                 {photo.patientNote ?? "sem observação"} · {formatDate(photo.createdAt)} ·{" "}
                 <span
                   className={
                     photo.waitingHours >= TRIAGE_ATTENTION_HOURS
-                      ? "font-semibold text-red-700"
+                      ? "font-semibold text-danger"
                       : undefined
                   }
                 >
@@ -247,23 +249,25 @@ function TriageQueue() {
                 </span>
               </p>
             </div>
-            <button
+            <Button
               type="button"
               onClick={() => void triage(photo, "reviewed")}
-              className="font-medium text-emerald-700 hover:underline"
+              variant="link"
+              className="h-auto p-0 text-success"
             >
               Ok, manter plano
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={() => void triage(photo, "escalated")}
-              className="font-medium text-red-700 hover:underline"
+              variant="link"
+              className="h-auto p-0 text-danger"
             >
               Antecipar retorno
-            </button>
+            </Button>
           </li>
         ))}
       </ul>
-    </div>
+    </Card>
   );
 }

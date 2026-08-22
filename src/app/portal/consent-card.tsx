@@ -2,31 +2,39 @@
 
 import { useState } from "react";
 import { apiFetch } from "@/lib/client";
-import { useApiQuery } from "@/lib/use-api-query";
 import { formatDateTime } from "@/lib/format";
 import { Button, Input } from "@still-void/ui/react";
 import { ErrorAlert } from "@/components/feedback";
 import { accentButton } from "@/lib/ui";
 
-interface ConsentStatusDto {
+export interface ConsentStatusDto {
   consentText: string;
   accepted: boolean;
   acceptedAt: string | null;
 }
 
-/** Consentimento digital (O4.1): paciente lê o termo vigente e aceita no portal. */
-export function ConsentCard() {
-  const { data, refresh } = useApiQuery<ConsentStatusDto>("/api/portal/patient/consent");
+/**
+ * Consentimento digital (O4.1): paciente lê o termo vigente e aceita no portal.
+ * O status vem do pai (`PatientPortalView`) — o mesmo dado governa o envio de
+ * foto (COMP3-01), então uma cópia só evita telas divergentes após o aceite.
+ */
+export function ConsentCard({
+  status,
+  onAccepted,
+}: {
+  status: ConsentStatusDto | null;
+  onAccepted: () => void;
+}) {
   const [error, setError] = useState<string | null>(null);
   const [accepting, setAccepting] = useState(false);
 
-  if (!data) return null;
+  if (!status) return null;
 
-  if (data.accepted) {
+  if (status.accepted) {
     return (
       <p className="rounded-lg border border-success-soft bg-success-soft px-4 py-3 text-sm text-success">
         ✓ Termo de consentimento aceito
-        {data.acceptedAt ? ` em ${formatDateTime(data.acceptedAt)}` : ""}.
+        {status.acceptedAt ? ` em ${formatDateTime(status.acceptedAt)}` : ""}.
       </p>
     );
   }
@@ -36,7 +44,7 @@ export function ConsentCard() {
     setError(null);
     try {
       await apiFetch("/api/portal/patient/consent", { method: "POST" });
-      refresh();
+      onAccepted();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao registrar aceite");
       setAccepting(false);
@@ -51,7 +59,7 @@ export function ConsentCard() {
       </h2>
       {error && <ErrorAlert message={error} />}
       <pre className="mb-3 max-h-48 overflow-y-auto whitespace-pre-wrap rounded border border-warning-soft bg-sv-surface p-3 text-xs text-ink">
-        {data.consentText}
+        {status.consentText}
       </pre>
       <Button
         type="button"
@@ -68,18 +76,19 @@ export function ConsentCard() {
 /** Envio remoto de foto (O4.2) para condição ativa do próprio paciente. */
 export function PatientPhotoUpload({
   conditionId,
+  consentPending,
   onSent,
 }: {
   conditionId: string;
+  // Envio exige consentimento vigente (COMP3-01) — avisa antes de escolher o
+  // arquivo. Enquanto o status não chegou (null no pai), não bloqueia a tela.
+  consentPending: boolean;
   onSent: () => void;
 }) {
-  const { data: consent } = useApiQuery<ConsentStatusDto>("/api/portal/patient/consent");
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
-  // Envio exige consentimento vigente (COMP3-01) — avisa antes de escolher o arquivo.
-  const consentPending = consent !== null && consent.accepted === false;
 
   const upload = async (file: File) => {
     setSending(true);

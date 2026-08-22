@@ -21,7 +21,7 @@ import {
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import { ConditionProgress, type ConditionWithAssessmentsDto } from "./condition-progress";
-import { ConsentCard, PatientPhotoUpload } from "./consent-card";
+import { ConsentCard, PatientPhotoUpload, type ConsentStatusDto } from "./consent-card";
 import { ScheduleReturn } from "./schedule-return";
 
 interface PatientPortalDto {
@@ -37,6 +37,11 @@ const PAGE_LOAD_MS = Date.now();
 
 export function PatientPortalView() {
   const { data, error, refresh } = useApiQuery<PatientPortalDto>("/api/portal/patient");
+  // Fonte única do consentimento na tela: o card de aceite e o envio de foto
+  // (COMP3-01) leem o mesmo status — cópias separadas divergiam após o aceite,
+  // porque useApiQuery guarda estado por componente, sem cache compartilhado.
+  const { data: consent, refresh: refreshConsent } =
+    useApiQuery<ConsentStatusDto>("/api/portal/patient/consent");
   const [confirmError, setConfirmError] = useState<string | null>(null);
 
   if (error) return <ErrorAlert message={error} />;
@@ -70,7 +75,7 @@ export function PatientPortalView() {
         description="Acompanhe aqui suas consultas e sua evolução clínica."
       />
 
-      <ConsentCard />
+      <ConsentCard status={consent} onAccepted={refreshConsent} />
 
       <Section title="Próximas consultas">
         {confirmError && <ErrorAlert message={confirmError} />}
@@ -106,7 +111,11 @@ export function PatientPortalView() {
               <div key={entry.condition.id}>
                 <ConditionProgress {...entry} photoUrlBase="/api/portal/patient/photos" />
                 {entry.condition.status === "active" && (
-                  <PatientPhotoUpload conditionId={entry.condition.id} onSent={refresh} />
+                  <PatientPhotoUpload
+                    conditionId={entry.condition.id}
+                    consentPending={consent !== null && !consent.accepted}
+                    onSent={refresh}
+                  />
                 )}
               </div>
             ))}

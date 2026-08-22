@@ -42,6 +42,7 @@
   --color-border: var(--sv-border);
   --color-border-strong: var(--sv-border-strong);
 
+  /* sv-gap: tailwind-setup-v3-only */
   /* --- nomes exigidos pelos componentes shadcn do pacote ---
      Extraídos do dist da lib: bg-sv-surface, bg-sv-surface-2, bg-sv-border,
      bg-sv-signal-cyan, text-sv-text, text-sv-text-2, text-sv-bg,

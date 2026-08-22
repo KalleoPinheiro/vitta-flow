@@ -92,7 +92,16 @@ if [ -f "$GAPS_DOC" ]; then
   #   /* sv-gap: x */   (antes de um elemento em posicao de expressao)
   #   {/* sv-gap: x */} (filho de JSX)
   code_slugs=$(grep -rhoE 'sv-gap: [a-z0-9-]+' src 2>/dev/null | sed 's|sv-gap: ||' | sort -u)
-  doc_slugs=$(grep -oE '^### `[a-z0-9-]+`' "$GAPS_DOC" 2>/dev/null | tr -d '#`' | tr -d ' ' | sort -u)
+  # Uma seção anotada com <!-- sv-gap-doc-only --> é relato sobre a lib, sem
+  # workaround local: só a direção código -> doc vale para ela.
+  doc_slugs=$(awk '
+    /^### `[a-z0-9-]+`/ {
+      if (pending) print pending
+      slug = $0; gsub(/[^a-z0-9-]/, "", slug); pending = slug; next
+    }
+    /sv-gap-doc-only/ { pending = ""; next }
+    END               { if (pending) print pending }
+  ' "$GAPS_DOC" 2>/dev/null | sort -u)
   hits=$(
     comm -23 <(printf '%s\n' "$code_slugs" | grep . || true) <(printf '%s\n' "$doc_slugs" | grep . || true) \
       | sed "s|^|marcado no código, ausente de $GAPS_DOC: |"

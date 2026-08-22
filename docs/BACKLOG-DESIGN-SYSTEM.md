@@ -1,6 +1,10 @@
 # Backlog — Adoção do `@still-void/ui`
 
-- **Status:** Aberto
+- **Status:** Parcialmente fechado — itens 1, 2 e 3 resolvidos em 2026-08-22 pela
+  migração para a `@still-void/ui@2.0.1`
+  (`.specs/features/still-void-v2-migration/`). Itens 4, 5 e 6 seguem abertos.
+  As lacunas do catálogo levantadas durante essa migração estão em
+  [still-void-gaps.md](still-void-gaps.md).
 - **Data:** 2026-07-30
 - **Contexto:** PR #2 (`claude/still-void-design-system-3h4su8`) — adoção do
   `@still-void/ui` 1.1.0 como design system do VittaFlow.
@@ -11,6 +15,12 @@ do pedido original ("aplicar o design system, tema claro, accent violeta"). Cada
 item abaixo é candidato a issue própria.
 
 ## 1. Resto do app ainda pinta pela ponte `teal-*`/`slate-*`, não pelos tokens `sv-*` diretamente
+
+> **RESOLVIDO (2026-08-22).** As ~40 telas foram convertidas para os utilitários
+> semânticos (`text-ink-*`, `border-border`, `bg-accent-soft`, `text-success`…), e as
+> sobrescritas `--color-slate-*`/`--color-teal-*` foram removidas do `@theme`. O gate
+> `npm run check:sv` falha se um degrau cru voltar.
+
 
 **O quê:** a PR retokenizou o shell (sidebar, header do portal, login), os
 primitivos compartilhados (`StatusBadge`, `ErrorAlert`, `LoadingIndicator`,
@@ -32,6 +42,12 @@ para as classes do pacote (`sv-pill`, `sv-header__link`, etc.) ou para um
 
 ## 2. Botão primário duplicado em ~15 arquivos, sem componente compartilhado
 
+> **RESOLVIDO (2026-08-22).** Os botões passaram a usar o `<Button>` do próprio
+> pacote. Como o catálogo não tem variante primária preenchida com o accent, a
+> diferença ficou na receita `accentButton` de `src/lib/ui.ts` — um lugar só — e virou
+> a entrada `button-accent-variant` em [still-void-gaps.md](still-void-gaps.md).
+
+
 **O quê:** o padrão `"rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium
 text-white hover:bg-teal-800"` (e variações próximas) se repete em botões de
 submit por toda a base — nunca foi extraído para um componente.
@@ -45,6 +61,12 @@ sobre os tokens `--sv-radius-md`/`--sv-duration-fast`/`--sv-ease-hover`
 diretamente, substituindo os botões inline.
 
 ## 3. `DocumentFrame` (documentos imprimíveis) não foi retokenizado
+
+> **RESOLVIDO (2026-08-22).** `DocumentFrame` e as páginas de `src/app/documentos/**`
+> não dependem mais da ponte. A moldura usa `<Button>` do pacote na barra de ações, e o
+> corpo impresso usa preto/branco literais — decisão explícita: o alvo é papel, e seguir
+> o tema imprimiria texto claro no tema escuro.
+
 
 **O quê:** `src/components/document-frame.tsx` (moldura A4 de atestado, termo de
 consentimento e relatório de evolução) continua com `text-slate-900`,

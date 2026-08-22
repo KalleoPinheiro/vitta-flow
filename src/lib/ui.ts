@@ -12,6 +12,7 @@
  *
  * Ver `docs/still-void-gaps.md`, entrada `button-accent-variant`.
  */
+// sv-gap: button-accent-variant
 export const accentButton = "bg-accent-ink text-sv-bg hover:bg-accent-strong";
 
 /**
@@ -23,5 +24,6 @@ export const accentButton = "bg-accent-ink text-sv-bg hover:bg-accent-strong";
  * Ver `docs/still-void-gaps.md`, entradas `native-select`, `textarea` e
  * `file-input`.
  */
+// sv-gap: native-select
 export const nativeField =
   "flex w-full rounded-md border border-sv-border bg-sv-surface px-3 py-2 text-sm text-sv-text ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";

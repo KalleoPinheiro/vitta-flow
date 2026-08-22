@@ -46,9 +46,12 @@ export function Modal({ title, onClose, children }: ModalProps) {
         }
       }}
     >
-      <DialogContent aria-modal="true" className="max-h-[90vh] overflow-y-auto">
+      {/* sv-gap: dialog-aria-modal */}
+      {/* sv-gap: dialog-shadow */}
+      <DialogContent aria-modal="true" className="max-h-[90vh] overflow-y-auto shadow-none">
         <div className="flex items-center justify-between">
           <DialogTitle className="sv-display text-lg font-semibold">{title}</DialogTitle>
+          {/* sv-gap: dialog-close-button */}
           <DialogClose aria-label="Fechar" className="text-ink-3 hover:text-ink">
             ✕
           </DialogClose>

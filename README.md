@@ -4,6 +4,7 @@ Sistema de gestão completo para clínica de estomaterapia: prontuário eletrôn
 
 📄 PRD do módulo clínico: [docs/PRD.md](docs/PRD.md)
 🔐 Análise de segurança/escalabilidade + plano de ação: [docs/ANALISE-SEGURANCA-ESCALABILIDADE.md](docs/ANALISE-SEGURANCA-ESCALABILIDADE.md)
+🎨 Lacunas do design system, para backlog da lib: [docs/still-void-gaps.md](docs/still-void-gaps.md)
 
 ## Como rodar
 
@@ -160,7 +161,8 @@ Três papéis, resolvidos automaticamente no login com Google pelo email da cont
 - **googleapis** — sincronização de eventos com Google Calendar (service account)
 - **Zod** — validação de entrada nas rotas de API
 - **Vitest** — testes unitários, de aplicação e integração
-- **Tailwind CSS 4** — UI
+- **Tailwind CSS 4** — UI (CSS-first: a ponte de tokens vive em `src/app/globals.css`, sem `tailwind.config.ts`)
+- **@still-void/ui 2.x** — design system (tokens, receitas e componentes shadcn). Lacunas do catálogo em [docs/still-void-gaps.md](docs/still-void-gaps.md)
 - **Docker Compose** — PostgreSQL + app conteinerizados
 
 ## Arquitetura
@@ -194,6 +196,9 @@ Testes escritos em estilo BDD (`Feature / Cenário / Dado-Quando-Então`), com c
 - `tests/application/` — casos de uso com repositórios in-memory
 - `tests/infrastructure/` — integração dos repositórios SQLite (`:memory:`)
 - `tests/api/` — fluxo completo pela API (paciente → consulta → fatura → resumo)
+- `tests/components/` e `tests/pages/` — renderização e interação (jsdom + Testing Library)
+
+`npm run check:sv` é um gate à parte: falha se um `<button>`/`<input>` cru voltar, se uma cor sair da ponte de tokens, ou se uma marcação `sv-gap:` ficar sem entrada em [docs/still-void-gaps.md](docs/still-void-gaps.md).
 
 ## API
 

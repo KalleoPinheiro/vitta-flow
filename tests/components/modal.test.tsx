@@ -90,6 +90,19 @@ describe("Feature: Modal", () => {
       expect(screen.getByRole("dialog")).toHaveClass("bg-sv-surface");
     });
 
+    it("Dado o modal renderizado, Então não tem sombra — regra de fidelidade do Still Void", () => {
+      render(
+        <Modal title="Detalhes" onClose={vi.fn()}>
+          <p>Conteúdo</p>
+        </Modal>,
+      );
+
+      // O DialogContent do pacote traz `shadow-lg`, contrariando a propria regra
+      // "cards have no shadow" do README da lib. O app neutraliza com shadow-none.
+      expect(screen.getByRole("dialog")).toHaveClass("shadow-none");
+      expect(screen.getByRole("dialog")).not.toHaveClass("shadow-lg");
+    });
+
     it("Dado o modal montado, Então o foco vai para o primeiro elemento focável dentro dele", async () => {
       render(
         <Modal title="Detalhes" onClose={vi.fn()}>

@@ -12,6 +12,7 @@ export function LoadMoreButton({ visible, onClick }: LoadMoreButtonProps) {
     return null;
   }
   return (
+    // sv-gap: pagination
     <div className="mt-4 text-center">
       <Button type="button" variant="outline" size="sm" onClick={onClick}>
         Carregar mais

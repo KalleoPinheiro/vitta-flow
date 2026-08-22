@@ -48,6 +48,9 @@ report "import bare @still-void/ui" "$(printf '%s' "$hits" | grep -c . || true)"
 # Um <button> só sobrevive com `// sv-gap:` na linha imediatamente anterior.
 hits=$(tsx_files | while read -r f; do
   awk -v F="$f" '
+    # Linha de comentário (JSDoc, // ou {/* */}) não é markup: `<button>` citado
+    # em prosa não é call site.
+    /^[[:space:]]*(\*|\/\/|\{\/\*|\/\*)/ { prev = $0; next }
     /<button/ && prev !~ /sv-gap:/ { printf "%s:%d: %s\n", F, NR, $0 }
     { prev = $0 }
   ' "$f"
@@ -59,6 +62,7 @@ report "<button> cru" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
 # o que a lib entrega é o <Input> textual.
 hits=$(tsx_files | while read -r f; do
   awk -v F="$f" '
+    /^[[:space:]]*(\*|\/\/|\{\/\*|\/\*)/ { prev = $0; next }
     /<input/ && $0 !~ /type="(checkbox|radio|file)"/ && prev !~ /sv-gap:/ { printf "%s:%d: %s\n", F, NR, $0 }
     { prev = $0 }
   ' "$f"

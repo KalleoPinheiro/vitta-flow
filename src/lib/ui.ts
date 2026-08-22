@@ -13,3 +13,15 @@
  * Ver `docs/still-void-gaps.md`, entrada `button-accent-variant`.
  */
 export const accentButton = "bg-accent-ink text-sv-bg hover:bg-accent-strong";
+
+/**
+ * Superfície de campo tokenizada para os elementos de formulário que a lib não
+ * exporta: `<select>`, `<textarea>` e `<input type="file|checkbox|radio">`.
+ * Espelha o visual do `Input` do pacote (mesma borda, raio, superfície e anel
+ * de foco) para que campo nativo e campo da lib não destoem lado a lado.
+ *
+ * Ver `docs/still-void-gaps.md`, entradas `native-select`, `textarea` e
+ * `file-input`.
+ */
+export const nativeField =
+  "flex w-full rounded-md border border-sv-border bg-sv-surface px-3 py-2 text-sm text-sv-text ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";

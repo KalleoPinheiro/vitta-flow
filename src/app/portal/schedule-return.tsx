@@ -5,6 +5,8 @@ import { apiFetch } from "@/lib/client";
 import { useApiQuery } from "@/lib/use-api-query";
 import type { ProcedureDto } from "@/lib/dto";
 import { formatTime } from "@/lib/format";
+import { Button, Card, CardContent, Input } from "@still-void/ui/react";
+import { accentButton, nativeField } from "@/lib/ui";
 import { ErrorAlert } from "@/components/feedback";
 
 interface AvailableSlotDto {
@@ -35,13 +37,14 @@ export function ScheduleReturn({ followUpId, onScheduled }: ScheduleReturnProps)
 
   if (!open) {
     return (
-      <button
+      <Button
         type="button"
+        size="sm"
         onClick={() => setOpen(true)}
-        className="mt-2 rounded-lg bg-teal-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-teal-800"
+        className={`mt-2 ${accentButton}`}
       >
         Agendar retorno
-      </button>
+      </Button>
     );
   }
 
@@ -71,8 +74,6 @@ function SchedulePanel({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const inputClass =
-    "mt-1 w-full rounded-lg border border-slate-300 px-3 py-1.5 text-xs focus:border-teal-500 focus:outline-none";
 
   const schedule = async (slot: AvailableSlotDto) => {
     setSaving(true);
@@ -90,16 +91,18 @@ function SchedulePanel({
   };
 
   return (
-    <div className="mt-2 rounded-lg border border-teal-200 bg-white p-3">
+    <Card className="mt-2 border-accent">
+      <CardContent className="p-3">
       {error && <ErrorAlert message={error} />}
       <div className="grid gap-2 sm:grid-cols-2">
         <label className="text-xs font-medium">
           Procedimento
+          {/* sv-gap: native-select */}
           <select
             value={procedureId}
             disabled={saving}
             onChange={(e) => setProcedureId(e.target.value)}
-            className={inputClass}
+            className={`mt-1 ${nativeField} py-1.5 text-xs`}
           >
             <option value="">Selecione…</option>
             {(procedures ?? []).map((procedure) => (
@@ -111,14 +114,14 @@ function SchedulePanel({
         </label>
         <label className="text-xs font-medium">
           Dia
-          <input
+          <Input
             type="date"
             value={date}
             disabled={saving}
             min={today}
             max={maxDate}
             onChange={(e) => setDate(e.target.value)}
-            className={inputClass}
+            className="mt-1 h-8 text-xs"
           />
         </label>
       </div>
@@ -132,14 +135,16 @@ function SchedulePanel({
         />
       )}
 
-      <button
+      <Button
         type="button"
+        variant="link"
         onClick={onCancel}
-        className="mt-3 text-xs font-medium text-slate-500 hover:underline"
+        className="mt-3 h-auto px-0 text-xs font-medium text-ink-3"
       >
         Cancelar
-      </button>
-    </div>
+      </Button>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -165,11 +170,11 @@ function SlotPicker({
     return <ErrorAlert message={error} />;
   }
   if (!slots) {
-    return <p className="mt-3 text-xs text-slate-500">Buscando horários…</p>;
+    return <p className="mt-3 text-xs text-ink-3">Buscando horários…</p>;
   }
   if (slots.length === 0) {
     return (
-      <p className="mt-3 text-xs text-slate-500">
+      <p className="mt-3 text-xs text-ink-3">
         Nenhum horário livre neste dia — tente outra data.
       </p>
     );
@@ -178,15 +183,17 @@ function SlotPicker({
   return (
     <div className="mt-3 flex flex-wrap gap-2">
       {slots.map((slot) => (
-        <button
+        <Button
           key={slot.startsAt}
           type="button"
+          variant="outline"
+          size="sm"
           disabled={disabled}
           onClick={() => onPick(slot)}
-          className="rounded-lg border border-teal-300 px-3 py-1 text-xs font-medium text-teal-800 hover:bg-teal-50 disabled:opacity-50"
+          className="h-7 border-accent px-3 text-xs font-medium text-accent-ink hover:bg-accent-soft"
         >
           {formatTime(slot.startsAt)}
-        </button>
+        </Button>
       ))}
     </div>
   );

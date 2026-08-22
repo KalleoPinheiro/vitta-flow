@@ -95,36 +95,22 @@ de tema é uma feature de produto, não parte da adoção do design system.
 pacote já suporta — falta só compor `ThemeProvider` no root layout, adicionar
 `ThemeScript` no `<head>` (com nonce da CSP) e `ThemeToggle` na sidebar/header.
 
-## 5. Teste E2E falhando, pré-existente e não relacionado a esta PR
+## 5. ~~Teste E2E falhando, pré-existente e não relacionado a esta PR~~ — RESOLVIDO
 
-> **Ampliado (2026-08-22).** A migração para a v2 rodou a suíte E2E completa: **60
-> passaram, 4 falharam**. Além do `faturamento.spec.ts` já descrito aqui, falham
-> `portal-paciente.spec.ts` ("paciente confirma presença, aceita o consentimento e
-> envia foto de evolução") e os dois testes de `triagem.spec.ts`.
->
-> **Confirmação de que não são regressão:** os mesmos 4 testes, e só eles, falham em
-> `d917d72` — o commit que só sobe a versão e corrige os imports, antes de qualquer
-> mudança de UI. Verificado em worktree separada.
->
-> **Causa provável dos três de foto:** `POST /api/portal/patient/photos`
-> ([route.ts:52](../src/app/api/portal/patient/photos/route.ts)) exige consentimento
-> vigente (gate COMP3-01, fase 3). O helper `uploadPatientPhoto` de
-> `e2e/triagem.spec.ts` cria paciente e condição e envia a foto sem aceitar o termo —
-> o teste é anterior ao gate e nunca foi atualizado. Precisa de investigação
-> dedicada, fora do escopo da migração de design system.
+> **Fechado em 2026-08-22.** As 4 falhas foram diagnosticadas e corrigidas; a suíte
+> E2E fecha **64/64**. Relatório completo em
+> [.specs/features/e2e-consentimento-verdes/validation.md](../.specs/features/e2e-consentimento-verdes/validation.md).
 
-**O quê:** `e2e/faturamento.spec.ts:79` ("pacote pré-pago consome sessão sem
-gerar nova fatura ao concluir") falha de forma consistente.
+Diagnóstico final das 4:
 
-**Confirmação:** reproduzido também sem as mudanças desta PR (`git stash` +
-reexecução do spec isolado) — não é regressão da adoção do design system.
+| Teste | Culpado | Correção |
+| --- | --- | --- |
+| `triagem.spec.ts` × 2 | teste | o helper `uploadPatientPhoto` enviava foto sem aceitar o termo; o gate COMP3-01 da rota está correto e não foi tocado |
+| `portal-paciente.spec.ts` | **aplicação** | `ConsentCard` e `PatientPhotoUpload` tinham cada um a sua cópia do status do consentimento (`useApiQuery` não compartilha cache), então o aceite não liberava o envio de foto sem reload — status subiu para `PatientPortalView` |
+| `faturamento.spec.ts` | teste | o locator casava também a fatura da **venda** do pacote (`Pacote: <procedimento> (N sessões)`); a conclusão coberta por pacote nunca gerou fatura — comportamento sempre esteve certo |
 
-**Proposta de correção futura:** investigar a asserção `toHaveCount(0)` de
-`pendingForAppointment` na linha 121 — o teste espera que a conclusão de uma
-consulta vinculada a um pacote pré-pago não gere fatura pendente, e algo no
-fluxo de faturamento/pacotes está gerando uma mesmo assim (ou o teste está
-desatualizado em relação ao comportamento atual). Precisa de investigação
-dedicada em `src/application/billing/`.
+Ou seja: 3 dos 4 eram teste desatualizado; 1 escondia um bug real de UI que só
+apareceu quando o teste foi investigado a fundo.
 
 ## 6. `CardSkeleton` do pacote assume 3 linhas fixas
 

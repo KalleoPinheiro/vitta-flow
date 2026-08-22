@@ -52,12 +52,9 @@
 
 ## Handoff
 
-- **Feature**: still-void-v2-migration — **validada** (`.specs/features/still-void-v2-migration/validation.md`)
-- **Phase / Task**: fases 1–7 completas + 2 fix tasks do sensor; validação PASS (22/23 ACs com evidência, 15/15 mutações mortas)
-- **Completed**: bump para 2.0.1 + ponte Tailwind + gate executável; catálogo adotado em ~40 arquivos (89 `<button>` → `Button`, 71 `<input>` → `Input`, 65 div-cartão → `Card`, `Modal` → `Dialog`, `ErrorAlert` → `Alert`); paleta inteira em tokens; `docs/still-void-gaps.md` com 12 lacunas + 5 defeitos da lib
+- **Feature**: e2e-consentimento-verdes — **validada** (`.specs/features/e2e-consentimento-verdes/validation.md`)
+- **Phase / Task**: T1–T3 completas; validação PASS (8/8 ACs com evidência, 5/5 mutações mortas)
+- **Completed**: as 4 falhas E2E pré-existentes fechadas — suíte em **64/64**. Veredito da pergunta em aberto do handoff anterior: o gate de consentimento da rota está **correto** (base legal LGPD/COMP3-01, intocado); o helper `uploadPatientPhoto` é que ficou para trás. Junto apareceu um bug real de UI: `ConsentCard` e `PatientPhotoUpload` mantinham cópias separadas do status do consentimento, e o aceite não liberava o envio de foto sem reload. O teste de pacote pré-pago era falso positivo (locator casava a fatura de venda do pacote).
 - **In-progress** (file:line): —
-- **Next step**: revisão humana do diff (33 commits) e abertura das issues de `docs/still-void-gaps.md` no repositório still-void
+- **Next step**: pendências 1 (lint, 11 achados) e 2 (OOM de build) do handoff anterior seguem abertas; PR #8 segue aguardando revisão humana
 - **Blockers**: none
-- **Uncommitted files**: —
-- **Branch**: claude/still-void-v2-migration-097c56
-- **Pré-existente, fora do escopo**: `npm run lint` global sai com 1 (11 achados em arquivos não tocados); `npm run build` estoura o heap padrão do Node e exige `NODE_OPTIONS=--max-old-space-size=6144`; E2E fecha em 60 passando / 4 falhando, e os mesmos 4 falham em `d917d72` (antes de qualquer mudança de UI, verificado em worktree separada) — zero regressão; detalhe no item 5 de `docs/BACKLOG-DESIGN-SYSTEM.md`

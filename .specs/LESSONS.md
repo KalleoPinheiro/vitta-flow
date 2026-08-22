@@ -56,6 +56,18 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: AC P1-3.3 — .specs/features/still-void-v2-migration/spec.md:120 (specs)
 - last seen: 2026-08-22T21:21:54Z
 
+### L-008 — useApiQuery guarda estado por componente e não tem cache compartilhado: dois componentes que consultam a mesma URL divergem depois de uma mutação — quem depende do mesmo dado precisa recebê-lo por prop de um pai único.
+- signal: `gate_fail` · recurrence: 1 feature(s) · scope: `src/app/**,src/lib/use-api-query.ts` · harmful: 0
+- features: e2e-consentimento-verdes
+- evidence: src/lib/use-api-query.ts:13 (src/app/**,src/lib/use-api-query.ts)
+- last seen: 2026-08-22T22:14:58Z
+
+### L-009 — Asserção de ausência (toHaveCount(0)) exige uma âncora de presença na mesma lista, senão passa por lista vazia e casa por engano com registro vizinho de descrição parecida.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `e2e/**` · harmful: 0
+- features: e2e-consentimento-verdes
+- evidence: e2e/faturamento.spec.ts:136 (e2e/**)
+- last seen: 2026-08-22T22:14:58Z
+
 ## Quarantined (failed when applied — ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

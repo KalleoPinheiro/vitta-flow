@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { headerClasses } from "@still-void/ui/react";
+import { Button } from "@still-void/ui/react";
 
 export function LogoutButton() {
   const router = useRouter();
@@ -13,12 +13,14 @@ export function LogoutButton() {
   };
 
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="sm"
+      className="self-start"
       onClick={() => void handleLogout()}
-      className={`${headerClasses.link} self-start`}
     >
       Sair
-    </button>
+    </Button>
   );
 }

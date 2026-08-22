@@ -77,9 +77,10 @@ function CarePlanDocumentContent({
       {detail.outcomes.length === 0 ? (
         <p className="mb-4">Nenhum resultado prescrito.</p>
       ) : (
+        // sv-gap: table
         <table className="mb-4 w-full border-collapse text-xs">
           <thead>
-            <tr className="border-b border-slate-400 text-left">
+            <tr className="border-b border-black text-left">
               <th className="py-1 pr-2">Resultado</th>
               <th className="py-1 pr-2">Basal</th>
               <th className="py-1 pr-2">Atual</th>
@@ -89,7 +90,7 @@ function CarePlanDocumentContent({
           </thead>
           <tbody>
             {detail.outcomes.map((outcome) => (
-              <tr key={outcome.id} className="border-b border-slate-200">
+              <tr key={outcome.id} className="border-b border-black/30">
                 <td className="py-1 pr-2">
                   {outcome.outcomeCode} — {outcome.outcomeLabel}
                 </td>
@@ -107,9 +108,10 @@ function CarePlanDocumentContent({
       {detail.interventions.length === 0 ? (
         <p>Nenhuma intervenção prescrita.</p>
       ) : (
+        // sv-gap: table
         <table className="w-full border-collapse text-xs">
           <thead>
-            <tr className="border-b border-slate-400 text-left">
+            <tr className="border-b border-black text-left">
               <th className="py-1 pr-2">Intervenção</th>
               <th className="py-1 pr-2">Frequência</th>
               <th className="py-1 pr-2">Prioridade</th>
@@ -118,7 +120,7 @@ function CarePlanDocumentContent({
           </thead>
           <tbody>
             {detail.interventions.map((intervention) => (
-              <tr key={intervention.id} className="border-b border-slate-200">
+              <tr key={intervention.id} className="border-b border-black/30">
                 <td className="py-1 pr-2">
                   {intervention.interventionCode} — {intervention.interventionLabel}
                 </td>

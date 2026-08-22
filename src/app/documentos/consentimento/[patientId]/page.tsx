@@ -39,7 +39,7 @@ export default function ConsentDocumentPage({
         Proteção de Dados (Lei nº 13.709/2018).
       </p>
       <div className="mt-10">
-        <div className="mx-auto w-64 border-t border-slate-800 pt-1 text-center">
+        <div className="mx-auto w-64 border-t border-black pt-1 text-center">
           {patient.fullName}
           <span className="block text-xs">Paciente ou responsável legal</span>
         </div>

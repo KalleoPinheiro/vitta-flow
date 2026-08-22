@@ -24,7 +24,10 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
-GAPS_DOC="docs/still-void-gaps.md"
+# Parametrizável para o próprio teste do gate poder rodá-lo contra um fixture
+# (tests/scripts/check-sv-adoption.test.ts). Sem argumento, opera no app.
+SRC="${1:-src}"
+GAPS_DOC="${2:-docs/still-void-gaps.md}"
 findings=0
 
 report() {
@@ -38,10 +41,10 @@ report() {
   fi
 }
 
-tsx_files() { find src -name '*.tsx' -o -name '*.ts' | sort; }
+tsx_files() { find "$SRC" -name '*.tsx' -o -name '*.ts' | sort; }
 
 # --- [1] entry point removido na v2 ------------------------------------------
-hits=$(grep -rn 'from "@still-void/ui"' src 2>/dev/null || true)
+hits=$(grep -rn 'from "@still-void/ui"' "$SRC" 2>/dev/null || true)
 report "import bare @still-void/ui" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
 
 # --- [2] <button> cru --------------------------------------------------------
@@ -71,16 +74,16 @@ report "<input> textual cru" "$(printf '%s' "$hits" | grep -c . || true)" "$hits
 
 # --- [4] utilitário de paleta crua ------------------------------------------
 # Toda cor tem de resolver para um token --sv-* pela ponte do @theme.
-hits=$(grep -rnE '\b(slate|teal|amber|emerald|sky|red|violet)-[0-9]{2,3}\b' src --include='*.tsx' 2>/dev/null || true)
+hits=$(grep -rnE '\b(slate|teal|amber|emerald|sky|red|violet)-[0-9]{2,3}\b' "$SRC" --include='*.tsx' 2>/dev/null || true)
 report "utilitário de paleta crua" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
 
 # --- [5] vocabulário de apelido sobrevivente no tema ------------------------
-hits=$(grep -nE '^\s*--color-(slate|teal)-[0-9]{2,3}:' src/app/globals.css 2>/dev/null || true)
+hits=$(grep -rnE '^\s*--color-(slate|teal)-[0-9]{2,3}:' "$SRC" --include='*.css' 2>/dev/null || true)
 report "apelido slate/teal no @theme" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
 
 # --- [6] símbolo client-only em arquivo sem "use client" --------------------
 # Erro de fronteira do App Router: quebra o build, e é barato pegar antes dele.
-hits=$(grep -rln '@still-void/ui/react/client' src 2>/dev/null | while read -r f; do
+hits=$(grep -rln '@still-void/ui/react/client' "$SRC" 2>/dev/null | while read -r f; do
   head -3 "$f" | grep -q '"use client"' || echo "$f:1: importa de @still-void/ui/react/client sem a diretiva \"use client\""
 done)
 report "client-only fora de client component" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
@@ -91,7 +94,7 @@ if [ -f "$GAPS_DOC" ]; then
   #   // sv-gap: x      (elemento raiz de um return)
   #   /* sv-gap: x */   (antes de um elemento em posicao de expressao)
   #   {/* sv-gap: x */} (filho de JSX)
-  code_slugs=$(grep -rhoE 'sv-gap: [a-z0-9-]+' src 2>/dev/null | sed 's|sv-gap: ||' | sort -u)
+  code_slugs=$(grep -rhoE 'sv-gap: [a-z0-9-]+' "$SRC" 2>/dev/null | sed 's|sv-gap: ||' | sort -u)
   # Uma seção anotada com <!-- sv-gap-doc-only --> é relato sobre a lib, sem
   # workaround local: só a direção código -> doc vale para ela.
   doc_slugs=$(awk '

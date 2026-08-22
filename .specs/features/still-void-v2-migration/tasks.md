@@ -9,7 +9,7 @@ Implement these tasks with the `tlc-spec-driven` skill: **activate it by name an
 ---
 
 **Design**: `.specs/features/still-void-v2-migration/design.md`
-**Status**: Approved (execução inline, sem sub-agentes — confirmado pelo usuário em 2026-08-22)
+**Status**: Done — T1–T30 implementados em 26 commits atômicos (2026-08-22). T9 foi no-op: o shell já estava limpo da feature anterior.
 
 ---
 

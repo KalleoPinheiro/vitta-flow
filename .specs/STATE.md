@@ -34,13 +34,30 @@
 - **Date**: 2026-08-15
 - **Status**: active
 
+### AD-005
+- **Decision**: Todo workaround local que existe por ausência de componente no `@still-void/ui` é marcado no ponto do código com o comentário `sv-gap: <slug>`, e o mesmo `<slug>` tem uma seção em `docs/still-void-gaps.md`. `scripts/check-sv-adoption.sh` (`npm run check:sv`) falha se um dos lados ficar órfão, nos dois sentidos.
+- **Reason**: sem a marcação, "isso é `<select>` nativo porque a lib não tem" e "isso é `<select>` nativo porque ninguém migrou" são indistinguíveis no diff — e a dívida vira invisível na revisão seguinte.
+- **Trade-off**: exige disciplina de manter o documento junto do código; a exceção `<!-- sv-gap-doc-only -->` cobre a lacuna que é relato sobre a lib e não tem workaround local.
+- **Scope**: src/**, docs/still-void-gaps.md, scripts/
+- **Date**: 2026-08-22
+- **Status**: active
+
+### AD-006
+- **Decision**: Todo utilitário de cor em `src/**/*.tsx` resolve para um token `--sv-*` pela ponte `@theme` de `globals.css`. Degrau cru de paleta Tailwind (`slate-*`, `teal-*`, `amber-*`, `emerald-*`, `sky-*`, `red-*`, `violet-*`) é proibido e falha o gate. A única exceção é cor neutra literal (`black`, `white`, `transparent`, `current`) em superfície de impressão, que precisa ignorar o tema — e leva comentário dizendo por quê.
+- **Reason**: a ponte anterior remapeava `slate-*`/`teal-*` para os tokens, então a cor certa saía, mas o código mentia sobre o papel: `bg-teal-700` não diz "ação primária", e o apelido travava a leitura e a troca de accent.
+- **Trade-off**: a varredura do Tailwind foi restringida a `src/` via `source("../../src")` para que blocos de código em `docs/` e `.specs/` não ressuscitem os apelidos no CSS gerado — se algum dia houver markup fora de `src/`, o `@source` precisa ser estendido.
+- **Scope**: src/app/globals.css, src/**/*.tsx
+- **Date**: 2026-08-22
+- **Status**: active
+
 ## Handoff
 
-- **Feature**: fase-4-portal-auto-agendamento (aguardando Verifier)
-- **Phase / Task**: F1/F2/F3 PASS; F4 T1–T3 implementados (c7dd752, b33019e, a7cf03d)
-- **Completed**: todas as fases executáveis do plano (1–4)
+- **Feature**: still-void-v2-migration (T1–T30 implementados; aguardando Verifier)
+- **Phase / Task**: fases 1–7 completas, 26 commits atômicos
+- **Completed**: bump para 2.0.1 + ponte Tailwind + gate executável; catálogo adotado em ~40 arquivos (89 `<button>` → `Button`, 71 `<input>` → `Input`, 65 div-cartão → `Card`, `Modal` → `Dialog`, `ErrorAlert` → `Alert`); paleta inteira em tokens; `docs/still-void-gaps.md` com 12 lacunas + 5 defeitos da lib
 - **In-progress** (file:line): —
-- **Next step**: veredito do Verifier da fase 4; fases 5–6 são backlog (dependem de decisão do usuário)
+- **Next step**: veredito do Verifier
 - **Blockers**: none
-- **Uncommitted files**: .specs (status)
-- **Branch**: claude/code-analysis-product-evolution-a4c0f1
+- **Uncommitted files**: —
+- **Branch**: claude/still-void-v2-migration-097c56
+- **Pré-existente, fora do escopo**: `npm run lint` global sai com 1 (11 achados em arquivos não tocados); `npm run build` estoura o heap padrão do Node e exige `NODE_OPTIONS=--max-old-space-size=6144`; E2E fecha em 60 passando / 4 falhando, e os mesmos 4 falham em `d917d72` (antes de qualquer mudança de UI, verificado em worktree separada) — zero regressão; detalhe no item 5 de `docs/BACKLOG-DESIGN-SYSTEM.md`

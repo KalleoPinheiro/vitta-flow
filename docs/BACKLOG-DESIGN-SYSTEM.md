@@ -97,6 +97,22 @@ pacote já suporta — falta só compor `ThemeProvider` no root layout, adiciona
 
 ## 5. Teste E2E falhando, pré-existente e não relacionado a esta PR
 
+> **Ampliado (2026-08-22).** A migração para a v2 rodou a suíte E2E completa: **60
+> passaram, 4 falharam**. Além do `faturamento.spec.ts` já descrito aqui, falham
+> `portal-paciente.spec.ts` ("paciente confirma presença, aceita o consentimento e
+> envia foto de evolução") e os dois testes de `triagem.spec.ts`.
+>
+> **Confirmação de que não são regressão:** os mesmos 4 testes, e só eles, falham em
+> `d917d72` — o commit que só sobe a versão e corrige os imports, antes de qualquer
+> mudança de UI. Verificado em worktree separada.
+>
+> **Causa provável dos três de foto:** `POST /api/portal/patient/photos`
+> ([route.ts:52](../src/app/api/portal/patient/photos/route.ts)) exige consentimento
+> vigente (gate COMP3-01, fase 3). O helper `uploadPatientPhoto` de
+> `e2e/triagem.spec.ts` cria paciente e condição e envia a foto sem aceitar o termo —
+> o teste é anterior ao gate e nunca foi atualizado. Precisa de investigação
+> dedicada, fora do escopo da migração de design system.
+
 **O quê:** `e2e/faturamento.spec.ts:79` ("pacote pré-pago consome sessão sem
 gerar nova fatura ao concluir") falha de forma consistente.
 

@@ -141,22 +141,22 @@ apelido `slate-*`/`teal-*` — e os 52 usos de `amber/emerald/sky` seguem fora d
 
 | Requirement ID | Story | Phase | Status |
 | --- | --- | --- | --- |
-| SV2-01 | P1: Subir para a v2 | Design | Pending |
-| SV2-02 | P1: Subir para a v2 | Design | Pending |
-| SV2-03 | P1: Subir para a v2 | Design | Pending |
-| SV2-04 | P1: Catálogo — Button | Design | Pending |
-| SV2-05 | P1: Catálogo — Input | Design | Pending |
-| SV2-06 | P1: Catálogo — Alert | Design | Pending |
-| SV2-07 | P1: Catálogo — Dialog/Modal | Design | Pending |
-| SV2-08 | P1: Catálogo — Card | Design | Pending |
-| SV2-09 | P1: Catálogo — fronteira server/client | Design | Pending |
-| SV2-10 | P1: Lacunas — documento | Design | Pending |
-| SV2-11 | P1: Lacunas — marcações `// sv-gap:` no código | Design | Pending |
-| SV2-12 | P2: Paleta — apelidos removidos | Design | Pending |
-| SV2-13 | P2: Paleta — hardcodes amber/emerald/sky mapeados | Design | Pending |
+| SV2-01 | P1: Subir para a v2 | Verified | Implementado |
+| SV2-02 | P1: Subir para a v2 | Verified | Implementado |
+| SV2-03 | P1: Subir para a v2 | Verified | Implementado |
+| SV2-04 | P1: Catálogo — Button | Verified | Implementado |
+| SV2-05 | P1: Catálogo — Input | Verified | Implementado |
+| SV2-06 | P1: Catálogo — Alert | Verified | Implementado |
+| SV2-07 | P1: Catálogo — Dialog/Modal | Verified | Implementado |
+| SV2-08 | P1: Catálogo — Card | Verified | Implementado |
+| SV2-09 | P1: Catálogo — fronteira server/client | Verified | Implementado |
+| SV2-10 | P1: Lacunas — documento | Verified | Implementado |
+| SV2-11 | P1: Lacunas — marcações `// sv-gap:` no código | Verified | Implementado |
+| SV2-12 | P2: Paleta — apelidos removidos | Verified | Implementado |
+| SV2-13 | P2: Paleta — hardcodes amber/emerald/sky mapeados | Verified | Implementado |
 
 **ID format:** `SV2-[NUMBER]`
-**Coverage:** 13 total, 0 mapeados a tasks (preenchido em tasks.md)
+**Coverage:** 13 total, 13 mapeados a tasks, 0 sem mapeamento
 
 ---
 

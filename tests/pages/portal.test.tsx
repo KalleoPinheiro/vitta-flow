@@ -169,6 +169,21 @@ describe("Feature: Página do portal", () => {
       const link = screen.getByText("Ir para o sistema da clínica →");
       expect(link.closest("a")).toHaveAttribute("href", "/");
     });
+
+    it("Dado role admin, Então o bloco é um Card do Still Void, não uma div de superfície", async () => {
+      mockFetch([
+        {
+          path: "/api/portal/me",
+          respond: () => jsonResponse(true, { subject: "ana@clinica.com", role: "admin" }),
+        },
+      ]);
+
+      const { container } = render(<PortalPage />);
+      await screen.findByText("Ir para o sistema da clínica →");
+
+      // `bg-sv-surface` é emitido pelo <Card> do pacote, não pelo app.
+      expect(container.querySelector(".bg-sv-surface")).toBeInTheDocument();
+    });
   });
 
   describe("Cenário: sessão de paciente", () => {

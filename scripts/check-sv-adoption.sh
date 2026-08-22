@@ -71,7 +71,7 @@ report "<input> textual cru" "$(printf '%s' "$hits" | grep -c . || true)" "$hits
 
 # --- [4] utilitário de paleta crua ------------------------------------------
 # Toda cor tem de resolver para um token --sv-* pela ponte do @theme.
-hits=$(grep -rnE '\b(slate|teal|amber|emerald|sky)-[0-9]{2,3}\b' src --include='*.tsx' 2>/dev/null || true)
+hits=$(grep -rnE '\b(slate|teal|amber|emerald|sky|red|violet)-[0-9]{2,3}\b' src --include='*.tsx' 2>/dev/null || true)
 report "utilitário de paleta crua" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
 
 # --- [5] vocabulário de apelido sobrevivente no tema ------------------------
@@ -87,7 +87,11 @@ report "client-only fora de client component" "$(printf '%s' "$hits" | grep -c .
 
 # --- [7] sv-gap órfão nos dois sentidos -------------------------------------
 if [ -f "$GAPS_DOC" ]; then
-  code_slugs=$(grep -rhoE '// sv-gap: [a-z0-9-]+' src 2>/dev/null | sed 's|// sv-gap: ||' | sort -u)
+  # Aceita as tres formas validas conforme a posicao no JSX:
+  #   // sv-gap: x      (elemento raiz de um return)
+  #   /* sv-gap: x */   (antes de um elemento em posicao de expressao)
+  #   {/* sv-gap: x */} (filho de JSX)
+  code_slugs=$(grep -rhoE 'sv-gap: [a-z0-9-]+' src 2>/dev/null | sed 's|sv-gap: ||' | sort -u)
   doc_slugs=$(grep -oE '^### `[a-z0-9-]+`' "$GAPS_DOC" 2>/dev/null | tr -d '#`' | tr -d ' ' | sort -u)
   hits=$(
     comm -23 <(printf '%s\n' "$code_slugs" | grep . || true) <(printf '%s\n' "$doc_slugs" | grep . || true) \

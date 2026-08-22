@@ -15,9 +15,8 @@ import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert } from "@/components/feedback";
 import { HealingChart } from "@/components/healing-chart";
 import { ConditionPhotos } from "./condition-photos";
-
-const inputClass =
-  "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none";
+import { Button, Input } from "@still-void/ui/react";
+import { accentButton, nativeField } from "@/lib/ui";
 
 interface ConditionsSectionProps {
   patientId: string;
@@ -61,16 +60,16 @@ export function ConditionsSection({ patientId, conditions, onChanged }: Conditio
     <div className="flex flex-col gap-4">
       {error && <ErrorAlert message={error} />}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-ink-3">
           Estomias e feridas com avaliações seriadas para acompanhar a evolução.
         </p>
-        <button
+        <Button
           type="button"
           onClick={() => setCreating(true)}
-          className="rounded-lg bg-teal-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-teal-800"
+          className={accentButton}
         >
           + Nova condição
-        </button>
+        </Button>
       </div>
 
       {conditions.length === 0 ? (
@@ -81,11 +80,15 @@ export function ConditionsSection({ patientId, conditions, onChanged }: Conditio
             const conditionAssessments = assessments[condition.id] ?? [];
             const isOpen = expanded === condition.id;
             return (
-              <li key={condition.id} className="rounded-lg border border-slate-200 bg-white p-4">
+              /* sv-gap: card-as-element */
+              <li
+                key={condition.id}
+                className="rounded-lg border border-sv-border bg-sv-surface p-4"
+              >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <span className="mr-2 font-medium">{condition.title}</span>
-                    <span className="mr-2 text-xs text-slate-500">
+                    <span className="mr-2 text-xs text-ink-3">
                       {CONDITION_KIND_LABELS[condition.kind]}
                       {condition.stomaType ? ` · ${STOMA_TYPE_LABELS[condition.stomaType]}` : ""}
                       {condition.startedAt ? ` · desde ${formatDate(condition.startedAt)}` : ""}
@@ -96,34 +99,37 @@ export function ConditionsSection({ patientId, conditions, onChanged }: Conditio
                     />
                   </div>
                   <div className="flex gap-2 text-sm">
-                    <button
+                    <Button
                       type="button"
                       onClick={() => toggleExpanded(condition.id)}
-                      className="font-medium text-teal-700 hover:underline"
+                      variant="link"
+                      className="h-auto p-0 text-accent-ink"
                     >
                       {isOpen ? "Ocultar avaliações" : "Ver avaliações"}
-                    </button>
+                    </Button>
                     {condition.status === "active" && (
                       <>
-                        <button
+                        <Button
                           type="button"
                           onClick={() => setAssessing(condition)}
-                          className="font-medium text-teal-700 hover:underline"
+                          variant="link"
+                          className="h-auto p-0 text-accent-ink"
                         >
                           + Avaliação
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           type="button"
                           onClick={() => void resolveCondition(condition)}
-                          className="font-medium text-slate-500 hover:underline"
+                          variant="link"
+                          className="h-auto p-0 text-ink-3"
                         >
                           Marcar resolvida
-                        </button>
+                        </Button>
                       </>
                     )}
                     <a
                       href={`/documentos/relatorio/${condition.id}`}
-                      className="font-medium text-teal-700 hover:underline"
+                      className="font-medium text-accent-ink hover:underline"
                     >
                       Relatório p/ parceiro
                     </a>
@@ -131,7 +137,7 @@ export function ConditionsSection({ patientId, conditions, onChanged }: Conditio
                 </div>
 
                 {isOpen && (
-                  <div className="mt-3 border-t border-slate-100 pt-3">
+                  <div className="mt-3 border-t border-border pt-3">
                     <ConditionPhotos
                       conditionId={condition.id}
                       canUpload={condition.status === "active"}
@@ -143,8 +149,9 @@ export function ConditionsSection({ patientId, conditions, onChanged }: Conditio
                         <div className="mb-3">
                           <HealingChart assessments={conditionAssessments} />
                         </div>
+                        {/* sv-gap: table */}
                         <table className="w-full text-left text-xs">
-                          <thead className="text-slate-500">
+                          <thead className="text-ink-3">
                             <tr>
                               <th className="py-1 pr-3">Data</th>
                               <th className="py-1 pr-3">C×L×P (mm)</th>
@@ -157,7 +164,7 @@ export function ConditionsSection({ patientId, conditions, onChanged }: Conditio
                               <th className="py-1">Complicações</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-100">
+                          <tbody className="divide-y divide-border">
                             {conditionAssessments.map((a) => (
                               <tr key={a.id}>
                                 <td className="py-1.5 pr-3">{formatDateTime(a.createdAt)}</td>
@@ -256,10 +263,11 @@ function ConditionForm({ patientId, onSaved }: { patientId: string; onSaved: () 
       {error && <ErrorAlert message={error} />}
       <label className="text-sm font-medium">
         Tipo *
+        {/* sv-gap: native-select */}
         <select
           value={kind}
           onChange={(e) => setKind(e.target.value as "stoma" | "wound")}
-          className={`mt-1 ${inputClass}`}
+          className={`mt-1 ${nativeField}`}
         >
           <option value="stoma">Estomia</option>
           <option value="wound">Ferida</option>
@@ -268,10 +276,11 @@ function ConditionForm({ patientId, onSaved }: { patientId: string; onSaved: () 
       {kind === "stoma" && (
         <label className="text-sm font-medium">
           Tipo de estomia *
+          {/* sv-gap: native-select */}
           <select
             value={stomaType}
             onChange={(e) => setStomaType(e.target.value)}
-            className={`mt-1 ${inputClass}`}
+            className={`mt-1 ${nativeField}`}
           >
             {Object.entries(STOMA_TYPE_LABELS).map(([value, label]) => (
               <option key={value} value={value}>
@@ -283,34 +292,35 @@ function ConditionForm({ patientId, onSaved }: { patientId: string; onSaved: () 
       )}
       <label className="text-sm font-medium">
         Descrição/localização *
-        <input
+        <Input
           required
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder={kind === "stoma" ? "Ex.: Colostomia terminal QIE" : "Ex.: Úlcera venosa perna E"}
-          className={`mt-1 ${inputClass}`}
+          className="mt-1"
         />
       </label>
       <label className="text-sm font-medium">
         Início (cirurgia/lesão)
-        <input
+        <Input
           type="date"
           value={startedAt}
           onChange={(e) => setStartedAt(e.target.value)}
-          className={`mt-1 ${inputClass}`}
+          className="mt-1"
         />
       </label>
       <label className="text-sm font-medium">
         Observações
-        <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className={`mt-1 ${inputClass}`} />
+        {/* sv-gap: textarea */}
+        <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className={`mt-1 ${nativeField}`} />
       </label>
-      <button
+      <Button
         type="submit"
         disabled={saving}
-        className="mt-1 rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-50"
+        className={`mt-1 ${accentButton}`}
       >
         {saving ? "Salvando…" : "Criar condição"}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -435,21 +445,22 @@ function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSav
           <div className="grid grid-cols-3 gap-3">
             <label className="text-sm font-medium">
               Comprimento (mm)
-              <input type="number" min="0" value={values.lengthMm} onChange={(e) => set("lengthMm")(e.target.value)} className={`mt-1 ${inputClass}`} />
+              <Input type="number" min="0" value={values.lengthMm} onChange={(e) => set("lengthMm")(e.target.value)} className="mt-1" />
             </label>
             <label className="text-sm font-medium">
               Largura (mm)
-              <input type="number" min="0" value={values.widthMm} onChange={(e) => set("widthMm")(e.target.value)} className={`mt-1 ${inputClass}`} />
+              <Input type="number" min="0" value={values.widthMm} onChange={(e) => set("widthMm")(e.target.value)} className="mt-1" />
             </label>
             <label className="text-sm font-medium">
               Profundidade (mm)
-              <input type="number" min="0" value={values.depthMm} onChange={(e) => set("depthMm")(e.target.value)} className={`mt-1 ${inputClass}`} />
+              <Input type="number" min="0" value={values.depthMm} onChange={(e) => set("depthMm")(e.target.value)} className="mt-1" />
             </label>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <label className="text-sm font-medium">
               Tecido predominante
-              <select value={values.tissueType} onChange={(e) => set("tissueType")(e.target.value)} className={`mt-1 ${inputClass}`}>
+              {/* sv-gap: native-select */}
+              <select value={values.tissueType} onChange={(e) => set("tissueType")(e.target.value)} className={`mt-1 ${nativeField}`}>
                 <option value="">—</option>
                 {/* Valores canônicos do PUSH 3.0 — texto livre legado permanece no histórico. */}
                 <option value="closed">Fechado (0)</option>
@@ -461,7 +472,8 @@ function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSav
             </label>
             <label className="text-sm font-medium">
               Exsudato
-              <select value={values.exudate} onChange={(e) => set("exudate")(e.target.value)} className={`mt-1 ${inputClass}`}>
+              {/* sv-gap: native-select */}
+              <select value={values.exudate} onChange={(e) => set("exudate")(e.target.value)} className={`mt-1 ${nativeField}`}>
                 <option value="">—</option>
                 {Object.entries(EXUDATE_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>
@@ -475,8 +487,8 @@ function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSav
       )}
       {!isWound && (
         <>
-          <fieldset className="rounded-lg border border-slate-200 p-3">
-            <legend className="px-1 text-xs font-semibold uppercase text-slate-500">
+          <fieldset className="rounded-lg border border-border p-3">
+            <legend className="px-1 text-xs font-semibold uppercase text-ink-3">
               Escala DET (0–15) — área 0–3 · severidade 0–2
             </legend>
             <div className="grid grid-cols-3 gap-3 text-sm">
@@ -507,56 +519,58 @@ function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSav
             <p className="mb-1 text-sm font-medium">Complicações</p>
             <div className="flex flex-wrap gap-2">
               {COMPLICATION_OPTIONS.map((option) => (
-                <button
+                <Button
                   key={option.value}
                   type="button"
                   onClick={() => toggleComplication(option.value)}
                   className={`rounded-full px-2.5 py-1 text-xs font-medium ${
                     values.complicationCodes.includes(option.value)
-                      ? "bg-red-700 text-white"
-                      : "border border-slate-300 text-slate-600 hover:bg-slate-100"
+                      ? "bg-danger text-white"
+                      : "border border-border-strong text-ink-2 hover:bg-surface-2"
                   }`}
+                  variant="outline"
                 >
                   {option.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
           <label className="text-sm font-medium">
             Pele periestomal
-            <input
+            <Input
               value={values.skinCondition}
               onChange={(e) => set("skinCondition")(e.target.value)}
               placeholder="Ex.: íntegra, dermatite leve…"
-              className={`mt-1 ${inputClass}`}
+              className="mt-1"
             />
           </label>
           <label className="text-sm font-medium">
             Observação de complicações (texto livre)
-            <input
+            <Input
               value={values.complications}
               onChange={(e) => set("complications")(e.target.value)}
               placeholder="Detalhe as complicações selecionadas…"
-              className={`mt-1 ${inputClass}`}
+              className="mt-1"
             />
           </label>
         </>
       )}
       <label className="text-sm font-medium">
         Dor (0–10)
-        <input type="number" min="0" max="10" value={values.painScale} onChange={(e) => set("painScale")(e.target.value)} className={`mt-1 ${inputClass}`} />
+        <Input type="number" min="0" max="10" value={values.painScale} onChange={(e) => set("painScale")(e.target.value)} className="mt-1" />
       </label>
       <label className="text-sm font-medium">
         Observações
-        <textarea rows={2} value={values.notes} onChange={(e) => set("notes")(e.target.value)} className={`mt-1 ${inputClass}`} />
+        {/* sv-gap: textarea */}
+        <textarea rows={2} value={values.notes} onChange={(e) => set("notes")(e.target.value)} className={`mt-1 ${nativeField}`} />
       </label>
-      <button
+      <Button
         type="submit"
         disabled={saving}
-        className="mt-1 rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-50"
+        className={`mt-1 ${accentButton}`}
       >
         {saving ? "Registrando…" : "Registrar avaliação"}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -578,23 +592,21 @@ function DetDomainInputs({
     <div>
       <p className="mb-1 font-medium">{label}</p>
       <div className="flex gap-2">
-        <input
+        <Input
           type="number"
           min="0"
           max="3"
           placeholder="área"
           value={area}
           onChange={(e) => onArea(e.target.value)}
-          className={inputClass}
         />
-        <input
+        <Input
           type="number"
           min="0"
           max="2"
           placeholder="sev."
           value={severity}
           onChange={(e) => onSeverity(e.target.value)}
-          className={inputClass}
         />
       </div>
     </div>

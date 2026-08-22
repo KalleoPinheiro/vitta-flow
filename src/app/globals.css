@@ -1,4 +1,8 @@
-@import "tailwindcss";
+/* `source("../../src")` restringe a varredura ao código do app. A detecção
+   automática do v4 varreria também docs/ e .specs/, que citam classes antigas em
+   blocos de código — isso ressuscitaria no CSS gerado justamente os apelidos que
+   esta migração removeu. Documentação não é fonte de markup. */
+@import "tailwindcss" source("../../src");
 @import "@still-void/ui/theme.css";
 @import "@still-void/ui/style.css" layer(components);
 
@@ -89,34 +93,4 @@
   --radius-xl: var(--sv-radius-xl);
 
   --spacing-4: var(--sv-space-4);
-
-  /* --- override das escalas teal e slate já usadas nos componentes,
-     recolorindo o app inteiro sem editar cada arquivo ---
-
-     O Still Void separa o accent de superfície (--sv-accent) do accent de texto
-     (--sv-accent-ink, escurecido no tema claro justamente para bater 4.5:1).
-     Os degraus claros (50–500) são preenchimento/borda decorativa e derivam do
-     accent; os escuros (600–900) pintam texto (text-teal-700, 28 usos) e fundo
-     de botão com texto branco (bg-teal-700, 36 usos) e derivam do ink. */
-  --color-teal-50: color-mix(in oklab, var(--sv-accent) 10%, white);
-  --color-teal-100: color-mix(in oklab, var(--sv-accent) 18%, white);
-  --color-teal-200: color-mix(in oklab, var(--sv-accent) 32%, white);
-  --color-teal-300: color-mix(in oklab, var(--sv-accent) 50%, white);
-  --color-teal-400: color-mix(in oklab, var(--sv-accent) 75%, white);
-  --color-teal-500: var(--sv-accent);
-  --color-teal-600: color-mix(in oklab, var(--sv-accent-ink) 94%, white);
-  --color-teal-700: var(--sv-accent-ink);
-  --color-teal-800: color-mix(in oklab, var(--sv-accent-ink) 88%, black);
-  --color-teal-900: color-mix(in oklab, var(--sv-accent-ink) 76%, black);
-
-  --color-slate-50: var(--sv-bg);
-  --color-slate-100: var(--sv-surface-2);
-  --color-slate-200: color-mix(in oklab, var(--sv-text-3) 22%, var(--sv-bg));
-  --color-slate-300: color-mix(in oklab, var(--sv-text-3) 40%, var(--sv-bg));
-  --color-slate-400: var(--sv-text-3);
-  --color-slate-500: var(--sv-text-3);
-  --color-slate-600: var(--sv-text-2);
-  --color-slate-700: color-mix(in oklab, var(--sv-text) 78%, var(--sv-text-2));
-  --color-slate-800: color-mix(in oklab, var(--sv-text) 90%, var(--sv-text-2));
-  --color-slate-900: var(--sv-text);
 }

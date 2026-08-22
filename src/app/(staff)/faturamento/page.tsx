@@ -17,6 +17,8 @@ import { ErrorAlert } from "@/components/feedback";
 import { LoadMoreButton } from "@/components/load-more-button";
 import { PagedList } from "@/components/paged-list";
 import { InvoiceForm, type InvoiceFormValues } from "./invoice-form";
+import { Button, Card, Input } from "@still-void/ui/react";
+import { accentButton, nativeField } from "@/lib/ui";
 
 const STATUS_FILTERS = [
   { value: "", label: "Todas" },
@@ -35,8 +37,9 @@ interface InvoicesTableProps {
 
 function InvoicesTable({ invoices, onPay, onCancel }: InvoicesTableProps) {
   return (
+    // sv-gap: table
     <table className="w-full text-left text-sm">
-      <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
+      <thead className="border-b border-border bg-bg text-xs uppercase text-ink-3">
         <tr>
           <th className="px-4 py-3">Emissão</th>
           <th className="px-4 py-3">Paciente</th>
@@ -47,12 +50,12 @@ function InvoicesTable({ invoices, onPay, onCancel }: InvoicesTableProps) {
           <th className="px-4 py-3 text-right">Ações</th>
         </tr>
       </thead>
-      <tbody className="divide-y divide-slate-100">
+      <tbody className="divide-y divide-border">
         {invoices.map((invoice) => (
           <tr key={invoice.id}>
-            <td className="px-4 py-3 text-slate-600">{formatDate(invoice.issuedAt)}</td>
+            <td className="px-4 py-3 text-ink-2">{formatDate(invoice.issuedAt)}</td>
             <td className="px-4 py-3 font-medium">{invoice.patientName}</td>
-            <td className="max-w-56 truncate px-4 py-3 text-slate-600">
+            <td className="max-w-56 truncate px-4 py-3 text-ink-2">
               {invoice.description}
             </td>
             <td className="px-4 py-3 font-medium">{formatCurrency(invoice.amountCents)}</td>
@@ -62,7 +65,7 @@ function InvoicesTable({ invoices, onPay, onCancel }: InvoicesTableProps) {
                 label={INVOICE_STATUS_LABELS[invoice.status] ?? invoice.status}
               />
             </td>
-            <td className="px-4 py-3 text-slate-600">
+            <td className="px-4 py-3 text-ink-2">
               {invoice.paymentMethod
                 ? `${PAYMENT_METHOD_LABELS[invoice.paymentMethod] ?? invoice.paymentMethod}${
                     invoice.paidAt ? ` em ${formatDate(invoice.paidAt)}` : ""
@@ -72,20 +75,22 @@ function InvoicesTable({ invoices, onPay, onCancel }: InvoicesTableProps) {
             <td className="px-4 py-3 text-right">
               {invoice.status === "pending" && (
                 <>
-                  <button
+                  <Button
                     type="button"
                     onClick={() => onPay(invoice)}
-                    className="mr-2 font-medium text-emerald-700 hover:underline"
+                    variant="link"
+                    className="h-auto p-0 mr-2 text-success"
                   >
                     Receber
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
                     onClick={() => onCancel(invoice)}
-                    className="font-medium text-red-700 hover:underline"
+                    variant="link"
+                    className="h-auto p-0 text-danger"
                   >
                     Cancelar
-                  </button>
+                  </Button>
                 </>
               )}
             </td>
@@ -171,54 +176,55 @@ export default function BillingPage() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="sv-display text-2xl font-bold">Faturamento</h1>
         <div className="flex gap-2">
-          <button
+          <Button
             type="button"
             onClick={() => setSellingPackage(true)}
-            className="rounded-lg border border-teal-700 px-4 py-2 text-sm font-medium text-teal-700 hover:bg-teal-50"
+            variant="outline"
+            className="text-accent-ink hover:bg-accent-soft"
           >
             Vender pacote
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={() => setCreating(true)}
-            className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800"
+            className={accentButton}
           >
             + Nova fatura
-          </button>
+          </Button>
         </div>
       </div>
 
       {error && <ErrorAlert message={error} />}
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:max-w-xl">
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
-          <p className="text-sm text-slate-500">Total recebido (lista atual)</p>
-          <p className="mt-1 text-2xl font-bold text-emerald-700">{formatCurrency(totals.paid)}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
-          <p className="text-sm text-slate-500">Total a receber (lista atual)</p>
-          <p className="mt-1 text-2xl font-bold text-amber-600">{formatCurrency(totals.pending)}</p>
-        </div>
+        <Card className="p-5">
+          <p className="text-sm text-ink-3">Total recebido (lista atual)</p>
+          <p className="mt-1 text-2xl font-bold text-success">{formatCurrency(totals.paid)}</p>
+        </Card>
+        <Card className="p-5">
+          <p className="text-sm text-ink-3">Total a receber (lista atual)</p>
+          <p className="mt-1 text-2xl font-bold text-warning">{formatCurrency(totals.pending)}</p>
+        </Card>
       </div>
 
       <div className="mb-4 flex gap-2">
         {STATUS_FILTERS.map((filter) => (
-          <button
+          <Button
             key={filter.value}
             type="button"
             onClick={() => setStatusFilter(filter.value)}
             className={`rounded-full px-3 py-1.5 text-sm font-medium ${
               statusFilter === filter.value
-                ? "bg-teal-700 text-white"
-                : "border border-slate-300 text-slate-600 hover:bg-slate-100"
+                ? "bg-accent-ink text-white"
+                : "border border-border-strong text-ink-2 hover:bg-surface-2"
             }`}
           >
             {filter.label}
-          </button>
+          </Button>
         ))}
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+      <Card className="overflow-x-auto">
         <PagedList
           items={invoices}
           emptyMessage="Nenhuma fatura encontrada."
@@ -230,7 +236,7 @@ export default function BillingPage() {
             />
           )}
         />
-      </div>
+      </Card>
 
       <LoadMoreButton visible={Boolean(invoices) && hasMore} onClick={loadMore} />
 
@@ -252,19 +258,20 @@ export default function BillingPage() {
 
       {paying && (
         <Modal title="Registrar pagamento" onClose={() => setPaying(null)}>
-          <p className="mb-4 text-sm text-slate-600">
+          <p className="mb-4 text-sm text-ink-2">
             {paying.patientName} — {formatCurrency(paying.amountCents)}
           </p>
           <div className="grid grid-cols-2 gap-2">
             {Object.entries(PAYMENT_METHOD_LABELS).map(([method, label]) => (
-              <button
+              <Button
                 key={method}
                 type="button"
                 onClick={() => void handlePay(paying, method)}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium hover:border-teal-500 hover:bg-teal-50"
+                variant="outline"
+                className="hover:bg-accent-soft"
               >
                 {label}
-              </button>
+              </Button>
             ))}
           </div>
         </Modal>
@@ -310,9 +317,6 @@ function PackageForm({
   const [expiresAt, setExpiresAt] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-
-  const inputClass =
-    "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none";
   const activeProcedures = (procedures ?? []).filter((p) => p.active);
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -344,7 +348,8 @@ function PackageForm({
       {error && <ErrorAlert message={error} />}
       <label className="text-sm font-medium">
         Paciente *
-        <select required value={patientId} onChange={(e) => setPatientId(e.target.value)} className={`mt-1 ${inputClass}`}>
+        {/* sv-gap: native-select */}
+        <select required value={patientId} onChange={(e) => setPatientId(e.target.value)} className={`mt-1 ${nativeField}`}>
           <option value="">Selecione…</option>
           {patients.map((patient) => (
             <option key={patient.id} value={patient.id}>
@@ -355,7 +360,8 @@ function PackageForm({
       </label>
       <label className="text-sm font-medium">
         Procedimento *
-        <select required value={procedureId} onChange={(e) => setProcedureId(e.target.value)} className={`mt-1 ${inputClass}`}>
+        {/* sv-gap: native-select */}
+        <select required value={procedureId} onChange={(e) => setProcedureId(e.target.value)} className={`mt-1 ${nativeField}`}>
           <option value="">Selecione…</option>
           {activeProcedures.map((procedure) => (
             <option key={procedure.id} value={procedure.id}>
@@ -364,7 +370,7 @@ function PackageForm({
           ))}
         </select>
         {activeProcedures.length === 0 && (
-          <span className="mt-1 block text-xs font-normal text-amber-600">
+          <span className="mt-1 block text-xs font-normal text-warning">
             Cadastre procedimentos no catálogo para vender pacotes.
           </span>
         )}
@@ -372,32 +378,32 @@ function PackageForm({
       <div className="grid grid-cols-2 gap-3">
         <label className="text-sm font-medium">
           Sessões *
-          <input required type="number" min="1" max="100" value={sessions} onChange={(e) => setSessions(e.target.value)} className={`mt-1 ${inputClass}`} />
+          <Input required type="number" min="1" max="100" value={sessions} onChange={(e) => setSessions(e.target.value)} className="mt-1" />
         </label>
         <label className="text-sm font-medium">
           Preço total (R$) *
-          <input required type="number" min="0" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className={`mt-1 ${inputClass}`} />
+          <Input required type="number" min="0" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className="mt-1" />
         </label>
       </div>
       <label className="text-sm font-medium">
         Validade
-        <input
+        <Input
           type="date"
           value={expiresAt}
           onChange={(e) => setExpiresAt(e.target.value)}
-          className={`mt-1 ${inputClass}`}
+          className="mt-1"
         />
-        <span className="mt-1 block text-xs font-normal text-slate-500">
+        <span className="mt-1 block text-xs font-normal text-ink-3">
           Opcional — sem data, o pacote não expira.
         </span>
       </label>
-      <button
+      <Button
         type="submit"
         disabled={saving}
-        className="mt-1 rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-50"
+        className={`mt-1 ${accentButton}`}
       >
         {saving ? "Vendendo…" : "Vender pacote"}
-      </button>
+      </Button>
     </form>
   );
 }

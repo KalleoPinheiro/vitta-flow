@@ -6,6 +6,8 @@ import { useApiQuery } from "@/lib/use-api-query";
 import { BUSINESS_HOURS, MIN_GAP_MINUTES } from "@/domain/scheduling/business-hours";
 import { ErrorAlert } from "@/components/feedback";
 import { dayKey } from "./calendar-grid";
+import { Button, Input } from "@still-void/ui/react";
+import { accentButton, nativeField } from "@/lib/ui";
 
 export interface AppointmentFormValues {
   patientId: string;
@@ -29,9 +31,6 @@ interface AppointmentFormProps {
   defaultProcedure?: string;
   onSubmit: (values: AppointmentFormValues) => Promise<void>;
 }
-
-const inputClass =
-  "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none";
 
 const DURATION_OPTIONS = [30, 45, 60, 90, 120];
 
@@ -90,18 +89,19 @@ export function AppointmentForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       {error && <ErrorAlert message={error} />}
-      <p className="rounded-lg bg-teal-50 px-3 py-2 text-xs text-teal-900">
+      <p className="rounded-lg bg-accent-soft px-3 py-2 text-xs text-accent-ink">
         Atendimento de {BUSINESS_HOURS.weekDays}, das{" "}
         {String(BUSINESS_HOURS.startHour).padStart(2, "0")}:00 às {BUSINESS_HOURS.endHour}:00,
         com intervalo mínimo de {MIN_GAP_MINUTES} minutos entre consultas.
       </p>
       <label className="text-sm font-medium">
         Paciente *
+        {/* sv-gap: native-select */}
         <select
           required
           value={values.patientId}
           onChange={(e) => setValues((prev) => ({ ...prev, patientId: e.target.value }))}
-          className={`mt-1 ${inputClass}`}
+          className={`mt-1 ${nativeField}`}
         >
           <option value="">Selecione…</option>
           {activePatients.map((patient) => (
@@ -113,12 +113,13 @@ export function AppointmentForm({
       </label>
       <label className="text-sm font-medium">
         Repetição
+        {/* sv-gap: native-select */}
         <select
           value={values.occurrences}
           onChange={(e) =>
             setValues((prev) => ({ ...prev, occurrences: Number(e.target.value) }))
           }
-          className={`mt-1 ${inputClass}`}
+          className={`mt-1 ${nativeField}`}
         >
           <option value={1}>Consulta única</option>
           {[4, 6, 8, 10, 12].map((n) => (
@@ -131,10 +132,11 @@ export function AppointmentForm({
       {professionals.length > 0 && (
         <label className="text-sm font-medium">
           Profissional
+          {/* sv-gap: native-select */}
           <select
             value={values.professionalId}
             onChange={(e) => setValues((prev) => ({ ...prev, professionalId: e.target.value }))}
-            className={`mt-1 ${inputClass}`}
+            className={`mt-1 ${nativeField}`}
           >
             <option value="">— sem atribuição —</option>
             {professionals.map((professional) => (
@@ -148,32 +150,33 @@ export function AppointmentForm({
       <div className="grid grid-cols-3 gap-3">
         <label className="text-sm font-medium">
           Data *
-          <input
+          <Input
             required
             type="date"
             value={values.date}
             onChange={(e) => setValues((prev) => ({ ...prev, date: e.target.value }))}
-            className={`mt-1 ${inputClass}`}
+            className="mt-1"
           />
         </label>
         <label className="text-sm font-medium">
           Início *
-          <input
+          <Input
             required
             type="time"
             value={values.startTime}
             onChange={(e) => setValues((prev) => ({ ...prev, startTime: e.target.value }))}
-            className={`mt-1 ${inputClass}`}
+            className="mt-1"
           />
         </label>
         <label className="text-sm font-medium">
           Duração *
+          {/* sv-gap: native-select */}
           <select
             value={values.durationMinutes}
             onChange={(e) =>
               setValues((prev) => ({ ...prev, durationMinutes: Number(e.target.value) }))
             }
-            className={`mt-1 ${inputClass}`}
+            className={`mt-1 ${nativeField}`}
           >
             {DURATION_OPTIONS.map((minutes) => (
               <option key={minutes} value={minutes}>
@@ -186,10 +189,11 @@ export function AppointmentForm({
       {activeCatalog.length > 0 && (
         <label className="text-sm font-medium">
           Procedimento do catálogo
+          {/* sv-gap: native-select */}
           <select
             value={values.procedureId}
             onChange={(e) => applyCatalogProcedure(e.target.value)}
-            className={`mt-1 ${inputClass}`}
+            className={`mt-1 ${nativeField}`}
           >
             <option value="">— escolher do catálogo —</option>
             {activeCatalog.map((procedure) => (
@@ -203,42 +207,43 @@ export function AppointmentForm({
 
       <label className="text-sm font-medium">
         Procedimento *
-        <input
+        <Input
           required
           value={values.procedure}
           onChange={(e) => setValues((prev) => ({ ...prev, procedure: e.target.value }))}
           placeholder="Ex.: Troca de bolsa de colostomia"
-          className={`mt-1 ${inputClass}`}
+          className="mt-1"
         />
       </label>
       <label className="text-sm font-medium">
         Valor (R$) *
-        <input
+        <Input
           required
           type="number"
           min="0"
           step="0.01"
           value={values.price}
           onChange={(e) => setValues((prev) => ({ ...prev, price: e.target.value }))}
-          className={`mt-1 ${inputClass}`}
+          className="mt-1"
         />
       </label>
       <label className="text-sm font-medium">
         Observações
+        {/* sv-gap: textarea */}
         <textarea
           rows={2}
           value={values.notes}
           onChange={(e) => setValues((prev) => ({ ...prev, notes: e.target.value }))}
-          className={`mt-1 ${inputClass}`}
+          className={`mt-1 ${nativeField}`}
         />
       </label>
-      <button
+      <Button
         type="submit"
         disabled={saving}
-        className="mt-2 rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-50"
+        className={`mt-2 ${accentButton}`}
       >
         {saving ? "Agendando…" : "Agendar consulta"}
-      </button>
+      </Button>
     </form>
   );
 }

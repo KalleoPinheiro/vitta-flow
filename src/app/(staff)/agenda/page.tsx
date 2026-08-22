@@ -9,6 +9,8 @@ import { ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import { CalendarGrid } from "./calendar-grid";
 import { AppointmentForm, type AppointmentFormValues } from "./appointment-form";
 import { AppointmentDetail } from "./appointment-detail";
+import { Button } from "@still-void/ui/react";
+import { accentButton, nativeField } from "@/lib/ui";
 
 function ProfessionalFilter({
   professionals,
@@ -23,10 +25,11 @@ function ProfessionalFilter({
     return null;
   }
   return (
+    // sv-gap: native-select
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="ml-auto rounded-lg border border-slate-300 px-3 py-1.5 text-sm focus:border-teal-500 focus:outline-none"
+      className={nativeField}
     >
       <option value="">Todos os profissionais</option>
       {professionals.map((professional) => (
@@ -49,7 +52,7 @@ function AgendaNotices({
     <>
       {error && <ErrorAlert message={error} />}
       {seriesNotice && (
-        <p className="mb-4 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900">
+        <p className="mb-4 rounded-lg border border-accent bg-accent-soft px-4 py-3 text-sm text-accent-ink">
           {seriesNotice}
         </p>
       )}
@@ -179,37 +182,39 @@ export default function AgendaPage() {
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="sv-display text-2xl font-bold">Agenda</h1>
-        <button
+        <Button
           type="button"
           onClick={() => setCreatingFor(new Date())}
-          className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800"
+          className={accentButton}
         >
           + Nova consulta
-        </button>
+        </Button>
       </div>
 
       <AgendaNotices error={error} seriesNotice={seriesNotice} />
 
       <div className="mb-4 flex items-center gap-3">
-        <button
+        <Button
           type="button"
           onClick={() => changeMonth(-1)}
           aria-label="Mês anterior"
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-100"
+          variant="outline"
+          className="hover:bg-surface-2"
         >
           ←
-        </button>
+        </Button>
         <span className="min-w-48 text-center text-lg font-semibold capitalize">
           {monthLabel(monthDate)}
         </span>
-        <button
+        <Button
           type="button"
           onClick={() => changeMonth(1)}
           aria-label="Próximo mês"
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-100"
+          variant="outline"
+          className="hover:bg-surface-2"
         >
           →
-        </button>
+        </Button>
         <ProfessionalFilter
           professionals={professionals ?? []}
           value={professionalFilter}

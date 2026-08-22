@@ -72,7 +72,7 @@ describe("Feature: Gate de adoção do Still Void", () => {
       const result = runGate(src, gapsDoc);
 
       expect(result.status).toBe(1);
-      expect(result.output).toContain("[import bare @still-void/ui]");
+      expect(result.output).toContain("✗ [import bare @still-void/ui] 1 achado(s)");
       expect(result.output).toContain("mau.tsx");
     });
 
@@ -82,7 +82,7 @@ describe("Feature: Gate de adoção do Still Void", () => {
       const result = runGate(src, gapsDoc);
 
       expect(result.status).toBe(1);
-      expect(result.output).toContain("[<button> cru]");
+      expect(result.output).toContain("✗ [<button> cru] 1 achado(s)");
     });
 
     it("Dado <button> cru COM marcação sv-gap, Então não reporta (workaround declarado)", () => {
@@ -97,12 +97,27 @@ describe("Feature: Gate de adoção do Still Void", () => {
       expect(result.status).toBe(0);
     });
 
-    it("Dado <input> textual cru, Então reporta; e não reporta type=file, checkbox ou radio", () => {
+    it("Dado <input> textual cru, Então reporta e sai com 1", () => {
       writeFileSync(join(src, "mau.tsx"), 'export const X = () => <input type="email" />;\n');
-      expect(runGate(src, gapsDoc).output).toContain("[<input> textual cru]");
 
-      writeFileSync(join(src, "mau.tsx"), 'export const X = () => <input type="file" />;\n');
-      expect(runGate(src, gapsDoc).status).toBe(0);
+      const result = runGate(src, gapsDoc);
+
+      // O rótulo sozinho não serve de prova: ele é impresso tanto no estado ✓
+      // quanto no ✗. A prova é o marcador de falha, a contagem e o arquivo.
+      expect(result.status).toBe(1);
+      expect(result.output).toContain("✗ [<input> textual cru] 1 achado(s)");
+      expect(result.output).toContain("mau.tsx");
+    });
+
+    it("Dado <input> de tipo file, checkbox ou radio, Então não é reportado (lacuna conhecida da lib)", () => {
+      for (const type of ["file", "checkbox", "radio"]) {
+        writeFileSync(join(src, "mau.tsx"), `export const X = () => <input type="${type}" />;\n`);
+
+        const result = runGate(src, gapsDoc);
+
+        expect(result.status, `type=${type}`).toBe(0);
+        expect(result.output).toContain("✓ [<input> textual cru]");
+      }
     });
 
     it("Dado utilitário de paleta fora da ponte de tokens, Então reporta e sai com 1", () => {
@@ -111,7 +126,7 @@ describe("Feature: Gate de adoção do Still Void", () => {
       const result = runGate(src, gapsDoc);
 
       expect(result.status).toBe(1);
-      expect(result.output).toContain("[utilitário de paleta crua]");
+      expect(result.output).toContain("✗ [utilitário de paleta crua] 1 achado(s)");
     });
 
     it("Dado apelido slate/teal de volta no @theme, Então reporta e sai com 1", () => {
@@ -123,7 +138,7 @@ describe("Feature: Gate de adoção do Still Void", () => {
       const result = runGate(src, gapsDoc);
 
       expect(result.status).toBe(1);
-      expect(result.output).toContain("[apelido slate/teal no @theme]");
+      expect(result.output).toContain("✗ [apelido slate/teal no @theme] 1 achado(s)");
     });
 
     it("Dado símbolo client-only importado em arquivo sem 'use client', Então reporta e sai com 1", () => {
@@ -132,7 +147,7 @@ describe("Feature: Gate de adoção do Still Void", () => {
       const result = runGate(src, gapsDoc);
 
       expect(result.status).toBe(1);
-      expect(result.output).toContain("[client-only fora de client component]");
+      expect(result.output).toContain("✗ [client-only fora de client component] 1 achado(s)");
     });
 
     it("Dado marcação sv-gap sem seção no documento de lacunas, Então reporta e sai com 1", () => {

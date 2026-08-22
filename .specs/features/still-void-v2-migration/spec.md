@@ -150,7 +150,7 @@ apelido `slate-*`/`teal-*` — e os 52 usos de `amber/emerald/sky` seguem fora d
 | SV2-07 | P1: Catálogo — Dialog/Modal | Verified | Implementado |
 | SV2-08 | P1: Catálogo — Card | Verified | Implementado |
 | SV2-09 | P1: Catálogo — fronteira server/client | Verified | Implementado |
-| SV2-10 | P1: Lacunas — documento | Verified | Implementado |
+| SV2-10 | P1: Lacunas — documento | Verified ⚠️ | Lacuna de precisão em AC P1-3.3 (`Label`/`Field`) — ver validation.md |
 | SV2-11 | P1: Lacunas — marcações `// sv-gap:` no código | Verified | Implementado |
 | SV2-12 | P2: Paleta — apelidos removidos | Verified | Implementado |
 | SV2-13 | P2: Paleta — hardcodes amber/emerald/sky mapeados | Verified | Implementado |

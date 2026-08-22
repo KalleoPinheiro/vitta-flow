@@ -52,11 +52,11 @@
 
 ## Handoff
 
-- **Feature**: still-void-v2-migration (T1–T30 implementados; aguardando Verifier)
-- **Phase / Task**: fases 1–7 completas, 26 commits atômicos
+- **Feature**: still-void-v2-migration — **validada** (`.specs/features/still-void-v2-migration/validation.md`)
+- **Phase / Task**: fases 1–7 completas + 2 fix tasks do sensor; validação PASS (22/23 ACs com evidência, 15/15 mutações mortas)
 - **Completed**: bump para 2.0.1 + ponte Tailwind + gate executável; catálogo adotado em ~40 arquivos (89 `<button>` → `Button`, 71 `<input>` → `Input`, 65 div-cartão → `Card`, `Modal` → `Dialog`, `ErrorAlert` → `Alert`); paleta inteira em tokens; `docs/still-void-gaps.md` com 12 lacunas + 5 defeitos da lib
 - **In-progress** (file:line): —
-- **Next step**: veredito do Verifier
+- **Next step**: revisão humana do diff (33 commits) e abertura das issues de `docs/still-void-gaps.md` no repositório still-void
 - **Blockers**: none
 - **Uncommitted files**: —
 - **Branch**: claude/still-void-v2-migration-097c56

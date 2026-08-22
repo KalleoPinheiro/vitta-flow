@@ -7,9 +7,8 @@ import { useApiQuery } from "@/lib/use-api-query";
 import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
-
-const inputClass =
-  "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none";
+import { Button, Input } from "@still-void/ui/react";
+import { accentButton, nativeField } from "@/lib/ui";
 
 const WEEKDAYS = [
   { value: 0, label: "Dom" },
@@ -79,79 +78,81 @@ function ScheduleSection() {
   };
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5">
+    // sv-gap: card-as-element
+    <section className="rounded-lg border border-sv-border bg-sv-surface p-5">
       <h2 className="mb-1 text-lg font-semibold">Grade de horários</h2>
-      <p className="mb-4 text-sm text-slate-500">
+      <p className="mb-4 text-sm text-ink-3">
         Define dias e janela de atendimento usados na validação da agenda.
         {data.isDefault && " (usando padrão — nada salvo ainda)"}
       </p>
       {saveError && <ErrorAlert message={saveError} />}
       {saved && (
-        <p className="mb-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+        <p className="mb-3 rounded-lg bg-success-soft px-3 py-2 text-sm text-success">
           Grade salva — vale imediatamente para novos agendamentos.
         </p>
       )}
 
       <div className="mb-4 flex flex-wrap gap-2">
         {WEEKDAYS.map((day) => (
-          <button
+          <Button
             key={day.value}
             type="button"
             onClick={() => toggleDay(day.value)}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium ${
-              draft.weekdays.includes(day.value)
-                ? "bg-teal-700 text-white"
-                : "border border-slate-300 text-slate-600 hover:bg-slate-100"
+            size="sm"
+            variant={draft.weekdays.includes(day.value) ? "default" : "outline"}
+            aria-pressed={draft.weekdays.includes(day.value)}
+            className={`rounded-full ${
+              draft.weekdays.includes(day.value) ? accentButton : ""
             }`}
           >
             {day.label}
-          </button>
+          </Button>
         ))}
       </div>
 
       <div className="grid max-w-md grid-cols-3 gap-3">
         <label className="text-sm font-medium">
           Abre (h)
-          <input
+          <Input
             type="number"
             min="0"
             max="23"
             value={draft.startHour}
             onChange={(e) => setDraft({ ...draft, startHour: Number(e.target.value) })}
-            className={`mt-1 ${inputClass}`}
+            className="mt-1"
           />
         </label>
         <label className="text-sm font-medium">
           Fecha (h)
-          <input
+          <Input
             type="number"
             min="1"
             max="24"
             value={draft.endHour}
             onChange={(e) => setDraft({ ...draft, endHour: Number(e.target.value) })}
-            className={`mt-1 ${inputClass}`}
+            className="mt-1"
           />
         </label>
         <label className="text-sm font-medium">
           Intervalo (min)
-          <input
+          <Input
             type="number"
             min="15"
             max="120"
             value={draft.minGapMinutes}
             onChange={(e) => setDraft({ ...draft, minGapMinutes: Number(e.target.value) })}
-            className={`mt-1 ${inputClass}`}
+            className="mt-1"
           />
         </label>
       </div>
 
-      <button
+      <Button
         type="button"
         onClick={() => void save()}
-        className="mt-4 rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800"
+        className={`mt-4 ${accentButton}`}
       >
         Salvar grade
-      </button>
+      </Button>
     </section>
   );
 }
@@ -179,18 +180,19 @@ function AccountsSection() {
   };
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5">
+    // sv-gap: card-as-element
+    <section className="rounded-lg border border-sv-border bg-sv-surface p-5">
       <div className="mb-1 flex items-center justify-between">
         <h2 className="text-lg font-semibold">Contas de acesso da equipe</h2>
-        <button
+        <Button
           type="button"
           onClick={() => setCreating(true)}
-          className="rounded-lg bg-teal-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-teal-800"
+          className={accentButton}
         >
           + Nova conta
-        </button>
+        </Button>
       </div>
-      <p className="mb-4 text-sm text-slate-500">
+      <p className="mb-4 text-sm text-ink-3">
         Cada pessoa com sua senha: auditoria identifica quem acessou o prontuário e a
         evolução assume o autor automaticamente.
       </p>
@@ -201,8 +203,9 @@ function AccountsSection() {
       ) : accounts.length === 0 ? (
         <EmptyState message="Nenhuma conta individual — todos usam a senha master (auditoria sem identificação pessoal)." />
       ) : (
+        // sv-gap: table
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-slate-200 text-xs uppercase text-slate-500">
+          <thead className="border-b border-border text-xs uppercase text-ink-3">
             <tr>
               <th className="py-2 pr-3">Email</th>
               <th className="py-2 pr-3">Profissional vinculado</th>
@@ -210,11 +213,11 @@ function AccountsSection() {
               <th className="py-2 text-right">Ações</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-border">
             {accounts.map((account) => (
               <tr key={account.id} className={account.active ? "" : "opacity-50"}>
                 <td className="py-2 pr-3 font-medium">{account.email}</td>
-                <td className="py-2 pr-3 text-slate-600">
+                <td className="py-2 pr-3 text-ink-2">
                   {professionalName(account.professionalId)}
                 </td>
                 <td className="py-2 pr-3">
@@ -224,13 +227,14 @@ function AccountsSection() {
                   />
                 </td>
                 <td className="py-2 text-right">
-                  <button
+                  <Button
                     type="button"
                     onClick={() => void toggleActive(account)}
-                    className="font-medium text-slate-500 hover:underline"
+                    variant="link"
+                    className="h-auto p-0 text-ink-3"
                   >
                     {account.active ? "Desativar" : "Reativar"}
-                  </button>
+                  </Button>
                 </td>
               </tr>
             ))}
@@ -288,31 +292,32 @@ function AccountForm({
       {error && <ErrorAlert message={error} />}
       <label className="text-sm font-medium">
         Email *
-        <input
+        <Input
           required
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className={`mt-1 ${inputClass}`}
+          className="mt-1"
         />
       </label>
       <label className="text-sm font-medium">
         Senha * (mín. 8 caracteres)
-        <input
+        <Input
           required
           type="password"
           minLength={8}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className={`mt-1 ${inputClass}`}
+          className="mt-1"
         />
       </label>
       <label className="text-sm font-medium">
         Profissional vinculado
+        {/* sv-gap: native-select */}
         <select
           value={professionalId}
           onChange={(e) => setProfessionalId(e.target.value)}
-          className={`mt-1 ${inputClass}`}
+          className={`mt-1 ${nativeField}`}
         >
           <option value="">— nenhum (recepção/gestão) —</option>
           {professionals.map((professional) => (
@@ -322,13 +327,13 @@ function AccountForm({
           ))}
         </select>
       </label>
-      <button
+      <Button
         type="submit"
         disabled={saving}
-        className="mt-1 rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-50"
+        className={`mt-1 ${accentButton}`}
       >
         {saving ? "Criando…" : "Criar conta"}
-      </button>
+      </Button>
     </form>
   );
 }

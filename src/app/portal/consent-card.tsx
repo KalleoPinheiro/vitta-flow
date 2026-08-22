@@ -44,7 +44,8 @@ export function ConsentCard() {
   };
 
   return (
-    <section className="rounded-xl border border-warning bg-warning-soft p-4">
+    // sv-gap: card-as-element
+    <section className="rounded-lg border border-warning bg-warning-soft p-4">
       <h2 className="mb-2 text-sm font-bold text-warning">
         Termo de consentimento pendente
       </h2>

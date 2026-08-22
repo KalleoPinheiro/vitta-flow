@@ -113,11 +113,27 @@ test.describe("faturamento", () => {
     expect(pkgAfter.usedSessions).toBe(1);
 
     // A sessão do pacote não deve ter gerado uma nova fatura pendente separada.
+    // A venda do pacote emite fatura própria ("Pacote: <procedimento> (N sessões)"),
+    // então casar o nome do paciente com o do procedimento pega as duas — a
+    // distinção é a célula de descrição: a fatura da consulta usa o nome do
+    // procedimento puro.
     await page.goto("/faturamento");
     await page.getByRole("button", { name: "Pendentes" }).click();
-    const pendingForAppointment = page.getByRole("row", {
-      name: new RegExp(`${patient.fullName}.*${procedure.name}`),
+    const pendingRowsForPatient = page.getByRole("row", {
+      name: new RegExp(patient.fullName),
     });
-    await expect(pendingForAppointment).toHaveCount(0);
+    const packageSaleInvoice = pendingRowsForPatient.filter({
+      has: page.getByRole("cell", {
+        name: `Pacote: ${procedure.name} (5 sessões)`,
+        exact: true,
+      }),
+    });
+    const appointmentInvoice = pendingRowsForPatient.filter({
+      has: page.getByRole("cell", { name: procedure.name, exact: true }),
+    });
+    // Âncora: a fatura da venda continua pendente — sem ela, o toHaveCount(0)
+    // abaixo passaria por lista vazia em vez de por comportamento correto.
+    await expect(packageSaleInvoice).toHaveCount(1);
+    await expect(appointmentInvoice).toHaveCount(0);
   });
 });

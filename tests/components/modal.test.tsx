@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 import { Modal } from "@/components/modal";
 
 afterEach(() => {
@@ -36,22 +36,12 @@ describe("Feature: Modal", () => {
     });
   });
 
-  describe("Cenário: fechamento pelo overlay", () => {
-    it("Dado clique no overlay, Quando acionado, Então onClose é chamado", () => {
-      const onClose = vi.fn();
-      const { container } = render(
-        <Modal title="Detalhes" onClose={onClose}>
-          <p>Conteúdo</p>
-        </Modal>,
-      );
-
-      const overlay = container.firstElementChild as HTMLElement;
-      fireEvent.click(overlay);
-
-      expect(onClose).toHaveBeenCalledTimes(1);
-    });
-
-    it("Dado clique dentro do card do modal, Quando acionado, Então onClose não é chamado", () => {
+  describe("Cenário: interação dentro do diálogo", () => {
+    // A dismissão por clique NO overlay é coberta em e2e/modal-dismissao.spec.ts:
+    // a Radix a implementa ouvindo `pointerdown`, e o jsdom não implementa
+    // PointerEvent — nem com polyfill o handler dispara. É comportamento real de
+    // browser, então a asserção vive na camada onde há browser de verdade.
+    it("Dado clique dentro do diálogo, Quando acionado, Então onClose não é chamado", () => {
       const onClose = vi.fn();
       render(
         <Modal title="Detalhes" onClose={onClose}>
@@ -59,9 +49,21 @@ describe("Feature: Modal", () => {
         </Modal>,
       );
 
+      fireEvent.pointerDown(screen.getByText("Conteúdo do card"));
       fireEvent.click(screen.getByText("Conteúdo do card"));
 
       expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it("Dado o diálogo aberto, Então o overlay de dismissão está presente sobre a página", () => {
+      render(
+        <Modal title="Detalhes" onClose={vi.fn()}>
+          <p>Conteúdo</p>
+        </Modal>,
+      );
+
+      const overlay = document.querySelector('[data-state="open"][class*="fixed inset-0"]');
+      expect(overlay).toBeInTheDocument();
     });
   });
 
@@ -77,14 +79,27 @@ describe("Feature: Modal", () => {
       expect(dialog).toHaveAttribute("aria-modal", "true");
     });
 
-    it("Dado o modal montado, Então o foco vai para o primeiro elemento focável dentro dele", () => {
+    it("Dado o modal renderizado, Então o diálogo vem do Dialog do Still Void", () => {
+      render(
+        <Modal title="Detalhes" onClose={vi.fn()}>
+          <p>Conteúdo</p>
+        </Modal>,
+      );
+
+      // `bg-sv-surface` é emitido pelo <DialogContent> do pacote, não pelo app.
+      expect(screen.getByRole("dialog")).toHaveClass("bg-sv-surface");
+    });
+
+    it("Dado o modal montado, Então o foco vai para o primeiro elemento focável dentro dele", async () => {
       render(
         <Modal title="Detalhes" onClose={vi.fn()}>
           <button type="button">Salvar</button>
         </Modal>,
       );
 
-      expect(screen.getByLabelText("Fechar")).toHaveFocus();
+      await waitFor(() => {
+        expect(screen.getByLabelText("Fechar")).toHaveFocus();
+      });
     });
   });
 
@@ -104,7 +119,7 @@ describe("Feature: Modal", () => {
   });
 
   describe("Cenário: restauração de foco ao fechar", () => {
-    it("Dado um elemento focado antes de abrir, Quando o modal desmonta, Então o foco volta pra ele", () => {
+    it("Dado um elemento focado antes de abrir, Quando o modal desmonta, Então o foco volta pra ele", async () => {
       const trigger = document.createElement("button");
       document.body.appendChild(trigger);
       trigger.focus();
@@ -114,9 +129,18 @@ describe("Feature: Modal", () => {
           <p>Conteúdo</p>
         </Modal>,
       );
+      await waitFor(() => {
+        expect(screen.getByLabelText("Fechar")).toHaveFocus();
+      });
       unmount();
 
       expect(trigger).toHaveFocus();
+
+      // A Radix agenda o próprio restore em setTimeout; o foco tem de continuar
+      // no gatilho depois que essa limpeza roda, não só no instante do desmonte.
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(trigger).toHaveFocus();
+
       trigger.remove();
     });
   });
@@ -129,11 +153,12 @@ describe("Feature: Modal", () => {
         </Modal>,
       );
 
+      const dialog = screen.getByRole("dialog");
       const closeButton = screen.getByLabelText("Fechar");
       const saveButton = screen.getByText("Salvar");
       saveButton.focus();
 
-      fireEvent.keyDown(document, { key: "Tab" });
+      fireEvent.keyDown(dialog, { key: "Tab" });
 
       expect(closeButton).toHaveFocus();
     });
@@ -145,11 +170,12 @@ describe("Feature: Modal", () => {
         </Modal>,
       );
 
+      const dialog = screen.getByRole("dialog");
       const closeButton = screen.getByLabelText("Fechar");
       const saveButton = screen.getByText("Salvar");
       closeButton.focus();
 
-      fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+      fireEvent.keyDown(dialog, { key: "Tab", shiftKey: true });
 
       expect(saveButton).toHaveFocus();
     });

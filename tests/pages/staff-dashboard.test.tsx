@@ -311,7 +311,7 @@ describe("Feature: Dashboard do painel interno", () => {
       await waitFor(() => {
         expect(screen.getByText(/aguardando há 2h/)).toBeInTheDocument();
       });
-      expect(screen.getByText(/aguardando há 2h/)).not.toHaveClass("text-red-700");
+      expect(screen.getByText(/aguardando há 2h/)).not.toHaveClass("text-danger");
       expect(screen.queryByText(/PUSH|DET/)).not.toBeInTheDocument();
     });
 

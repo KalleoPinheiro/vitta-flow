@@ -8,9 +8,8 @@ import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
-
-const inputClass =
-  "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none";
+import { Button, Card, Input } from "@still-void/ui/react";
+import { accentButton, nativeField } from "@/lib/ui";
 
 interface SupplyInsightDto {
   supplyId: string;
@@ -47,13 +46,13 @@ export default function SuppliesPage() {
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="sv-display text-2xl font-bold">Materiais e estoque</h1>
-        <button
+        <Button
           type="button"
           onClick={() => setEditing("new")}
-          className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800"
+          className={accentButton}
         >
           + Novo insumo
-        </button>
+        </Button>
       </div>
 
       {error && <ErrorAlert message={error} />}
@@ -122,7 +121,7 @@ function LowStockBanner({ supplies }: { supplies: SupplyDto[] | null }) {
     return null;
   }
   return (
-    <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+    <div className="mb-4 rounded-lg border border-warning bg-warning-soft px-4 py-3 text-sm text-warning">
       ⚠ {count} {count === 1 ? "insumo está" : "insumos estão"} com estoque baixo (≤ mínimo).
     </div>
   );
@@ -135,7 +134,7 @@ function ExpiryBanner({ batches }: { batches: ExpiringBatchDto[] }) {
   const expired = batches.filter((b) => b.isExpired);
   const expiring = batches.filter((b) => !b.isExpired);
   return (
-    <div className="mb-4 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900">
+    <div className="mb-4 rounded-lg border border-danger bg-danger-soft px-4 py-3 text-sm text-danger">
       {expired.length > 0 && (
         <p>
           ⛔ {expired.length} {expired.length === 1 ? "lote vencido" : "lotes vencidos"} com saldo:{" "}
@@ -169,14 +168,15 @@ interface SuppliesTableProps {
 function SuppliesTable({ supplies, insights, onMove, onHistory, onEdit }: SuppliesTableProps) {
   const insightBySupply = new Map(insights.map((i) => [i.supplyId, i]));
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+    <Card className="overflow-x-auto">
       {!supplies ? (
         <LoadingIndicator />
       ) : supplies.length === 0 ? (
         <EmptyState message="Nenhum insumo cadastrado." />
       ) : (
+        // sv-gap: table
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
+          <thead className="border-b border-border bg-bg text-xs uppercase text-ink-3">
             <tr>
               <th className="px-4 py-3">Insumo</th>
               <th className="px-4 py-3">Estoque</th>
@@ -187,7 +187,7 @@ function SuppliesTable({ supplies, insights, onMove, onHistory, onEdit }: Suppli
               <th className="px-4 py-3 text-right">Ações</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-border">
             {supplies.map((supply) => (
               <SupplyRow
                 key={supply.id}
@@ -201,7 +201,7 @@ function SuppliesTable({ supplies, insights, onMove, onHistory, onEdit }: Suppli
           </tbody>
         </table>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -215,12 +215,12 @@ interface SupplyRowProps {
 
 function StockoutForecast({ insight }: { insight?: SupplyInsightDto }) {
   if (!insight || insight.daysToStockout == null) {
-    return <span className="text-slate-400">—</span>;
+    return <span className="text-ink-3">—</span>;
   }
   const days = insight.daysToStockout;
   const urgent = days <= STOCKOUT_ALERT_DAYS;
   return (
-    <span className={urgent ? "font-medium text-red-700" : "text-slate-600"}>
+    <span className={urgent ? "font-medium text-danger" : "text-ink-2"}>
       ~{days} {days === 1 ? "dia" : "dias"}
     </span>
   );
@@ -238,7 +238,7 @@ function SupplyRow({ supply, insight, onMove, onHistory, onEdit }: SupplyRowProp
           </span>
         )}
       </td>
-      <td className="px-4 py-3 text-slate-600">{supply.minQty}</td>
+      <td className="px-4 py-3 text-ink-2">{supply.minQty}</td>
       <td className="px-4 py-3">
         <StockoutForecast insight={insight} />
       </td>
@@ -250,15 +250,24 @@ function SupplyRow({ supply, insight, onMove, onHistory, onEdit }: SupplyRowProp
         />
       </td>
       <td className="px-4 py-3 text-right text-sm">
-        <button type="button" onClick={onMove} className="mr-2 font-medium text-emerald-700 hover:underline">
+        <Button type="button" onClick={onMove}
+          variant="link"
+          className="h-auto p-0 mr-2 text-success"
+        >
           Movimentar
-        </button>
-        <button type="button" onClick={onHistory} className="mr-2 font-medium text-teal-700 hover:underline">
+        </Button>
+        <Button type="button" onClick={onHistory}
+          variant="link"
+          className="h-auto p-0 mr-2 text-accent-ink"
+        >
           Histórico
-        </button>
-        <button type="button" onClick={onEdit} className="font-medium text-slate-500 hover:underline">
+        </Button>
+        <Button type="button" onClick={onEdit}
+          variant="link"
+          className="h-auto p-0 text-ink-3"
+        >
           Editar
-        </button>
+        </Button>
       </td>
     </tr>
   );
@@ -321,50 +330,51 @@ function SupplyForm({ initial, onSaved }: { initial?: SupplyDto; onSaved: () => 
       {error && <ErrorAlert message={error} />}
       <label className="text-sm font-medium">
         Nome *
-        <input
+        <Input
           required
           value={values.name}
           onChange={(e) => setValues((prev) => ({ ...prev, name: e.target.value }))}
           placeholder="Ex.: Bolsa colostomia 1 peça 60mm"
-          className={`mt-1 ${inputClass}`}
+          className="mt-1"
         />
       </label>
       <div className="grid grid-cols-3 gap-3">
         <label className="text-sm font-medium">
           Unidade *
-          <input
+          <Input
             required
             value={values.unit}
             onChange={(e) => setValues((prev) => ({ ...prev, unit: e.target.value }))}
-            className={`mt-1 ${inputClass}`}
+            className="mt-1"
           />
         </label>
         <label className="text-sm font-medium">
           Estoque mínimo *
-          <input
+          <Input
             required
             type="number"
             min="0"
             value={values.minQty}
             onChange={(e) => setValues((prev) => ({ ...prev, minQty: e.target.value }))}
-            className={`mt-1 ${inputClass}`}
+            className="mt-1"
           />
         </label>
         <label className="text-sm font-medium">
           Preço (R$) *
-          <input
+          <Input
             required
             type="number"
             min="0"
             step="0.01"
             value={values.price}
             onChange={(e) => setValues((prev) => ({ ...prev, price: e.target.value }))}
-            className={`mt-1 ${inputClass}`}
+            className="mt-1"
           />
         </label>
       </div>
       {initial && (
         <label className="flex items-center gap-2 text-sm font-medium">
+          {/* sv-gap: checkbox */}
           <input
             type="checkbox"
             checked={values.active}
@@ -373,13 +383,13 @@ function SupplyForm({ initial, onSaved }: { initial?: SupplyDto; onSaved: () => 
           Insumo ativo
         </label>
       )}
-      <button
+      <Button
         type="submit"
         disabled={saving}
-        className="mt-1 rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-50"
+        className={`mt-1 ${accentButton}`}
       >
         {saving ? "Salvando…" : "Salvar"}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -433,16 +443,17 @@ function MovementForm({ supply, onSaved }: { supply: SupplyDto; onSaved: () => v
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       {error && <ErrorAlert message={error} />}
-      <p className="text-sm text-slate-600">
+      <p className="text-sm text-ink-2">
         Estoque atual: <strong>{supply.stockQty} {supply.unit}</strong>
       </p>
       <div className="grid grid-cols-2 gap-3">
         <label className="text-sm font-medium">
           Tipo *
+          {/* sv-gap: native-select */}
           <select
             value={type}
             onChange={(e) => setType(e.target.value as "in" | "out")}
-            className={`mt-1 ${inputClass}`}
+            className={`mt-1 ${nativeField}`}
           >
             <option value="in">Entrada (compra/devolução)</option>
             <option value="out">Saída (uso/perda)</option>
@@ -450,44 +461,44 @@ function MovementForm({ supply, onSaved }: { supply: SupplyDto; onSaved: () => v
         </label>
         <label className="text-sm font-medium">
           Quantidade *
-          <input
+          <Input
             required
             type="number"
             min="1"
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
-            className={`mt-1 ${inputClass}`}
+            className="mt-1"
           />
         </label>
       </div>
       <label className="text-sm font-medium">
         Motivo *
-        <input
+        <Input
           required
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           placeholder="Ex.: Uso em atendimento, compra fornecedor X, vencimento…"
-          className={`mt-1 ${inputClass}`}
+          className="mt-1"
         />
       </label>
       {type === "in" && (
         <div className="grid grid-cols-2 gap-3">
           <label className="text-sm font-medium">
             Lote (opcional)
-            <input
+            <Input
               value={batchLabel}
               onChange={(e) => setBatchLabel(e.target.value)}
               placeholder="Ex.: L2026-091"
-              className={`mt-1 ${inputClass}`}
+              className="mt-1"
             />
           </label>
           <label className="text-sm font-medium">
             Validade (opcional)
-            <input
+            <Input
               type="date"
               value={expiresAt}
               onChange={(e) => setExpiresAt(e.target.value)}
-              className={`mt-1 ${inputClass}`}
+              className="mt-1"
             />
           </label>
         </div>
@@ -495,10 +506,11 @@ function MovementForm({ supply, onSaved }: { supply: SupplyDto; onSaved: () => v
       {type === "out" && (
         <label className="text-sm font-medium">
           Consulta atendida (custo por atendimento)
+          {/* sv-gap: native-select */}
           <select
             value={appointmentId}
             onChange={(e) => setAppointmentId(e.target.value)}
-            className={`mt-1 ${inputClass}`}
+            className={`mt-1 ${nativeField}`}
           >
             <option value="">— sem vínculo —</option>
             {(todayAppointments ?? []).map((appointment) => (
@@ -511,18 +523,18 @@ function MovementForm({ supply, onSaved }: { supply: SupplyDto; onSaved: () => v
               </option>
             ))}
           </select>
-          <span className="mt-1 block text-xs font-normal text-slate-400">
+          <span className="mt-1 block text-xs font-normal text-ink-3">
             Vincular a saída à consulta alimenta a margem por procedimento no relatório.
           </span>
         </label>
       )}
-      <button
+      <Button
         type="submit"
         disabled={saving}
-        className="mt-1 rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-50"
+        className={`mt-1 ${accentButton}`}
       >
         {saving ? "Registrando…" : "Registrar movimentação"}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -537,14 +549,14 @@ function MovementHistory({ supplyId }: { supplyId: string }) {
   if (movements.length === 0) return <EmptyState message="Nenhuma movimentação registrada." />;
 
   return (
-    <ul className="divide-y divide-slate-100 text-sm">
+    <ul className="divide-y divide-border text-sm">
       {movements.map((movement) => (
         <li key={movement.id} className="flex items-center gap-3 py-2">
           <span
             className={`inline-block w-14 rounded-full px-2 py-0.5 text-center text-xs font-medium ${
               movement.type === "in"
-                ? "bg-emerald-100 text-emerald-800"
-                : "bg-amber-100 text-amber-800"
+                ? "bg-success-soft text-success"
+                : "bg-warning-soft text-warning"
             }`}
           >
             {movement.type === "in" ? "+" : "−"}
@@ -552,7 +564,7 @@ function MovementHistory({ supplyId }: { supplyId: string }) {
           </span>
           <div className="min-w-0 flex-1">
             <p className="truncate">{movement.reason}</p>
-            <p className="text-xs text-slate-400">{formatDateTime(movement.createdAt)}</p>
+            <p className="text-xs text-ink-3">{formatDateTime(movement.createdAt)}</p>
           </div>
         </li>
       ))}

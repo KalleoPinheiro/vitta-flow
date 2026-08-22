@@ -349,7 +349,7 @@ describe("Feature: Materiais e estoque", () => {
       render(<SuppliesPage />);
 
       const forecast = await screen.findByText("~45 dias");
-      expect(forecast).toHaveClass("text-slate-600");
+      expect(forecast).toHaveClass("text-ink-2");
     });
 
     it("Dado insumo sem previsão de ruptura, Quando a página carrega, Então exibe traço", async () => {

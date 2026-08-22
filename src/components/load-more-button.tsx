@@ -1,6 +1,6 @@
 "use client";
 
-import { categoryPill } from "@still-void/ui/react";
+import { Button } from "@still-void/ui/react";
 
 interface LoadMoreButtonProps {
   visible: boolean;
@@ -13,9 +13,9 @@ export function LoadMoreButton({ visible, onClick }: LoadMoreButtonProps) {
   }
   return (
     <div className="mt-4 text-center">
-      <button type="button" onClick={onClick} className={categoryPill({ interactive: true })}>
+      <Button type="button" variant="outline" size="sm" onClick={onClick}>
         Carregar mais
-      </button>
+      </Button>
     </div>
   );
 }

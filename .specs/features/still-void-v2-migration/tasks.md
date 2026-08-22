@@ -162,7 +162,7 @@ T27 → T28 → T29 → T30
 - [ ] `@theme` define, cada uma derivada de um `--sv-*`: `--color-sv-bg`, `--color-sv-surface`, `--color-sv-surface-2`, `--color-sv-text`, `--color-sv-text-2`, `--color-sv-text-3`, `--color-sv-border`, `--color-sv-signal-cyan`, `--color-background`, `--color-ring`, `--color-destructive`, `--color-destructive-foreground`
 - [ ] `@theme` define também `--color-surface-2`, `--color-accent-soft`, `--color-accent-strong` para o app (cobrem `teal-50/100` e `hover:bg-teal-800`, que hoje não têm nome semântico)
 - [ ] Os `@import` de `@still-void/ui/theme.css` e `@still-void/ui/style.css` seguem byte-idênticos
-- [ ] **Gate empírico**: após `npm run build`, `grep -rl "bg-sv-surface" .next/static/css/` retorna ao menos um arquivo. Se falhar, o `@source` está errado — corrigir antes de commitar
+- [ ] **Gate empírico**: após o build, `grep -rl "bg-sv-surface" $(find .next -name "*.css")` retorna ao menos um arquivo, e a regra gerada é `.bg-sv-surface{background-color:var(--color-sv-surface)}` com `--color-sv-surface` definido no mesmo arquivo. Se falhar, o `@source` está errado — corrigir antes de commitar. (O Turbopack emite o CSS em `.next/static/chunks/`, não em `.next/static/css/`.)
 - [ ] Gate: `npm run typecheck && npm run lint && npm run build && npm test`
 - [ ] Contagem de testes: baseline atual preservada, zero deleções
 

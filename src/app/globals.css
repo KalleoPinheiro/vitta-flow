@@ -2,6 +2,13 @@
 @import "@still-void/ui/theme.css";
 @import "@still-void/ui/style.css" layer(components);
 
+/* Os componentes shadcn da v2 (Button, Card, Input, Alert, Badge, Dialog…) não
+   têm classe em style.css — eles emitem utilitários Tailwind no className. O
+   Tailwind v4 detecta conteúdo respeitando o .gitignore, e node_modules está
+   ignorado: sem este @source as classes que só existem dentro do pacote nunca
+   chegam ao CSS gerado e os componentes saem sem estilo. */
+@source "../../node_modules/@still-void/ui/dist";
+
 /* O theme.css entra sem layer (só define custom properties) e o style.css entra
    em layer(components) de propósito: CSS sem layer vence CSS em layer, então um
    .sv-pill fora de layer ganharia de qualquer utilitário Tailwind aplicado no
@@ -30,6 +37,31 @@
   --color-ink-3: var(--sv-text-3);
   --color-border: var(--sv-border);
   --color-border-strong: var(--sv-border-strong);
+
+  /* --- nomes exigidos pelos componentes shadcn do pacote ---
+     Extraídos do dist da lib: bg-sv-surface, bg-sv-surface-2, bg-sv-border,
+     bg-sv-signal-cyan, text-sv-text, text-sv-text-2, text-sv-bg,
+     border-sv-border, bg-background, ring-ring, ring-offset-background,
+     bg-destructive, text-destructive-foreground, text-accent, ring-accent.
+     Sem estes nomes o utilitário não existe e o componente renderiza sem cor. */
+  --color-sv-bg: var(--sv-bg);
+  --color-sv-surface: var(--sv-surface);
+  --color-sv-surface-2: var(--sv-surface-2);
+  --color-sv-text: var(--sv-text);
+  --color-sv-text-2: var(--sv-text-2);
+  --color-sv-text-3: var(--sv-text-3);
+  --color-sv-border: var(--sv-border);
+  --color-sv-signal-cyan: var(--sv-accent-cyan);
+  --color-background: var(--sv-bg);
+  --color-ring: var(--sv-accent);
+  --color-destructive: var(--sv-danger);
+  --color-destructive-foreground: var(--sv-bg);
+
+  /* --- papéis que o app usa e ainda não tinham nome semântico --- */
+  --color-surface-2: var(--sv-surface-2);
+  --color-bg-elev: var(--sv-bg-elev);
+  --color-accent-soft: color-mix(in oklab, var(--sv-accent) 14%, var(--sv-bg));
+  --color-accent-strong: color-mix(in oklab, var(--sv-accent-ink) 88%, black);
 
   /* Estados semânticos são fixos no Still Void, independentes do accent do site:
      um "pago" verde nunca colide com a cor da marca. Sempre a variante -ink,

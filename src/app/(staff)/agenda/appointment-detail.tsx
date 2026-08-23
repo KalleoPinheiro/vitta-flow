@@ -145,7 +145,7 @@ export function AppointmentDetail({ appointment, onAction, onReschedule }: Appoi
                   )
                 }
                 variant="ghost"
-                className="${button.className}"
+                className={button.className}
               >
                 {button.label}
               </Button>

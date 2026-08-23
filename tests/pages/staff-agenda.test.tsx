@@ -822,6 +822,23 @@ describe("Feature: Detalhe de consulta", () => {
       expect(screen.getByText("Cancelar")).toBeInTheDocument();
     });
 
+    it("Dado consulta agendada, Quando renderizar, Então cada ação leva a sua cor semântica", () => {
+      render(
+        <AppointmentDetail
+          appointment={appointmentFixture}
+          onAction={vi.fn().mockResolvedValue(undefined)}
+          onReschedule={vi.fn().mockResolvedValue(undefined)}
+        />,
+      );
+
+      // A cor distingue a ação destrutiva da confirmação — sem ela as quatro
+      // ficam visualmente idênticas (a classe já vazou como string literal uma vez).
+      expect(screen.getByText("Confirmar").className).toContain("bg-accent-ink");
+      expect(screen.getByText("Concluir + faturar").className).toContain("bg-success");
+      expect(screen.getByText("Registrar falta").className).toContain("bg-warning");
+      expect(screen.getByText("Cancelar").className).toContain("bg-danger");
+    });
+
     it("Dado consulta confirmada, Quando renderizar, Então não exibe a ação de confirmar", () => {
       render(
         <AppointmentDetail

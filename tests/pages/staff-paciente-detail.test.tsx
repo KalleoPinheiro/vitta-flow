@@ -1328,7 +1328,9 @@ describe("Feature: PatientRecordPage", () => {
 
       expect(await screen.findByText(/Dor leve na região/)).toBeInTheDocument();
       expect(screen.getByText(/Ferida limpa, sem sinais de infecção/)).toBeInTheDocument();
-      expect(screen.getByText(new RegExp(formatDateTime(evolutionFixture.createdAt)))).toBeInTheDocument();
+      expect(
+        screen.getByText(formatDateTime(evolutionFixture.createdAt), { exact: false }),
+      ).toBeInTheDocument();
       expect(screen.getByText(/Dra\. Ana/)).toBeInTheDocument();
     });
 

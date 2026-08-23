@@ -76,6 +76,16 @@ describe("Feature: Gate de adoção do Still Void", () => {
       expect(result.output).toContain("mau.tsx");
     });
 
+    it("Dado import do entry point removido com aspas simples, Então também reporta (estilo de citação não escapa do gate)", () => {
+      writeFileSync(join(src, "mau.tsx"), "import { logo } from '@still-void/ui';\n");
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.status).toBe(1);
+      expect(result.output).toContain("✗ [import bare @still-void/ui] 1 achado(s)");
+      expect(result.output).toContain("mau.tsx");
+    });
+
     it("Dado <button> cru sem marcação sv-gap, Então reporta e sai com 1", () => {
       writeFileSync(join(src, "mau.tsx"), "export const X = () => <button type=\"button\">x</button>;\n");
 
@@ -148,6 +158,17 @@ describe("Feature: Gate de adoção do Still Void", () => {
 
       expect(result.status).toBe(1);
       expect(result.output).toContain("✗ [client-only fora de client component] 1 achado(s)");
+    });
+
+    it("Dado símbolo client-only com a diretiva 'use client' em aspas simples, Então NÃO reporta", () => {
+      writeFileSync(
+        join(src, "ok.tsx"),
+        "'use client';\nimport { Dialog } from \"@still-void/ui/react/client\";\n",
+      );
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.output).toContain("✓ [client-only fora de client component]");
     });
 
     it("Dado marcação sv-gap sem seção no documento de lacunas, Então reporta e sai com 1", () => {

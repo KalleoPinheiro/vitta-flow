@@ -187,3 +187,42 @@ distinguir as duas faturas e agora falha quando o bug de verdade aparece (provad
 
 **Próximos passos**: nenhum bloqueio. Fora do escopo: coordenar com a sessão concorrente que
 tem 7 arquivos `e2e/*` não commitados na árvore.
+
+---
+
+## Trabalho posterior ao veredito (2026-08-22)
+
+O relatório acima fecha a feature. Depois dele, as três pendências pré-existentes do handoff
+foram resolvidas, mais dois defeitos de suíte que o próprio Verifier levantou.
+
+| Item | Estado | Commit |
+| --- | --- | --- |
+| Lint: 11 achados → 0, `exit 0` | fechado | `76ed3d8` |
+| Re-tentativa não idempotente (409 por slot repetido) | fechado | `2126807` |
+| Flaky real do `<input type="month">` | fechado | `2126807` |
+| OOM de build (pico ~2,5 GB vs heap padrão 2.240 MB) | fechado, AD-007 | `836d9e8` |
+
+**A "sessão concorrente" que o Verifier detectou era o próprio autor**, trabalhando em lint e
+retry em paralelo à verificação. Os 7 arquivos `e2e/*` não commitados que ele viu na árvore
+eram esse trabalho em andamento; nada foi perdido e nada era resíduo dele.
+
+**Os 2 flaky que ele reportou tinham causas diferentes.** `relatorios.spec.ts:59` ("produção
+por profissional") era artefato da edição concorrente durante a corrida dele. `:86` ("mês sem
+consultas") era **defeito real**, e o snapshot da falha provou: o `<input type="month">` exibia
+`2029-09` enquanto a tabela mostrava dados do mês anterior. `fill()` escreve direto no DOM e o
+value-tracker do React engolia o `onChange` — o estado (e a busca) ficavam no mês antigo. O
+guard checava `toHaveValue`, que o próprio `fill()` sempre satisfaz, então não via nada. O
+critério passou a ser a requisição do mês pedido. Mutação que desliga o refetch derruba o novo
+guard; `--repeat-each=8 --retries=0` em 24/24.
+
+### Ressalva sobre "64/64"
+
+A afirmação anterior de "64/64" contava o **resultado final** de cada teste, o que mascara
+re-tentativas. Medições honestas:
+
+- Com a config do projeto (`retries: 1`): **64/64, 0 flaky**.
+- Com `--retries=0`: três corridas, uma limpa e duas com **1 falha esporádica cada, em teste
+  diferente a cada vez** — `read ECONNRESET` num `POST /api/patients` e uma busca da fila de
+  triagem que voltou vazia. São falhas de transporte do servidor dev (Turbopack compilando rota
+  sob demanda), não de lógica de teste; é exatamente o que o comentário de `retries: 1` em
+  `playwright.config.ts` documenta. Não foram perseguidas.

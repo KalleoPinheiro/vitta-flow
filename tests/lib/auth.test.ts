@@ -146,6 +146,37 @@ describe("Feature: Criptografia de segredos — payload malformado", () => {
       "Segredo cifrado em formato inválido",
     );
   });
+
+  it("Dado tag de autenticação truncada, Quando decifrar, Então rejeita como formato inválido (não como falha de auth)", () => {
+    const encrypted = encryptSecret("valor", SECRET);
+    const [iv, tag, data] = encrypted.split(".");
+    const truncated = Buffer.from(tag, "base64url").subarray(0, 4).toString("base64url");
+
+    // GCM aceita tags de 4/8/12..16 bytes por padrão — truncar enfraquece a
+    // autenticação. O tamanho é fixado em 16 bytes, então a rejeição acontece
+    // na validação de formato, antes de qualquer tentativa de decifragem.
+    expect(() => decryptSecret([iv, truncated, data].join("."), SECRET)).toThrow(
+      "Segredo cifrado em formato inválido",
+    );
+  });
+
+  it("Dado IV de tamanho inesperado, Quando decifrar, Então rejeita como formato inválido", () => {
+    const encrypted = encryptSecret("valor", SECRET);
+    const [iv, tag, data] = encrypted.split(".");
+    const shortIv = Buffer.from(iv, "base64url").subarray(0, 8).toString("base64url");
+
+    expect(() => decryptSecret([shortIv, tag, data].join("."), SECRET)).toThrow(
+      "Segredo cifrado em formato inválido",
+    );
+  });
+
+  it("Dado payload legado (tag de 16 bytes, default do Node), Quando decifrar, Então continua funcionando", () => {
+    // Compatibilidade retroativa: o default do Node para GCM já era 16 bytes,
+    // então tudo que foi cifrado antes de fixar authTagLength segue decifrável.
+    const encrypted = encryptSecret("refresh-token-legado", SECRET);
+    expect(Buffer.from(encrypted.split(".")[1], "base64url")).toHaveLength(16);
+    expect(decryptSecret(encrypted, SECRET)).toBe("refresh-token-legado");
+  });
 });
 
 describe("Feature: Configuração de OAuth do Google a partir do ambiente", () => {

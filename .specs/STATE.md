@@ -50,11 +50,23 @@
 - **Date**: 2026-08-22
 - **Status**: active
 
+### AD-007
+- **Decision**: `npm run build` invoca o Next via `node --max-old-space-size=4096` em vez de deixar o heap no padrão do V8.
+- **Reason**: o build usa ~2,5 GB de pico (medido) e o V8 dimensiona o heap padrão pela memória do host — em máquina de ~8 GB o padrão é 2.240 MB e o build worker morre com `Ineffective mark-compacts near heap limit`. O limite fica na fronteira exata da necessidade, então a falha depende da máquina, não do código.
+- **Trade-off**: fixa um número que precisa subir se o pico do build crescer; a forma `node --max-old-space-size=… ./node_modules/next/dist/bin/next build` foi escolhida em vez de `NODE_OPTIONS=…` por ser portável para Windows (sem sintaxe de env do shell) — verificado que os build workers herdam o `execArgv`.
+- **Scope**: package.json, Dockerfile (herda pelo `npm run build`)
+- **Date**: 2026-08-22
+- **Status**: active
+
 ## Handoff
 
-- **Feature**: e2e-consentimento-verdes — **validada** (`.specs/features/e2e-consentimento-verdes/validation.md`)
-- **Phase / Task**: T1–T3 completas; validação PASS (8/8 ACs com evidência, 5/5 mutações mortas)
-- **Completed**: as 4 falhas E2E pré-existentes fechadas — suíte em **64/64**. Veredito da pergunta em aberto do handoff anterior: o gate de consentimento da rota está **correto** (base legal LGPD/COMP3-01, intocado); o helper `uploadPatientPhoto` é que ficou para trás. Junto apareceu um bug real de UI: `ConsentCard` e `PatientPhotoUpload` mantinham cópias separadas do status do consentimento, e o aceite não liberava o envio de foto sem reload. O teste de pacote pré-pago era falso positivo (locator casava a fatura de venda do pacote).
+- **Feature**: e2e-consentimento-verdes — **validada por verificador independente** (`.specs/features/e2e-consentimento-verdes/validation.md`): PASS, 7/7 ACs com evidência, 7/7 mutações mortas
+- **Phase / Task**: fechada. As três pendências pré-existentes do handoff anterior também estão fechadas.
+- **Completed**:
+  - 4 falhas E2E: gate de consentimento da rota está **correto** (LGPD/COMP3-01, intocado); o helper de triagem é que estava desatualizado; junto apareceu bug real de UI (status de consentimento duplicado entre `ConsentCard` e `PatientPhotoUpload`); o teste de pacote pré-pago era falso positivo.
+  - Lint 11 → 0 (`exit 0`). Dois achados escondiam teste fraco (spies sem asserção; `makeEvent` que descartava `occurredAt`), corrigidos.
+  - Suíte E2E 64/64 com `--retries=0`, flaky 0. Corrigidos dois defeitos de suíte: re-tentativa não idempotente (409 por slot repetido) e flaky real do `<input type="month">` (guard checava `toHaveValue`, que o próprio `fill()` satisfaz).
+  - Build OOM: causa medida (pico ~2,5 GB vs heap padrão 2.240 MB nesta máquina) e fixada em `package.json` — ver AD-007.
 - **In-progress** (file:line): —
-- **Next step**: pendências 1 (lint, 11 achados) e 2 (OOM de build) do handoff anterior seguem abertas; PR #8 segue aguardando revisão humana
+- **Next step**: PR #8 segue aguardando revisão humana; abrir as issues de `docs/still-void-gaps.md` no repositório still-void
 - **Blockers**: none

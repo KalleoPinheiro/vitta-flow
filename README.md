@@ -69,6 +69,14 @@ npm run test:coverage # cobertura mínima de 80% imposta
 npm run lint          # ESLint
 ```
 
+**Memória do build.** `npm run build` fixa o heap do Node em 4 GB. O build usa
+~2,5 GB de pico (React Compiler + geração estática de 52 rotas), e o V8 dimensiona
+o heap padrão pela memória da máquina: em host de ~8 GB o padrão fica em ~2,2 GB e
+o build worker morre com `Ineffective mark-compacts near heap limit`. Em host com
+mais memória o padrão já seria suficiente — o valor fixo só garante que o build se
+comporte igual em qualquer máquina. Se o pico do build subir, ajuste o número em
+`package.json`.
+
 ## Funcionalidades
 
 ### Dashboard (`/`)

@@ -9,6 +9,7 @@ import {
 } from "./support/api";
 import { slotForAttempt } from "./support/dates";
 import { toApiDatetime } from "./support/iso-datetime";
+import { escapeRegExp } from "./support/regexp";
 
 const monthValue = (year: number, month: number): string =>
   `${year}-${String(month).padStart(2, "0")}`;
@@ -64,7 +65,7 @@ test.describe("relatório gerencial", () => {
     await page.goto("/relatorios");
     await setReportMonth(page, monthValue(slot.ymd.year, slot.ymd.month));
 
-    const row = page.getByRole("row", { name: new RegExp(procedure.name) });
+    const row = page.getByRole("row", { name: new RegExp(escapeRegExp(procedure.name)) });
     await expect(row).toBeVisible();
     await expect(row.getByText("R$ 220,00").first()).toBeVisible();
   });
@@ -91,7 +92,7 @@ test.describe("relatório gerencial", () => {
     await page.goto("/relatorios");
     await setReportMonth(page, monthValue(slot.ymd.year, slot.ymd.month));
 
-    const row = page.getByRole("row", { name: new RegExp(professional.fullName) });
+    const row = page.getByRole("row", { name: new RegExp(escapeRegExp(professional.fullName)) });
     await expect(row).toBeVisible();
     await expect(row.getByText("R$ 90,00")).toBeVisible();
   });

@@ -1,3 +1,5 @@
+import { randomBytes } from "node:crypto";
+
 /**
  * Constantes compartilhadas entre `playwright.config.ts`, `global-setup.ts` e os specs.
  *
@@ -20,9 +22,35 @@ export const MAIN_PORT = 3000;
 export const OPEN_MODE_BASE_URL = "http://localhost:3100";
 export const OPEN_MODE_PORT = 3100;
 
-/** Segredo fixo — vale só para a suíte E2E local, nunca usado em produção. */
-export const E2E_AUTH_SECRET = "e2e-fixed-secret-do-not-use-in-production-0000000000";
-export const E2E_AUTH_PASSWORD = "e2e-master-password-123";
+/**
+ * Credenciais da suíte E2E. Nunca são credenciais de produção.
+ *
+ * Não ficam mais no código-fonte (GitLeaks `generic-api-key` / Semgrep
+ * `hardcoded_secrets`): por padrão são geradas por execução e gravadas de volta em
+ * `process.env`. Este módulo é carregado primeiro pelo runner do Playwright (via
+ * `playwright.config.ts`); os workers são processos filhos e herdam esse `env`, e o
+ * servidor que o próprio Playwright sobe recebe os valores por `webServer.env`
+ * (mapeados para `AUTH_SECRET`/`AUTH_PASSWORD`).
+ *
+ * O alcance para aí: a propagação cobre apenas processos gerenciados pelo Playwright.
+ * Um `npm run dev` iniciado à parte lê o `AUTH_SECRET`/`AUTH_PASSWORD` do ambiente
+ * dele, e `webServer.env` não é aplicado quando `reuseExistingServer` reaproveita esse
+ * processo. Para reaproveitar um servidor já em pé é preciso que os DOIS pares batam:
+ * exporte `E2E_AUTH_SECRET`/`E2E_AUTH_PASSWORD` para a suíte e
+ * `AUTH_SECRET`/`AUTH_PASSWORD` com os mesmos valores para o servidor.
+ */
+const secretFromEnv = (name: string, bytes: number): string => {
+  const current = process.env[name];
+  if (current !== undefined && current.length > 0) {
+    return current;
+  }
+  const generated = randomBytes(bytes).toString("base64url");
+  process.env[name] = generated;
+  return generated;
+};
+
+export const E2E_AUTH_SECRET = secretFromEnv("E2E_AUTH_SECRET", 32);
+export const E2E_AUTH_PASSWORD = secretFromEnv("E2E_AUTH_PASSWORD", 18);
 
 export const ADMIN_STORAGE_STATE_PATH = "e2e/.auth/admin-storage.json";
 export const SEED_DATA_PATH = "e2e/support/seed-data.json";

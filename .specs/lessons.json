@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 10,
+  "next_id": 12,
   "lessons": [
     {
       "id": "L-001",
@@ -166,6 +166,42 @@
       ],
       "created": "2026-08-22T22:14:58Z",
       "last_seen": "2026-08-22T22:14:58Z"
+    },
+    {
+      "id": "L-010",
+      "key": "spec_precision_gap::ao testar escape sanitiza o escolha a entrada negativa provando que o defeito realmente aparece sem a corre o dr ana vs drxana n o exercita o curinga falta o espa o e uma string com vira alterna o que casa trivialmente",
+      "text": "Ao testar escape/sanitização, escolha a entrada negativa provando que o defeito realmente aparece sem a correção — 'Dr. Ana' vs 'DrXAna' não exercita o curinga (falta o espaço), e uma string com '|' vira alternação que casa trivialmente.",
+      "signal": "spec_precision_gap",
+      "scope": "tests",
+      "status": "candidate",
+      "features": [
+        "auditoria-seguranca-dependencias"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "tests/support/regexp.test.ts:M3 (tests)"
+      ],
+      "created": "2026-08-23T15:46:52Z",
+      "last_seen": "2026-08-23T15:46:52Z"
+    },
+    {
+      "id": "L-011",
+      "key": "ac_gap::relat rio de scanner externo pode citar vers o que n o existe na rvore atual confronte sempre com npm ls pkg e npm audit antes de agir o scan de 2026 08 23 apontou postcss 8 4 31 era c pia aninhada do next e omitiu 3 high reais undici nanoid js yaml",
+      "text": "Relatório de scanner externo pode citar versão que não existe na árvore atual: confronte sempre com 'npm ls <pkg>' e 'npm audit' antes de agir — o scan de 2026-08-23 apontou postcss 8.4.31 (era cópia aninhada do next) e omitiu 3 HIGH reais (undici, nanoid, js-yaml).",
+      "signal": "ac_gap",
+      "scope": "deps",
+      "status": "candidate",
+      "features": [
+        "auditoria-seguranca-dependencias"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "relatorio-gitguard-cmt5621 (deps)"
+      ],
+      "created": "2026-08-23T15:46:52Z",
+      "last_seen": "2026-08-23T15:46:52Z"
     }
   ]
 }

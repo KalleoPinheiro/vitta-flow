@@ -1,4 +1,5 @@
 import { describe, it, expect, afterEach } from "vitest";
+import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import {
   createSessionToken,
   verifySessionToken,
@@ -14,6 +15,22 @@ import { RateLimiter } from "@/lib/auth/rate-limit";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 
 const SECRET = "test-secret";
+
+/**
+ * Reproduz `encryptSecret` como era ANTES de `authTagLength` ser explícito, para que o
+ * teste de compatibilidade exercite um ciphertext realmente legado — e não a saída do
+ * helper já corrigido. Único motivo para existir uma cifragem local neste arquivo.
+ */
+function encryptSecretPreAuthTagLength(plaintext: string, secret: string): string {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", createHash("sha256").update(secret).digest(), iv);
+  const encrypted = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
+  return [
+    iv.toString("base64url"),
+    cipher.getAuthTag().toString("base64url"),
+    encrypted.toString("base64url"),
+  ].join(".");
+}
 
 describe("Feature: Sessão assinada (HMAC)", () => {
   it("Dado token emitido, Quando verificar com o mesmo segredo, Então válido com subject", () => {
@@ -145,6 +162,39 @@ describe("Feature: Criptografia de segredos — payload malformado", () => {
     expect(() => decryptSecret("iv.tag", SECRET)).toThrow(
       "Segredo cifrado em formato inválido",
     );
+  });
+
+  it("Dado tag de autenticação truncada, Quando decifrar, Então rejeita como formato inválido (não como falha de auth)", () => {
+    const encrypted = encryptSecret("valor", SECRET);
+    const [iv, tag, data] = encrypted.split(".");
+    const truncated = Buffer.from(tag, "base64url").subarray(0, 4).toString("base64url");
+
+    // GCM aceita tags de 4/8/12..16 bytes por padrão — truncar enfraquece a
+    // autenticação. O tamanho é fixado em 16 bytes, então a rejeição acontece
+    // na validação de formato, antes de qualquer tentativa de decifragem.
+    expect(() => decryptSecret([iv, truncated, data].join("."), SECRET)).toThrow(
+      "Segredo cifrado em formato inválido",
+    );
+  });
+
+  it("Dado IV de tamanho inesperado, Quando decifrar, Então rejeita como formato inválido", () => {
+    const encrypted = encryptSecret("valor", SECRET);
+    const [iv, tag, data] = encrypted.split(".");
+    const shortIv = Buffer.from(iv, "base64url").subarray(0, 8).toString("base64url");
+
+    expect(() => decryptSecret([shortIv, tag, data].join("."), SECRET)).toThrow(
+      "Segredo cifrado em formato inválido",
+    );
+  });
+
+  it("Dado payload cifrado no formato anterior a authTagLength, Quando decifrar, Então continua funcionando", () => {
+    // Compatibilidade retroativa de verdade: cifra reproduzindo o código ANTERIOR
+    // (createCipheriv sem authTagLength) e decifra com a implementação atual.
+    // Cifrar com `encryptSecret` provaria apenas que o helper novo lê a própria saída.
+    const legacy = encryptSecretPreAuthTagLength("refresh-token-legado", SECRET);
+
+    expect(Buffer.from(legacy.split(".")[1], "base64url")).toHaveLength(16);
+    expect(decryptSecret(legacy, SECRET)).toBe("refresh-token-legado");
   });
 });
 

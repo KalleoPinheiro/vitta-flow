@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import type { APIRequestContext } from "@playwright/test";
 import { toApiDatetime } from "./iso-datetime";
 
@@ -53,8 +54,12 @@ export async function apiGet<T>(request: APIRequestContext, url: string): Promis
   return unwrap<T>(request, request.get(url));
 }
 
-/** Sufixo curto e único — evita colisão de nome/email/telefone entre specs. */
-export const unique = (): string => Math.random().toString(36).slice(2, 10);
+/**
+ * Sufixo curto e único — evita colisão de nome/email/telefone entre specs.
+ * Usa `randomBytes` em vez do PRNG não criptográfico do JS: 4 bytes hex dão as mesmas
+ * 8 posições de antes (Semgrep node_insecure_random_generator).
+ */
+export const unique = (): string => randomBytes(4).toString("hex");
 
 export interface PatientDto {
   id: string;

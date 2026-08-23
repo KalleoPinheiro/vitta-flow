@@ -430,7 +430,7 @@ describe("Feature: Plano de Cuidados (SAE) na página do paciente", () => {
     // Avaliar resultado — atinge a meta (basal=1, meta=3 por padrão do formulário)
     fireEvent.click(screen.getByText("Avaliar"));
     const anchorLabel = outcomeCatalog.scaleAnchors[2];
-    fireEvent.click(await screen.findByText(new RegExp(anchorLabel)));
+    fireEvent.click(await screen.findByText(anchorLabel, { exact: false }));
     fireEvent.click(screen.getByText("Registrar avaliação"));
 
     await waitFor(() => expect(screen.getByText("Meta atingida")).toBeInTheDocument());

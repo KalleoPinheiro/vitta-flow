@@ -68,6 +68,18 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: e2e/faturamento.spec.ts:136 (e2e/**)
 - last seen: 2026-08-22T22:14:58Z
 
+### L-010 — Ao testar escape/sanitização, escolha a entrada negativa provando que o defeito realmente aparece sem a correção — 'Dr. Ana' vs 'DrXAna' não exercita o curinga (falta o espaço), e uma string com '|' vira alternação que casa trivialmente.
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `tests` · harmful: 0
+- features: auditoria-seguranca-dependencias
+- evidence: tests/support/regexp.test.ts:M3 (tests)
+- last seen: 2026-08-23T15:46:52Z
+
+### L-011 — Relatório de scanner externo pode citar versão que não existe na árvore atual: confronte sempre com 'npm ls <pkg>' e 'npm audit' antes de agir — o scan de 2026-08-23 apontou postcss 8.4.31 (era cópia aninhada do next) e omitiu 3 HIGH reais (undici, nanoid, js-yaml).
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `deps` · harmful: 0
+- features: auditoria-seguranca-dependencias
+- evidence: relatorio-gitguard-cmt5621 (deps)
+- last seen: 2026-08-23T15:46:52Z
+
 ## Quarantined (failed when applied — ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

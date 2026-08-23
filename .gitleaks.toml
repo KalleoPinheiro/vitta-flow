@@ -1,0 +1,45 @@
+# Configuração do GitLeaks para o vitta-flow.
+#
+# Contexto: o scan de 2026-08-23 (GitGuard) reportou 7 findings HIGH de
+# `generic-api-key`. Todos são fixtures das suítes de teste — nenhuma credencial real
+# foi exposta, e o `.env.example` versionado só contém valores vazios ou placeholders.
+#
+# Dois deles vinham de `e2e/support/constants.ts` e foram resolvidos na origem: os
+# segredos da suíte E2E saíram do código e passaram a ser gerados por execução. Não há
+# allowlist para `e2e/` — a árvore não tem mais literal de segredo, e suprimi-la
+# esconderia regressão futura.
+#
+# O que resta são constantes inline dos testes unitários (ex.: `const SECRET =
+# "test-secret"`), que precisam ser determinísticas e legíveis no próprio teste. A
+# permissão abaixo vale só para a regra `generic-api-key` e só para os arquivos
+# enumerados — qualquer outro arquivo, inclusive um teste novo, continua sendo
+# reportado.
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "generic-api-key"
+[rules.allowlist]
+description = "Constantes determinísticas destes arquivos de teste — não são credenciais reais"
+paths = [
+  '''^tests/api/audit-lgpd-routes\.test\.ts$''',
+  '''^tests/api/auth-portal-gaps\.test\.ts$''',
+  '''^tests/api/auth-routes\.test\.ts$''',
+  '''^tests/api/portal-routes\.test\.ts$''',
+  '''^tests/api/scheduling-catalog-routes\.test\.ts$''',
+  '''^tests/lib/access-policy\.test\.ts$''',
+  '''^tests/lib/auth\.test\.ts$''',
+  '''^tests/lib/proxy-revocation\.test\.ts$''',
+  '''^tests/lib/request-session\.test\.ts$''',
+  '''^tests/pages/login\.test\.tsx$''',
+  '''^tests/proxy\.test\.ts$''',
+]
+
+[allowlist]
+description = "Arquivos-modelo e artefatos gerados"
+paths = [
+  # Modelo versionado por decisão (ver .gitignore): valores vazios/placeholder.
+  '''^\.env\.example$''',
+  '''^package-lock\.json$''',
+]

@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { createCondition, createPatient, unique } from "./support/api";
 import { sessionCookie } from "./support/session-token";
+import { escapeRegExp } from "./support/regexp";
 
 const TINY_PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
@@ -56,7 +57,7 @@ test.describe("triagem de fotos", () => {
 
     // Manter o plano não deve criar um retorno antecipado para essa condição.
     await expect(
-      page.getByText(new RegExp(`Retorno antecipado: foto de ${condition.title}`)),
+      page.getByText(new RegExp(`Retorno antecipado: foto de ${escapeRegExp(condition.title)}`)),
     ).toHaveCount(0);
   });
 

@@ -58,15 +58,36 @@
 - **Date**: 2026-08-22
 - **Status**: active
 
+### AD-008
+- **Decision**: Os 7 findings HIGH de "segredo exposto" (GitLeaks `generic-api-key`) e os 2 de `hardcoded_secrets` (Semgrep) do scan de 2026-08-23 são falsos positivos — não há rotação de credencial nem reescrita de histórico Git.
+- **Reason**: todos os valores são fixtures de teste rotuladas (`e2e/support/constants.ts`, `tests/**`); o `.env.example` versionado só contém valores vazios ou placeholder. Nenhuma credencial real chegou ao repositório.
+- **Trade-off**: as constantes inline de `tests/**` continuam no código (a suíte precisa delas determinísticas e legíveis) e ficam cobertas por allowlist em `.gitleaks.toml` / `.semgrepignore`, restrita a `tests/` e `e2e/`. As da suíte E2E foram externalizadas e passaram a ser geradas por execução.
+- **Scope**: e2e, tests, configuração de scanners
+- **Date**: 2026-08-23
+- **Status**: active
+
+### AD-009
+- **Decision**: As 4 vulnerabilidades MODERATE de `esbuild` (via `@esbuild-kit/*` → `drizzle-kit`) são aceitas, não corrigidas.
+- **Reason**: o único remédio oferecido pelo npm é downgrade major de `drizzle-kit` 0.31.10 → 0.18.1. `drizzle-kit` é CLI de migração, dev-only, fora do bundle de produção; e o advisory do `esbuild` afeta o dev-server dele, não o runtime da aplicação.
+- **Trade-off**: `npm audit` segue reportando 4 MODERATE. Revisar quando o `drizzle-kit` migrar do `@esbuild-kit` (já deprecado, fundido no `tsx`).
+- **Scope**: dependências
+- **Date**: 2026-08-23
+- **Status**: active
+
+### AD-010
+- **Decision**: A varredura de dependências fica limitada a patch/minor. Majors disponíveis (TypeScript 7, ESLint 10, `@types/node` 26, `@testing-library/jest-dom` 7, `googleapis` 176) não são aplicados.
+- **Reason**: decisão do usuário; nenhum deles é necessário para fechar os findings de segurança, e cada um exigiria refactor de config/tipos com risco de cascata.
+- **Trade-off**: o projeto fica uma major atrás nesses cinco pacotes. É backlog, não pendência de segurança.
+- **Scope**: dependências
+- **Date**: 2026-08-23
+- **Status**: active
+
 ## Handoff
 
-- **Feature**: e2e-consentimento-verdes — **validada por verificador independente** (`.specs/features/e2e-consentimento-verdes/validation.md`): PASS, 7/7 ACs com evidência, 7/7 mutações mortas
-- **Phase / Task**: fechada. As três pendências pré-existentes do handoff anterior também estão fechadas.
-- **Completed**:
-  - 4 falhas E2E: gate de consentimento da rota está **correto** (LGPD/COMP3-01, intocado); o helper de triagem é que estava desatualizado; junto apareceu bug real de UI (status de consentimento duplicado entre `ConsentCard` e `PatientPhotoUpload`); o teste de pacote pré-pago era falso positivo.
-  - Lint 11 → 0 (`exit 0`). Dois achados escondiam teste fraco (spies sem asserção; `makeEvent` que descartava `occurredAt`), corrigidos.
-  - Suíte E2E 64/64 com `--retries=0`, flaky 0. Corrigidos dois defeitos de suíte: re-tentativa não idempotente (409 por slot repetido) e flaky real do `<input type="month">` (guard checava `toHaveValue`, que o próprio `fill()` satisfaz).
-  - Build OOM: causa medida (pico ~2,5 GB vs heap padrão 2.240 MB nesta máquina) e fixada em `package.json` — ver AD-007.
+- **Feature**: auditoria-seguranca-dependencias
+- **Phase / Task**: T1–T5 implementados e commitados; T6 (registro de decisões) em curso
+- **Completed**: confronto dos 35 findings do scan GitGuard; crypto GCM, RegExp escapada, gerador aleatório, segredos E2E externalizados, dependências atualizadas
 - **In-progress** (file:line): —
-- **Next step**: PR #8 segue aguardando revisão humana; abrir as issues de `docs/still-void-gaps.md` no repositório still-void
+- **Next step**: Verifier independente sobre a feature (author != verifier); depois abrir PR
 - **Blockers**: none
+- **Branch**: claude/tlc-spec-driven-audit-5a46b5 (base: main @ 5b0a072)

@@ -583,6 +583,46 @@ describe("Feature: Visão do paciente no portal", () => {
       ).not.toBeInTheDocument();
     });
 
+    it("Dado que a recarga do termo falha após o aceite, Então o botão volta a ficar clicável (o aceite é retentável)", async () => {
+      // Quem confirma o aceite na tela é o GET recarregado pelo pai. Se essa
+      // recarga falhar, o card continua pendente — e o botão não pode ficar
+      // preso em "Registrando…", senão o paciente perde o caminho de volta e o
+      // envio de foto (COMP3-01) segue bloqueado para sempre.
+      let consentReads = 0;
+      mockFetch([
+        {
+          method: "POST",
+          path: "/api/portal/patient/consent",
+          respond: () => jsonResponse(true, { accepted: true }),
+        },
+        {
+          path: "/api/portal/patient/consent",
+          respond: () => {
+            consentReads += 1;
+            return consentReads === 1
+              ? jsonResponse(true, { consentText: "Termo", accepted: false, acceptedAt: null })
+              : jsonResponse(false, null, "Falha ao recarregar o termo");
+          },
+        },
+        {
+          path: "/api/portal/patient",
+          respond: () => jsonResponse(true, emptyPatientBundle),
+        },
+      ]);
+
+      render(<PatientPortalView />);
+
+      const button = await screen.findByText("Li e aceito o termo");
+      fireEvent.click(button);
+
+      await waitFor(() => expect(consentReads).toBe(2));
+      await waitFor(() => {
+        expect(screen.getByText("Li e aceito o termo")).toBeInTheDocument();
+      });
+      expect(screen.getByText("Li e aceito o termo").closest("button")).not.toBeDisabled();
+      expect(screen.queryByText("Registrando…")).not.toBeInTheDocument();
+    });
+
     it("Dado status do termo ainda não carregado, Quando renderizar, Então não bloqueia o envio por engano", async () => {
       const activeCondition: ConditionWithAssessmentsDto = {
         condition: buildCondition({ id: "cond-active", status: "active" }),

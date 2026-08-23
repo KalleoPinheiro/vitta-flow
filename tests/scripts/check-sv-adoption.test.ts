@@ -86,6 +86,26 @@ describe("Feature: Gate de adoção do Still Void", () => {
       expect(result.output).toContain("mau.tsx");
     });
 
+    it("Dado import por efeito colateral do entry point removido, Então reporta (não há cláusula from para casar)", () => {
+      writeFileSync(join(src, "mau.tsx"), 'import "@still-void/ui";\n');
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.status).toBe(1);
+      expect(result.output).toContain("✗ [import bare @still-void/ui] 1 achado(s)");
+      expect(result.output).toContain("mau.tsx");
+    });
+
+    it("Dado espaço extra antes do especificador, Então reporta (formatação não escapa do gate)", () => {
+      writeFileSync(join(src, "mau.tsx"), 'import { logo } from   "@still-void/ui";\n');
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.status).toBe(1);
+      expect(result.output).toContain("✗ [import bare @still-void/ui] 1 achado(s)");
+      expect(result.output).toContain("mau.tsx");
+    });
+
     it("Dado <button> cru sem marcação sv-gap, Então reporta e sai com 1", () => {
       writeFileSync(join(src, "mau.tsx"), "export const X = () => <button type=\"button\">x</button>;\n");
 
@@ -164,6 +184,17 @@ describe("Feature: Gate de adoção do Still Void", () => {
       writeFileSync(
         join(src, "ok.tsx"),
         "'use client';\nimport { Dialog } from \"@still-void/ui/react/client\";\n",
+      );
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.output).toContain("✓ [client-only fora de client component]");
+    });
+
+    it("Dado a diretiva 'use client' recuada, Então NÃO reporta (o parser do Next aceita espaço à esquerda)", () => {
+      writeFileSync(
+        join(src, "ok.tsx"),
+        '  "use client";\nimport { Dialog } from "@still-void/ui/react/client";\n',
       );
 
       const result = runGate(src, gapsDoc);

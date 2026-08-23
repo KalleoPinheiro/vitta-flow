@@ -45,8 +45,11 @@ tsx_files() { find "$SRC" -name '*.tsx' -o -name '*.ts' | sort; }
 
 # --- [1] entry point removido na v2 ------------------------------------------
 # Aspas simples e duplas: o projeto usa duplas, mas um arquivo com aspas simples
-# não pode escapar do gate só por causa do estilo de citação.
-hits=$(grep -rnE "from ['\"]@still-void/ui['\"]" "$SRC" 2>/dev/null || true)
+# não pode escapar do gate só por causa do estilo de citação. `import` sozinho
+# cobre o import por efeito colateral (`import "@still-void/ui";`), que carrega o
+# entry point removido sem cláusula `from`; o espaço é variável porque nada
+# obriga a formatação a ser a canônica.
+hits=$(grep -rnE "\b(from|import)[[:space:]]*['\"]@still-void/ui['\"]" "$SRC" 2>/dev/null || true)
 report "import bare @still-void/ui" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
 
 # --- [2] <button> cru --------------------------------------------------------
@@ -86,7 +89,9 @@ report "apelido slate/teal no @theme" "$(printf '%s' "$hits" | grep -c . || true
 # --- [6] símbolo client-only em arquivo sem "use client" --------------------
 # Erro de fronteira do App Router: quebra o build, e é barato pegar antes dele.
 hits=$(grep -rln '@still-void/ui/react/client' "$SRC" 2>/dev/null | while read -r f; do
-  head -3 "$f" | grep -qE "^['\"]use client['\"]" \
+  # Espaço à esquerda é tolerado pelo parser do Next (só código executável antes
+  # da diretiva é que invalida), então recusar aqui seria falso positivo.
+  head -3 "$f" | grep -qE "^[[:space:]]*['\"]use client['\"]" \
     || echo "$f:1: importa de @still-void/ui/react/client sem a diretiva \"use client\""
 done)
 report "client-only fora de client component" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"

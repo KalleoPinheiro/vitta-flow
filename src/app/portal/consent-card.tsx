@@ -47,6 +47,12 @@ export function ConsentCard({
       onAccepted();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao registrar aceite");
+    } finally {
+      // Sai de "Registrando…" mesmo no sucesso: quem confirma o aceite na tela é
+      // o status recarregado pelo pai, e essa recarga pode falhar. Se o estado
+      // ficasse preso aqui, o botão morria desabilitado e o envio de foto
+      // (COMP3-01) seguia bloqueado sem caminho de volta. O POST é idempotente
+      // (rota devolve o aceite existente), então tentar de novo é seguro.
       setAccepting(false);
     }
   };

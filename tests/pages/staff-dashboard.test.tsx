@@ -299,7 +299,9 @@ describe("Feature: Dashboard do painel interno", () => {
         expect(screen.getByText("PUSH 9")).toBeInTheDocument();
       });
       const waiting = screen.getByText(/aguardando há 30h/);
-      expect(waiting).toHaveClass("text-red-700");
+      // `text-danger` é o token semântico do Still Void (var(--sv-danger-ink)),
+      // que substituiu o degrau cru text-red-700 na migração para a v2.
+      expect(waiting).toHaveClass("text-danger");
     });
 
     it("Dado pendência recente sem score, Quando renderizar, Então idade sem destaque e sem badge (COMP3-05)", async () => {
@@ -309,7 +311,7 @@ describe("Feature: Dashboard do painel interno", () => {
       await waitFor(() => {
         expect(screen.getByText(/aguardando há 2h/)).toBeInTheDocument();
       });
-      expect(screen.getByText(/aguardando há 2h/)).not.toHaveClass("text-red-700");
+      expect(screen.getByText(/aguardando há 2h/)).not.toHaveClass("text-danger");
       expect(screen.queryByText(/PUSH|DET/)).not.toBeInTheDocument();
     });
 
@@ -373,7 +375,8 @@ describe("Feature: Dashboard do painel interno", () => {
           if (url.startsWith("/api/supplies")) return jsonResponse(true, []);
           if (url.startsWith("/api/photos/triage")) return jsonResponse(true, [triageFixture]);
           if (url.startsWith("/api/photos/") && method === "PATCH") {
-            // eslint-disable-next-line @typescript-eslint/only-throw-error -- simula rejeição não padronizada
+            // Rejeição não padronizada de propósito: o cliente precisa lidar com
+            // throw de string, não só de Error.
             throw "falha inesperada";
           }
           throw new Error(`URL não mapeada: ${method} ${url}`);

@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { createAppointment, createCondition, createPatient, unique } from "./support/api";
-import { slotFromSeed } from "./support/dates";
+import { slotForAttempt } from "./support/dates";
 import { toApiDatetime } from "./support/iso-datetime";
 import { sessionCookie } from "./support/session-token";
 
@@ -17,7 +17,7 @@ test.describe("portal do paciente", () => {
   }) => {
     const patient = await createPatient(request, { fullName: `Paciente Portal ${unique()}` });
     const procedure = `Curativo portal E2E ${unique()}`;
-    const slot = slotFromSeed("portal-paciente-confirm");
+    const slot = slotForAttempt("portal-paciente-confirm");
     await createAppointment(request, {
       patientId: patient.id,
       startsAt: toApiDatetime(slot.startsAt),
@@ -70,7 +70,7 @@ test.describe("portal do paciente", () => {
   }) => {
     const patientA = await createPatient(request, { fullName: `Paciente A Portal ${unique()}` });
     const patientB = await createPatient(request, { fullName: `Paciente B Portal ${unique()}` });
-    const slot = slotFromSeed("portal-paciente-ownership");
+    const slot = slotForAttempt("portal-paciente-ownership");
     const appointmentA = await createAppointment(request, {
       patientId: patientA.id,
       startsAt: toApiDatetime(slot.startsAt),

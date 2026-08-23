@@ -26,7 +26,7 @@ export function PackagesSection({ patientId }: { patientId: string }) {
 
   if (!packages) return <LoadingIndicator />;
   if (packages.length === 0) {
-    return <p className="text-sm text-slate-500">Nenhum pacote de sessões para este paciente.</p>;
+    return <p className="text-sm text-ink-3">Nenhum pacote de sessões para este paciente.</p>;
   }
 
   return (
@@ -34,14 +34,14 @@ export function PackagesSection({ patientId }: { patientId: string }) {
       {packages.map((pkg) => (
         <li
           key={pkg.id}
-          className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-slate-200 p-3 text-sm"
+          className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border p-3 text-sm"
         >
           <span className="font-medium">{pkg.procedureName ?? "Procedimento"}</span>
-          <span className="text-slate-600">
+          <span className="text-ink-2">
             {pkg.remainingSessions} de {pkg.totalSessions} sessões restantes
           </span>
-          <span className="text-slate-500">{formatCurrency(pkg.priceCents)}</span>
-          <span className={isExpired(pkg) ? "font-medium text-red-700" : "text-slate-500"}>
+          <span className="text-ink-3">{formatCurrency(pkg.priceCents)}</span>
+          <span className={isExpired(pkg) ? "font-medium text-danger" : "text-ink-3"}>
             {pkg.expiresAt
               ? `${isExpired(pkg) ? "Expirado em" : "Válido até"} ${formatDate(pkg.expiresAt)}`
               : "Sem validade"}

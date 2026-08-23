@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeAll, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { adminCookieHeader } from "../support/session";
 import { jsonRequest } from "../support/request";
@@ -212,6 +212,9 @@ describe("Feature: Rotas de auditoria, export LGPD, fotos (staff) e cron de lemb
       const saveSpy = vi
         .spyOn(DrizzleAuditEventRepository.prototype, "save")
         .mockRejectedValueOnce(new Error("auditoria indisponível"));
+      // spyOn no mesmo método de protótipo devolve o mock já existente, com o
+      // histórico dos testes anteriores — zera para contar só esta requisição.
+      saveSpy.mockClear();
 
       const response = await exportRoute.GET(
         jsonRequest(`/api/patients/${patientId}/export`, "GET"),
@@ -219,6 +222,9 @@ describe("Feature: Rotas de auditoria, export LGPD, fotos (staff) e cron de lemb
       );
 
       // Exportação de titular não responde sucesso sem trilha gravada.
+      // A asserção sobre o spy prova que o 500 veio da trilha recusada, e não
+      // de qualquer outra falha no caminho.
+      expect(saveSpy).toHaveBeenCalledTimes(1);
       expect(response.status).toBe(500);
       const body = (await response.json()) as Envelope<null>;
       expect(body.success).toBe(false);
@@ -273,12 +279,16 @@ describe("Feature: Rotas de auditoria, export LGPD, fotos (staff) e cron de lemb
       const saveSpy = vi
         .spyOn(DrizzleAuditEventRepository.prototype, "save")
         .mockRejectedValueOnce(new Error("auditoria indisponível"));
+      // spyOn no mesmo método de protótipo devolve o mock já existente, com o
+      // histórico dos testes anteriores — zera para contar só esta requisição.
+      saveSpy.mockClear();
 
       const response = await photoByIdRoute.DELETE(
         jsonRequest(`/api/photos/${deletablePhotoId}`, "DELETE"),
         context(deletablePhotoId),
       );
 
+      expect(saveSpy).toHaveBeenCalledTimes(1);
       expect(response.status).toBe(500);
     });
 

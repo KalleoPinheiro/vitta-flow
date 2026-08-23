@@ -6,6 +6,8 @@ import type { EvolutionNoteDto, ProfessionalDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import { formatDateTime } from "@/lib/format";
 import { EmptyState, ErrorAlert } from "@/components/feedback";
+import { Button } from "@still-void/ui/react";
+import { accentButton, nativeField } from "@/lib/ui";
 
 interface EvolutionsSectionProps {
   patientId: string;
@@ -57,31 +59,32 @@ export function EvolutionsSection({ patientId, evolutions, onSaved }: Evolutions
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-ink-3">
           Evoluções são imutáveis após registradas (integridade de prontuário).
         </p>
-        <button
+        <Button
           type="button"
           onClick={() => setShowForm((v) => !v)}
-          className="rounded-lg bg-teal-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-teal-800"
+          className={accentButton}
         >
           {showForm ? "Fechar" : "+ Nova evolução"}
-        </button>
+        </Button>
       </div>
 
       {showForm && (
         <form
           onSubmit={handleSubmit}
-          className="flex flex-col gap-3 rounded-lg border border-teal-200 bg-teal-50/40 p-4"
+          className="flex flex-col gap-3 rounded-lg border border-accent bg-accent-soft/40 p-4"
         >
           {error && <ErrorAlert message={error} />}
           {activeProfessionals.length > 0 && (
             <label className="text-sm font-medium">
               Profissional responsável
+              {/* sv-gap: native-select */}
               <select
                 value={professionalId}
                 onChange={(e) => setProfessionalId(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-teal-500 focus:outline-none"
+                className={`${nativeField} mt-1 w-full`}
               >
                 <option value="">— sem atribuição —</option>
                 {activeProfessionals.map((professional) => (
@@ -95,22 +98,23 @@ export function EvolutionsSection({ patientId, evolutions, onSaved }: Evolutions
           {SOAP_FIELDS.map((field) => (
             <label key={field.key} className="text-sm font-medium">
               {field.label}
+              {/* sv-gap: textarea */}
               <textarea
                 rows={2}
                 value={values[field.key]}
                 placeholder={field.placeholder}
                 onChange={(e) => setValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-teal-500 focus:outline-none"
+                className={`${nativeField} mt-1 w-full`}
               />
             </label>
           ))}
-          <button
+          <Button
             type="submit"
             disabled={saving}
-            className="self-start rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-50"
+            className={`self-start ${accentButton}`}
           >
             {saving ? "Registrando…" : "Registrar evolução"}
-          </button>
+          </Button>
         </form>
       )}
 
@@ -119,8 +123,9 @@ export function EvolutionsSection({ patientId, evolutions, onSaved }: Evolutions
       ) : (
         <ul className="flex flex-col gap-3">
           {evolutions.map((note) => (
-            <li key={note.id} className="rounded-lg border border-slate-200 bg-white p-4">
-              <p className="mb-2 text-xs font-medium text-slate-400">
+            /* sv-gap: card-as-element */
+            <li key={note.id} className="rounded-lg border border-sv-border bg-sv-surface p-4">
+              <p className="mb-2 text-xs font-medium text-ink-3">
                 {formatDateTime(note.createdAt)}
                 {professionalName(note.professionalId) && (
                   <span> · {professionalName(note.professionalId)}</span>
@@ -130,7 +135,7 @@ export function EvolutionsSection({ patientId, evolutions, onSaved }: Evolutions
                 {SOAP_FIELDS.map((field) =>
                   note[field.key] ? (
                     <div key={field.key}>
-                      <dt className="inline font-semibold text-teal-800">
+                      <dt className="inline font-semibold text-accent-ink">
                         {field.label.slice(0, 1)}:{" "}
                       </dt>
                       <dd className="inline whitespace-pre-wrap">{note[field.key]}</dd>

@@ -8,7 +8,7 @@ import {
   unique,
   type ProcedureDto,
 } from "./support/api";
-import { slotFromSeed } from "./support/dates";
+import { slotForAttempt } from "./support/dates";
 import { toApiDatetime } from "./support/iso-datetime";
 
 test.describe("inventário", () => {
@@ -68,7 +68,7 @@ test.describe("inventário", () => {
     const procedure = procedures.find((p) => p.name === procedureName);
     expect(procedure).toBeTruthy();
 
-    const slot = slotFromSeed("inventario-kit-dispensa");
+    const slot = slotForAttempt("inventario-kit-dispensa");
     const appointment = await createAppointment(request, {
       patientId: patient.id,
       startsAt: toApiDatetime(slot.startsAt),

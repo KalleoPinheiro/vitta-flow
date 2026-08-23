@@ -18,6 +18,7 @@ import { ConditionsSection } from "./conditions-section";
 import { EvolutionsSection } from "./evolutions-section";
 import { CarePlansSection } from "./care-plans-section";
 import { PackagesSection } from "./packages-section";
+import { Button, Card } from "@still-void/ui/react";
 
 const TABS = [
   { key: "anamnese", label: "Anamnese" },
@@ -59,19 +60,19 @@ function PatientHeader({ patient }: { patient: PatientDto }) {
         status={patient.active ? "confirmed" : "cancelled"}
         label={patient.active ? "Ativo" : "Inativo"}
       />
-      <span className="text-sm text-slate-500">
+      <span className="text-sm text-ink-3">
         {patient.phone} · {patient.email}
         {patient.birthDate ? ` · nasc. ${formatDate(patient.birthDate)}` : ""}
       </span>
       <span className="ml-auto flex gap-3 text-sm font-medium">
-        <a href={`/documentos/consentimento/${patient.id}`} className="text-teal-700 hover:underline">
+        <a href={`/documentos/consentimento/${patient.id}`} className="text-accent-ink hover:underline">
           Termo de consentimento
         </a>
         <a
           href={`/api/patients/${patient.id}/export`}
           target="_blank"
           rel="noreferrer"
-          className="text-slate-500 hover:underline"
+          className="text-ink-3 hover:underline"
           title="Exportação completa dos dados do titular (LGPD art. 18)"
         >
           Exportar dados (LGPD)
@@ -86,26 +87,27 @@ function AllergyBanner({ allergies }: { allergies?: string }) {
     return null;
   }
   return (
-    <div className="mb-6 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm">
-      <span className="font-bold text-red-800">⚠ Alergias: </span>
-      <span className="text-red-900">{allergies}</span>
+    <div className="mb-6 rounded-lg border border-danger bg-danger-soft px-4 py-3 text-sm">
+      <span className="font-bold text-danger">⚠ Alergias: </span>
+      <span className="text-danger">{allergies}</span>
     </div>
   );
 }
 
 function TabButton({ label, isActive, onClick }: TabButtonProps) {
   return (
-    <button
+    <Button
       type="button"
       onClick={onClick}
       className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium ${
         isActive
-          ? "border-teal-700 text-teal-800"
-          : "border-transparent text-slate-500 hover:text-slate-700"
+          ? "border-accent-ink text-accent-ink"
+          : "border-transparent text-ink-3 hover:text-ink"
       }`}
+      variant="outline"
     >
       {label}
-    </button>
+    </Button>
   );
 }
 
@@ -133,14 +135,14 @@ export default function PatientRecordPage({ params }: { params: Promise<{ id: st
   return (
     <div>
       <div className="mb-1 text-sm">
-        <Link href="/pacientes" className="text-teal-700 hover:underline">
+        <Link href="/pacientes" className="text-accent-ink hover:underline">
           ← Pacientes
         </Link>
       </div>
       <PatientHeader patient={patient} />
       <AllergyBanner allergies={anamnesis?.allergies} />
 
-      <div className="mb-4 flex gap-2 border-b border-slate-200">
+      <div className="mb-4 flex gap-2 border-b border-border">
         {TABS.map((item) => (
           <TabButton
             key={item.key}
@@ -151,7 +153,7 @@ export default function PatientRecordPage({ params }: { params: Promise<{ id: st
         ))}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="p-5">
         <RecordTabPanel
           tab={tab}
           patientId={id}
@@ -164,7 +166,7 @@ export default function PatientRecordPage({ params }: { params: Promise<{ id: st
           refreshEvolutions={refreshEvolutions}
           refreshCarePlans={refreshCarePlans}
         />
-      </div>
+      </Card>
     </div>
   );
 }

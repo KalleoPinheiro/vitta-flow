@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Card, CardContent } from "@still-void/ui/react";
 import { useApiQuery } from "@/lib/use-api-query";
 import { ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import { PatientPortalView } from "./patient-view";
@@ -21,13 +22,15 @@ export default function PortalPage() {
   if (me.role === "partner") return <PartnerPortalView />;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm">
-      <p className="mb-3">
-        Você está logado como <strong>equipe da clínica</strong> ({me.subject}).
-      </p>
-      <Link href="/" className="font-medium text-teal-700 hover:underline">
-        Ir para o sistema da clínica →
-      </Link>
-    </div>
+    <Card>
+      <CardContent className="p-6 text-sm">
+        <p className="mb-3">
+          Você está logado como <strong>equipe da clínica</strong> ({me.subject}).
+        </p>
+        <Link href="/" className="font-medium text-accent-ink hover:underline">
+          Ir para o sistema da clínica →
+        </Link>
+      </CardContent>
+    </Card>
   );
 }

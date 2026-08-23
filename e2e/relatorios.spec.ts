@@ -7,23 +7,36 @@ import {
   createProfessional,
   unique,
 } from "./support/api";
-import { slotFromSeed } from "./support/dates";
+import { slotForAttempt } from "./support/dates";
 import { toApiDatetime } from "./support/iso-datetime";
 
 const monthValue = (year: number, month: number): string =>
   `${year}-${String(month).padStart(2, "0")}`;
 
+/** Mês âncora: garante que o `fill()` seguinte seja sempre mudança real de valor. */
+const ANCHOR_MONTH = "2000-01";
+
 /**
- * `<input type="month">` é controlado por estado React — em raras execuções o
- * primeiro `fill()` corre com o fetch inicial (mês atual) e o valor não gruda.
- * Reforça preenchendo de novo até o filtro realmente disparar a busca do mês certo.
+ * `<input type="month">` é controlado por estado React. `fill()` escreve direto no
+ * DOM, e o value-tracker do React pode engolir o `onChange` — o input passa a
+ * mostrar o mês novo enquanto o estado (e o fetch) continuam no mês antigo. Checar
+ * `toHaveValue` não detecta isso: o `fill()` sempre satisfaz essa asserção.
+ *
+ * Por isso o critério de sucesso aqui é a REQUISIÇÃO do mês pedido, que só sai se
+ * o estado do React realmente mudou. Cada tentativa passa pelo mês âncora antes,
+ * senão um `fill()` repetido com o mesmo valor não dispararia busca nenhuma.
  */
 async function setReportMonth(page: import("@playwright/test").Page, value: string): Promise<void> {
   const input = page.locator('input[type="month"]');
   await expect(async () => {
+    const requested = page.waitForResponse(
+      (response) => response.url().includes(`/api/reports?month=${value}`),
+      { timeout: 5_000 },
+    );
+    await input.fill(ANCHOR_MONTH);
     await input.fill(value);
-    await expect(input).toHaveValue(value);
-  }).toPass({ timeout: 10_000 });
+    await requested;
+  }).toPass({ timeout: 20_000 });
 }
 
 test.describe("relatório gerencial", () => {
@@ -37,7 +50,7 @@ test.describe("relatório gerencial", () => {
       priceCents: 22000,
       durationMinutes: 45,
     });
-    const slot = slotFromSeed("relatorios-margem-2");
+    const slot = slotForAttempt("relatorios-margem-2");
     const appointment = await createAppointment(request, {
       patientId: patient.id,
       startsAt: toApiDatetime(slot.startsAt),
@@ -64,7 +77,7 @@ test.describe("relatório gerencial", () => {
       fullName: `Enf. Relatório E2E ${unique()}`,
     });
     const patient = await createPatient(request, { fullName: `Paciente Produção ${unique()}` });
-    const slot = slotFromSeed("relatorios-producao");
+    const slot = slotForAttempt("relatorios-producao");
     const appointment = await createAppointment(request, {
       patientId: patient.id,
       startsAt: toApiDatetime(slot.startsAt),

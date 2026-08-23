@@ -1,24 +1,20 @@
-import type { CSSProperties } from "react";
-import { Callout, CardSkeleton } from "@still-void/ui/react";
+import { Alert, AlertDescription, CardSkeleton } from "@still-void/ui/react";
 
 interface ErrorAlertProps {
   message: string;
 }
 
 /**
- * O Still Void só define os kinds note/warn/aha — não há um "danger". A cor da
- * barra lateral e do rótulo é sobrescrevível por CSS var, então usamos o token
- * semântico de erro do próprio sistema em cima do kind visualmente mais próximo.
+ * O `Alert` do Still Void é neutro por definição (superfície e borda padrão) —
+ * o catálogo não traz variante de erro. A cor vem do token semântico `danger`,
+ * que é fixo no sistema e independente do accent do site: um erro nunca colide
+ * com a cor da marca. Sempre a variante -ink, a que bate 4.5:1 no tema claro.
  */
-const DANGER_CALLOUT: CSSProperties = {
-  "--sv-callout-color": "var(--sv-danger-ink)",
-} as CSSProperties;
-
 export function ErrorAlert({ message }: ErrorAlertProps) {
   return (
-    <Callout kind="warn" label="Erro" role="alert" className="mb-4" style={DANGER_CALLOUT}>
-      {message}
-    </Callout>
+    <Alert className="mb-4 border-danger">
+      <AlertDescription className="text-danger">{message}</AlertDescription>
+    </Alert>
   );
 }
 

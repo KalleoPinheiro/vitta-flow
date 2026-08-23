@@ -21,6 +21,14 @@ describe("Feature: Botão carregar mais", () => {
 
       expect(screen.getByRole("button", { name: "Carregar mais" })).toBeInTheDocument();
     });
+
+    it("Dado visible verdadeiro, Então o botão vem do Button do Still Void", () => {
+      render(<LoadMoreButton visible={true} onClick={vi.fn()} />);
+
+      // `border-sv-border` é emitido pela variante outline do <Button> do
+      // pacote, não pelo app: prova de que o botão é o componente da lib.
+      expect(screen.getByRole("button", { name: "Carregar mais" })).toHaveClass("border-sv-border");
+    });
   });
 
   describe("Cenário: interação de clique", () => {

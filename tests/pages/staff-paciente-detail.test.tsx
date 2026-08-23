@@ -1455,7 +1455,7 @@ describe("Feature: Pacotes no prontuário (COMP3-10)", () => {
     fireEvent.click(screen.getByText("Pacotes"));
 
     const expired = await screen.findByText(/Expirado em 01\/01\/2020/);
-    expect(expired).toHaveClass("text-red-700");
+    expect(expired).toHaveClass("text-danger");
   });
 
   it("Dado paciente sem pacotes, Quando abrir a aba, Então exibe estado vazio", async () => {

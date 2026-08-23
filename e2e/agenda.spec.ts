@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { createAppointment, createPatient } from "./support/api";
 import { DEFAULT_SCHEDULE_CONFIG } from "./support/constants";
-import { businessDay, slotFromSeed, outsideBusinessHoursSlot, type YMD } from "./support/dates";
+import { businessDay, slotForAttempt, outsideBusinessHoursSlot, type YMD } from "./support/dates";
 
 const PT_MONTHS = [
   "janeiro",
@@ -50,7 +50,7 @@ async function goToMonth(page: Page, target: YMD): Promise<void> {
 test.describe("agenda", () => {
   test("agenda uma consulta em dia útil e horário comercial", async ({ page, request }) => {
     const patient = await createPatient(request, { fullName: `Paciente Agenda ${Date.now()}` });
-    const slot = slotFromSeed("agenda-happy-path");
+    const slot = slotForAttempt("agenda-happy-path");
 
     await page.goto("/agenda");
     await page.getByRole("button", { name: "+ Nova consulta" }).click();
@@ -76,7 +76,7 @@ test.describe("agenda", () => {
   }) => {
     const patientA = await createPatient(request);
     const patientB = await createPatient(request);
-    const slot = slotFromSeed("agenda-conflict");
+    const slot = slotForAttempt("agenda-conflict");
 
     await createAppointment(request, {
       patientId: patientA.id,
@@ -119,8 +119,8 @@ test.describe("agenda", () => {
 
   test("remarca uma consulta existente", async ({ page, request }) => {
     const patient = await createPatient(request, { fullName: `Paciente Remarcar ${Date.now()}` });
-    const original = slotFromSeed("agenda-reschedule-original");
-    const target = slotFromSeed("agenda-reschedule-target");
+    const original = slotForAttempt("agenda-reschedule-original");
+    const target = slotForAttempt("agenda-reschedule-target");
 
     await createAppointment(request, {
       patientId: patient.id,
@@ -152,7 +152,7 @@ test.describe("agenda", () => {
 
   test("cria série recorrente semanal", async ({ page, request }) => {
     const patient = await createPatient(request, { fullName: `Paciente Serie ${Date.now()}` });
-    const slot = slotFromSeed("agenda-recurring");
+    const slot = slotForAttempt("agenda-recurring");
 
     await page.goto("/agenda");
     await page.getByRole("button", { name: "+ Nova consulta" }).click();

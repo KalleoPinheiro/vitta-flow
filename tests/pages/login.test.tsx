@@ -209,4 +209,18 @@ describe("Feature: Página de login", () => {
       expect(button.disabled).toBe(false);
     });
   });
+
+  describe("Cenário: adoção do catálogo do design system", () => {
+    it("Dado o formulário de senha, Então campos e submit vêm do Still Void", async () => {
+      mockProviders({ password: true, google: false });
+
+      render(<LoginPage />);
+
+      const senha = await screen.findByLabelText("Senha");
+      // `bg-sv-surface` no campo e no botão é emitido pelos <Input>/<Button> do
+      // pacote, não pelo app.
+      expect(senha).toHaveClass("bg-sv-surface");
+      expect(screen.getByRole("button", { name: "Entrar" })).toHaveClass("bg-accent-ink");
+    });
+  });
 });

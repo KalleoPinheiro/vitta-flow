@@ -26,6 +26,7 @@ interface StatusBadgeProps {
  * Selo de status como pílula do design system: ponto colorido + label, nunca
  * emoji (regra de fidelidade do Still Void).
  */
+// sv-gap: badge-hardcoded-red
 export function StatusBadge({ status, label }: StatusBadgeProps) {
   return <CategoryPill label={label} color={COLOR_BY_STATUS[status] ?? FALLBACK_COLOR} />;
 }

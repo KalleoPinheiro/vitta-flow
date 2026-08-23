@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { Button } from "@still-void/ui/react";
 
 export interface ClinicInfoDto {
   name: string;
@@ -26,25 +27,21 @@ export function DocumentFrame({ clinic, title, children }: DocumentFrameProps) {
   });
 
   return (
-    <div className="text-slate-900">
-      <div className="mb-6 flex items-center justify-between border-b border-slate-300 pb-4 print:hidden">
-        <button
-          type="button"
-          onClick={() => window.history.back()}
-          className="text-sm text-teal-700 hover:underline"
-        >
+    /* A moldura imprime em papel: fundo branco e tinta preta são o alvo real,
+       não o tema da tela. Por isso o corpo do documento usa `black` literal —
+       cor neutra, não paleta — enquanto a barra de ações, que só existe na tela
+       e some no `print:`, segue os tokens do design system. */
+    <div className="text-black">
+      <div className="mb-6 flex items-center justify-between border-b border-border pb-4 print:hidden">
+        <Button type="button" variant="link" onClick={() => window.history.back()}>
           ← Voltar
-        </button>
-        <button
-          type="button"
-          onClick={() => window.print()}
-          className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800"
-        >
+        </Button>
+        <Button type="button" onClick={() => window.print()}>
           Imprimir / salvar PDF
-        </button>
+        </Button>
       </div>
 
-      <header className="mb-8 border-b-2 border-slate-800 pb-4 text-center">
+      <header className="mb-8 border-b-2 border-black pb-4 text-center">
         <h1 className="text-xl font-bold">{clinic.name}</h1>
         {clinic.cnpj && <p className="text-sm">CNPJ: {clinic.cnpj}</p>}
         {clinic.address && <p className="text-sm">{clinic.address}</p>}
@@ -59,7 +56,7 @@ export function DocumentFrame({ clinic, title, children }: DocumentFrameProps) {
           {clinic.city ? `${clinic.city}, ` : ""}
           {today}.
         </p>
-        <div className="mx-auto w-64 border-t border-slate-800 pt-1 text-center text-sm">
+        <div className="mx-auto w-64 border-t border-black pt-1 text-center text-sm">
           {clinic.professionalName ?? "Assinatura do profissional"}
           {clinic.professionalRegistry && (
             <span className="block text-xs">{clinic.professionalRegistry}</span>

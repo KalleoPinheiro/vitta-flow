@@ -82,9 +82,10 @@ function ReportContent({
       {chronological.length === 0 ? (
         <p>Nenhuma avaliação registrada até a data deste relatório.</p>
       ) : (
+        // sv-gap: table
         <table className="w-full border-collapse text-xs">
           <thead>
-            <tr className="border-b border-slate-400 text-left">
+            <tr className="border-b border-black text-left">
               <th className="py-1 pr-2">Data</th>
               <th className="py-1 pr-2">C×L×P (mm)</th>
               <th className="py-1 pr-2">Área (mm²)</th>
@@ -95,7 +96,7 @@ function ReportContent({
           </thead>
           <tbody>
             {chronological.map((a) => (
-              <tr key={a.id} className="border-b border-slate-200">
+              <tr key={a.id} className="border-b border-black/30">
                 <td className="py-1 pr-2">{formatDate(a.createdAt)}</td>
                 <td className="py-1 pr-2">
                   {a.lengthMm != null ? `${a.lengthMm}×${a.widthMm ?? "—"}×${a.depthMm ?? "—"}` : "—"}

@@ -105,5 +105,33 @@ describe("Feature: Moldura de documento", () => {
 
       expect(printSpy).toHaveBeenCalledTimes(1);
     });
+
+    it("Dado a barra de ações, Então os botões vêm do Button do Still Void", () => {
+      render(
+        <DocumentFrame clinic={fullClinic} title="Atestado">
+          <p>Corpo</p>
+        </DocumentFrame>,
+      );
+
+      // `text-accent` e `bg-sv-surface` são emitidos pelas variantes link e
+      // default do <Button> do pacote, não pelo app.
+      expect(screen.getByRole("button", { name: "← Voltar" })).toHaveClass("text-accent");
+      expect(screen.getByRole("button", { name: "Imprimir / salvar PDF" })).toHaveClass(
+        "bg-sv-surface",
+      );
+    });
+
+    it("Dado a barra de ações, Então ela some na impressão e o corpo do documento fica em tinta preta", () => {
+      const { container } = render(
+        <DocumentFrame clinic={fullClinic} title="Atestado">
+          <p>Corpo</p>
+        </DocumentFrame>,
+      );
+
+      expect(container.firstElementChild).toHaveClass("text-black");
+      expect(
+        screen.getByRole("button", { name: "← Voltar" }).closest(".print\\:hidden"),
+      ).toBeInTheDocument();
+    });
   });
 });

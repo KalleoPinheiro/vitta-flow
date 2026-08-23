@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { logo, logoClasses } from "@still-void/ui";
+import { logo, logoClasses } from "@still-void/ui/react";
 
 interface BrandLogoProps {
   href?: string;

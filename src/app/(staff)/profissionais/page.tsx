@@ -7,9 +7,8 @@ import { useApiQuery } from "@/lib/use-api-query";
 import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
-
-const inputClass =
-  "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none";
+import { Button, Card, Input } from "@still-void/ui/react";
+import { accentButton } from "@/lib/ui";
 
 export default function ProfessionalsPage() {
   const { data: professionals, error, refresh } = useApiQuery<ProfessionalDto[]>(
@@ -35,25 +34,26 @@ export default function ProfessionalsPage() {
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="sv-display text-2xl font-bold">Profissionais</h1>
-        <button
+        <Button
           type="button"
           onClick={() => setEditing("new")}
-          className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800"
+          className={accentButton}
         >
           + Novo profissional
-        </button>
+        </Button>
       </div>
 
       {(error || actionError) && <ErrorAlert message={actionError ?? error ?? ""} />}
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+      <Card className="overflow-x-auto">
         {!professionals ? (
           <LoadingIndicator />
         ) : professionals.length === 0 ? (
           <EmptyState message="Nenhum profissional cadastrado. Consultas e evoluções podem ser atribuídas após o cadastro." />
         ) : (
+          // sv-gap: table
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
+            <thead className="border-b border-border bg-bg text-xs uppercase text-ink-3">
               <tr>
                 <th className="px-4 py-3">Nome</th>
                 <th className="px-4 py-3">Registro</th>
@@ -61,11 +61,11 @@ export default function ProfessionalsPage() {
                 <th className="px-4 py-3 text-right">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-border">
               {professionals.map((professional) => (
                 <tr key={professional.id} className={professional.active ? "" : "opacity-50"}>
                   <td className="px-4 py-3 font-medium">{professional.fullName}</td>
-                  <td className="px-4 py-3 text-slate-600">{professional.registry ?? "—"}</td>
+                  <td className="px-4 py-3 text-ink-2">{professional.registry ?? "—"}</td>
                   <td className="px-4 py-3">
                     <StatusBadge
                       status={professional.active ? "confirmed" : "cancelled"}
@@ -73,27 +73,29 @@ export default function ProfessionalsPage() {
                     />
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button
+                    <Button
                       type="button"
                       onClick={() => setEditing(professional)}
-                      className="mr-2 font-medium text-teal-700 hover:underline"
+                      variant="link"
+                      className="h-auto p-0 mr-2 text-accent-ink"
                     >
                       Editar
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
                       onClick={() => void toggleActive(professional)}
-                      className="font-medium text-slate-500 hover:underline"
+                      variant="link"
+                      className="h-auto p-0 text-ink-3"
                     >
                       {professional.active ? "Desativar" : "Reativar"}
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
-      </div>
+      </Card>
 
       {editing && (
         <Modal
@@ -152,29 +154,29 @@ function ProfessionalForm({
       {error && <ErrorAlert message={error} />}
       <label className="text-sm font-medium">
         Nome *
-        <input
+        <Input
           required
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
-          className={`mt-1 ${inputClass}`}
+          className="mt-1"
         />
       </label>
       <label className="text-sm font-medium">
         Registro profissional
-        <input
+        <Input
           value={registry}
           onChange={(e) => setRegistry(e.target.value)}
           placeholder="Ex.: COREN-SP 123456"
-          className={`mt-1 ${inputClass}`}
+          className="mt-1"
         />
       </label>
-      <button
+      <Button
         type="submit"
         disabled={saving}
-        className="mt-1 rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-50"
+        className={`mt-1 ${accentButton}`}
       >
         {saving ? "Salvando…" : "Salvar"}
-      </button>
+      </Button>
     </form>
   );
 }

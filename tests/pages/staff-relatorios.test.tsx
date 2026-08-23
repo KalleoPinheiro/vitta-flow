@@ -111,7 +111,7 @@ describe("Feature: Relatório gerencial", () => {
       render(<ReportsPage />);
 
       const rate = await screen.findByText("20.0%");
-      expect(rate.className).toContain("text-red-700");
+      expect(rate.className).toContain("text-danger");
     });
 
     it("Dado taxa de falta dentro do esperado, Quando renderizar, Então mantém o indicador em cor neutra", async () => {
@@ -120,7 +120,7 @@ describe("Feature: Relatório gerencial", () => {
       render(<ReportsPage />);
 
       const rate = await screen.findByText("5.0%");
-      expect(rate.className).toContain("text-teal-700");
+      expect(rate.className).toContain("text-accent-ink");
     });
 
     it("Dado consultas por status, Quando renderizar, Então lista os rótulos traduzidos com as contagens", async () => {
@@ -182,7 +182,7 @@ describe("Feature: Relatório gerencial", () => {
       render(<ReportsPage />);
 
       const margin = await screen.findByText("-R$ 30,00");
-      expect(margin.className).toContain("text-red-700");
+      expect(margin.className).toContain("text-danger");
     });
 
     it("Dado produção por profissional, Quando renderizar, Então lista nome, contagem, receita e repasse", async () => {

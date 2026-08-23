@@ -1,6 +1,17 @@
-@import "tailwindcss";
+/* `source("../../src")` restringe a varredura ao código do app. A detecção
+   automática do v4 varreria também docs/ e .specs/, que citam classes antigas em
+   blocos de código — isso ressuscitaria no CSS gerado justamente os apelidos que
+   esta migração removeu. Documentação não é fonte de markup. */
+@import "tailwindcss" source("../../src");
 @import "@still-void/ui/theme.css";
 @import "@still-void/ui/style.css" layer(components);
+
+/* Os componentes shadcn da v2 (Button, Card, Input, Alert, Badge, Dialog…) não
+   têm classe em style.css — eles emitem utilitários Tailwind no className. O
+   Tailwind v4 detecta conteúdo respeitando o .gitignore, e node_modules está
+   ignorado: sem este @source as classes que só existem dentro do pacote nunca
+   chegam ao CSS gerado e os componentes saem sem estilo. */
+@source "../../node_modules/@still-void/ui/dist";
 
 /* O theme.css entra sem layer (só define custom properties) e o style.css entra
    em layer(components) de propósito: CSS sem layer vence CSS em layer, então um
@@ -31,6 +42,32 @@
   --color-border: var(--sv-border);
   --color-border-strong: var(--sv-border-strong);
 
+  /* sv-gap: tailwind-setup-v3-only */
+  /* --- nomes exigidos pelos componentes shadcn do pacote ---
+     Extraídos do dist da lib: bg-sv-surface, bg-sv-surface-2, bg-sv-border,
+     bg-sv-signal-cyan, text-sv-text, text-sv-text-2, text-sv-bg,
+     border-sv-border, bg-background, ring-ring, ring-offset-background,
+     bg-destructive, text-destructive-foreground, text-accent, ring-accent.
+     Sem estes nomes o utilitário não existe e o componente renderiza sem cor. */
+  --color-sv-bg: var(--sv-bg);
+  --color-sv-surface: var(--sv-surface);
+  --color-sv-surface-2: var(--sv-surface-2);
+  --color-sv-text: var(--sv-text);
+  --color-sv-text-2: var(--sv-text-2);
+  --color-sv-text-3: var(--sv-text-3);
+  --color-sv-border: var(--sv-border);
+  --color-sv-signal-cyan: var(--sv-accent-cyan);
+  --color-background: var(--sv-bg);
+  --color-ring: var(--sv-accent);
+  --color-destructive: var(--sv-danger);
+  --color-destructive-foreground: var(--sv-bg);
+
+  /* --- papéis que o app usa e ainda não tinham nome semântico --- */
+  --color-surface-2: var(--sv-surface-2);
+  --color-bg-elev: var(--sv-bg-elev);
+  --color-accent-soft: color-mix(in oklab, var(--sv-accent) 14%, var(--sv-bg));
+  --color-accent-strong: color-mix(in oklab, var(--sv-accent-ink) 88%, black);
+
   /* Estados semânticos são fixos no Still Void, independentes do accent do site:
      um "pago" verde nunca colide com a cor da marca. Sempre a variante -ink,
      porque no app essas cores pintam texto e selo, não superfície decorativa. */
@@ -38,6 +75,14 @@
   --color-success: var(--sv-success-ink);
   --color-warning: var(--sv-warning-ink);
   --color-info: var(--sv-info-ink);
+
+  /* Superfície suave de cada estado semântico: o token -ink pinta texto e borda,
+     e a superfície de trás precisa do par claro. Derivada do token não-ink por
+     mistura com o fundo, para acompanhar tema claro e escuro. */
+  --color-danger-soft: color-mix(in oklab, var(--sv-danger) 12%, var(--sv-bg));
+  --color-success-soft: color-mix(in oklab, var(--sv-success) 12%, var(--sv-bg));
+  --color-warning-soft: color-mix(in oklab, var(--sv-warning) 14%, var(--sv-bg));
+  --color-info-soft: color-mix(in oklab, var(--sv-info) 12%, var(--sv-bg));
 
   --font-sans: var(--sv-font-body); /* Manrope */
   --font-display: var(--sv-font-display); /* Sora */
@@ -49,34 +94,4 @@
   --radius-xl: var(--sv-radius-xl);
 
   --spacing-4: var(--sv-space-4);
-
-  /* --- override das escalas teal e slate já usadas nos componentes,
-     recolorindo o app inteiro sem editar cada arquivo ---
-
-     O Still Void separa o accent de superfície (--sv-accent) do accent de texto
-     (--sv-accent-ink, escurecido no tema claro justamente para bater 4.5:1).
-     Os degraus claros (50–500) são preenchimento/borda decorativa e derivam do
-     accent; os escuros (600–900) pintam texto (text-teal-700, 28 usos) e fundo
-     de botão com texto branco (bg-teal-700, 36 usos) e derivam do ink. */
-  --color-teal-50: color-mix(in oklab, var(--sv-accent) 10%, white);
-  --color-teal-100: color-mix(in oklab, var(--sv-accent) 18%, white);
-  --color-teal-200: color-mix(in oklab, var(--sv-accent) 32%, white);
-  --color-teal-300: color-mix(in oklab, var(--sv-accent) 50%, white);
-  --color-teal-400: color-mix(in oklab, var(--sv-accent) 75%, white);
-  --color-teal-500: var(--sv-accent);
-  --color-teal-600: color-mix(in oklab, var(--sv-accent-ink) 94%, white);
-  --color-teal-700: var(--sv-accent-ink);
-  --color-teal-800: color-mix(in oklab, var(--sv-accent-ink) 88%, black);
-  --color-teal-900: color-mix(in oklab, var(--sv-accent-ink) 76%, black);
-
-  --color-slate-50: var(--sv-bg);
-  --color-slate-100: var(--sv-surface-2);
-  --color-slate-200: color-mix(in oklab, var(--sv-text-3) 22%, var(--sv-bg));
-  --color-slate-300: color-mix(in oklab, var(--sv-text-3) 40%, var(--sv-bg));
-  --color-slate-400: var(--sv-text-3);
-  --color-slate-500: var(--sv-text-3);
-  --color-slate-600: var(--sv-text-2);
-  --color-slate-700: color-mix(in oklab, var(--sv-text) 78%, var(--sv-text-2));
-  --color-slate-800: color-mix(in oklab, var(--sv-text) 90%, var(--sv-text-2));
-  --color-slate-900: var(--sv-text);
 }

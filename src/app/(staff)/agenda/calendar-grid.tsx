@@ -2,15 +2,16 @@
 
 import type { AppointmentDto } from "@/lib/dto";
 import { formatTime } from "@/lib/format";
+import { Button, Card } from "@still-void/ui/react";
 
 const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 const STATUS_COLORS: Record<string, string> = {
-  scheduled: "bg-sky-100 text-sky-900 border-sky-300",
-  confirmed: "bg-teal-100 text-teal-900 border-teal-300",
-  completed: "bg-emerald-100 text-emerald-900 border-emerald-300",
-  cancelled: "bg-slate-100 text-slate-500 border-slate-200 line-through",
-  no_show: "bg-amber-100 text-amber-900 border-amber-300",
+  scheduled: "bg-info-soft text-info border-info",
+  confirmed: "bg-accent-soft text-accent-ink border-accent",
+  completed: "bg-success-soft text-success border-success",
+  cancelled: "bg-surface-2 text-ink-3 border-border line-through",
+  no_show: "bg-warning-soft text-warning border-warning",
 };
 
 export const dayKey = (date: Date): string =>
@@ -52,10 +53,10 @@ export function CalendarGrid({
 
   return (
     <div className="overflow-x-auto">
-      <div className="min-w-[840px] overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50">
+      <Card className="min-w-[840px] overflow-hidden">
+        <div className="grid grid-cols-7 border-b border-border bg-bg">
           {WEEKDAY_LABELS.map((label) => (
-            <div key={label} className="px-2 py-2 text-center text-xs font-semibold uppercase text-slate-500">
+            <div key={label} className="px-2 py-2 text-center text-xs font-semibold uppercase text-ink-3">
               {label}
             </div>
           ))}
@@ -71,40 +72,41 @@ export function CalendarGrid({
               <div
                 key={key}
                 onClick={() => onDayClick(day)}
-                className={`min-h-24 cursor-pointer border-b border-r border-slate-100 p-1.5 align-top transition hover:bg-teal-50/50 ${
-                  isCurrentMonth ? "" : "bg-slate-50/70 text-slate-400"
+                className={`min-h-24 cursor-pointer border-b border-r border-border p-1.5 align-top transition hover:bg-accent-soft/50 ${
+                  isCurrentMonth ? "" : "bg-bg/70 text-ink-3"
                 }`}
               >
                 <span
                   className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${
-                    key === todayKey ? "bg-teal-700 text-white" : ""
+                    key === todayKey ? "bg-accent-ink text-white" : ""
                   }`}
                 >
                   {day.getDate()}
                 </span>
                 <div className="mt-1 flex flex-col gap-1">
                   {dayAppointments.map((appointment) => (
-                    <button
+                    <Button
                       key={appointment.id}
                       type="button"
                       onClick={(event) => {
                         event.stopPropagation();
                         onAppointmentClick(appointment);
                       }}
-                      className={`truncate rounded border px-1.5 py-0.5 text-left text-xs ${
-                        STATUS_COLORS[appointment.status] ?? "bg-slate-100"
-                      }`}
                       title={`${formatTime(appointment.startsAt)} ${appointment.patientName ?? ""} — ${appointment.procedure}`}
+                      variant="outline"
+                      className={`h-auto w-full truncate rounded border-0 px-1.5 py-0.5 text-left text-xs font-normal ${
+                        STATUS_COLORS[appointment.status] ?? "bg-surface-2"
+                      }`}
                     >
                       {formatTime(appointment.startsAt)} {appointment.patientName}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
             );
           })}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

@@ -23,9 +23,8 @@ import {
 import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert } from "@/components/feedback";
-
-const inputClass =
-  "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none";
+import { Button, Input } from "@still-void/ui/react";
+import { accentButton, nativeField } from "@/lib/ui";
 
 interface CarePlansSectionProps {
   patientId: string;
@@ -41,16 +40,16 @@ export function CarePlansSection({ patientId, conditions, plans, onChanged }: Ca
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-ink-3">
           Processo de Enfermagem: diagnóstico (NANDA-I) → resultado esperado (NOC) → intervenção (NIC).
         </p>
-        <button
+        <Button
           type="button"
           onClick={() => setCreating(true)}
-          className="rounded-lg bg-teal-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-teal-800"
+          className={accentButton}
         >
           + Novo plano
-        </button>
+        </Button>
       </div>
 
       {plans.length === 0 ? (
@@ -61,7 +60,8 @@ export function CarePlansSection({ patientId, conditions, plans, onChanged }: Ca
             const condition = conditions.find((item) => item.id === plan.conditionId);
             const isOpen = expanded === plan.id;
             return (
-              <li key={plan.id} className="rounded-lg border border-slate-200 bg-white p-4">
+              /* sv-gap: card-as-element */
+              <li key={plan.id} className="rounded-lg border border-sv-border bg-sv-surface p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <span className="mr-2 font-medium">
@@ -73,16 +73,17 @@ export function CarePlansSection({ patientId, conditions, plans, onChanged }: Ca
                     />
                   </div>
                   <div className="flex gap-3 text-sm">
-                    <button
+                    <Button
                       type="button"
                       onClick={() => setExpanded(isOpen ? null : plan.id)}
-                      className="font-medium text-teal-700 hover:underline"
+                      variant="link"
+                      className="h-auto p-0 text-accent-ink"
                     >
                       {isOpen ? "Ocultar plano" : "Ver plano"}
-                    </button>
+                    </Button>
                     <a
                       href={`/documentos/plano-cuidados/${plan.id}`}
-                      className="font-medium text-teal-700 hover:underline"
+                      className="font-medium text-accent-ink hover:underline"
                     >
                       Imprimir plano
                     </a>
@@ -146,10 +147,11 @@ function OpenCarePlanForm({
       {error && <ErrorAlert message={error} />}
       <label className="text-sm font-medium">
         Condição associada
+        {/* sv-gap: native-select */}
         <select
           value={conditionId}
           onChange={(e) => setConditionId(e.target.value)}
-          className={`mt-1 ${inputClass}`}
+          className={`mt-1 ${nativeField}`}
         >
           <option value="">Geral (sem condição específica)</option>
           {conditions.map((condition) => (
@@ -159,13 +161,13 @@ function OpenCarePlanForm({
           ))}
         </select>
       </label>
-      <button
+      <Button
         type="submit"
         disabled={saving}
-        className="mt-1 rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-50"
+        className={`mt-1 ${accentButton}`}
       >
         {saving ? "Abrindo…" : "Abrir plano"}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -197,7 +199,7 @@ function CarePlanPanel({ planId, onChanged }: { planId: string; onChanged: () =>
   };
 
   return (
-    <div className="mt-3 flex flex-col gap-4 border-t border-slate-100 pt-3">
+    <div className="mt-3 flex flex-col gap-4 border-t border-border pt-3">
       {actionError && <ErrorAlert message={actionError} />}
 
       <DiagnosesSection
@@ -216,13 +218,14 @@ function CarePlanPanel({ planId, onChanged }: { planId: string; onChanged: () =>
       />
 
       {isActive && (
-        <button
+        <Button
           type="button"
           onClick={() => void resolvePlan()}
-          className="self-start text-sm font-medium text-slate-500 hover:underline"
+          variant="link"
+          className="h-auto p-0 self-start text-ink-3"
         >
           Resolver plano
-        </button>
+        </Button>
       )}
 
       {addingDiagnosis && (
@@ -276,11 +279,14 @@ function DiagnosesSection({
   return (
     <section>
       <div className="mb-2 flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-slate-700">Diagnósticos (NANDA-I)</h4>
+        <h4 className="text-sm font-semibold text-ink">Diagnósticos (NANDA-I)</h4>
         {isActive && (
-          <button type="button" onClick={onAdd} className="text-sm font-medium text-teal-700 hover:underline">
+          <Button type="button" onClick={onAdd}
+            variant="link"
+            className="h-auto p-0 text-accent-ink"
+          >
             + Diagnóstico
-          </button>
+          </Button>
         )}
       </div>
       {diagnoses.length === 0 ? (
@@ -288,8 +294,8 @@ function DiagnosesSection({
       ) : (
         <ul className="flex flex-col gap-2">
           {diagnoses.map((diagnosis) => (
-            <li key={diagnosis.id} className="rounded-lg bg-slate-50 p-3 text-sm">
-              <span className="mr-2 rounded-full bg-teal-100 px-2 py-0.5 text-xs font-medium text-teal-800">
+            <li key={diagnosis.id} className="rounded-lg bg-bg p-3 text-sm">
+              <span className="mr-2 rounded-full bg-accent-soft px-2 py-0.5 text-xs font-medium text-accent-ink">
                 {diagnosis.diagnosisCode} · {CARE_PLAN_DIAGNOSIS_TYPE_LABELS[diagnosis.type]}
               </span>
               <p className="mt-1">{pesSentence(diagnosis)}</p>
@@ -315,11 +321,14 @@ function OutcomesSection({
   return (
     <section>
       <div className="mb-2 flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-slate-700">Resultados esperados (NOC)</h4>
+        <h4 className="text-sm font-semibold text-ink">Resultados esperados (NOC)</h4>
         {isActive && (
-          <button type="button" onClick={onAdd} className="text-sm font-medium text-teal-700 hover:underline">
+          <Button type="button" onClick={onAdd}
+            variant="link"
+            className="h-auto p-0 text-accent-ink"
+          >
             + Resultado
-          </button>
+          </Button>
         )}
       </div>
       {outcomes.length === 0 ? (
@@ -345,18 +354,18 @@ function InterventionRow({
   onRecorded: () => void;
 }) {
   return (
-    <li className="rounded-lg bg-slate-50 p-3 text-sm">
+    <li className="rounded-lg bg-bg p-3 text-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <span className="font-medium">{intervention.interventionLabel}</span>
-          <span className="ml-2 text-xs text-slate-500">
+          <span className="ml-2 text-xs text-ink-3">
             {intervention.frequency} · prioridade {INTERVENTION_PRIORITY_LABELS[intervention.priority]}
           </span>
         </div>
         {isActive && <RecordInterventionButton interventionId={intervention.id} onRecorded={onRecorded} />}
       </div>
       {intervention.records.length > 0 && (
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-ink-3">
           Última execução: {formatDateTime(intervention.records[0].performedAt)} · total{" "}
           {intervention.records.length}
         </p>
@@ -379,11 +388,14 @@ function InterventionsSection({
   return (
     <section>
       <div className="mb-2 flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-slate-700">Intervenções (NIC)</h4>
+        <h4 className="text-sm font-semibold text-ink">Intervenções (NIC)</h4>
         {isActive && (
-          <button type="button" onClick={onAdd} className="text-sm font-medium text-teal-700 hover:underline">
+          <Button type="button" onClick={onAdd}
+            variant="link"
+            className="h-auto p-0 text-accent-ink"
+          >
             + Intervenção
-          </button>
+          </Button>
         )}
       </div>
       {interventions.length === 0 ? (
@@ -405,9 +417,9 @@ function InterventionsSection({
 }
 
 function scoreBadgeClass(current: number | null, target: number): string {
-  if (current == null) return "bg-slate-200 text-slate-600";
-  if (current >= target) return "bg-emerald-100 text-emerald-800";
-  return "bg-amber-100 text-amber-800";
+  if (current == null) return "bg-surface-2 text-ink-2";
+  if (current >= target) return "bg-success-soft text-success";
+  return "bg-warning-soft text-warning";
 }
 
 function OutcomeRow({
@@ -422,20 +434,21 @@ function OutcomeRow({
   const [evaluating, setEvaluating] = useState(false);
 
   return (
-    <li className="rounded-lg bg-slate-50 p-3 text-sm">
+    <li className="rounded-lg bg-bg p-3 text-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="font-medium">{outcome.outcomeLabel}</span>
         {canEvaluate && (
-          <button
+          <Button
             type="button"
             onClick={() => setEvaluating(true)}
-            className="text-sm font-medium text-teal-700 hover:underline"
+            variant="link"
+            className="h-auto p-0 text-accent-ink"
           >
             Avaliar
-          </button>
+          </Button>
         )}
       </div>
-      <div className="mt-1 flex items-center gap-2 text-xs text-slate-600">
+      <div className="mt-1 flex items-center gap-2 text-xs text-ink-2">
         <span>Basal {outcome.baselineScore}</span>
         <span aria-hidden="true">→</span>
         <span className={`rounded-full px-2 py-0.5 font-medium ${scoreBadgeClass(outcome.currentScore, outcome.targetScore)}`}>
@@ -448,7 +461,7 @@ function OutcomeRow({
         )}
       </div>
       {outcome.evaluations.length > 0 && (
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-ink-3">
           Última avaliação: {formatDateTime(outcome.evaluations[0].evaluatedAt)} · {outcome.evaluations.length}{" "}
           avaliação(ões) no histórico
         </p>
@@ -496,15 +509,16 @@ function RecordInterventionButton({
 
   return (
     <span>
-      <button
+      <Button
         type="button"
         disabled={saving}
         onClick={() => void record()}
-        className="text-sm font-medium text-teal-700 hover:underline disabled:opacity-50"
+        variant="link"
+        className="h-auto p-0 text-accent-ink"
       >
         {saving ? "Registrando…" : "Registrar execução"}
-      </button>
-      {error && <span className="ml-2 text-xs text-red-700">{error}</span>}
+      </Button>
+      {error && <span className="ml-2 text-xs text-danger">{error}</span>}
     </span>
   );
 }
@@ -544,17 +558,18 @@ function TaxonomyOptionList<T extends TaxonomyOption>({
     return null;
   }
   return (
-    <ul className="max-h-40 overflow-y-auto rounded-lg border border-slate-200">
+    <ul className="max-h-40 overflow-y-auto rounded-lg border border-border">
       {options.map((item) => (
         <li key={item.code}>
-          <button
+          <Button
             type="button"
             onClick={() => onSelect(item)}
-            className="w-full px-3 py-2 text-left text-sm hover:bg-teal-50"
+            variant="ghost"
+            className="w-full text-left hover:bg-accent-soft"
           >
             <span className="font-medium">{item.code}</span> — {item.label}
-            {linkedHint && <span className="ml-2 text-xs text-teal-700">{linkedHint}</span>}
-          </button>
+            {linkedHint && <span className="ml-2 text-xs text-accent-ink">{linkedHint}</span>}
+          </Button>
         </li>
       ))}
     </ul>
@@ -601,14 +616,14 @@ function AddDiagnosisForm({ carePlanId, onSaved }: { carePlanId: string; onSaved
       {error && <ErrorAlert message={error} />}
       <label className="text-sm font-medium">
         Buscar diagnóstico (NANDA-I)
-        <input
+        <Input
           value={searchInputValue(selected, term)}
           onChange={(e) => {
             setSelected(null);
             setTerm(e.target.value);
           }}
           placeholder="Ex.: integridade da pele, 00046…"
-          className={`mt-1 ${inputClass}`}
+          className="mt-1"
         />
       </label>
       {!selected && <TaxonomyOptionList options={results} linkedHint={null} onSelect={setSelected} />}
@@ -618,6 +633,7 @@ function AddDiagnosisForm({ carePlanId, onSaved }: { carePlanId: string; onSaved
             <legend className="sr-only">Tipo de diagnóstico</legend>
             {(["real", "risco", "promocao-saude"] as const).map((option) => (
               <label key={option} className="flex items-center gap-1">
+                {/* sv-gap: radio-group */}
                 <input
                   type="radio"
                   name="diagnosis-type"
@@ -631,18 +647,18 @@ function AddDiagnosisForm({ carePlanId, onSaved }: { carePlanId: string; onSaved
           {type !== "promocao-saude" && (
             <label className="text-sm font-medium">
               Relacionado a (etiologia)
-              <input
+              <Input
                 value={relatedFactors}
                 onChange={(e) => setRelatedFactors(e.target.value)}
                 placeholder="Fator relacionado / de risco"
-                className={`mt-1 ${inputClass}`}
+                className="mt-1"
               />
             </label>
           )}
           {(type === "real" || type === "promocao-saude") && (
             <label className="text-sm font-medium">
               Evidenciado por (características definidoras)
-              <input
+              <Input
                 value={definingCharacteristics}
                 onChange={(e) => setDefiningCharacteristics(e.target.value)}
                 placeholder={
@@ -650,19 +666,19 @@ function AddDiagnosisForm({ carePlanId, onSaved }: { carePlanId: string; onSaved
                     ? "Motivação/desejo expresso pelo paciente"
                     : "Sinais e sintomas observados"
                 }
-                className={`mt-1 ${inputClass}`}
+                className="mt-1"
               />
             </label>
           )}
         </>
       )}
-      <button
+      <Button
         type="submit"
         disabled={saving}
-        className="mt-1 rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-50"
+        className={`mt-1 ${accentButton}`}
       >
         {saving ? "Salvando…" : "Prescrever diagnóstico"}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -719,14 +735,14 @@ function PrescribeOutcomeForm({
       {error && <ErrorAlert message={error} />}
       <label className="text-sm font-medium">
         Buscar resultado (NOC)
-        <input
+        <Input
           value={searchInputValue(selected, term)}
           onChange={(e) => {
             setSelected(null);
             setTerm(e.target.value);
           }}
           placeholder="Ex.: integridade tissular, 1101…"
-          className={`mt-1 ${inputClass}`}
+          className="mt-1"
         />
       </label>
       {!selected && (
@@ -740,7 +756,7 @@ function PrescribeOutcomeForm({
         <div className="grid grid-cols-2 gap-3">
           <label className="text-sm font-medium">
             Pontuação basal (1–5)
-            <input
+            <Input
               type="number"
               required
               min={1}
@@ -748,13 +764,13 @@ function PrescribeOutcomeForm({
               step={1}
               value={baselineScore}
               onChange={(e) => setBaselineScore(e.target.value)}
-              className={`mt-1 ${inputClass}`}
+              className="mt-1"
             />
-            <span className="mt-1 block text-xs text-slate-500">{selected.scaleAnchors[Number(baselineScore) - 1]}</span>
+            <span className="mt-1 block text-xs text-ink-3">{selected.scaleAnchors[Number(baselineScore) - 1]}</span>
           </label>
           <label className="text-sm font-medium">
             Meta (1–5)
-            <input
+            <Input
               type="number"
               required
               min={1}
@@ -762,19 +778,19 @@ function PrescribeOutcomeForm({
               step={1}
               value={targetScore}
               onChange={(e) => setTargetScore(e.target.value)}
-              className={`mt-1 ${inputClass}`}
+              className="mt-1"
             />
-            <span className="mt-1 block text-xs text-slate-500">{selected.scaleAnchors[Number(targetScore) - 1]}</span>
+            <span className="mt-1 block text-xs text-ink-3">{selected.scaleAnchors[Number(targetScore) - 1]}</span>
           </label>
         </div>
       )}
-      <button
+      <Button
         type="submit"
         disabled={saving}
-        className="mt-1 rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-50"
+        className={`mt-1 ${accentButton}`}
       >
         {saving ? "Salvando…" : "Prescrever resultado"}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -827,14 +843,14 @@ function PrescribeInterventionForm({
       {error && <ErrorAlert message={error} />}
       <label className="text-sm font-medium">
         Buscar intervenção (NIC)
-        <input
+        <Input
           value={searchInputValue(selected, term)}
           onChange={(e) => {
             setSelected(null);
             setTerm(e.target.value);
           }}
           placeholder="Ex.: cuidados com lesões, 3660…"
-          className={`mt-1 ${inputClass}`}
+          className="mt-1"
         />
       </label>
       {!selected && (
@@ -848,18 +864,19 @@ function PrescribeInterventionForm({
         <>
           <label className="text-sm font-medium">
             Frequência *
-            <input
+            <Input
               required
               value={frequency}
               onChange={(e) => setFrequency(e.target.value)}
               placeholder="Ex.: a cada troca de placa"
-              className={`mt-1 ${inputClass}`}
+              className="mt-1"
             />
           </label>
           <fieldset className="flex gap-3 text-sm">
             <legend className="sr-only">Prioridade da intervenção</legend>
             {(["baixa", "media", "alta"] as const).map((option) => (
               <label key={option} className="flex items-center gap-1">
+                {/* sv-gap: radio-group */}
                 <input
                   type="radio"
                   name="intervention-priority"
@@ -872,13 +889,13 @@ function PrescribeInterventionForm({
           </fieldset>
         </>
       )}
-      <button
+      <Button
         type="submit"
         disabled={saving}
-        className="mt-1 rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-50"
+        className={`mt-1 ${accentButton}`}
       >
         {saving ? "Salvando…" : "Prescrever intervenção"}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -915,6 +932,7 @@ function EvaluateOutcomeForm({ outcome, onSaved }: { outcome: CarePlanOutcomeDto
           const value = index + 1;
           return (
             <label key={value} className="flex items-center gap-2 text-sm">
+              {/* sv-gap: radio-group */}
               <input
                 type="radio"
                 name="outcome-score"
@@ -928,15 +946,16 @@ function EvaluateOutcomeForm({ outcome, onSaved }: { outcome: CarePlanOutcomeDto
       </fieldset>
       <label className="text-sm font-medium">
         Observações
-        <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className={`mt-1 ${inputClass}`} />
+        {/* sv-gap: textarea */}
+        <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className={`mt-1 ${nativeField}`} />
       </label>
-      <button
+      <Button
         type="submit"
         disabled={saving}
-        className="mt-1 rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-50"
+        className={`mt-1 ${accentButton}`}
       >
         {saving ? "Salvando…" : "Registrar avaliação"}
-      </button>
+      </Button>
     </form>
   );
 }

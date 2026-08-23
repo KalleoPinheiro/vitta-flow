@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/client";
 import type { ConditionPhotoDto } from "@/lib/dto";
 import { formatDate } from "@/lib/format";
 import { ErrorAlert } from "@/components/feedback";
+import { Button } from "@still-void/ui/react";
 
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
@@ -87,10 +88,11 @@ export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps
   return (
     <div className="mt-3">
       <div className="mb-2 flex items-center justify-between">
-        <h4 className="text-xs font-semibold uppercase text-slate-500">Fotos de evolução</h4>
+        <h4 className="text-xs font-semibold uppercase text-ink-3">Fotos de evolução</h4>
         {canUpload && (
-          <label className="cursor-pointer text-xs font-medium text-teal-700 hover:underline">
+          <label className="cursor-pointer text-xs font-medium text-accent-ink hover:underline">
             {uploading ? "Enviando…" : "+ Adicionar foto"}
+            {/* sv-gap: file-input */}
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp"
@@ -109,7 +111,7 @@ export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps
       {error && <ErrorAlert message={error} />}
 
       {list.length === 0 ? (
-        <p className="text-xs text-slate-400">Nenhuma foto registrada.</p>
+        <p className="text-xs text-ink-3">Nenhuma foto registrada.</p>
       ) : (
         <>
           {showCompare && (
@@ -125,18 +127,19 @@ export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps
                 <img
                   src={`/api/photos/${photo.id}`}
                   alt={`Foto de ${formatDate(photo.createdAt)}`}
-                  className="h-24 w-24 rounded border border-slate-200 object-cover"
+                  className="h-24 w-24 rounded border border-border object-cover"
                 />
-                <figcaption className="mt-0.5 flex items-center justify-between text-[10px] text-slate-400">
+                <figcaption className="mt-0.5 flex items-center justify-between text-[10px] text-ink-3">
                   {formatDate(photo.createdAt)}
                   {canUpload && (
-                    <button
+                    <Button
                       type="button"
                       onClick={() => void remove(photo)}
-                      className="text-red-600 hover:underline"
+                      variant="link"
+                      className="h-auto p-0 text-danger"
                     >
                       excluir
-                    </button>
+                    </Button>
                   )}
                 </figcaption>
               </figure>
@@ -151,12 +154,12 @@ export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps
 function ComparePane({ label, photoId }: { label: string; photoId: string }) {
   return (
     <figure>
-      <figcaption className="mb-1 text-xs font-medium text-slate-500">{label}</figcaption>
+      <figcaption className="mb-1 text-xs font-medium text-ink-3">{label}</figcaption>
       {/* eslint-disable-next-line @next/next/no-img-element -- rota autorizada dinâmica */}
       <img
         src={`/api/photos/${photoId}`}
         alt={label}
-        className="w-full rounded border border-slate-200 object-contain"
+        className="w-full rounded border border-border object-contain"
       />
     </figure>
   );

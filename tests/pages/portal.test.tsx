@@ -169,6 +169,21 @@ describe("Feature: Página do portal", () => {
       const link = screen.getByText("Ir para o sistema da clínica →");
       expect(link.closest("a")).toHaveAttribute("href", "/");
     });
+
+    it("Dado role admin, Então o bloco é um Card do Still Void, não uma div de superfície", async () => {
+      mockFetch([
+        {
+          path: "/api/portal/me",
+          respond: () => jsonResponse(true, { subject: "ana@clinica.com", role: "admin" }),
+        },
+      ]);
+
+      const { container } = render(<PortalPage />);
+      await screen.findByText("Ir para o sistema da clínica →");
+
+      // `bg-sv-surface` é emitido pelo <Card> do pacote, não pelo app.
+      expect(container.querySelector(".bg-sv-surface")).toBeInTheDocument();
+    });
   });
 
   describe("Cenário: sessão de paciente", () => {
@@ -519,6 +534,122 @@ describe("Feature: Visão do paciente no portal", () => {
     });
   });
 
+  describe("Cenário: aceite do termo libera o envio de foto na mesma tela", () => {
+    it("Dado termo pendente, Quando aceitar, Então o envio de foto aparece sem recarregar a página", async () => {
+      const activeCondition: ConditionWithAssessmentsDto = {
+        condition: buildCondition({ id: "cond-active", status: "active" }),
+        assessments: [],
+      };
+      let accepted = false;
+      mockFetch([
+        {
+          method: "POST",
+          path: "/api/portal/patient/consent",
+          respond: () => {
+            accepted = true;
+            return jsonResponse(true, { accepted: true });
+          },
+        },
+        {
+          path: "/api/portal/patient/consent",
+          respond: () =>
+            jsonResponse(true, { consentText: "Termo", accepted, acceptedAt: accepted ? "2026-02-01T09:00:00.000Z" : null }),
+        },
+        {
+          path: "/api/portal/patient",
+          respond: () => jsonResponse(true, { ...emptyPatientBundle, conditions: [activeCondition] }),
+        },
+      ]);
+
+      render(<PatientPortalView />);
+
+      expect(await screen.findByText("Termo de consentimento pendente")).toBeInTheDocument();
+      expect(
+        screen.getByText("Aceite o termo de consentimento acima para enviar fotos à equipe."),
+      ).toBeInTheDocument();
+      expect(document.querySelector('input[type="file"]')).toBeNull();
+
+      fireEvent.click(screen.getByText("Li e aceito o termo"));
+
+      expect(
+        await screen.findByText(`✓ Termo de consentimento aceito em ${formatDateTime("2026-02-01T09:00:00.000Z")}.`),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText("Observação (opcional): dor, vazamento, vermelhidão…"),
+      ).toBeInTheDocument();
+      expect(document.querySelector('input[type="file"]')).not.toBeNull();
+      expect(
+        screen.queryByText("Aceite o termo de consentimento acima para enviar fotos à equipe."),
+      ).not.toBeInTheDocument();
+    });
+
+    it("Dado que a recarga do termo falha após o aceite, Então o botão volta a ficar clicável (o aceite é retentável)", async () => {
+      // Quem confirma o aceite na tela é o GET recarregado pelo pai. Se essa
+      // recarga falhar, o card continua pendente — e o botão não pode ficar
+      // preso em "Registrando…", senão o paciente perde o caminho de volta e o
+      // envio de foto (COMP3-01) segue bloqueado para sempre.
+      let consentReads = 0;
+      mockFetch([
+        {
+          method: "POST",
+          path: "/api/portal/patient/consent",
+          respond: () => jsonResponse(true, { accepted: true }),
+        },
+        {
+          path: "/api/portal/patient/consent",
+          respond: () => {
+            consentReads += 1;
+            return consentReads === 1
+              ? jsonResponse(true, { consentText: "Termo", accepted: false, acceptedAt: null })
+              : jsonResponse(false, null, "Falha ao recarregar o termo");
+          },
+        },
+        {
+          path: "/api/portal/patient",
+          respond: () => jsonResponse(true, emptyPatientBundle),
+        },
+      ]);
+
+      render(<PatientPortalView />);
+
+      const button = await screen.findByText("Li e aceito o termo");
+      fireEvent.click(button);
+
+      await waitFor(() => expect(consentReads).toBe(2));
+      await waitFor(() => {
+        expect(screen.getByText("Li e aceito o termo")).toBeInTheDocument();
+      });
+      expect(screen.getByText("Li e aceito o termo").closest("button")).not.toBeDisabled();
+      expect(screen.queryByText("Registrando…")).not.toBeInTheDocument();
+    });
+
+    it("Dado status do termo ainda não carregado, Quando renderizar, Então não bloqueia o envio por engano", async () => {
+      const activeCondition: ConditionWithAssessmentsDto = {
+        condition: buildCondition({ id: "cond-active", status: "active" }),
+        assessments: [],
+      };
+      mockFetch([
+        {
+          path: "/api/portal/patient/consent",
+          // Status indeterminado: a requisição nunca resolve dentro do teste.
+          respond: () => ({ ok: true, json: () => new Promise<unknown>(() => {}) }),
+        },
+        {
+          path: "/api/portal/patient",
+          respond: () => jsonResponse(true, { ...emptyPatientBundle, conditions: [activeCondition] }),
+        },
+      ]);
+
+      render(<PatientPortalView />);
+
+      await screen.findByText("Ferida perna E");
+      expect(
+        screen.queryByText("Aceite o termo de consentimento acima para enviar fotos à equipe."),
+      ).not.toBeInTheDocument();
+      expect(screen.getByText("Enviar foto")).toBeInTheDocument();
+    });
+  });
+
   describe("Cenário: faturas do paciente", () => {
     it("Dado fatura pendente, Quando renderizar, Então exibe descrição, valor e status", async () => {
       const invoice: InvoiceDto = {
@@ -683,96 +814,82 @@ describe("Feature: Visão do parceiro no portal", () => {
 });
 
 describe("Feature: Cartão de consentimento", () => {
+  const TERMO = "Texto do termo de consentimento";
+
   describe("Cenário: carregando", () => {
     it("Dado que o status ainda não chegou, Quando renderizar, Então não exibe nada", () => {
-      mockFetch([
-        { path: "/api/portal/patient/consent", respond: () => jsonResponse(true, { consentText: "Termo", accepted: false, acceptedAt: null }) },
-      ]);
-
-      const { container } = render(<ConsentCard />);
+      const { container } = render(<ConsentCard status={null} onAccepted={vi.fn()} />);
 
       expect(container).toBeEmptyDOMElement();
     });
   });
 
   describe("Cenário: termo já aceito", () => {
-    it("Dado consentimento aceito, Quando renderizar, Então exibe confirmação com data", async () => {
-      mockFetch([
-        {
-          path: "/api/portal/patient/consent",
-          respond: () =>
-            jsonResponse(true, {
-              consentText: "Termo vigente",
-              accepted: true,
-              acceptedAt: "2026-01-10T14:30:00.000Z",
-            }),
-        },
-      ]);
-
-      render(<ConsentCard />);
+    it("Dado consentimento aceito, Quando renderizar, Então exibe confirmação com data", () => {
+      render(
+        <ConsentCard
+          status={{ consentText: TERMO, accepted: true, acceptedAt: "2026-01-10T14:30:00.000Z" }}
+          onAccepted={vi.fn()}
+        />,
+      );
 
       expect(
-        await screen.findByText(`✓ Termo de consentimento aceito em ${formatDateTime("2026-01-10T14:30:00.000Z")}.`),
+        screen.getByText(`✓ Termo de consentimento aceito em ${formatDateTime("2026-01-10T14:30:00.000Z")}.`),
       ).toBeInTheDocument();
     });
   });
 
   describe("Cenário: termo pendente de aceite", () => {
-    it("Dado consentimento pendente, Quando aceitar, Então registra o aceite e atualiza a tela", async () => {
-      let accepted = false;
+    it("Dado consentimento pendente, Quando aceitar, Então registra o aceite e avisa o pai", async () => {
+      const onAccepted = vi.fn();
       mockFetch([
         {
           method: "POST",
           path: "/api/portal/patient/consent",
-          respond: () => {
-            accepted = true;
-            return jsonResponse(true, { ok: true });
-          },
-        },
-        {
-          path: "/api/portal/patient/consent",
-          respond: () =>
-            jsonResponse(true, {
-              consentText: "Texto do termo de consentimento",
-              accepted,
-              acceptedAt: accepted ? "2026-02-01T09:00:00.000Z" : null,
-            }),
+          respond: () => jsonResponse(true, { accepted: true }),
         },
       ]);
 
-      render(<ConsentCard />);
+      render(
+        <ConsentCard
+          status={{ consentText: TERMO, accepted: false, acceptedAt: null }}
+          onAccepted={onAccepted}
+        />,
+      );
 
-      expect(await screen.findByText("Termo de consentimento pendente")).toBeInTheDocument();
-      expect(screen.getByText("Texto do termo de consentimento")).toBeInTheDocument();
+      expect(screen.getByText("Termo de consentimento pendente")).toBeInTheDocument();
+      expect(screen.getByText(TERMO)).toBeInTheDocument();
 
       fireEvent.click(screen.getByText("Li e aceito o termo"));
 
-      expect(
-        await screen.findByText(`✓ Termo de consentimento aceito em ${formatDateTime("2026-02-01T09:00:00.000Z")}.`),
-      ).toBeInTheDocument();
+      await waitFor(() => {
+        expect(onAccepted).toHaveBeenCalledTimes(1);
+      });
     });
 
     it("Dado falha ao registrar aceite, Quando aceitar, Então exibe alerta de erro e reabilita o botão", async () => {
+      const onAccepted = vi.fn();
       mockFetch([
         {
           method: "POST",
           path: "/api/portal/patient/consent",
           respond: () => jsonResponse(false, null, "Erro ao registrar aceite do termo"),
         },
-        {
-          path: "/api/portal/patient/consent",
-          respond: () => jsonResponse(true, { consentText: "Texto do termo", accepted: false, acceptedAt: null }),
-        },
       ]);
 
-      render(<ConsentCard />);
+      render(
+        <ConsentCard
+          status={{ consentText: TERMO, accepted: false, acceptedAt: null }}
+          onAccepted={onAccepted}
+        />,
+      );
 
-      const button = await screen.findByText("Li e aceito o termo");
-      fireEvent.click(button);
+      fireEvent.click(screen.getByText("Li e aceito o termo"));
 
       expect(await screen.findByText("Erro ao registrar aceite do termo")).toBeInTheDocument();
       const enabledButton = screen.getByText("Li e aceito o termo") as HTMLButtonElement;
       expect(enabledButton.disabled).toBe(false);
+      expect(onAccepted).not.toHaveBeenCalled();
     });
   });
 });
@@ -786,20 +903,13 @@ describe("Feature: Envio de foto pelo paciente", () => {
     it("Dado arquivo selecionado com observação, Quando enviar, Então chama a API e notifica o pai", async () => {
       const onSent = vi.fn();
       let receivedBody: FormData | null = null;
-      mockFetch([
-        {
-          method: "POST",
-          path: "/api/portal/patient/photos",
-          respond: () => rawResponse(true),
-        },
-      ]);
       const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
         receivedBody = init?.body as FormData;
         return rawResponse(true);
       });
       vi.stubGlobal("fetch", fetchMock);
 
-      render(<PatientPhotoUpload conditionId="cond-1" onSent={onSent} />);
+      render(<PatientPhotoUpload conditionId="cond-1" consentPending={false} onSent={onSent} />);
 
       fireEvent.change(screen.getByPlaceholderText("Observação (opcional): dor, vazamento, vermelhidão…"), {
         target: { value: "Está coçando" },
@@ -818,19 +928,11 @@ describe("Feature: Envio de foto pelo paciente", () => {
   });
 
   describe("Cenário: consentimento pendente", () => {
-    it("Dado termo não aceito, Quando renderizar o envio, Então orienta o aceite e não oferece o arquivo (COMP3-01)", async () => {
-      mockFetch([
-        {
-          path: "/api/portal/patient/consent",
-          respond: () =>
-            jsonResponse(true, { consentText: "Termo", accepted: false, acceptedAt: null }),
-        },
-      ]);
-
-      render(<PatientPhotoUpload conditionId="cond-1" onSent={vi.fn()} />);
+    it("Dado termo não aceito, Quando renderizar o envio, Então orienta o aceite e não oferece o arquivo (COMP3-01)", () => {
+      render(<PatientPhotoUpload conditionId="cond-1" consentPending onSent={vi.fn()} />);
 
       expect(
-        await screen.findByText("Aceite o termo de consentimento acima para enviar fotos à equipe."),
+        screen.getByText("Aceite o termo de consentimento acima para enviar fotos à equipe."),
       ).toBeInTheDocument();
       expect(document.querySelector('input[type="file"]')).toBeNull();
     });
@@ -842,7 +944,7 @@ describe("Feature: Envio de foto pelo paciente", () => {
       const fetchMock = vi.fn(async () => rawResponse(false, { error: "Arquivo muito grande" }));
       vi.stubGlobal("fetch", fetchMock);
 
-      render(<PatientPhotoUpload conditionId="cond-1" onSent={onSent} />);
+      render(<PatientPhotoUpload conditionId="cond-1" consentPending={false} onSent={onSent} />);
 
       const input = document.querySelector('input[type="file"]') as HTMLInputElement;
       fireEvent.change(input, { target: { files: [makeFile()] } });

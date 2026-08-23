@@ -34,13 +34,39 @@
 - **Date**: 2026-08-15
 - **Status**: active
 
+### AD-005
+- **Decision**: Todo workaround local que existe por ausência de componente no `@still-void/ui` é marcado no ponto do código com o comentário `sv-gap: <slug>`, e o mesmo `<slug>` tem uma seção em `docs/still-void-gaps.md`. `scripts/check-sv-adoption.sh` (`npm run check:sv`) falha se um dos lados ficar órfão, nos dois sentidos.
+- **Reason**: sem a marcação, "isso é `<select>` nativo porque a lib não tem" e "isso é `<select>` nativo porque ninguém migrou" são indistinguíveis no diff — e a dívida vira invisível na revisão seguinte.
+- **Trade-off**: exige disciplina de manter o documento junto do código; a exceção `<!-- sv-gap-doc-only -->` cobre a lacuna que é relato sobre a lib e não tem workaround local.
+- **Scope**: src/**, docs/still-void-gaps.md, scripts/
+- **Date**: 2026-08-22
+- **Status**: active
+
+### AD-006
+- **Decision**: Todo utilitário de cor em `src/**/*.tsx` resolve para um token `--sv-*` pela ponte `@theme` de `globals.css`. Degrau cru de paleta Tailwind (`slate-*`, `teal-*`, `amber-*`, `emerald-*`, `sky-*`, `red-*`, `violet-*`) é proibido e falha o gate. A única exceção é cor neutra literal (`black`, `white`, `transparent`, `current`) em superfície de impressão, que precisa ignorar o tema — e leva comentário dizendo por quê.
+- **Reason**: a ponte anterior remapeava `slate-*`/`teal-*` para os tokens, então a cor certa saía, mas o código mentia sobre o papel: `bg-teal-700` não diz "ação primária", e o apelido travava a leitura e a troca de accent.
+- **Trade-off**: a varredura do Tailwind foi restringida a `src/` via `source("../../src")` para que blocos de código em `docs/` e `.specs/` não ressuscitem os apelidos no CSS gerado — se algum dia houver markup fora de `src/`, o `@source` precisa ser estendido.
+- **Scope**: src/app/globals.css, src/**/*.tsx
+- **Date**: 2026-08-22
+- **Status**: active
+
+### AD-007
+- **Decision**: `npm run build` invoca o Next via `node --max-old-space-size=4096` em vez de deixar o heap no padrão do V8.
+- **Reason**: o build usa ~2,5 GB de pico (medido) e o V8 dimensiona o heap padrão pela memória do host — em máquina de ~8 GB o padrão é 2.240 MB e o build worker morre com `Ineffective mark-compacts near heap limit`. O limite fica na fronteira exata da necessidade, então a falha depende da máquina, não do código.
+- **Trade-off**: fixa um número que precisa subir se o pico do build crescer; a forma `node --max-old-space-size=… ./node_modules/next/dist/bin/next build` foi escolhida em vez de `NODE_OPTIONS=…` por ser portável para Windows (sem sintaxe de env do shell) — verificado que os build workers herdam o `execArgv`.
+- **Scope**: package.json, Dockerfile (herda pelo `npm run build`)
+- **Date**: 2026-08-22
+- **Status**: active
+
 ## Handoff
 
-- **Feature**: fase-4-portal-auto-agendamento (aguardando Verifier)
-- **Phase / Task**: F1/F2/F3 PASS; F4 T1–T3 implementados (c7dd752, b33019e, a7cf03d)
-- **Completed**: todas as fases executáveis do plano (1–4)
+- **Feature**: e2e-consentimento-verdes — **validada por verificador independente** (`.specs/features/e2e-consentimento-verdes/validation.md`): PASS, 7/7 ACs com evidência, 7/7 mutações mortas
+- **Phase / Task**: fechada. As três pendências pré-existentes do handoff anterior também estão fechadas.
+- **Completed**:
+  - 4 falhas E2E: gate de consentimento da rota está **correto** (LGPD/COMP3-01, intocado); o helper de triagem é que estava desatualizado; junto apareceu bug real de UI (status de consentimento duplicado entre `ConsentCard` e `PatientPhotoUpload`); o teste de pacote pré-pago era falso positivo.
+  - Lint 11 → 0 (`exit 0`). Dois achados escondiam teste fraco (spies sem asserção; `makeEvent` que descartava `occurredAt`), corrigidos.
+  - Suíte E2E 64/64 com `--retries=0`, flaky 0. Corrigidos dois defeitos de suíte: re-tentativa não idempotente (409 por slot repetido) e flaky real do `<input type="month">` (guard checava `toHaveValue`, que o próprio `fill()` satisfaz).
+  - Build OOM: causa medida (pico ~2,5 GB vs heap padrão 2.240 MB nesta máquina) e fixada em `package.json` — ver AD-007.
 - **In-progress** (file:line): —
-- **Next step**: veredito do Verifier da fase 4; fases 5–6 são backlog (dependem de decisão do usuário)
+- **Next step**: PR #8 segue aguardando revisão humana; abrir as issues de `docs/still-void-gaps.md` no repositório still-void
 - **Blockers**: none
-- **Uncommitted files**: .specs (status)
-- **Branch**: claude/code-analysis-product-evolution-a4c0f1

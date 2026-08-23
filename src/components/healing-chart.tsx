@@ -107,6 +107,7 @@ function buildChartModel(assessments: AssessmentDto[]): ChartModel | null {
  * Tendência de cicatrização: área da ferida (C×L) e dor ao longo das avaliações.
  * SVG puro — sem dependência externa (CSP default-src 'self').
  */
+// sv-gap: data-chart
 export function HealingChart({ assessments }: HealingChartProps) {
   const model = buildChartModel(assessments);
   if (!model) {

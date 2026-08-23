@@ -28,6 +28,14 @@ describe("Feature: Botão de logout", () => {
 
       expect(screen.getByRole("button", { name: "Sair" })).toBeInTheDocument();
     });
+
+    it("Dado o componente, Então o botão vem do Button do Still Void", () => {
+      render(<LogoutButton />);
+
+      // `hover:bg-sv-surface` é emitido pela variante ghost do <Button> do
+      // pacote, não pelo app: prova de que o botão é o componente da lib.
+      expect(screen.getByRole("button", { name: "Sair" })).toHaveClass("hover:bg-sv-surface");
+    });
   });
 
   describe("Cenário: clique aciona logout", () => {

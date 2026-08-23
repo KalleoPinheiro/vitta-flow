@@ -4,6 +4,8 @@ import { useState } from "react";
 import { apiFetch } from "@/lib/client";
 import type { AnamnesisDto } from "@/lib/dto";
 import { ErrorAlert } from "@/components/feedback";
+import { Button } from "@still-void/ui/react";
+import { accentButton, nativeField } from "@/lib/ui";
 
 interface AnamnesisSectionProps {
   patientId: string;
@@ -56,24 +58,25 @@ export function AnamnesisSection({ patientId, anamnesis, onSaved }: AnamnesisSec
       {FIELDS.map((field) => (
         <label key={field.key} className="text-sm font-medium">
           {field.label}
+          {/* sv-gap: textarea */}
           <textarea
             rows={2}
             value={values[field.key]}
             placeholder={field.placeholder}
             onChange={(e) => setValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none"
+            className={`${nativeField} mt-1 w-full`}
           />
         </label>
       ))}
       <div className="flex items-center gap-3">
-        <button
+        <Button
           type="submit"
           disabled={saving}
-          className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-50"
+          className={accentButton}
         >
           {saving ? "Salvando…" : "Salvar anamnese"}
-        </button>
-        {savedAt && <span className="text-xs text-slate-500">Salvo às {savedAt}</span>}
+        </Button>
+        {savedAt && <span className="text-xs text-ink-3">Salvo às {savedAt}</span>}
       </div>
     </form>
   );

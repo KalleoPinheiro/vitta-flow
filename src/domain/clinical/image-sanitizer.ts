@@ -51,19 +51,31 @@ interface JpegSegment {
   copyRest?: boolean;
 }
 
-function readJpegSegment(data: Uint8Array, offset: number): JpegSegment | null {
+/**
+ * Localiza o marcador que abre o segmento em `offset`. Qualquer número de
+ * bytes 0xFF pode preceder o marcador (fill bytes, ITU-T T.81).
+ */
+function findJpegMarker(
+  data: Uint8Array,
+  offset: number,
+): { marker: number; markerAt: number } | null {
   if (data[offset] !== 0xff) {
     return null;
   }
-  // Qualquer número de bytes 0xFF pode preceder o marcador (ITU-T T.81).
   let markerAt = offset + 1;
   while (markerAt < data.length && data[markerAt] === 0xff) {
     markerAt += 1;
   }
   const marker = data[markerAt];
-  if (marker === undefined) {
+  return marker === undefined ? null : { marker, markerAt };
+}
+
+function readJpegSegment(data: Uint8Array, offset: number): JpegSegment | null {
+  const found = findJpegMarker(data, offset);
+  if (!found) {
     return null;
   }
+  const { marker, markerAt } = found;
   if (marker === JPEG_SOS) {
     return { end: data.length, keep: true, copyRest: true };
   }

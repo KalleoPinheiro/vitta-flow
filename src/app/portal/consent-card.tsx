@@ -2,29 +2,39 @@
 
 import { useState } from "react";
 import { apiFetch } from "@/lib/client";
-import { useApiQuery } from "@/lib/use-api-query";
 import { formatDateTime } from "@/lib/format";
+import { Button, Input } from "@still-void/ui/react";
 import { ErrorAlert } from "@/components/feedback";
+import { accentButton } from "@/lib/ui";
 
-interface ConsentStatusDto {
+export interface ConsentStatusDto {
   consentText: string;
   accepted: boolean;
   acceptedAt: string | null;
 }
 
-/** Consentimento digital (O4.1): paciente lê o termo vigente e aceita no portal. */
-export function ConsentCard() {
-  const { data, refresh } = useApiQuery<ConsentStatusDto>("/api/portal/patient/consent");
+/**
+ * Consentimento digital (O4.1): paciente lê o termo vigente e aceita no portal.
+ * O status vem do pai (`PatientPortalView`) — o mesmo dado governa o envio de
+ * foto (COMP3-01), então uma cópia só evita telas divergentes após o aceite.
+ */
+export function ConsentCard({
+  status,
+  onAccepted,
+}: {
+  status: ConsentStatusDto | null;
+  onAccepted: () => void;
+}) {
   const [error, setError] = useState<string | null>(null);
   const [accepting, setAccepting] = useState(false);
 
-  if (!data) return null;
+  if (!status) return null;
 
-  if (data.accepted) {
+  if (status.accepted) {
     return (
-      <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+      <p className="rounded-lg border border-success-soft bg-success-soft px-4 py-3 text-sm text-success">
         ✓ Termo de consentimento aceito
-        {data.acceptedAt ? ` em ${formatDateTime(data.acceptedAt)}` : ""}.
+        {status.acceptedAt ? ` em ${formatDateTime(status.acceptedAt)}` : ""}.
       </p>
     );
   }
@@ -34,30 +44,37 @@ export function ConsentCard() {
     setError(null);
     try {
       await apiFetch("/api/portal/patient/consent", { method: "POST" });
-      refresh();
+      onAccepted();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao registrar aceite");
+    } finally {
+      // Sai de "Registrando…" mesmo no sucesso: quem confirma o aceite na tela é
+      // o status recarregado pelo pai, e essa recarga pode falhar. Se o estado
+      // ficasse preso aqui, o botão morria desabilitado e o envio de foto
+      // (COMP3-01) seguia bloqueado sem caminho de volta. O POST é idempotente
+      // (rota devolve o aceite existente), então tentar de novo é seguro.
       setAccepting(false);
     }
   };
 
   return (
-    <section className="rounded-xl border border-amber-300 bg-amber-50 p-4">
-      <h2 className="mb-2 text-sm font-bold text-amber-900">
+    // sv-gap: card-as-element
+    <section className="rounded-lg border border-warning bg-warning-soft p-4">
+      <h2 className="mb-2 text-sm font-bold text-warning">
         Termo de consentimento pendente
       </h2>
       {error && <ErrorAlert message={error} />}
-      <pre className="mb-3 max-h-48 overflow-y-auto whitespace-pre-wrap rounded border border-amber-200 bg-white p-3 text-xs text-slate-700">
-        {data.consentText}
+      <pre className="mb-3 max-h-48 overflow-y-auto whitespace-pre-wrap rounded border border-warning-soft bg-sv-surface p-3 text-xs text-ink">
+        {status.consentText}
       </pre>
-      <button
+      <Button
         type="button"
         disabled={accepting}
         onClick={() => void accept()}
-        className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-50"
+        className={accentButton}
       >
         {accepting ? "Registrando…" : "Li e aceito o termo"}
-      </button>
+      </Button>
     </section>
   );
 }
@@ -65,18 +82,19 @@ export function ConsentCard() {
 /** Envio remoto de foto (O4.2) para condição ativa do próprio paciente. */
 export function PatientPhotoUpload({
   conditionId,
+  consentPending,
   onSent,
 }: {
   conditionId: string;
+  // Envio exige consentimento vigente (COMP3-01) — avisa antes de escolher o
+  // arquivo. Enquanto o status não chegou (null no pai), não bloqueia a tela.
+  consentPending: boolean;
   onSent: () => void;
 }) {
-  const { data: consent } = useApiQuery<ConsentStatusDto>("/api/portal/patient/consent");
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
-  // Envio exige consentimento vigente (COMP3-01) — avisa antes de escolher o arquivo.
-  const consentPending = consent !== null && consent.accepted === false;
 
   const upload = async (file: File) => {
     setSending(true);
@@ -103,29 +121,30 @@ export function PatientPhotoUpload({
 
   if (consentPending) {
     return (
-      <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+      <p className="mt-2 rounded-lg border border-warning-soft bg-warning-soft px-3 py-2 text-xs text-warning">
         Aceite o termo de consentimento acima para enviar fotos à equipe.
       </p>
     );
   }
 
   return (
-    <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+    <div className="mt-2 rounded-lg border border-border bg-bg p-3">
       {error && <ErrorAlert message={error} />}
       {sent && (
-        <p className="mb-2 text-xs text-emerald-700">
+        <p className="mb-2 text-xs text-success">
           Foto enviada — a equipe vai avaliar e retorna se for preciso antecipar sua consulta.
         </p>
       )}
       <div className="flex flex-wrap items-center gap-2">
-        <input
+        <Input
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Observação (opcional): dor, vazamento, vermelhidão…"
-          className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs focus:border-teal-500 focus:outline-none"
+          className="h-8 min-w-0 flex-1 text-xs"
         />
-        <label className="cursor-pointer rounded-lg bg-teal-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-teal-800">
+        <label className={`cursor-pointer rounded-md px-3 py-1.5 text-xs font-medium ${accentButton}`}>
           {sending ? "Enviando…" : "Enviar foto"}
+          {/* sv-gap: file-input */}
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"

@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 5,
+  "next_id": 10,
   "lessons": [
     {
       "id": "L-001",
@@ -76,6 +76,96 @@
       ],
       "created": "2026-08-15T09:40:27Z",
       "last_seen": "2026-08-15T09:40:27Z"
+    },
+    {
+      "id": "L-005",
+      "key": "surviving_mutant::um script que serve de gate precisa de teste pr prio com fixture e viola o plantada sen o ele fica cego em sil ncio e segue reportando ok",
+      "text": "Um script que serve de gate precisa de teste próprio, com fixture e violação plantada — senão ele fica cego em silêncio e segue reportando OK",
+      "signal": "surviving_mutant",
+      "scope": "scripts",
+      "status": "candidate",
+      "features": [
+        "still-void-v2-migration"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "Sensor M8 — scripts/check-sv-adoption.sh; tests/scripts/check-sv-adoption.test.ts (scripts)"
+      ],
+      "created": "2026-08-22T21:21:54Z",
+      "last_seen": "2026-08-22T21:21:54Z"
+    },
+    {
+      "id": "L-006",
+      "key": "surviving_mutant::ao asserir sobre sa da de linha de comando exija o marcador de falha e a contagem nunca s o r tulo da checagem que costuma ser impresso nos dois estados",
+      "text": "Ao asserir sobre saída de linha de comando, exija o marcador de falha e a contagem, nunca só o rótulo da checagem, que costuma ser impresso nos dois estados",
+      "signal": "surviving_mutant",
+      "scope": "tests",
+      "status": "candidate",
+      "features": [
+        "still-void-v2-migration"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "Sensor M12 — tests/scripts/check-sv-adoption.test.ts:107 (tests)"
+      ],
+      "created": "2026-08-22T21:21:54Z",
+      "last_seen": "2026-08-22T21:21:54Z"
+    },
+    {
+      "id": "L-007",
+      "key": "spec_precision_gap::ao exigir que um documento liste um item diga se satisfaz com se o pr pria ou com men o no corpo as duas leituras s o v lidas e o verificador n o tem como escolher",
+      "text": "Ao exigir que um documento liste um item, diga se satisfaz com seção própria ou com menção no corpo — as duas leituras são válidas e o verificador não tem como escolher",
+      "signal": "spec_precision_gap",
+      "scope": "specs",
+      "status": "candidate",
+      "features": [
+        "still-void-v2-migration"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "AC P1-3.3 — .specs/features/still-void-v2-migration/spec.md:103 (specs)"
+      ],
+      "created": "2026-08-22T21:21:54Z",
+      "last_seen": "2026-08-22T21:21:54Z"
+    },
+    {
+      "id": "L-008",
+      "key": "gate_fail::useapiquery guarda estado por componente e n o tem cache compartilhado dois componentes que consultam a mesma url divergem depois de uma muta o quem depende do mesmo dado precisa receb lo por prop de um pai nico",
+      "text": "useApiQuery guarda estado por componente e não tem cache compartilhado: dois componentes que consultam a mesma URL divergem depois de uma mutação — quem depende do mesmo dado precisa recebê-lo por prop de um pai único.",
+      "signal": "gate_fail",
+      "scope": "src/app/**,src/lib/use-api-query.ts",
+      "status": "candidate",
+      "features": [
+        "e2e-consentimento-verdes"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "src/lib/use-api-query.ts:13 (src/app/**,src/lib/use-api-query.ts)"
+      ],
+      "created": "2026-08-22T22:14:58Z",
+      "last_seen": "2026-08-22T22:14:58Z"
+    },
+    {
+      "id": "L-009",
+      "key": "ac_gap::asser o de aus ncia tohavecount 0 exige uma ncora de presen a na mesma lista sen o passa por lista vazia e casa por engano com registro vizinho de descri o parecida",
+      "text": "Asserção de ausência (toHaveCount(0)) exige uma âncora de presença na mesma lista, senão passa por lista vazia e casa por engano com registro vizinho de descrição parecida.",
+      "signal": "ac_gap",
+      "scope": "e2e/**",
+      "status": "candidate",
+      "features": [
+        "e2e-consentimento-verdes"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "e2e/faturamento.spec.ts:136 (e2e/**)"
+      ],
+      "created": "2026-08-22T22:14:58Z",
+      "last_seen": "2026-08-22T22:14:58Z"
     }
   ]
 }

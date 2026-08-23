@@ -3,6 +3,8 @@
 import { useState } from "react";
 import type { PartnerDto, PatientDto } from "@/lib/dto";
 import { ErrorAlert } from "@/components/feedback";
+import { Button, Input } from "@still-void/ui/react";
+import { accentButton, nativeField } from "@/lib/ui";
 
 export interface PatientFormValues {
   fullName: string;
@@ -18,9 +20,6 @@ interface PatientFormProps {
   partners: PartnerDto[];
   onSubmit: (values: PatientFormValues) => Promise<void>;
 }
-
-const inputClass =
-  "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none";
 
 const toFormValues = (initial?: PatientDto): PatientFormValues => {
   if (!initial) {
@@ -62,47 +61,48 @@ export function PatientForm({ initial, partners, onSubmit }: PatientFormProps) {
       {error && <ErrorAlert message={error} />}
       <label className="text-sm font-medium">
         Nome completo *
-        <input
+        <Input
           required
           value={values.fullName}
           onChange={(e) => set("fullName")(e.target.value)}
-          className={`mt-1 ${inputClass}`}
+          className="mt-1"
         />
       </label>
       <label className="text-sm font-medium">
         Email *
-        <input
+        <Input
           required
           type="email"
           value={values.email}
           onChange={(e) => set("email")(e.target.value)}
-          className={`mt-1 ${inputClass}`}
+          className="mt-1"
         />
       </label>
       <label className="text-sm font-medium">
         Telefone *
-        <input
+        <Input
           required
           value={values.phone}
           onChange={(e) => set("phone")(e.target.value)}
-          className={`mt-1 ${inputClass}`}
+          className="mt-1"
         />
       </label>
       <label className="text-sm font-medium">
         Data de nascimento
-        <input
+        <Input
           type="date"
           value={values.birthDate}
           onChange={(e) => set("birthDate")(e.target.value)}
-          className={`mt-1 ${inputClass}`}
+          className="mt-1"
         />
       </label>
       <label className="text-sm font-medium">
         Indicado por (médico parceiro)
+        {/* sv-gap: native-select */}
         <select
           value={values.referredByPartnerId}
           onChange={(e) => set("referredByPartnerId")(e.target.value)}
-          className={`mt-1 ${inputClass}`}
+          className={`mt-1 ${nativeField}`}
         >
           <option value="">Sem indicação</option>
           {partners
@@ -117,20 +117,21 @@ export function PatientForm({ initial, partners, onSubmit }: PatientFormProps) {
       </label>
       <label className="text-sm font-medium">
         Observações clínicas
+        {/* sv-gap: textarea */}
         <textarea
           rows={3}
           value={values.notes}
           onChange={(e) => set("notes")(e.target.value)}
-          className={`mt-1 ${inputClass}`}
+          className={`mt-1 ${nativeField}`}
         />
       </label>
-      <button
+      <Button
         type="submit"
         disabled={saving}
-        className="mt-2 rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-50"
+        className={`mt-2 ${accentButton}`}
       >
         {saving ? "Salvando…" : "Salvar"}
-      </button>
+      </Button>
     </form>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button, Card, CardContent } from "@still-void/ui/react";
 import { Hero } from "@still-void/ui/react";
 import type { PartnerDto, PortalAppointmentDto, ReferredPatientSummaryDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
@@ -45,32 +46,34 @@ export function PartnerPortalView() {
           {data.referredPatients.map(({ patient, appointments, conditions }) => {
             const isOpen = expanded === patient.id;
             return (
-              <div key={patient.id} className="rounded-xl border border-slate-200 bg-white p-4">
-                <button
+              <Card key={patient.id}>
+                <CardContent className="p-4">
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={() => setExpanded(isOpen ? null : patient.id)}
-                  className="flex w-full items-center justify-between text-left"
+                  className="flex h-auto w-full items-center justify-between whitespace-normal px-0 py-0 text-left"
                 >
                   <div>
                     <p className="font-medium">{patient.fullName}</p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-ink-3">
                       {appointments.length} consulta(s) · {conditions.length} condição(ões) em
                       acompanhamento
                     </p>
                   </div>
-                  <span className="text-sm font-medium text-teal-700">
+                  <span className="text-sm font-medium text-accent-ink">
                     {isOpen ? "Ocultar" : "Ver evolução"}
                   </span>
-                </button>
+                </Button>
 
                 {isOpen && (
-                  <div className="mt-4 flex flex-col gap-4 border-t border-slate-100 pt-4">
+                  <div className="mt-4 flex flex-col gap-4 border-t border-border pt-4">
                     <div>
                       <h3 className="mb-2 text-sm font-semibold">Consultas</h3>
                       {appointments.length === 0 ? (
                         <EmptyState message="Nenhuma consulta." />
                       ) : (
-                        <ul className="divide-y divide-slate-100 text-sm">
+                        <ul className="divide-y divide-border text-sm">
                           {appointments.map((appointment) => (
                             <li key={appointment.id} className="flex items-center gap-3 py-2">
                               <span className="flex-1">
@@ -102,7 +105,8 @@ export function PartnerPortalView() {
                     </div>
                   </div>
                 )}
-              </div>
+                </CardContent>
+              </Card>
             );
           })}
         </div>

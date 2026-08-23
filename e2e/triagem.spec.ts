@@ -16,6 +16,11 @@ async function uploadPatientPhoto(
   note: string,
 ): Promise<void> {
   await page.context().addCookies([sessionCookie(patientEmail, "patient")]);
+  // Tratamento de imagem clínica exige base legal registrada (COMP3-01): sem
+  // aceite vigente do termo, a rota de envio rejeita — o paciente do portal faz
+  // esse aceite na tela, aqui vai pela mesma API.
+  const consent = await page.request.post("/api/portal/patient/consent");
+  expect(consent.ok(), `aceite do termo falhou: ${consent.status()}`).toBe(true);
   const response = await page.request.post("/api/portal/patient/photos", {
     multipart: {
       file: { name: "foto.png", mimeType: "image/png", buffer: TINY_PNG },

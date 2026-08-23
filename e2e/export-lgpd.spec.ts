@@ -7,7 +7,7 @@ import {
   createPatient,
   unique,
 } from "./support/api";
-import { slotFromSeed } from "./support/dates";
+import { slotForAttempt } from "./support/dates";
 import { toApiDatetime } from "./support/iso-datetime";
 
 test.describe("exportação de dados do titular (LGPD art. 18)", () => {
@@ -19,7 +19,7 @@ test.describe("exportação de dados do titular (LGPD art. 18)", () => {
     });
     await addAssessment(request, condition.id, { lengthMm: 15, widthMm: 8, depthMm: 2 });
 
-    const slot = slotFromSeed("export-lgpd-appointment-1");
+    const slot = slotForAttempt("export-lgpd-appointment-1");
     const appointment = await createAppointment(request, {
       patientId: patient.id,
       startsAt: toApiDatetime(slot.startsAt),

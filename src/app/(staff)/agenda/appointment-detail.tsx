@@ -10,6 +10,8 @@ import {
 } from "@/lib/format";
 import { StatusBadge } from "@/components/status-badge";
 import { ErrorAlert } from "@/components/feedback";
+import { Button, Input } from "@still-void/ui/react";
+import { accentButton, nativeField } from "@/lib/ui";
 
 type AppointmentAction = "confirm" | "cancel" | "no_show" | "complete";
 
@@ -29,10 +31,10 @@ const FOLLOW_UP_OPTIONS = [
 ];
 
 const ACTION_BUTTONS: Array<{ action: AppointmentAction; label: string; className: string }> = [
-  { action: "confirm", label: "Confirmar", className: "bg-teal-700 hover:bg-teal-800" },
-  { action: "complete", label: "Concluir + faturar", className: "bg-emerald-700 hover:bg-emerald-800" },
-  { action: "no_show", label: "Registrar falta", className: "bg-amber-600 hover:bg-amber-700" },
-  { action: "cancel", label: "Cancelar", className: "bg-red-700 hover:bg-red-800" },
+  { action: "confirm", label: "Confirmar", className: "bg-accent-ink hover:bg-accent-strong" },
+  { action: "complete", label: "Concluir + faturar", className: "bg-success hover:bg-success" },
+  { action: "no_show", label: "Registrar falta", className: "bg-warning hover:bg-warning" },
+  { action: "cancel", label: "Cancelar", className: "bg-danger hover:bg-danger" },
 ];
 
 const VISIBLE_ACTIONS: Record<string, AppointmentAction[]> = {
@@ -82,39 +84,40 @@ export function AppointmentDetail({ appointment, onAction, onReschedule }: Appoi
         />
       </div>
       <p>
-        <span className="text-slate-500">Data: </span>
+        <span className="text-ink-3">Data: </span>
         {formatDate(appointment.startsAt)}, {formatTime(appointment.startsAt)}–
         {formatTime(appointment.endsAt)}
       </p>
       <p>
-        <span className="text-slate-500">Procedimento: </span>
+        <span className="text-ink-3">Procedimento: </span>
         {appointment.procedure}
       </p>
       <p>
-        <span className="text-slate-500">Valor: </span>
+        <span className="text-ink-3">Valor: </span>
         {formatCurrency(appointment.priceCents)}
       </p>
       {appointment.notes && (
         <p>
-          <span className="text-slate-500">Observações: </span>
+          <span className="text-ink-3">Observações: </span>
           {appointment.notes}
         </p>
       )}
 
       <a
         href={`/documentos/atestado/${appointment.id}`}
-        className="text-xs font-medium text-teal-700 hover:underline"
+        className="text-xs font-medium text-accent-ink hover:underline"
       >
         Declaração de comparecimento
       </a>
 
       {visibleActions.includes("complete") && (
-        <label className="mt-1 text-xs font-medium text-slate-600">
+        <label className="mt-1 text-xs font-medium text-ink-2">
           Ao concluir, programar retorno:
+          {/* sv-gap: native-select */}
           <select
             value={followUpInDays}
             onChange={(e) => setFollowUpInDays(Number(e.target.value))}
-            className="ml-2 rounded-lg border border-slate-300 px-2 py-1 text-xs"
+            className={nativeField}
           >
             {FOLLOW_UP_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -129,7 +132,7 @@ export function AppointmentDetail({ appointment, onAction, onReschedule }: Appoi
         <div className="mt-2 flex flex-wrap gap-2">
           {ACTION_BUTTONS.filter((button) => visibleActions.includes(button.action)).map(
             (button) => (
-              <button
+              <Button
                 key={button.action}
                 type="button"
                 disabled={busy}
@@ -141,51 +144,53 @@ export function AppointmentDetail({ appointment, onAction, onReschedule }: Appoi
                     ),
                   )
                 }
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50 ${button.className}`}
+                variant="ghost"
+                className={button.className}
               >
                 {button.label}
-              </button>
+              </Button>
             ),
           )}
-          <button
+          <Button
             type="button"
             disabled={busy}
             onClick={() => setRescheduling((prev) => !prev)}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            variant="outline"
+            className="text-ink hover:bg-bg"
           >
             Remarcar
-          </button>
+          </Button>
         </div>
       )}
 
       {rescheduling && (
-        <div className="mt-2 flex flex-wrap items-end gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <div className="mt-2 flex flex-wrap items-end gap-2 rounded-lg border border-border bg-bg p-3">
           <label className="text-xs font-medium">
             Nova data
-            <input
+            <Input
               type="date"
               value={newDate}
               onChange={(e) => setNewDate(e.target.value)}
-              className="mt-1 block rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+              className="mt-1"
             />
           </label>
           <label className="text-xs font-medium">
             Novo horário
-            <input
+            <Input
               type="time"
               value={newTime}
               onChange={(e) => setNewTime(e.target.value)}
-              className="mt-1 block rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+              className="mt-1"
             />
           </label>
-          <button
+          <Button
             type="button"
             disabled={busy}
             onClick={() => void handleReschedule()}
-            className="rounded-lg bg-teal-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-teal-800 disabled:opacity-50"
+            className={accentButton}
           >
             Confirmar remarcação
-          </button>
+          </Button>
         </div>
       )}
     </div>

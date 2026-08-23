@@ -219,10 +219,12 @@ describe("Feature: SettingsPage", () => {
       render(<SettingsPage />);
       await screen.findByText("Grade de horários");
 
-      const domButton = screen.getByText("Dom");
-      expect(domButton.className).not.toContain("bg-teal-700");
+      const domButton = screen.getByRole("button", { name: "Dom" });
+      expect(domButton).toHaveAttribute("aria-pressed", "false");
+      expect(domButton.className).not.toContain("bg-accent-ink");
       fireEvent.click(domButton);
-      expect(domButton.className).toContain("bg-teal-700");
+      expect(domButton).toHaveAttribute("aria-pressed", "true");
+      expect(domButton.className).toContain("bg-accent-ink");
     });
 
     it("Dado clique em salvar grade, Quando a chamada é bem-sucedida, Então exibe confirmação", async () => {
@@ -304,10 +306,12 @@ describe("Feature: SettingsPage", () => {
       render(<SettingsPage />);
       await screen.findByText("Grade de horários");
 
-      const segButton = screen.getByText("Seg");
-      expect(segButton.className).toContain("bg-teal-700");
+      const segButton = screen.getByRole("button", { name: "Seg" });
+      expect(segButton).toHaveAttribute("aria-pressed", "true");
+      expect(segButton.className).toContain("bg-accent-ink");
       fireEvent.click(segButton);
-      expect(segButton.className).not.toContain("bg-teal-700");
+      expect(segButton).toHaveAttribute("aria-pressed", "false");
+      expect(segButton.className).not.toContain("bg-accent-ink");
     });
 
     it("Dado alteração dos campos de abertura, fechamento e intervalo, Quando editados, Então refletem os novos valores", async () => {

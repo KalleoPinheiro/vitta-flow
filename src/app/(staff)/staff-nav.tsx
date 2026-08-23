@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { headerClasses } from "@still-void/ui";
+import { headerClasses } from "@still-void/ui/react";
 
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard" },

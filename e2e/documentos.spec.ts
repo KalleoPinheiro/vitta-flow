@@ -1,13 +1,13 @@
 import { test, expect } from "@playwright/test";
 import { addAssessment, createAppointment, createCondition, createPatient, unique } from "./support/api";
-import { slotFromSeed } from "./support/dates";
+import { slotForAttempt } from "./support/dates";
 import { toApiDatetime } from "./support/iso-datetime";
 
 test.describe("documentos imprimíveis", () => {
   test("declaração de comparecimento mostra os dados da consulta", async ({ page, request }) => {
     const patient = await createPatient(request, { fullName: `Paciente Atestado ${unique()}` });
     const procedure = `Troca de bolsa (documento) E2E ${unique()}`;
-    const slot = slotFromSeed("documentos-atestado-1");
+    const slot = slotForAttempt("documentos-atestado-1");
     const appointment = await createAppointment(request, {
       patientId: patient.id,
       startsAt: toApiDatetime(slot.startsAt),

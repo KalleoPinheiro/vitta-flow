@@ -1,0 +1,10 @@
+# Regras SAST que não se aplicam às suítes de teste do vitta-flow.
+#
+# As suítes precisam de credenciais determinísticas e legíveis no próprio arquivo
+# (`const SECRET = "test-secret"`), o que dispara as regras de hardcoded_secrets.
+# Não são credenciais reais e nada disso vai para o bundle de produção.
+#
+# O código de produção NÃO é ignorado — os achados reais do scan de 2026-08-23
+# (gcm-no-tag-length em src/lib/auth/crypto.ts) foram corrigidos, não suprimidos.
+tests/
+e2e/

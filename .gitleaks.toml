@@ -1,0 +1,31 @@
+# Configuração do GitLeaks para o vitta-flow.
+#
+# Contexto: o scan de 2026-08-23 (GitGuard) reportou 7 findings HIGH de
+# `generic-api-key`. Todos são fixtures das suítes de teste — nenhuma credencial
+# real foi exposta, e o `.env.example` versionado só contém valores vazios ou
+# placeholders. Os segredos da suíte E2E foram removidos do código-fonte e passaram
+# a ser gerados por execução (ver e2e/support/constants.ts).
+#
+# O que resta são constantes inline dos testes unitários (ex.: `const SECRET =
+# "test-secret"`), que precisam ser determinísticas e legíveis no próprio teste.
+# Elas ficam explicitamente permitidas abaixo, com escopo restrito a `tests/`.
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "generic-api-key"
+[rules.allowlist]
+description = "Constantes determinísticas das suítes de teste — não são credenciais reais"
+paths = [
+  '''^tests/.*\.tsx?$''',
+  '''^e2e/.*\.tsx?$''',
+]
+
+[allowlist]
+description = "Arquivos-modelo e artefatos de teste"
+paths = [
+  # Modelo versionado por decisão (ver .gitignore): valores vazios/placeholder.
+  '''^\.env\.example$''',
+  '''^package-lock\.json$''',
+]

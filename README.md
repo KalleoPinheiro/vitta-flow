@@ -205,8 +205,11 @@ Testes escritos em estilo BDD (`Feature / Cenário / Dado-Quando-Então`), com c
 - `tests/infrastructure/` — integração dos repositórios SQLite (`:memory:`)
 - `tests/api/` — fluxo completo pela API (paciente → consulta → fatura → resumo)
 - `tests/components/` e `tests/pages/` — renderização e interação (jsdom + Testing Library)
+- `e2e/` — jornadas ponta a ponta no browser (Playwright, `npm run test:e2e`)
 
 `npm run check:sv` é um gate à parte: falha se um `<button>`/`<input>` cru voltar, se uma cor sair da ponte de tokens, ou se uma marcação `sv-gap:` ficar sem entrada em [docs/still-void-gaps.md](docs/still-void-gaps.md).
+
+A suíte E2E sobe os próprios servidores Next e **gera as credenciais a cada execução** — nenhum segredo fica no código-fonte. Para fixá-las (ao reaproveitar um `npm run dev` já em pé, por exemplo), defina `E2E_AUTH_SECRET` e `E2E_AUTH_PASSWORD` antes de rodar.
 
 ## API
 

@@ -25,7 +25,7 @@ Implement these tasks with the `tlc-spec-driven` skill: **activate it by name an
 | Manifesto (`package.json`) | none — build gate | `typecheck` + `build` verdes | — | `npm run typecheck && npm run build` |
 | Script de gate (`scripts/*.sh`) | none — auto-verificável | Executa, imprime achados, código de saída correto | — | `bash scripts/check-sv-adoption.sh` |
 | Fluxo E2E (`e2e/**`) | e2e | Suítes existentes verdes; nenhum spec novo (não há comportamento novo) | `e2e/*.spec.ts` | `npm run test:e2e` |
-| Documentação (`docs/*.md`) | none | Revisão contra a export line da `2.0.0` | — | — |
+| Documentação (`docs/*.md`) | none | Revisão contra a export line da `2.0.1` | — | — |
 
 ## Parallelism Assessment
 
@@ -52,9 +52,13 @@ Implement these tasks with the `tlc-spec-driven` skill: **activate it by name an
   (`no-unused-vars` em 6 arquivos de teste). **Dívida pré-existente, fora do escopo desta feature** — nenhum
   dos 7 arquivos é tocado aqui. Por isso o gate usa `npx eslint` nos arquivos da task, e não `npm run lint`
   global: um gate que já nasce vermelho não é gate. Corrigir esses 11 achados é trabalho separado.
+  → **Feito depois** (`76ed3d8`): os 11 achados foram zerados e o `npm run lint` global sai com 0. A linha
+  `npm run lint` que aparece nos gates de T1 e T30 abaixo passou a ser executável de fato.
 - `npm run build` → **OOM no heap padrão do Node** (`Ineffective mark-compacts near heap limit`, ~2 GB).
   Também pré-existente (medido com a ponte Tailwind fora da árvore). Passa com
   `NODE_OPTIONS=--max-old-space-size=6144`. Limite de ambiente, não da migração.
+  → **Resolvido depois** (`836d9e8`, AD-007): o pico real é ~2,5 GB e o heap padrão do V8 nesta máquina é
+  2.240 MB. O `npm run build` passou a fixar 4 GB, então não precisa mais de `NODE_OPTIONS` na linha de comando.
 
 ---
 
@@ -122,7 +126,7 @@ T27 → T28 → T29 → T30
 
 ## Task Breakdown
 
-### T1: Subir para `@still-void/ui@^2.0.0` e eliminar o import bare
+### T1: Subir para `@still-void/ui@^2.0.1` e eliminar o import bare
 
 **What**: Bump da dependência e reapontamento dos 5 imports do entry point removido.
 **Where**: `package.json`, `package-lock.json`, `src/app/(staff)/staff-nav.tsx`, `src/components/brand-logo.tsx`, `src/components/load-more-button.tsx`, `src/components/logout-button.tsx`, `src/components/modal.tsx`
@@ -133,7 +137,7 @@ T27 → T28 → T29 → T30
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] `package.json` declara `"@still-void/ui": "^2.0.0"`; `node_modules/@still-void/ui/package.json` reporta `version` iniciando em `2.`
+- [ ] `package.json` declara `"@still-void/ui": "^2.0.1"`; `node_modules/@still-void/ui/package.json` reporta `version` iniciando em `2.`
 - [ ] `headerClasses` (3 arquivos), `logo`/`logoClasses` (1) e `categoryPill` (1) importados de `@still-void/ui/react`
 - [ ] `grep -rn 'from "@still-void/ui"' src` retorna vazio
 - [ ] `react`/`react-dom` satisfazem o peer `>=18` (já em 19.2.4 — nenhuma instalação nova)
@@ -143,7 +147,7 @@ T27 → T28 → T29 → T30
 
 **Tests**: none (build gate — nenhuma mudança de comportamento)
 **Gate**: build
-**Commit**: `chore(deps): sobe @still-void/ui para 2.0.0 e migra os imports do entry point removido`
+**Commit**: `chore(deps): sobe @still-void/ui para 2.x e migra os imports do entry point removido` (`d917d72`)
 
 ---
 
@@ -647,7 +651,7 @@ T27 → T28 → T29 → T30
 
 ### T29: Documento de lacunas do catálogo
 
-**What**: O arquivo pedido — componentes que o VittaFlow precisa e a `@still-void/ui@2.0.0` não tem.
+**What**: O arquivo pedido — componentes que o VittaFlow precisa e a `@still-void/ui@2.0.1` não tem.
 **Where**: `docs/still-void-gaps.md` (novo), `README.md` (um link)
 **Depends on**: T28
 **Requirement**: SV2-10, SV2-11
@@ -655,7 +659,7 @@ T27 → T28 → T29 → T30
 **Done when**:
 - [ ] Uma seção por lacuna, com: `slug` (igual ao usado em `// sv-gap:`), nome proposto, motivo, nº de call sites, arquivos de exemplo, workaround em vigor, esboço de API sugerida
 - [ ] Cobre no mínimo: `textarea`, `native-select`, `label`/`field`, `table`, `checkbox`, `radio-group`, `pagination`, `progress`, `separator`, `alert-dialog`, `file-input`, `data-chart`
-- [ ] Cada entrada declara **"ausente em 2.0.0"** e é conferível contra a export line dos dois entry points
+- [ ] Cada entrada declara **"ausente em 2.0.1"** e é conferível contra a export line dos dois entry points
 - [ ] `alert-dialog` registra explicitamente a divergência: anunciado em `docs/design-system.md` da lib e com `@radix-ui/react-alert-dialog` em `dependencies`, mas ausente da export line
 - [ ] Todo `// sv-gap: <slug>` presente em `src/` tem seção correspondente, e vice-versa — verificado pelo próprio script de T3
 - [ ] Gate: `npm run typecheck && npm run lint && npm test` + `bash scripts/check-sv-adoption.sh`
@@ -674,7 +678,9 @@ T27 → T28 → T29 → T30
 **Requirement**: SV2-01..13 (fechamento de rastreabilidade)
 
 **Done when**:
-- [ ] `npm run test:e2e` verde — 17 specs, sem spec novo e sem spec pulado
+- [ ] `npm run test:e2e` verde — 17 specs, sem spec novo e sem spec pulado. **Exceção assumida em T30**:
+      fechou com 60/64, as 4 falhas medidas como pré-existentes contra o baseline `d917d72` (ver
+      `validation.md`). Exceção encerrada em 2026-08-22 pela feature `e2e-consentimento-verdes`: 64/64.
 - [ ] `AD-005` (convenção `// sv-gap:`) e `AD-006` (todo utilitário de cor resolve para um `--sv-*`) anexados a `.specs/STATE.md` `## Decisions`
 - [ ] Handoff de `.specs/STATE.md` atualizado
 - [ ] Tabela de rastreabilidade da spec com todos os 13 IDs em `Verified`

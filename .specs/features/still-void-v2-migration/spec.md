@@ -10,7 +10,7 @@ módulo. Além disso, o app reimplementa em HTML cru componentes que a lib já e
 
 ## Goals
 
-- [ ] `@still-void/ui@^2.0.0` instalado e zero import bare `@still-void/ui` em `src/`
+- [ ] `@still-void/ui@^2.0.1` instalado e zero import bare `@still-void/ui` em `src/`
 - [ ] `npm run build`, `npm run typecheck`, `npm test` e `npm run test:e2e` verdes
 - [ ] Todo elemento com equivalente no catálogo v2 passa a usar o componente da lib
 - [ ] Zero utilitário de cor sem ponte para token `--sv-*`
@@ -32,10 +32,10 @@ módulo. Além disso, o app reimplementa em HTML cru componentes que a lib já e
 
 | Assumption / decision | Chosen default | Rationale | Confirmed? |
 | --- | --- | --- | --- |
-| Alvo de versão | `^2.0.0` (última publicada: `2.0.0`) | Única release da linha 2.x em `npm view @still-void/ui versions`. | y |
+| Alvo de versão | `^2.0.1` | No planejamento a única release da linha 2.x era a `2.0.0`; a `2.0.1` foi publicada durante a implementação e é a que ficou travada no `package.json` e conferida em todas as evidências deste registro. | y |
 | `<select>` nativo e `<textarea>` | Mantidos, com estilo tokenizado; registrados como lacuna | Decisão do usuário. | y |
 | Paleta | Migrar para utilitários semânticos e remover apelidos `slate-*`/`teal-*` do `@theme` | Decisão do usuário. Ressalva registrada: `slate-*`/`teal-*` **já** apontam para `--sv-*` via `@theme`, então isso é renomeação (legibilidade + fim do apelido enganoso), não correção visual. `amber/emerald/sky` são hardcode real. | y |
-| `AlertDialog` | Tratado como **inexistente** na v2 | `docs/design-system.md` cita a família `AlertDialog`, mas a export line de `dist/react/client/index.d.ts@2.0.0` não a inclui. Evidência do artefato publicado vence a documentação. | y |
+| `AlertDialog` | Tratado como **inexistente** na v2 | `docs/design-system.md` cita a família `AlertDialog`, mas a export line de `dist/react/client/index.d.ts@2.0.1` não a inclui. Evidência do artefato publicado vence a documentação. | y |
 | Modal do app | Mantém a API pública `Modal({title,onClose,children})`, trocando o miolo por `Dialog` da lib | `Dialog` existe no catálogo v2 e cobre focus trap / Escape / `aria-modal` que hoje são feitos à mão. A API estável evita tocar nos ~10 call sites. | y |
 | `ErrorAlert` | Passa de `Callout kind="warn"` + override de CSS var para `Alert` + `AlertDescription` | A v2 traz `Alert` de verdade; o workaround do `Callout` existia porque a v1 não tinha. | y |
 | Componente `Header`/`Sidebar`/`Hero`/`Layout`/`CategoryPill` já em uso | Sem mudança além do path de import | A migração é só de import path para quem já usava `/react`. | y |
@@ -49,14 +49,14 @@ módulo. Além disso, o app reimplementa em HTML cru componentes que a lib já e
 
 ### P1: Subir para a v2 sem quebrar a resolução de módulo ⭐ MVP
 
-**User Story**: Como mantenedor do VittaFlow, quero o app rodando em `@still-void/ui@^2.0.0`
+**User Story**: Como mantenedor do VittaFlow, quero o app rodando em `@still-void/ui@^2.0.1`
 para receber correções e componentes shadcn da linha 2.x.
 
 **Why P1**: Sem isso nada mais compila. É o bloqueio raiz.
 
 **Acceptance Criteria**:
 
-1. WHEN `package.json` é lido THEN a dependência `@still-void/ui` SHALL declarar `^2.0.0` e `node_modules/@still-void/ui/package.json` SHALL reportar `version` iniciando em `2.`
+1. WHEN `package.json` é lido THEN a dependência `@still-void/ui` SHALL declarar `^2.0.1` e `node_modules/@still-void/ui/package.json` SHALL reportar `version` iniciando em `2.`
 2. WHEN `grep -rn "from \"@still-void/ui\"" src` é executado THEN o resultado SHALL ser vazio (zero linhas)
 3. WHEN `src/app/globals.css` é lido THEN os `@import` de `@still-void/ui/theme.css` e `@still-void/ui/style.css` SHALL permanecer inalterados (a v2 não muda os entry points de CSS)
 4. WHEN `npm run typecheck` é executado THEN SHALL sair com código 0
@@ -99,7 +99,7 @@ VittaFlow precisa e a lib não tem, para transformar em backlog da lib.
 **Acceptance Criteria**:
 
 1. WHEN `docs/still-void-gaps.md` existe THEN SHALL listar cada componente ausente com: nome proposto, motivo, quantidade de call sites no VittaFlow, arquivos de exemplo e o workaround em vigor
-2. WHEN um componente é listado como ausente THEN SHALL **não** constar na export line de `@still-void/ui/react@2.0.0` nem de `@still-void/ui/react/client@2.0.0`
+2. WHEN um componente é listado como ausente THEN SHALL **não** constar na export line de `@still-void/ui/react@2.0.1` nem de `@still-void/ui/react/client@2.0.1`
 3. WHEN o arquivo é lido THEN SHALL conter no mínimo as lacunas confirmadas por inventário: `Textarea`, `NativeSelect`, `Label`/`Field`, família `Table`, `Checkbox`, `RadioGroup`, `Pagination`, `Progress`, `Separator` e `AlertDialog`
 4. WHEN um workaround local sobrevive no código THEN SHALL existir um comentário `// sv-gap: <nome-da-lacuna>` no ponto do código, apontando para a entrada correspondente do documento
 
@@ -133,7 +133,7 @@ apelido `slate-*`/`teal-*` — e os 52 usos de `amber/emerald/sky` seguem fora d
 - WHEN `Dialog` da Radix roda em jsdom THEN os testes de `Modal` SHALL continuar passando; se a Radix exigir API de browser ausente no jsdom (`ResizeObserver`, `PointerEvent`), o setup de teste SHALL prover o polyfill em `tests/setup.ts` em vez de o teste ser afrouxado
 - WHEN o `Button` da lib recebe `className` do app THEN as classes do app SHALL vencer (Tailwind utilities > `layer(components)`), preservando os ajustes de largura/espaçamento existentes
 - WHEN um `<button>` cru precisa sobreviver (ex.: célula clicável de grade de agenda que não é um botão visual) THEN SHALL ser marcado com `// sv-gap:` e entrar no documento de lacunas
-- WHEN `docs/still-void-gaps.md` cita um componente que passe a existir numa release futura THEN a entrada SHALL carregar a versão verificada (`ausente em 2.0.0`) para o leitor saber contra o quê foi conferido
+- WHEN `docs/still-void-gaps.md` cita um componente que passe a existir numa release futura THEN a entrada SHALL carregar a versão verificada (`ausente em 2.0.1`) para o leitor saber contra o quê foi conferido
 
 ---
 
@@ -163,6 +163,8 @@ apelido `slate-*`/`teal-*` — e os 52 usos de `amber/emerald/sky` seguem fora d
 ## Success Criteria
 
 - [ ] `npm run typecheck && npm run build && npm test` verdes, cobertura ≥ 90% mantida
-- [ ] `npm run test:e2e` verde (nenhuma regressão de fluxo)
+- [x] `npm run test:e2e` verde (nenhuma regressão de fluxo) — a migração fechou com 60/64, as 4 falhas
+      medidas como **pré-existentes** contra o baseline `d917d72`; exceção documentada em `validation.md`
+      e encerrada em 2026-08-22 pela feature `e2e-consentimento-verdes` (64/64)
 - [ ] Zero import bare `@still-void/ui`, zero `<button>`/`<input>` cru não justificado, zero cor fora de token
 - [ ] `docs/still-void-gaps.md` acionável: cada entrada tem contagem de call sites e arquivos de exemplo

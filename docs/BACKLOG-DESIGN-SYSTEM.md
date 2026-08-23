@@ -22,6 +22,8 @@ item abaixo é candidato a issue própria.
 > `npm run check:sv` falha se um degrau cru voltar.
 
 
+_Registro histórico da PR #2 — descreve o estado de 2026-07-30, antes da resolução acima. Mantido como contexto; não é pedido de trabalho._
+
 **O quê:** a PR retokenizou o shell (sidebar, header do portal, login), os
 primitivos compartilhados (`StatusBadge`, `ErrorAlert`, `LoadingIndicator`,
 `EmptyState`, `Modal`, `LoadMoreButton`, `LogoutButton`, `HealingChart`) e os
@@ -48,6 +50,8 @@ para as classes do pacote (`sv-pill`, `sv-header__link`, etc.) ou para um
 > a entrada `button-accent-variant` em [still-void-gaps.md](still-void-gaps.md).
 
 
+_Registro histórico da PR #2 — descreve o estado de 2026-07-30, antes da resolução acima. Mantido como contexto; não é pedido de trabalho._
+
 **O quê:** o padrão `"rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium
 text-white hover:bg-teal-800"` (e variações próximas) se repete em botões de
 submit por toda a base — nunca foi extraído para um componente.
@@ -67,6 +71,8 @@ diretamente, substituindo os botões inline.
 > corpo impresso usa preto/branco literais — decisão explícita: o alvo é papel, e seguir
 > o tema imprimiria texto claro no tema escuro.
 
+
+_Registro histórico da PR #2 — descreve o estado de 2026-07-30, antes da resolução acima. Mantido como contexto; não é pedido de trabalho._
 
 **O quê:** `src/components/document-frame.tsx` (moldura A4 de atestado, termo de
 consentimento e relatório de evolução) continua com `text-slate-900`,

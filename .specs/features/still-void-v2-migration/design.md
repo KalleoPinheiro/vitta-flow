@@ -1,7 +1,7 @@
 # Migração `@still-void/ui` 1.x → 2.0 + adoção do catálogo — Design
 
 **Spec**: `.specs/features/still-void-v2-migration/spec.md`
-**Status**: Approved (abordagem C + ponte na task 1, confirmadas pelo usuário em 2026-08-22)
+**Status**: Approved (abordagem C + ponte na task 2, confirmadas pelo usuário em 2026-08-22)
 
 ---
 
@@ -16,7 +16,7 @@ Fontes consultadas, em ordem, e o que cada uma decidiu:
 | 2. Docs do projeto | `.specs/STATE.md` | AD-001..AD-004 são de auth/sessão/imagem/programa. Nenhuma restringe camada de UI → **conformar sem supersede**. |
 | 2. Docs do projeto | `AGENTS.md` | "This is NOT the Next.js you know" — checar `node_modules/next/dist/docs/` antes de mexer em convenção de App Router. Esta migração não muda roteamento, só componentes de folha. |
 | 4. Docs da lib | `docs/migration-v1-to-v2.md` | Único breaking: entry `@still-void/ui` some. Nada renomeado exceto o **tipo** `ReadingProgress` → `ReadingProgressController` (o app não usa). |
-| 4. Artefato publicado | `still-void-ui-2.0.0.tgz` | Export lines de `dist/react/index.d.ts` e `dist/react/client/index.d.ts` — fonte de verdade do catálogo (ver tabela abaixo). |
+| 4. Artefato publicado | `still-void-ui-2.0.1.tgz` | Export lines de `dist/react/index.d.ts` e `dist/react/client/index.d.ts` — fonte de verdade do catálogo (ver tabela abaixo). |
 
 ### Catálogo v2 verificado (contra a export line do tarball, não contra a doc)
 
@@ -26,7 +26,7 @@ Fontes consultadas, em ordem, e o que cada uma decidiu:
 
 > **Divergência documentada:** `docs/design-system.md` da lib anuncia a família `AlertDialog`,
 > e `@radix-ui/react-alert-dialog` está em `dependencies` — mas **nenhum símbolo `AlertDialog`
-> aparece na export line da `2.0.0`**. Tratado como ausente e listado como lacuna.
+> aparece na export line da `2.0.1`**. Tratado como ausente e listado como lacuna.
 
 ---
 
@@ -214,7 +214,7 @@ CSS-first e **não tem** `tailwind.config.ts`. A tradução para v4 é `@source`
 - **Purpose**: backlog acionável de componentes para a lib.
 - **Location**: `docs/still-void-gaps.md`
 - **Interfaces**: uma seção por lacuna com `slug`, motivo, nº de call sites, arquivos de exemplo, workaround atual, esboço de API sugerida
-- **Dependencies**: inventário desta fase; export line da `2.0.0` como prova de ausência
+- **Dependencies**: inventário desta fase; export line da `2.0.1` como prova de ausência
 
 ---
 
@@ -270,7 +270,7 @@ CSS-first e **não tem** `tailwind.config.ts`. A tradução para v4 é `@source`
 | --- | --- | --- |
 | Onde consumir a lib | Abordagem C (híbrida) | Já é a convenção do repo; não cria indireção sem uso |
 | Ponte Tailwind | `@source` + `@theme` em `globals.css` (CSS-first do v4) | O projeto não tem `tailwind.config.ts`; o README da lib assume v3 |
-| Fonte de verdade do catálogo | Export line do tarball `2.0.0` | A doc da lib diverge (`AlertDialog`); artefato vence documento |
+| Fonte de verdade do catálogo | Export line do tarball `2.0.1` | A doc da lib diverge (`AlertDialog`); artefato vence documento |
 | `Modal` sobre `Dialog` | Wrapper mantém a API | Evita tocar ~10 call sites e preserva o teste de a11y existente como contrato |
 | Workarounds sobreviventes | Comentário `// sv-gap: <slug>` | Torna a lacuna verificável por `grep` e liga código ↔ backlog da lib |
 | Gate de adoção | `scripts/check-sv-adoption.sh` | Critério "zero ocorrências" precisa ser executável, não inspeção visual |

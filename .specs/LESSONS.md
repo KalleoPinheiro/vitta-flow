@@ -53,7 +53,7 @@ Seen once or not yet corroborated. Tracked, not trusted.
 ### L-007 — Ao exigir que um documento liste um item, diga se satisfaz com seção própria ou com menção no corpo — as duas leituras são válidas e o verificador não tem como escolher
 - signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `specs` · harmful: 0
 - features: still-void-v2-migration
-- evidence: AC P1-3.3 — .specs/features/still-void-v2-migration/spec.md:120 (specs)
+- evidence: AC P1-3.3 — .specs/features/still-void-v2-migration/spec.md:103 (specs)
 - last seen: 2026-08-22T21:21:54Z
 
 ### L-008 — useApiQuery guarda estado por componente e não tem cache compartilhado: dois componentes que consultam a mesma URL divergem depois de uma mutação — quem depende do mesmo dado precisa recebê-lo por prop de um pai único.

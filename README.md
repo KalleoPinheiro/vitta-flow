@@ -65,7 +65,7 @@ Qualidade:
 
 ```bash
 npm test              # 191 testes (domínio, aplicação, integração Postgres via PGlite, API)
-npm run test:coverage # cobertura mínima de 80% imposta
+npm run test:coverage # cobertura mínima de 90% imposta (vitest.config.ts)
 npm run lint          # ESLint
 ```
 
@@ -198,7 +198,7 @@ src/
 
 ## Testes (BDD + TDD)
 
-Testes escritos em estilo BDD (`Feature / Cenário / Dado-Quando-Então`), com cobertura mínima de 80% imposta no vitest:
+Testes escritos em estilo BDD (`Feature / Cenário / Dado-Quando-Então`), com cobertura mínima de **90%** imposta no vitest (limiar em `vitest.config.ts` — fonte da verdade):
 
 - `tests/domain/` — invariantes das entidades e value objects
 - `tests/application/` — casos de uso com repositórios in-memory

@@ -3,7 +3,7 @@
 **Date**: 2026-08-22
 **Spec**: `.specs/features/still-void-v2-migration/spec.md`
 **Diff range**: `284d6fc..HEAD` (33 commits)
-**Verifier**: passe independente standalone (`validate.md`), executado após o último commit de task. Sub-agente não foi despachado: o usuário escolheu execução inline e o ambiente proíbe disparar agentes sem pedido explícito — este é o fallback previsto pela skill.
+**Verifier**: passe independente standalone seguindo `references/validate.md` **da skill tlc-spec-driven** (não este arquivo), executado após o último commit de task. Sub-agente não foi despachado: o usuário escolheu execução inline e o ambiente proíbe disparar agentes sem pedido explícito — este é o fallback previsto pela skill.
 
 ---
 
@@ -31,7 +31,7 @@
 
 | Critério | Resultado definido na spec | Evidência | Result |
 | --- | --- | --- | --- |
-| AC1 `package.json` declara `^2.0.0` e instalado começa com `2.` | `^2.0.0` / `2.x` | `package.json:12` — `"@still-void/ui": "^2.0.0"`; instalado `2.0.1` | ✅ PASS |
+| AC1 `package.json` declara `^2.0.1` e instalado começa com `2.` | `^2.0.1` / `2.x` | `package.json:12` — `"@still-void/ui": "^2.0.1"`; instalado `2.0.1` | ✅ PASS |
 | AC2 `grep from "@still-void/ui"` vazio | zero linhas | gate `check:sv` [1] + `tests/scripts/check-sv-adoption.test.ts:74` — `expect(result.status).toBe(1)` para o caso plantado | ✅ PASS |
 | AC3 `@import` de CSS inalterados | byte-idênticos | `git diff 284d6fc..HEAD -- src/app/globals.css` mantém as duas linhas | ✅ PASS |
 | AC4 `typecheck` exit 0 | exit 0 | executado, exit 0 | ✅ PASS |
@@ -151,9 +151,9 @@ critério. Registrado como lacuna de precisão em vez de aprovado em silêncio.
 - **Delta**: **+22 testes** (+1 arquivo), nenhuma deleção, nenhuma asserção afrouxada
 - **Typecheck**: exit 0
 - **Build**: exit 0; `bg-sv-surface` presente no CSS emitido; zero apelido `slate-*`/`teal-*` no chunk final
-- **Lint**: 0 achados nos arquivos tocados. O `npm run lint` global sai com 1 por **dívida pré-existente** (1 erro `complexity` em `src/domain/clinical/image-sanitizer.ts` + 10 `no-unused-vars` em 6 arquivos de teste), medida no baseline `284d6fc` antes de qualquer task
+- **Lint**: 0 achados nos arquivos tocados. À época da validação o `npm run lint` global saía com 1 por **dívida pré-existente** (1 erro `complexity` em `src/domain/clinical/image-sanitizer.ts` + 10 `no-unused-vars` em 6 arquivos de teste), medida no baseline `284d6fc` antes de qualquer task — por isso o gate desta feature usou `npx eslint` nos arquivos tocados. **Quitada depois** (`76ed3d8`): o `npm run lint` global agora sai com 0
 - **Gate de adoção**: 519 achados → **0**
-- **E2E**: **60 passaram, 4 falharam**
+- **E2E**: **60 passaram, 4 falharam** à época — as 4 eram anteriores à feature e foram **fechadas depois** (ver abaixo); a suíte hoje fecha 64/64
 
 ### Integridade das falhas de E2E
 
@@ -172,8 +172,17 @@ As 4 falhas **não são regressão**, e isso foi medido, não presumido: uma wor
 Causa provável dos três de foto: `POST /api/portal/patient/photos`
 ([route.ts:52](../../../src/app/api/portal/patient/photos/route.ts)) exige consentimento vigente
 (gate COMP3-01, fase 3), e o helper `uploadPatientPhoto` de `e2e/triagem.spec.ts` envia a foto sem
-aceitar o termo — o teste é anterior ao gate. Fora do escopo desta feature; registrado no item 5
-de `docs/BACKLOG-DESIGN-SYSTEM.md`.
+aceitar o termo — o teste é anterior ao gate. Fora do escopo desta feature.
+
+> **Fechadas em 2026-08-22**, em feature própria
+> ([e2e-consentimento-verdes](../e2e-consentimento-verdes/validation.md), verificada por
+> sub-agente independente). O diagnóstico acima se confirmou para os três de foto: gate da
+> rota **correto**, helper desatualizado. O de faturamento era falso positivo do locator.
+> Junto apareceu um bug real de UI no portal. A suíte E2E fecha **64/64**.
+>
+> Isto significa que o critério "`npm run test:e2e` verde" **não estava satisfeito no momento
+> desta validação** — era exceção consciente (falhas pré-existentes, medidas contra baseline),
+> e deixou de existir com o fechamento acima.
 
 ---
 

@@ -205,11 +205,11 @@ Testes escritos em estilo BDD (`Feature / Cenário / Dado-Quando-Então`), com c
 - `tests/infrastructure/` — integração dos repositórios SQLite (`:memory:`)
 - `tests/api/` — fluxo completo pela API (paciente → consulta → fatura → resumo)
 - `tests/components/` e `tests/pages/` — renderização e interação (jsdom + Testing Library)
-- `e2e/` — jornadas ponta a ponta no browser (Playwright, `npm run test:e2e`)
+- `e2e/` — jornadas ponta a ponta no browser (Playwright, `npm run test:e2e`; na primeira execução, ou após um bump do `@playwright/test`, rode `npx playwright install`)
 
 `npm run check:sv` é um gate à parte: falha se um `<button>`/`<input>` cru voltar, se uma cor sair da ponte de tokens, ou se uma marcação `sv-gap:` ficar sem entrada em [docs/still-void-gaps.md](docs/still-void-gaps.md).
 
-A suíte E2E sobe os próprios servidores Next e **gera as credenciais a cada execução** — nenhum segredo fica no código-fonte. Para fixá-las (ao reaproveitar um `npm run dev` já em pé, por exemplo), defina `E2E_AUTH_SECRET` e `E2E_AUTH_PASSWORD` antes de rodar.
+A suíte E2E sobe os próprios servidores Next e **gera as credenciais a cada execução** — nenhum segredo fica no código-fonte, e no fluxo normal não é preciso configurar nada. Para reaproveitar um `npm run dev` já em pé, o `webServer.env` do Playwright não se aplica: os dois pares precisam bater — `E2E_AUTH_SECRET`/`E2E_AUTH_PASSWORD` para a suíte e `AUTH_SECRET`/`AUTH_PASSWORD` com os mesmos valores para o servidor.
 
 ## API
 

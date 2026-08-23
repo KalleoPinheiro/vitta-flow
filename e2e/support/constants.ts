@@ -28,9 +28,16 @@ export const OPEN_MODE_PORT = 3100;
  * Não ficam mais no código-fonte (GitLeaks `generic-api-key` / Semgrep
  * `hardcoded_secrets`): por padrão são geradas por execução e gravadas de volta em
  * `process.env`. Este módulo é carregado primeiro pelo runner do Playwright (via
- * `playwright.config.ts`); os workers são processos filhos e herdam esse `env`, então
- * runner, workers e o servidor Next enxergam o mesmo valor. Defina as variáveis
- * manualmente para fixá-las (útil ao reaproveitar um servidor já em pé).
+ * `playwright.config.ts`); os workers são processos filhos e herdam esse `env`, e o
+ * servidor que o próprio Playwright sobe recebe os valores por `webServer.env`
+ * (mapeados para `AUTH_SECRET`/`AUTH_PASSWORD`).
+ *
+ * O alcance para aí: a propagação cobre apenas processos gerenciados pelo Playwright.
+ * Um `npm run dev` iniciado à parte lê o `AUTH_SECRET`/`AUTH_PASSWORD` do ambiente
+ * dele, e `webServer.env` não é aplicado quando `reuseExistingServer` reaproveita esse
+ * processo. Para reaproveitar um servidor já em pé é preciso que os DOIS pares batam:
+ * exporte `E2E_AUTH_SECRET`/`E2E_AUTH_PASSWORD` para a suíte e
+ * `AUTH_SECRET`/`AUTH_PASSWORD` com os mesmos valores para o servidor.
  */
 const secretFromEnv = (name: string, bytes: number): string => {
   const current = process.env[name];

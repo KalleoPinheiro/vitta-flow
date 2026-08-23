@@ -16,7 +16,7 @@ sub-agentes nesta sessão). Evidência por execução de comando, não por autoa
 | `npm run lint` | `No issues found` |
 | `npm run build` | build de produção completo |
 | `npm run check:sv` | `OK — adoção do @still-void/ui v2 completa` |
-| `npx playwright test e2e/auth.spec.ts` | 6 passed, 0 failed |
+| `npx playwright test e2e/auth.spec.ts` | 6 passed, 0 failed (re-executado após o bump do `@playwright/test` para 1.62.1, que exige `npx playwright install`) |
 | `npm audit` | 0 HIGH, 0 CRITICAL (4 MODERATE aceitos — AD-009) |
 
 ## Evidência por critério de aceite
@@ -40,7 +40,7 @@ sub-agentes nesta sessão). Evidência por execução de comando, não por autoa
 | AC-005.1 | `e2e/support/constants.ts` sem literal de segredo (restam URLs, paths e nome de cookie) | ✅ |
 | AC-005.2 | `secretFromEnv` lê de `process.env` e grava o valor gerado de volta | ✅ |
 | AC-005.3 | `e2e/auth.spec.ts` 6 passed — o `global-setup` faz login real com a senha gerada, provando a propagação runner → workers → servidor Next | ✅ |
-| AC-005.4 | `.gitleaks.toml` + `.semgrepignore`, escopo restrito a `tests/` e `e2e/` | ✅ |
+| AC-005.4 | `.gitleaks.toml` restrito à regra `generic-api-key` nos 11 arquivos de teste enumerados; sem supressão para `e2e/**` (0 literais após T4, verificado) e sem `.semgrepignore` (findings resolvidos na origem) | ✅ |
 | AC-006.1 | `npm outdated` só lista majors | ✅ |
 | AC-006.2 | Nenhum major aplicado (TS 5.9.3, ESLint 9.39.5, @types/node 20, jest-dom 6.9.1, googleapis 173) | ✅ |
 | AC-006.3 | Ver tabela de gates | ✅ |
@@ -54,6 +54,7 @@ Defeitos injetados em escopo descartável; todos revertidos com `git checkout` a
 | M1 — remove validação de tamanho de IV/tag em `crypto.ts` | **morto** (2 testes falharam) |
 | M2 — `AUTH_TAG_LENGTH` de 16 → 4 | **morto** (2 testes falharam) |
 | M3 — `escapeRegExp` vira função identidade | **morto** (3 de 4 falharam; o 4º é teste de equivalência para entrada sem metacaractere, sobrevive por construção) |
+| M2 (2ª rodada) — contra o teste de compatibilidade reescrito | **morto** — a versão anterior do teste sobrevivia a este mutante, porque cifrava com o próprio helper já corrigido |
 
 ### Gap de precisão encontrado e corrigido
 
@@ -71,11 +72,31 @@ testes, encontrada pelo sensor — não pela leitura do código.
 
 ## Confronto final com o relatório
 
-Dos 35 findings do scan: **10 procediam e foram corrigidos**; **25 eram falsos
-positivos** (7 GitLeaks + 2 Semgrep `hardcoded_secrets` de fixtures, 1
-`unsafe-formatstring`) ou fragilidade sem exposição em produção (19
-`detect-non-literal-regexp`, corrigidos mesmo assim). O relatório **não reportou** 3
-HIGH reais — `undici`, `nanoid`, `js-yaml` — também corrigidos aqui.
+Os 35 findings particionam assim — os buckets somam 35 sem sobreposição:
+
+| Bucket | Qtd | Veredito |
+|---|---|---|
+| TRIVY — dependências (`postcss` 3, `sharp` 1, `brace-expansion` 1) | 5 | procede, corrigido |
+| SEMGREP `gcm-no-tag-length` | 1 | procede, corrigido |
+| SEMGREP `node_insecure_random_generator` | 1 | procede, corrigido |
+| SEMGREP `detect-non-literal-regexp` | 18 | procede como fragilidade de teste (sem exposição em produção), corrigido |
+| **Subtotal — procedem** | **25** | |
+| GITLEAKS `generic-api-key` | 7 | falso positivo (fixtures de teste) |
+| SEMGREP `hardcoded_secrets` (`node_secret`, `node_password`) | 2 | falso positivo (mesmas fixtures) |
+| SEMGREP `unsafe-formatstring` | 1 | falso positivo (template literal de JS não tem semântica printf) |
+| **Subtotal — falsos positivos** | **10** | |
+| **Total** | **35** | |
+
+Conferência cruzada com os totais do relatório: HIGH = 4 (TRIVY) + 7 (GITLEAKS) + 3
+(SEMGREP) = 14 ✓ · MEDIUM = 1 (TRIVY, o XSS do postcss) + 19 (SEMGREP) = 20 ✓ ·
+LOW = 1 ✓. Por scanner: SEMGREP 23 · GITLEAKS 7 · TRIVY 5 = 35 ✓.
+
+O código teve **29** construções de `new RegExp` dinâmica corrigidas — mais que as 18
+reportadas, porque o scan não flagrou todas as ocorrências existentes.
+
+O relatório **não reportou** 3 HIGH reais — `undici`, `nanoid`, `js-yaml` — que o
+`npm audit` acusa no mesmo commit. Também corrigidos aqui, e por isso fora da
+partição dos 35 acima.
 
 ## Pendências
 

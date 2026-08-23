@@ -21,7 +21,7 @@ por `npm audit` (fonte de verdade para os itens TRIVY).
 | A4 | 7× GitLeaks `generic-api-key` | HIGH | **Falso positivo** | Fixtures de teste rotuladas (`e2e/support/constants.ts`, `tests/**`). `.env.example` só tem valores vazios/placeholder. Nenhuma credencial real |
 | A5 | `hardcoded_secrets.node_secret` / `node_password` | HIGH | **Falso positivo** | Mesmas constantes de A4 |
 | A6 | `gcm-no-tag-length` | HIGH | **Procede** | `src/lib/auth/crypto.ts` usa `aes-256-gcm` sem `authTagLength` em `createDecipheriv` |
-| A7 | 19× `detect-non-literal-regexp` | MEDIUM | **Procede como fragilidade, não como vuln** | Todas em `e2e/**` e `tests/**`, interpolando nomes de fixture sem escape. Sem exposição em produção |
+| A7 | 18× `detect-non-literal-regexp` | MEDIUM | **Procede como fragilidade, não como vuln** | Todas em `e2e/**` e `tests/**`, interpolando nomes de fixture sem escape. Sem exposição em produção |
 | A8 | `node_insecure_random_generator` | MEDIUM | **Procede** | 1 ocorrência: `e2e/support/api.ts:57` `Math.random()` |
 | A9 | `unsafe-formatstring` | LOW | **Falso positivo** | Template literals de JS não têm semântica printf |
 
@@ -80,8 +80,11 @@ Decisão do usuário: externalizar **e** configurar allowlist de scanner.
 **AC-005.2** Os valores vêm de `process.env`; na ausência, são gerados aleatoriamente
 por execução e propagados ao servidor Next e aos workers do Playwright.
 **AC-005.3** A suíte E2E continua funcional: runner e workers enxergam o mesmo valor.
-**AC-005.4** Existe configuração de allowlist (`.gitleaks.toml` + supressões Semgrep)
-cobrindo as constantes de teste remanescentes em `tests/**`, com justificativa.
+**AC-005.4** As supressões de scanner são as mínimas necessárias: `.gitleaks.toml`
+permite a regra `generic-api-key` apenas nos arquivos de teste enumerados que de fato
+contêm constantes inline, com justificativa. Não há supressão para `e2e/**` (a árvore
+não tem mais literal de segredo) nem para o Semgrep (os 2 findings de
+`hardcoded_secrets` eram os literais do `constants.ts`, resolvidos na origem).
 
 ### FR-006 — Dependências atualizadas dentro de patch/minor
 Decisão do usuário: sem majors quebráveis.

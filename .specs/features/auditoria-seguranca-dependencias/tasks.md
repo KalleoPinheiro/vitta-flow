@@ -9,15 +9,19 @@ Baseline antes da execução: `npm test` → 106 arquivos, 1780 testes, 0 falhas
 ## Fase 1 — Correções de código
 
 ### T1 — AES-GCM com `authTagLength` explícito (FR-002)
-- **Arquivos**: `src/lib/auth/crypto.ts`, `tests/lib/crypto.test.ts`
+- **Arquivos**: `src/lib/auth/crypto.ts`, `tests/lib/auth.test.ts` (é onde já vive o
+  bloco "Criptografia de segredos em repouso (AES-256-GCM)" — não há
+  `tests/lib/crypto.test.ts`)
 - **Teste primeiro**: payload com tag truncada deve ser rejeitado (AC-002.2);
-  round-trip preservado (AC-002.3); payload gerado sem a opção (tag de 16 bytes)
-  continua decifrável (compatibilidade retroativa).
-- **Gate**: `npx vitest run tests/lib/crypto.test.ts`
+  round-trip preservado (AC-002.3); compatibilidade retroativa exercitada com um
+  ciphertext construído no formato ANTERIOR (`createCipheriv` sem `authTagLength`),
+  não com a saída do helper já corrigido.
+- **Gate**: `npx vitest run tests/lib/auth.test.ts`
 
 ### T2 — `unique()` com gerador criptográfico (FR-004)
 - **Arquivos**: `e2e/support/api.ts`
-- **Verificação**: `grep -c "Math.random" e2e/ src/ scripts/` → 0; formato do sufixo
+- **Verificação**: `! grep -rn "Math\.random(" --include="*.ts" --include="*.tsx" src e2e scripts tests`
+  (recursivo, e o gate só passa quando não há ocorrência); formato do sufixo
   preservado (alfanumérico curto), unicidade mantida.
 - **Gate**: `npm run typecheck` + `npm run lint`
 

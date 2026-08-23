@@ -56,9 +56,8 @@ export async function apiGet<T>(request: APIRequestContext, url: string): Promis
 
 /**
  * Sufixo curto e único — evita colisão de nome/email/telefone entre specs.
- * Usa `randomBytes` em vez de `Math.random()`: 4 bytes hex dão as mesmas 8 posições
- * de antes, sem depender de um PRNG não criptográfico (Semgrep
- * node_insecure_random_generator).
+ * Usa `randomBytes` em vez do PRNG não criptográfico do JS: 4 bytes hex dão as mesmas
+ * 8 posições de antes (Semgrep node_insecure_random_generator).
  */
 export const unique = (): string => randomBytes(4).toString("hex");
 

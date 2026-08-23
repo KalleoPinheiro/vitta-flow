@@ -7,15 +7,19 @@ import { escapeRegExp } from "../../e2e/support/regexp";
  * detect-non-literal-regexp) — casando linhas erradas ou explodindo em erro de sintaxe.
  */
 describe("Feature: Escape de valor dinâmico usado em RegExp", () => {
-  it("Dado nome com metacaracteres, Quando construir RegExp, Então casa literalmente", () => {
+  it("Dado nome com metacaracteres, Quando construir RegExp, Então casa o literal e só ele", () => {
     const name = "Dr. Ana (Cardio) [1+1] {x} ^fim$ a|b *";
+    const pattern = new RegExp(escapeRegExp(name));
 
-    expect(new RegExp(escapeRegExp(name)).test(name)).toBe(true);
+    expect(pattern.test(name)).toBe(true);
+    // Sem escape, o `|` viraria alternação e o padrão casaria pelo ramo "b *" —
+    // qualquer texto contendo um "b" bastaria.
+    expect(pattern.test("outra fixture com b e espaco")).toBe(false);
   });
 
   it("Dado ponto no nome, Quando construir RegExp, Então não funciona como curinga", () => {
-    // Sem escape, "Dr. Ana" casaria com "DrXAna" — linha de outra fixture.
-    expect(new RegExp(escapeRegExp("Dr. Ana")).test("DrXAna")).toBe(false);
+    // Sem escape, o "." é curinga e "Dr. Ana" casaria com "DrX Ana" — outra fixture.
+    expect(new RegExp(escapeRegExp("Dr. Ana")).test("DrX Ana")).toBe(false);
     expect(new RegExp(escapeRegExp("Dr. Ana")).test("Dr. Ana")).toBe(true);
   });
 

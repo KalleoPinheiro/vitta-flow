@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { addAssessment, createAppointment, createCondition, createPartner, createPatient, unique } from "./support/api";
-import { slotFromSeed } from "./support/dates";
+import { slotForAttempt } from "./support/dates";
 import { toApiDatetime } from "./support/iso-datetime";
 import { sessionCookie } from "./support/session-token";
 
@@ -22,7 +22,7 @@ test.describe("portal do parceiro", () => {
       referredByPartnerId: otherPartner.id,
     });
 
-    const slot = slotFromSeed("portal-parceiro-appointment");
+    const slot = slotForAttempt("portal-parceiro-appointment");
     const procedure = `Avaliação vascular E2E ${unique()}`;
     await createAppointment(request, {
       patientId: referred.id,

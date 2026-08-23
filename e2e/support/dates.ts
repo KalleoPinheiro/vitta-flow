@@ -9,6 +9,8 @@
  * executa os testes.
  */
 
+import { test } from "@playwright/test";
+
 export interface YMD {
   year: number;
   month: number;
@@ -78,7 +80,24 @@ function hashSeed(seed: string): number {
  * diferentes caírem no mesmo horário (a suíte roda com `workers: 1`, mas specs
  * distintos ainda podem ser executados na mesma sessão/banco).
  */
-export function slotFromSeed(seed: string, durationMinutes = 60): Slot {
+export interface SlotOptions {
+  durationMinutes?: number;
+  /**
+   * Índice da tentativa do Playwright (`test.info().retry`). A re-tentativa de um
+   * teste roda contra o MESMO banco pglite, onde a consulta da tentativa anterior
+   * continua marcada — repetir o horário devolveria 409 ("horário indisponível") e
+   * a 2ª tentativa falharia por conflito de dado, escondendo o erro original.
+   *
+   * Cada tentativa desloca o dia em +70, além do teto de 65 do intervalo base:
+   * por construção, nenhuma tentativa cai sobre o slot de outra seed.
+   */
+  attempt?: number;
+}
+
+const ATTEMPT_DAY_STRIDE = 70;
+
+export function slotFromSeed(seed: string, options: SlotOptions = {}): Slot {
+  const { durationMinutes = 60, attempt = 0 } = options;
   const hash = hashSeed(seed);
   // O conflito de agenda é GLOBAL (não por profissional, ver
   // `Appointment#conflictsWith`), e a suíte inteira roda contra o mesmo banco
@@ -87,7 +106,7 @@ export function slotFromSeed(seed: string, durationMinutes = 60): Slot {
   // `goToMonth` de agenda.spec.ts não precisar de dezenas de cliques; a
   // combinação com hora/minuto (63×10×4 = 2.520 slots) já é suficiente para
   // as ~15 seeds reais usadas hoje na suíte (verificado sem colisões).
-  const dayOffset = 3 + (hash % 63); // 3..65 dias à frente — nunca hoje/ontem
+  const dayOffset = 3 + (hash % 63) + attempt * ATTEMPT_DAY_STRIDE; // 3..65 dias à frente — nunca hoje/ontem
   const hour = 8 + (Math.floor(hash / 63) % 10); // 8..17 (permite terminar até 18:00 com folga)
   const minute = (Math.floor(hash / 630) % 4) * 15; // 0/15/30/45
   const ymd = businessDay(dayOffset);
@@ -101,6 +120,15 @@ export function slotFromSeed(seed: string, durationMinutes = 60): Slot {
     dateInput: ymdToDateInput(ymd),
     startTimeInput: `${pad(hour)}:${pad(minute)}`,
   };
+}
+
+/**
+ * Slot da tentativa atual do Playwright. Use no lugar de `slotFromSeed` em todo
+ * teste que cria consulta pela API: na 1ª tentativa devolve exatamente o mesmo
+ * slot de sempre; em re-tentativa devolve um slot livre por construção.
+ */
+export function slotForAttempt(seed: string, durationMinutes = 60): Slot {
+  return slotFromSeed(seed, { durationMinutes, attempt: test.info().retry });
 }
 
 /** Horário fora da grade (19h) no mesmo dia útil da seed — para testar bloqueio. */

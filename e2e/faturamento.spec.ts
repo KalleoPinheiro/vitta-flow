@@ -9,12 +9,12 @@ import {
   payInvoice,
   unique,
 } from "./support/api";
-import { slotFromSeed } from "./support/dates";
+import { slotForAttempt } from "./support/dates";
 
 test.describe("faturamento", () => {
   test("concluir consulta gera fatura pendente", async ({ page, request }) => {
     const patient = await createPatient(request, { fullName: `Paciente Fatura ${unique()}` });
-    const slot = slotFromSeed("faturamento-complete");
+    const slot = slotForAttempt("faturamento-complete");
     const appointment = await createAppointment(request, {
       patientId: patient.id,
       startsAt: slot.startsAt,
@@ -96,7 +96,7 @@ test.describe("faturamento", () => {
     const [pkg] = await getPackagesByPatient(request, patient.id);
     expect(pkg.remainingSessions).toBe(5);
 
-    const slot = slotFromSeed("faturamento-package-session");
+    const slot = slotForAttempt("faturamento-package-session");
     const appointment = await createAppointment(request, {
       patientId: patient.id,
       startsAt: slot.startsAt,

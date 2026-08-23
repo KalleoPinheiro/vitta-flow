@@ -561,22 +561,37 @@ describe("Feature: Doubles em memória de infraestrutura", () => {
   });
 
   describe("Cenário: InMemoryAuditEventRepository", () => {
+    // AuditEvent.create carimba occurredAt = agora, o que deixaria os cenários de
+    // ordenação e de janela de datas sem instantes distintos para discriminar.
+    // restore permite controlar o instante — é o que esses cenários exigem.
+    let auditSeq = 0;
     const makeEvent = (patientId: string, occurredAt: Date) =>
-      AuditEvent.create({
+      AuditEvent.restore({
+        id: `audit-${(auditSeq += 1)}`,
         actorRole: "admin",
         actorId: "staff",
         action: "read",
         resourceType: "anamnesis",
         resourceId: "res-1",
         patientId,
+        detail: null,
+        occurredAt,
       });
 
     it("Dado eventos de pacientes distintos, Quando findAll sem filtro, Então retorna todos ordenados mais recente primeiro", async () => {
       const repo = new InMemoryAuditEventRepository();
-      await repo.save(makeEvent("patient-1", new Date()));
-      await repo.save(makeEvent("patient-2", new Date()));
+      const older = new Date("2026-03-01T10:00:00.000Z");
+      const newer = new Date("2026-03-02T10:00:00.000Z");
+      // Gravados fora de ordem de propósito: se findAll devolvesse na ordem de
+      // inserção, a asserção abaixo falharia.
+      await repo.save(makeEvent("patient-1", older));
+      await repo.save(makeEvent("patient-2", newer));
 
-      expect(await repo.findAll()).toHaveLength(2);
+      const all = await repo.findAll();
+
+      expect(all).toHaveLength(2);
+      expect(all.map((e) => e.patientId)).toEqual(["patient-2", "patient-1"]);
+      expect(all.map((e) => e.occurredAt)).toEqual([newer, older]);
     });
 
     it("Dado eventos de pacientes distintos, Quando filtrar por patientId, Então retorna só os do paciente", async () => {
@@ -602,11 +617,14 @@ describe("Feature: Doubles em memória de infraestrutura", () => {
 
     it("Dado janela de datas, Quando filtrar por from/to, Então respeita os limites (from inclusivo, to exclusivo)", async () => {
       const repo = new InMemoryAuditEventRepository();
-      await repo.save(makeEvent("patient-1", new Date()));
+      const at = new Date("2026-03-01T10:00:00.000Z");
+      await repo.save(makeEvent("patient-1", at));
 
-      const future = new Date(Date.now() + 86_400_000);
-      expect(await repo.findAll({ from: future })).toHaveLength(0);
-      expect(await repo.findAll({ to: new Date(Date.now() - 86_400_000) })).toHaveLength(0);
+      // O próprio instante entra em `from` e fica de fora de `to`.
+      expect(await repo.findAll({ from: at })).toHaveLength(1);
+      expect(await repo.findAll({ to: at })).toHaveLength(0);
+      expect(await repo.findAll({ from: new Date(at.getTime() + 1) })).toHaveLength(0);
+      expect(await repo.findAll({ to: new Date(at.getTime() + 1) })).toHaveLength(1);
     });
   });
 

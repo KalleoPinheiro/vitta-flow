@@ -375,7 +375,8 @@ describe("Feature: Dashboard do painel interno", () => {
           if (url.startsWith("/api/supplies")) return jsonResponse(true, []);
           if (url.startsWith("/api/photos/triage")) return jsonResponse(true, [triageFixture]);
           if (url.startsWith("/api/photos/") && method === "PATCH") {
-            // eslint-disable-next-line @typescript-eslint/only-throw-error -- simula rejeição não padronizada
+            // Rejeição não padronizada de propósito: o cliente precisa lidar com
+            // throw de string, não só de Error.
             throw "falha inesperada";
           }
           throw new Error(`URL não mapeada: ${method} ${url}`);

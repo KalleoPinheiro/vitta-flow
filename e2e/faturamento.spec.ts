@@ -3,7 +3,6 @@ import {
   completeAppointment,
   createAppointment,
   createInvoice,
-  createPackage,
   createPatient,
   createProcedure,
   getPackagesByPatient,

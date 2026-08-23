@@ -18,6 +18,16 @@ const eslintConfig = defineConfig([
   {
     // Qualidade estrutural: complexidade ciclomática baixa imposta em todo o código.
     rules: {
+      // Prefixo `_` marca ligação deliberadamente não usada — parâmetro que existe
+      // só para manter a assinatura de um contrato (mock de SDK, handler, callback).
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
       complexity: ["error", { max: 10 }],
       "max-depth": ["error", 4],
       "max-lines-per-function": [

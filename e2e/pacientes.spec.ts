@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { createPatient, unique } from "./support/api";
-import { escapeRegExp } from "./support/regexp";
+import { literal, rx } from "./support/regexp";
 
 test.describe("pacientes", () => {
   test("cria um paciente pela UI", async ({ page }) => {
@@ -25,7 +25,7 @@ test.describe("pacientes", () => {
     await expect(page.getByRole("cell", { name: patient.fullName })).toBeVisible();
 
     await page
-      .getByRole("row", { name: new RegExp(escapeRegExp(patient.fullName)) })
+      .getByRole("row", { name: literal(patient.fullName) })
       .getByRole("button", { name: "Editar" })
       .click();
     await page.getByLabel("Nome completo *").fill(newName);
@@ -42,11 +42,11 @@ test.describe("pacientes", () => {
     await page.goto("/pacientes");
     await page.getByPlaceholder("Buscar por nome, email ou telefone…").fill(patient.fullName);
     await page
-      .getByRole("row", { name: new RegExp(escapeRegExp(patient.fullName)) })
+      .getByRole("row", { name: literal(patient.fullName) })
       .getByRole("button", { name: "Desativar" })
       .click();
     await expect(
-      page.getByRole("row", { name: new RegExp(escapeRegExp(patient.fullName)) }).getByText("Inativo"),
+      page.getByRole("row", { name: literal(patient.fullName) }).getByText("Inativo"),
     ).toBeVisible();
 
     // Paciente inativo não aparece no seletor de novo agendamento.
@@ -87,11 +87,11 @@ test.describe("pacientes", () => {
     await page.goto("/pacientes");
     await page.getByPlaceholder("Buscar por nome, email ou telefone…").fill(patient.fullName);
     await page
-      .getByRole("row", { name: new RegExp(escapeRegExp(patient.fullName)) })
+      .getByRole("row", { name: literal(patient.fullName) })
       .getByRole("link", { name: "Prontuário" })
       .click();
 
-    await expect(page).toHaveURL(new RegExp(`/pacientes/${escapeRegExp(patient.id)}`));
+    await expect(page).toHaveURL(rx`/pacientes/${patient.id}`);
     await expect(page.getByRole("heading", { name: patient.fullName })).toBeVisible();
     await expect(page.getByRole("button", { name: "Anamnese", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Estomias e feridas" })).toBeVisible();

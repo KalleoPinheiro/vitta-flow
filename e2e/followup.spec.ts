@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { createFollowUp, createPatient, unique } from "./support/api";
-import { escapeRegExp } from "./support/regexp";
+import { rx } from "./support/regexp";
 
 const inDays = (days: number): string =>
   new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
@@ -48,7 +48,7 @@ test.describe("retornos (follow-ups)", () => {
     const link = item.getByRole("link", { name: "Agendar", exact: true });
     await expect(link).toHaveAttribute(
       "href",
-      new RegExp(`followUpId=${escapeRegExp(followUp.id)}.*patientId=${escapeRegExp(patient.id)}`),
+      rx`followUpId=${followUp.id}.*patientId=${patient.id}`,
     );
 
     // Limpeza: resolve o retorno para não poluir o dashboard de outros specs.

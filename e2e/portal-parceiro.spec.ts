@@ -3,7 +3,7 @@ import { addAssessment, createAppointment, createCondition, createPartner, creat
 import { slotForAttempt } from "./support/dates";
 import { toApiDatetime } from "./support/iso-datetime";
 import { sessionCookie } from "./support/session-token";
-import { escapeRegExp } from "./support/regexp";
+import { literal } from "./support/regexp";
 
 test.describe("portal do parceiro", () => {
   test("parceiro vê apenas os pacientes que indicou, com consultas e evolução clínica", async ({
@@ -45,7 +45,7 @@ test.describe("portal do parceiro", () => {
     await expect(page.getByText(referred.fullName)).toBeVisible();
     await expect(page.getByText(notReferred.fullName)).not.toBeVisible();
 
-    await page.getByRole("button", { name: new RegExp(escapeRegExp(referred.fullName)) }).click();
+    await page.getByRole("button", { name: literal(referred.fullName) }).click();
 
     await expect(page.getByText(procedure)).toBeVisible();
     await expect(page.getByText(condition.title)).toBeVisible();

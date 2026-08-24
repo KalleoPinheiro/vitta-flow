@@ -144,7 +144,7 @@ describe("Feature: Página de login", () => {
         String(input).startsWith("/api/auth/login"),
       );
       const body = JSON.parse(String(loginCall?.[1]?.body ?? "{}"));
-      expect(body).toEqual({ password: "senhaClinica123" });
+      expect(body).toEqual({ password: "senhaClinica123" });  // gitleaks:allow — fixture de teste, não é credencial
     });
 
     it("Dado email e senha preenchidos, Quando submeter, Então envia email e senha no corpo da requisição", async () => {
@@ -179,7 +179,7 @@ describe("Feature: Página de login", () => {
         String(input).startsWith("/api/auth/login"),
       );
       const body = JSON.parse(String(loginCall?.[1]?.body ?? "{}"));
-      expect(body).toEqual({ email: "ana@clinica.com", password: "senhaIndividual123" });
+      expect(body).toEqual({ email: "ana@clinica.com", password: "senhaIndividual123" });  // gitleaks:allow — fixture de teste, não é credencial
     });
 
     it("Dado credencial inválida, Quando submeter, Então exibe mensagem de erro e reabilita o botão", async () => {

@@ -425,7 +425,7 @@ describe("Feature: Recorrência de consultas, grade de horários, profissionais,
       const response = await accountsRoute.POST(
         jsonRequest("/api/accounts", "POST", {
           email: "equipe@example.com",
-          password: "senhaSegura123",
+          password: "senhaSegura123",  // gitleaks:allow — fixture de teste, não é credencial
           professionalId: professionalIdForAccount,
         }),
       );
@@ -448,7 +448,7 @@ describe("Feature: Recorrência de consultas, grade de horários, profissionais,
       const response = await accountsRoute.POST(
         jsonRequest("/api/accounts", "POST", {
           email: "sem.vinculo@example.com",
-          password: "senhaSegura123",
+          password: "senhaSegura123",  // gitleaks:allow — fixture de teste, não é credencial
         }),
       );
       const body = (await response.json()) as Envelope<{ professionalId: string | null }>;
@@ -461,7 +461,7 @@ describe("Feature: Recorrência de consultas, grade de horários, profissionais,
       const response = await accountsRoute.POST(
         jsonRequest("/api/accounts", "POST", {
           email: "equipe@example.com",
-          password: "outraSenha123",
+          password: "outraSenha123",  // gitleaks:allow — fixture de teste, não é credencial
         }),
       );
 
@@ -472,7 +472,7 @@ describe("Feature: Recorrência de consultas, grade de horários, profissionais,
       const response = await accountsRoute.POST(
         jsonRequest("/api/accounts", "POST", {
           email: "outra.conta@example.com",
-          password: "senhaSegura123",
+          password: "senhaSegura123",  // gitleaks:allow — fixture de teste, não é credencial
           professionalId: "profissional-fantasma",
         }),
       );
@@ -490,7 +490,7 @@ describe("Feature: Recorrência de consultas, grade de horários, profissionais,
 
     it("Dado nova senha, Quando PATCH /api/accounts/:id, Então atualiza a senha", async () => {
       const response = await accountByIdRoute.PATCH(
-        jsonRequest(`/api/accounts/${accountId}`, "PATCH", { password: "novaSenhaForte123" }),
+        jsonRequest(`/api/accounts/${accountId}`, "PATCH", { password: "novaSenhaForte123" }),  // gitleaks:allow — fixture de teste, não é credencial
         context(accountId),
       );
 

@@ -87,9 +87,21 @@ não é credencial.
 AD-008 afirma que existe allowlist em `.semgrepignore`; o arquivo nunca foi criado.
 A decisão passa a corresponder à árvore.
 
-**AC-003.1** `.semgrepignore` existe, cobre as fixtures de `tests/` e diz que não
-alcança o GitGuard.
-**AC-003.2** AD-008 é corrigido em `.specs/STATE.md` e deixa de afirmar o que não existe.
+**AC-003.1** Nenhuma decisão em `.specs/STATE.md` afirma a existência de arquivo de
+configuração que não está na árvore.
+**AC-003.2** AD-008 é corrigido e deixa de citar `.semgrepignore`.
+
+> **Desvio da spec inicial.** O AC-003.1 pedia *criar* o `.semgrepignore`. A premissa
+> era que o ignore default do Semgrep já excluía `tests/` — e ela é falsa: a execução
+> com `--verbose` mostra `Skipped by .semgrepignore: <none>`, e os 0 findings da
+> primeira rodada vieram de `p/javascript`/`p/nodejs` simplesmente não conterem as
+> regras `njsscan`, não de `tests/` ser pulado.
+>
+> Com a premissa corrigida, criar o arquivo seria pior que não criar: `.semgrepignore`
+> exclui **arquivos inteiros**, não regras. Excluir `tests/` apagaria toda a cobertura
+> Semgrep sobre a suíte para calar 2 findings deduplicados — e ainda assim não
+> alcançaria o GitGuard (AD-011). As fixtures de segredo de `tests/**` ficam como falso
+> positivo aceito e documentado em B7.
 
 ### FR-004 — Confronto registrado e reproduzível
 **AC-004.1** O procedimento de reprodução local dos dois scanners fica documentado, com
@@ -103,4 +115,5 @@ versões e comandos.
 - Centralizar as fixtures de segredo dos 11 arquivos de `tests/**` (B7): o GitGuard
   deduplica em 2 findings; o refactor custaria 11 arquivos para remover 2 linhas do
   relatório.
+- Criar `.semgrepignore` (ver desvio em FR-003).
 - `unsafe-formatstring` (B9): falso positivo de 1 LOW, sem ação.

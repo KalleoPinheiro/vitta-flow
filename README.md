@@ -222,35 +222,49 @@ regra é reproduzir localmente antes de agir (AD-013).
 npm audit
 ```
 
-O gitleaks e o semgrep não estão no `package.json` — instale sob demanda:
+O gitleaks e o semgrep não estão no `package.json` — instale sob demanda, nas versões
+que produziram os números registrados em `validation.md` (o asset do gitleaks é
+`linux_x64`; troque pelo da sua plataforma):
 
 ```bash
-gh release download --repo gitleaks/gitleaks --pattern 'gitleaks_*_linux_x64.tar.gz' --dir /tmp/gl && tar -xzf /tmp/gl/gitleaks_*_linux_x64.tar.gz -C /tmp/gl gitleaks
+mkdir -p /tmp/gl && gh release download v8.30.1 --repo gitleaks/gitleaks --pattern 'gitleaks_8.30.1_linux_x64.tar.gz' --dir /tmp/gl --clobber && tar -xzf /tmp/gl/gitleaks_8.30.1_linux_x64.tar.gz -C /tmp/gl gitleaks
 ```
 
 ```bash
-uv tool install semgrep
+uv tool install 'semgrep==1.174.0'
 ```
 
 Escaneie a árvore de um commit específico, não o diretório de trabalho — assim o
-`node_modules` e os artefatos de build ficam de fora:
+`node_modules` e os artefatos de build ficam de fora. O `tar` não cria o destino, então
+o `mkdir -p` não é opcional:
 
 ```bash
-git archive <commit> | tar -x -C /tmp/scan
+rm -rf /tmp/scan && mkdir -p /tmp/scan && git archive <commit> | tar -x -C /tmp/scan
 ```
 
+O gitleaks roda **de dentro da árvore, com o alvo `.`** — os `paths` do `.gitleaks.toml`
+são regex ancorada em caminho relativo à raiz da varredura, e com alvo absoluto não
+casam:
+
 ```bash
-/tmp/gl/gitleaks dir /tmp/scan --no-banner
+cd /tmp/scan && /tmp/gl/gitleaks dir . --no-banner
 ```
 
 ```bash
 cd /tmp/scan && semgrep scan --config=p/nodejsscan --config=r/javascript.lang.security.audit.detect-non-literal-regexp --metrics=off src e2e tests scripts
 ```
 
-Duas coisas que economizam tempo:
+Para reproduzir o que um scanner hospedado enxerga — e com isso o AC-002.1 de
+`ruido-scanners-seguranca` —, apague o `.gitleaks.toml` da cópia antes de escanear:
 
-- **Rode o gitleaks de dentro da árvore** (`gitleaks dir .`), não com caminho absoluto:
-  os `paths` do `.gitleaks.toml` ancoram em caminho relativo e não casam de outro jeito.
+```bash
+rm -rf /tmp/scan-nocfg && mkdir -p /tmp/scan-nocfg && git archive <commit> | tar -x -C /tmp/scan-nocfg && rm -f /tmp/scan-nocfg/.gitleaks.toml && cd /tmp/scan-nocfg && /tmp/gl/gitleaks dir . --no-banner
+```
+
+Rodando isso em `f725554` (base) o resultado é `leaks found: 7`; em `HEAD` é
+`no leaks found`. A diferença são os comentários inline — e é essa a razão de eles
+existirem:
+
 - **O `.gitleaks.toml` do repositório não alcança um scanner hospedado.** A precedência
   do gitleaks é `--config` > `GITLEAKS_CONFIG` > `(target)/.gitleaks.toml`, então quem
   passa a própria config sobrepõe a do repo. Falso positivo que precisa ser suprimido lá

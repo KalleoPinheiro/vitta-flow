@@ -108,10 +108,10 @@
 
 ## Handoff
 
-- **Feature**: auditoria-seguranca-dependencias
-- **Phase / Task**: T1–T5 implementados e commitados; T6 (registro de decisões) em curso
-- **Completed**: confronto dos 35 findings do scan GitGuard; crypto GCM, RegExp escapada, gerador aleatório, segredos E2E externalizados, dependências atualizadas
+- **Feature**: ruido-scanners-seguranca
+- **Phase / Task**: T1–T5 implementados, commitados e validados (PASS)
+- **Completed**: confronto reproduzível do scan `cmt60oz29012twtz1z1duza2q` (54 findings, nenhuma vulnerabilidade); `new RegExp` eliminado dos specs E2E via tagged template `rx`; 7 fixtures marcadas com `gitleaks:allow`; AD-008 corrigido; AD-011/012/013 registrados
 - **In-progress** (file:line): —
-- **Next step**: Verifier independente sobre a feature (author != verifier); depois abrir PR
+- **Next step**: abrir PR; depois disso, novo scan GitGuard deve cair de 54 para ~9 findings (2 `hardcoded_secrets` deduplicados + 1 `unsafe-formatstring` + os 6 TRIVY obsoletos, que só somem quando o serviço reindexar o lockfile)
 - **Blockers**: none
-- **Branch**: claude/tlc-spec-driven-audit-5a46b5 (base: main @ 5b0a072)
+- **Branch**: claude/tlc-spec-driven-audit-5a46b5 (base: main @ f725554)

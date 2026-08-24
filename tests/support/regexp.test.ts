@@ -65,6 +65,13 @@ describe("Feature: Construção de RegExp a partir de valor dinâmico", () => {
       expect(pattern.test("?followUpId=fX1&origem=sms&patientId=p+2")).toBe(false);
     });
 
+    it("Dado escape de regex na parte estática, Quando casar, Então chega intacto ao padrão", () => {
+      // A forma cozida do template literal descartaria a barra: `\d` viraria `d`, e o
+      // padrão passaria a casar "dd un" em vez de "10 un". Por isso `rx` lê `parts.raw`.
+      expect(rx`\d+ un`.test("10 un")).toBe(true);
+      expect(rx`\d+ un`.test("dd un")).toBe(false);
+    });
+
     it("Dado template sem interpolação, Quando casar, Então vale como padrão puro", () => {
       expect(rx`^10 un`.test("10 unidades")).toBe(true);
       expect(rx`^10 un`.test("de 10 unidades")).toBe(false);

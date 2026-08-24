@@ -211,6 +211,69 @@ Testes escritos em estilo BDD (`Feature / Cenário / Dado-Quando-Então`), com c
 
 A suíte E2E sobe os próprios servidores Next e **gera as credenciais a cada execução** — nenhum segredo fica no código-fonte, e no fluxo normal não é preciso configurar nada. Para reaproveitar um `npm run dev` já em pé, o `webServer.env` do Playwright não se aplica: os dois pares precisam bater — `E2E_AUTH_SECRET`/`E2E_AUTH_PASSWORD` para a suíte e `AUTH_SECRET`/`AUTH_PASSWORD` com os mesmos valores para o servidor.
 
+## Varredura de segurança
+
+`npm audit` é a fonte da verdade para dependências. Para os outros dois scanners, o
+relatório de um serviço hospedado (GitGuard) já divergiu da árvore mais de uma vez —
+apontando versões que não existiam mais e repetindo achados já corrigidos. Por isso a
+regra é reproduzir localmente antes de agir (AD-013).
+
+```bash
+npm audit
+```
+
+O gitleaks e o semgrep não estão no `package.json` — instale sob demanda, nas versões
+que produziram os números registrados em `validation.md` (o asset do gitleaks é
+`linux_x64`; troque pelo da sua plataforma):
+
+```bash
+mkdir -p /tmp/gl && gh release download v8.30.1 --repo gitleaks/gitleaks --pattern 'gitleaks_8.30.1_linux_x64.tar.gz' --dir /tmp/gl --clobber && tar -xzf /tmp/gl/gitleaks_8.30.1_linux_x64.tar.gz -C /tmp/gl gitleaks
+```
+
+```bash
+uv tool install 'semgrep==1.174.0'
+```
+
+Escaneie a árvore de um commit específico, não o diretório de trabalho — assim o
+`node_modules` e os artefatos de build ficam de fora. O `tar` não cria o destino, então
+o `mkdir -p` não é opcional:
+
+```bash
+rm -rf /tmp/scan && mkdir -p /tmp/scan && git archive <commit> | tar -x -C /tmp/scan
+```
+
+O gitleaks roda **de dentro da árvore, com o alvo `.`** — os `paths` do `.gitleaks.toml`
+são regex ancorada em caminho relativo à raiz da varredura, e com alvo absoluto não
+casam:
+
+```bash
+cd /tmp/scan && /tmp/gl/gitleaks dir . --no-banner
+```
+
+```bash
+cd /tmp/scan && semgrep scan --config=p/nodejsscan --config=r/javascript.lang.security.audit.detect-non-literal-regexp --metrics=off src e2e tests scripts
+```
+
+Para reproduzir o que um scanner hospedado enxerga — e com isso o AC-002.1 de
+`ruido-scanners-seguranca` —, apague o `.gitleaks.toml` da cópia antes de escanear:
+
+```bash
+rm -rf /tmp/scan-nocfg && mkdir -p /tmp/scan-nocfg && git archive <commit> | tar -x -C /tmp/scan-nocfg && rm -f /tmp/scan-nocfg/.gitleaks.toml && cd /tmp/scan-nocfg && /tmp/gl/gitleaks dir . --no-banner
+```
+
+Rodando isso em `f725554` (base) o resultado é `leaks found: 7`; em `HEAD` é
+`no leaks found`. A diferença são os comentários inline — e é essa a razão de eles
+existirem:
+
+- **O `.gitleaks.toml` do repositório não alcança um scanner hospedado.** A precedência
+  do gitleaks é `--config` > `GITLEAKS_CONFIG` > `(target)/.gitleaks.toml`, então quem
+  passa a própria config sobrepõe a do repo. Falso positivo que precisa ser suprimido lá
+  leva comentário inline `gitleaks:allow` / `nosemgrep` na linha (AD-011).
+
+O veredito de cada achado dos scans de 2026-08-23 fica em
+[`.specs/features/auditoria-seguranca-dependencias/spec.md`](.specs/features/auditoria-seguranca-dependencias/spec.md)
+e [`.specs/features/ruido-scanners-seguranca/spec.md`](.specs/features/ruido-scanners-seguranca/spec.md).
+
 ## API
 
 Todas as respostas usam o envelope `{ success, data, error }`.

@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { createPartner, createProfessional, unique } from "./support/api";
-import { escapeRegExp } from "./support/regexp";
+import { literal, rx } from "./support/regexp";
 
 test.describe("equipe — profissionais", () => {
   test("cria e edita um profissional pela UI", async ({ page }) => {
@@ -14,7 +14,7 @@ test.describe("equipe — profissionais", () => {
     await page.getByRole("button", { name: "Salvar" }).click();
 
     await expect(page.getByRole("heading", { name: "Novo profissional" })).not.toBeVisible();
-    const row = page.getByRole("row", { name: new RegExp(escapeRegExp(name)) });
+    const row = page.getByRole("row", { name: literal(name) });
     await expect(row).toBeVisible();
     await expect(row.getByText("COREN-SP 111222")).toBeVisible();
 
@@ -31,7 +31,7 @@ test.describe("equipe — profissionais", () => {
     });
 
     await page.goto("/profissionais");
-    const row = page.getByRole("row", { name: new RegExp(escapeRegExp(professional.fullName)) });
+    const row = page.getByRole("row", { name: literal(professional.fullName) });
     await expect(row.getByText("Ativo")).toBeVisible();
 
     await row.getByRole("button", { name: "Desativar" }).click();
@@ -57,7 +57,7 @@ test.describe("equipe — parceiros", () => {
     await page.getByRole("button", { name: "Salvar" }).click();
 
     await expect(page.getByRole("heading", { name: "Novo parceiro" })).not.toBeVisible();
-    const row = page.getByRole("row", { name: new RegExp(escapeRegExp(name)) });
+    const row = page.getByRole("row", { name: literal(name) });
     await expect(row).toBeVisible();
     await expect(row.getByText("CRM-SP 987654")).toBeVisible();
 
@@ -72,7 +72,7 @@ test.describe("equipe — parceiros", () => {
     const partner = await createPartner(request, { fullName: `Dr. Desativar ${unique()}` });
 
     await page.goto("/parceiros");
-    const row = page.getByRole("row", { name: new RegExp(escapeRegExp(partner.fullName)) });
+    const row = page.getByRole("row", { name: literal(partner.fullName) });
     await expect(row.getByText("Ativo")).toBeVisible();
 
     await row.getByRole("button", { name: "Desativar" }).click();
@@ -89,7 +89,7 @@ test.describe("equipe — parceiros", () => {
     await page.getByLabel("Telefone *").fill("11955554444");
     await page.getByRole("button", { name: "Salvar" }).click();
 
-    await expect(page.getByText(new RegExp(`Já existe parceiro com o email ${escapeRegExp(partner.email)}`))).toBeVisible();
+    await expect(page.getByText(rx`Já existe parceiro com o email ${partner.email}`)).toBeVisible();
     await expect(page.getByRole("heading", { name: "Novo parceiro" })).toBeVisible();
   });
 });

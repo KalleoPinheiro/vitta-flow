@@ -10,7 +10,7 @@ import {
 } from "./support/api";
 import { slotForAttempt } from "./support/dates";
 import { toApiDatetime } from "./support/iso-datetime";
-import { escapeRegExp } from "./support/regexp";
+import { literal, rx } from "./support/regexp";
 
 test.describe("inventário", () => {
   test("cadastra insumo e procedimento com kit, e a conclusão da consulta baixa o estoque", async ({
@@ -33,7 +33,7 @@ test.describe("inventário", () => {
 
     // Dá entrada de 10 unidades para ter saldo suficiente.
     await page
-      .getByRole("row", { name: new RegExp(escapeRegExp(supplyName)) })
+      .getByRole("row", { name: literal(supplyName) })
       .getByRole("button", { name: "Movimentar" })
       .click();
     await page.getByLabel("Quantidade *").fill("10");
@@ -41,7 +41,7 @@ test.describe("inventário", () => {
     await page.getByRole("button", { name: "Registrar movimentação" }).click();
     await expect(page.getByRole("heading", { name: /^Movimentar/ })).not.toBeVisible();
     await expect(
-      page.getByRole("row", { name: new RegExp(escapeRegExp(supplyName)) }).getByText(/^10 un/),
+      page.getByRole("row", { name: literal(supplyName) }).getByText(/^10 un/),
     ).toBeVisible();
 
     // Cadastra o procedimento e vincula o insumo como kit padrão.
@@ -53,7 +53,7 @@ test.describe("inventário", () => {
     await page.getByRole("button", { name: "Salvar" }).click();
     await expect(page.getByRole("heading", { name: "Novo procedimento" })).not.toBeVisible();
 
-    const row = page.getByRole("row", { name: new RegExp(escapeRegExp(procedureName)) });
+    const row = page.getByRole("row", { name: literal(procedureName) });
     await expect(row).toBeVisible();
     await row.getByRole("button", { name: "Kit" }).click();
     await expect(page.getByRole("heading", { name: `Kit de insumos — ${procedureName}` })).toBeVisible();
@@ -83,7 +83,7 @@ test.describe("inventário", () => {
     // Estoque deve ter caído de 10 para 8 (kit consome 2 unidades por atendimento).
     await page.goto("/materiais");
     await expect(
-      page.getByRole("row", { name: new RegExp(escapeRegExp(supplyName)) }).getByText(/^8 un/),
+      page.getByRole("row", { name: literal(supplyName) }).getByText(/^8 un/),
     ).toBeVisible();
   });
 
@@ -95,7 +95,7 @@ test.describe("inventário", () => {
     const supply = await createSupply(request, { name: supplyName, minQty: 10 });
 
     await page.goto("/materiais");
-    const row = page.getByRole("row", { name: new RegExp(escapeRegExp(supplyName)) });
+    const row = page.getByRole("row", { name: literal(supplyName) });
     await row.getByRole("button", { name: "Movimentar" }).click();
     await page.getByLabel("Quantidade *").fill("3");
     await page.getByLabel("Motivo *").fill("Compra pequena — E2E");
@@ -114,7 +114,7 @@ test.describe("inventário", () => {
     await createSupply(request, { name: supplyName });
 
     await page.goto("/materiais");
-    const row = page.getByRole("row", { name: new RegExp(escapeRegExp(supplyName)) });
+    const row = page.getByRole("row", { name: literal(supplyName) });
     await row.getByRole("button", { name: "Movimentar" }).click();
     await page.getByLabel("Tipo *").selectOption({ label: "Saída (uso/perda)" });
     await page.getByLabel("Quantidade *").fill("1");
@@ -133,7 +133,7 @@ test.describe("inventário", () => {
     const dateInput = soon.toISOString().slice(0, 10);
 
     await page.goto("/materiais");
-    const row = page.getByRole("row", { name: new RegExp(escapeRegExp(supplyName)) });
+    const row = page.getByRole("row", { name: literal(supplyName) });
     await row.getByRole("button", { name: "Movimentar" }).click();
     await page.getByLabel("Quantidade *").fill("20");
     await page.getByLabel("Motivo *").fill("Compra com validade — E2E");
@@ -143,7 +143,7 @@ test.describe("inventário", () => {
     await expect(page.getByRole("heading", { name: /^Movimentar/ })).not.toBeVisible();
 
     await expect(
-      page.getByText(new RegExp(`vence(m)? em até 30 dias.*${escapeRegExp(supplyName)}`)),
+      page.getByText(rx`vence(m)? em até 30 dias.*${supplyName}`),
     ).toBeVisible();
   });
 });

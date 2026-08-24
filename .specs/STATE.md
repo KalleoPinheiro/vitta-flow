@@ -108,10 +108,27 @@
 
 ## Handoff
 
-- **Feature**: ruido-scanners-seguranca
-- **Phase / Task**: T1–T5 implementados, commitados e validados (PASS)
-- **Completed**: confronto reproduzível do scan `cmt60oz29012twtz1z1duza2q` (54 findings, nenhuma vulnerabilidade); `new RegExp` eliminado dos specs E2E via tagged template `rx`; 7 fixtures marcadas com `gitleaks:allow`; AD-008 corrigido; AD-011/012/013 registrados
+- **Feature**: ruido-scanners-seguranca — **concluída e mergeada** (PR #10, squash `fcd6110`)
+- **Phase / Task**: —
+- **Completed**: confronto reproduzível do scan `cmt60oz29012twtz1z1duza2q`; `new RegExp` eliminado dos specs E2E via tagged template `rx`; 7 fixtures marcadas com `gitleaks:allow`; AD-008 corrigido; AD-011/012/013 registrados; procedimento de varredura do README corrigido após revisão do CodeRabbit e executado verbatim
 - **In-progress** (file:line): —
-- **Next step**: abrir PR; depois disso, novo scan GitGuard deve cair de 54 para ~9 findings (2 `hardcoded_secrets` deduplicados + 1 `unsafe-formatstring` + os 6 TRIVY obsoletos, que só somem quando o serviço reindexar o lockfile)
+- **Next step**: nenhum trabalho em curso. Ao rodar o próximo scan GitGuard, comparar com o baseline abaixo antes de agir (AD-013)
 - **Blockers**: none
-- **Branch**: claude/tlc-spec-driven-audit-5a46b5 (base: main @ f725554)
+- **Branch**: main @ `fcd6110`
+
+### Baseline de segurança medido em `fcd6110`
+
+Reproduza pelo procedimento do README (seção "Varredura de segurança").
+
+| Medição | Valor esperado |
+|---|---|
+| `gitleaks dir .` sobre a árvore **sem** `.gitleaks.toml` | `no leaks found` |
+| Semgrep (`p/nodejsscan` + regexp + gcm + formatstring) | 58 findings |
+| — `node_secret` / `node_password` / `node_username` | 40 / 13 / 4 — falso positivo aceito (AD-012) |
+| — `unsafe-formatstring` | 1 — falso positivo (B9) |
+| — `detect-non-literal-regexp` | 0 |
+| `npm audit` | 0 HIGH/CRITICAL; 4 MODERATE de `esbuild` (AD-009) |
+
+Um scan GitGuard sobre `fcd6110` deve cair de 54 para ~9 findings: 2 `hardcoded_secrets`
+deduplicados, 1 `unsafe-formatstring` e os 6 TRIVY obsoletos, que só somem quando o
+serviço reindexar o lockfile. Acima disso, reproduza localmente antes de agir.

@@ -102,6 +102,12 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: B8/B3 (processo de auditoria)
 - last seen: 2026-08-24T18:43:02Z
 
+### L-016 — Procedimento documentado só conta como verificado depois de executado verbatim: o README trazia 'gitleaks dir /tmp/scan' com alvo absoluto duas linhas acima do aviso de que o alvo tem de ser relativo, e um 'tar -x -C' em diretório inexistente — nenhum dos dois sobreviveria a uma execução, e o AC foi marcado como atendido só por leitura.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `docs,README` · harmful: 0
+- features: ruido-scanners-seguranca
+- evidence: AC-004.1 (docs,README)
+- last seen: 2026-08-24T19:16:17Z
+
 ## Quarantined (failed when applied — ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

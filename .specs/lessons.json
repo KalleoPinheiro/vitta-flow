@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 16,
+  "next_id": 17,
   "lessons": [
     {
       "id": "L-001",
@@ -276,6 +276,24 @@
       ],
       "created": "2026-08-24T18:43:02Z",
       "last_seen": "2026-08-24T18:43:02Z"
+    },
+    {
+      "id": "L-016",
+      "key": "ac_gap::procedimento documentado s conta como verificado depois de executado verbatim o readme trazia gitleaks dir tmp scan com alvo absoluto duas linhas acima do aviso de que o alvo tem de ser relativo e um tar x c em diret rio inexistente nenhum dos dois sobreviveria a uma execu o e o ac foi marcado como atendido s por leitura",
+      "text": "Procedimento documentado só conta como verificado depois de executado verbatim: o README trazia 'gitleaks dir /tmp/scan' com alvo absoluto duas linhas acima do aviso de que o alvo tem de ser relativo, e um 'tar -x -C' em diretório inexistente — nenhum dos dois sobreviveria a uma execução, e o AC foi marcado como atendido só por leitura.",
+      "signal": "ac_gap",
+      "scope": "docs,README",
+      "status": "candidate",
+      "features": [
+        "ruido-scanners-seguranca"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "AC-004.1 (docs,README)"
+      ],
+      "created": "2026-08-24T19:16:17Z",
+      "last_seen": "2026-08-24T19:16:17Z"
     }
   ]
 }

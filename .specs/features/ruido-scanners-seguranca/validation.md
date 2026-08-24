@@ -36,7 +36,7 @@ Ferramentas: `gitleaks` 8.30.1, `semgrep` 1.174.0, `npm audit` do lockfile da á
 | AC-002.3 | As supressões estão só em `tests/api/scheduling-catalog-routes.test.ts` e `tests/pages/login.test.tsx` | ✅ |
 | AC-003.1 | Nenhuma decisão cita arquivo inexistente; AD-012 registra a escolha de não criar o `.semgrepignore` e por quê | ✅ (com desvio registrado na spec) |
 | AC-003.2 | AD-008 corrigido em `.specs/STATE.md` | ✅ |
-| AC-004.1 | README, seção "Varredura de segurança": versões, comandos e as duas armadilhas (caminho relativo no gitleaks; config do repo não alcança scanner hospedado) | ✅ |
+| AC-004.1 | README, seção "Varredura de segurança". Cada comando foi **executado verbatim**: instala `gitleaks` v8.30.1 e `semgrep` 1.174.0 fixados, extrai a árvore, e a varredura sem `.gitleaks.toml` dá `leaks found: 7` em `f725554` e `no leaks found` em `HEAD`; o Semgrep dá `Ran 115 rules on 428 files: 57 findings` | ✅ |
 | AC-004.2 | AD-011, AD-012 e AD-013 em `.specs/STATE.md` | ✅ |
 
 ## Sensor de discriminação
@@ -61,6 +61,12 @@ parte estática, Quando casar, Então chega intacto ao padrão"; com ele, M3 pas
 Cada teste de `tests/support/regexp.test.ts` afirma um resultado definido pela spec
 (comportamento do casamento), não a forma da implementação: nenhum inspeciona `.source`
 nem usa `new RegExp` — usá-lo reintroduziria o padrão que FR-001 remove.
+
+**Correção pós-revisão.** AC-004.1 tinha sido marcado ✅ por leitura, não por execução —
+e a revisão do PR mostrou que o procedimento não rodava: o exemplo do gitleaks usava
+alvo absoluto duas linhas acima do aviso de que o alvo precisa ser relativo, o
+`tar -x -C` não criava o destino, e as versões não estavam fixadas. Corrigido e agora
+executado verbatim. Lição registrada (L-016).
 
 **Precisão da spec.** Um AC precisou de correção: AC-003.1 pedia criar o
 `.semgrepignore`, apoiado na premissa de que o ignore default do Semgrep já excluía

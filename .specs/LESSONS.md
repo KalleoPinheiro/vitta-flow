@@ -8,7 +8,11 @@
 
 Corroborated across multiple features. Safe to apply as guidance.
 
-_none_
+### L-011 — Relatório de scanner externo pode citar versão que não existe na árvore atual: confronte sempre com 'npm ls <pkg>' e 'npm audit' antes de agir — o scan de 2026-08-23 apontou postcss 8.4.31 (era cópia aninhada do next) e omitiu 3 HIGH reais (undici, nanoid, js-yaml).
+- signal: `ac_gap` · recurrence: 2 feature(s) · scope: `deps` · harmful: 0
+- features: auditoria-seguranca-dependencias, ruido-scanners-seguranca
+- evidence: relatorio-gitguard-cmt5621 (deps) (+1 more)
+- last seen: 2026-08-24T18:43:26Z
 
 ## Candidates (under observation — do NOT load as guidance yet)
 
@@ -74,11 +78,29 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: tests/support/regexp.test.ts:M3 (tests)
 - last seen: 2026-08-23T15:46:52Z
 
-### L-011 — Relatório de scanner externo pode citar versão que não existe na árvore atual: confronte sempre com 'npm ls <pkg>' e 'npm audit' antes de agir — o scan de 2026-08-23 apontou postcss 8.4.31 (era cópia aninhada do next) e omitiu 3 HIGH reais (undici, nanoid, js-yaml).
-- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `deps` · harmful: 0
-- features: auditoria-seguranca-dependencias
-- evidence: relatorio-gitguard-cmt5621 (deps)
-- last seen: 2026-08-23T15:46:52Z
+### L-012 — Se um comentário do código afirma que um detalhe de implementação importa (ex.: ler parts.raw em vez do template cozido), esse detalhe precisa de teste próprio — sem ele a mutação que o desfaz sobrevive e o comentário vira a única garantia.
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `e2e/support,tests` · harmful: 0
+- features: ruido-scanners-seguranca
+- evidence: M3: parts.raw -> parts (e2e/support,tests)
+- last seen: 2026-08-24T18:43:02Z
+
+### L-013 — AC deve prescrever o resultado, não a solução: 'criar .semgrepignore' fixou uma solução apoiada em premissa não medida (o ignore default excluiria tests/) e a premissa era falsa; 'nenhuma decisão cita arquivo inexistente' teria sobrevivido à medição.
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `.specs` · harmful: 0
+- features: ruido-scanners-seguranca
+- evidence: AC-003.1 (.specs)
+- last seen: 2026-08-24T18:43:02Z
+
+### L-014 — Antes de suprimir falso positivo por arquivo de config no repositório, prove por A/B que o canal alcança o scanner que reporta: gitleaks e semgrep dão precedência a --config sobre o arquivo do repo, então serviço hospedado ignora a allowlist e só o comentário inline (gitleaks:allow / nosemgrep) sobrevive.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `configuração de scanners` · harmful: 0
+- features: ruido-scanners-seguranca
+- evidence: AD-011 (configuração de scanners)
+- last seen: 2026-08-24T18:43:02Z
+
+### L-015 — Contagem maior num scan novo não é regressão: confira duplicação antes de investigar — o scan de 2026-08-23 subiu de 35 para 54 findings apenas repetindo detect-non-literal-regexp (18 contados como 36) e um CVE do brace-expansion duas vezes, e ainda listava dois achados já corrigidos.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `processo de auditoria` · harmful: 0
+- features: ruido-scanners-seguranca
+- evidence: B8/B3 (processo de auditoria)
+- last seen: 2026-08-24T18:43:02Z
 
 ## Quarantined (failed when applied — ignore)
 

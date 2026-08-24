@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 12,
+  "next_id": 16,
   "lessons": [
     {
       "id": "L-001",
@@ -191,17 +191,91 @@
       "text": "Relatório de scanner externo pode citar versão que não existe na árvore atual: confronte sempre com 'npm ls <pkg>' e 'npm audit' antes de agir — o scan de 2026-08-23 apontou postcss 8.4.31 (era cópia aninhada do next) e omitiu 3 HIGH reais (undici, nanoid, js-yaml).",
       "signal": "ac_gap",
       "scope": "deps",
+      "status": "confirmed",
+      "features": [
+        "auditoria-seguranca-dependencias",
+        "ruido-scanners-seguranca"
+      ],
+      "recurrence": 2,
+      "harmful": 0,
+      "evidence": [
+        "relatorio-gitguard-cmt5621 (deps)",
+        "B1/B2 (dependências)"
+      ],
+      "created": "2026-08-23T15:46:52Z",
+      "last_seen": "2026-08-24T18:43:26Z"
+    },
+    {
+      "id": "L-012",
+      "key": "surviving_mutant::se um coment rio do c digo afirma que um detalhe de implementa o importa ex ler parts raw em vez do template cozido esse detalhe precisa de teste pr prio sem ele a muta o que o desfaz sobrevive e o coment rio vira a nica garantia",
+      "text": "Se um comentário do código afirma que um detalhe de implementação importa (ex.: ler parts.raw em vez do template cozido), esse detalhe precisa de teste próprio — sem ele a mutação que o desfaz sobrevive e o comentário vira a única garantia.",
+      "signal": "surviving_mutant",
+      "scope": "e2e/support,tests",
       "status": "candidate",
       "features": [
-        "auditoria-seguranca-dependencias"
+        "ruido-scanners-seguranca"
       ],
       "recurrence": 1,
       "harmful": 0,
       "evidence": [
-        "relatorio-gitguard-cmt5621 (deps)"
+        "M3: parts.raw -> parts (e2e/support,tests)"
       ],
-      "created": "2026-08-23T15:46:52Z",
-      "last_seen": "2026-08-23T15:46:52Z"
+      "created": "2026-08-24T18:43:02Z",
+      "last_seen": "2026-08-24T18:43:02Z"
+    },
+    {
+      "id": "L-013",
+      "key": "spec_precision_gap::ac deve prescrever o resultado n o a solu o criar semgrepignore fixou uma solu o apoiada em premissa n o medida o ignore default excluiria tests e a premissa era falsa nenhuma decis o cita arquivo inexistente teria sobrevivido medi o",
+      "text": "AC deve prescrever o resultado, não a solução: 'criar .semgrepignore' fixou uma solução apoiada em premissa não medida (o ignore default excluiria tests/) e a premissa era falsa; 'nenhuma decisão cita arquivo inexistente' teria sobrevivido à medição.",
+      "signal": "spec_precision_gap",
+      "scope": ".specs",
+      "status": "candidate",
+      "features": [
+        "ruido-scanners-seguranca"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "AC-003.1 (.specs)"
+      ],
+      "created": "2026-08-24T18:43:02Z",
+      "last_seen": "2026-08-24T18:43:02Z"
+    },
+    {
+      "id": "L-014",
+      "key": "ac_gap::antes de suprimir falso positivo por arquivo de config no reposit rio prove por a b que o canal alcan a o scanner que reporta gitleaks e semgrep d o preced ncia a config sobre o arquivo do repo ent o servi o hospedado ignora a allowlist e s o coment rio inline gitleaks allow nosemgrep sobrevive",
+      "text": "Antes de suprimir falso positivo por arquivo de config no repositório, prove por A/B que o canal alcança o scanner que reporta: gitleaks e semgrep dão precedência a --config sobre o arquivo do repo, então serviço hospedado ignora a allowlist e só o comentário inline (gitleaks:allow / nosemgrep) sobrevive.",
+      "signal": "ac_gap",
+      "scope": "configuração de scanners",
+      "status": "candidate",
+      "features": [
+        "ruido-scanners-seguranca"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "AD-011 (configuração de scanners)"
+      ],
+      "created": "2026-08-24T18:43:02Z",
+      "last_seen": "2026-08-24T18:43:02Z"
+    },
+    {
+      "id": "L-015",
+      "key": "ac_gap::contagem maior num scan novo n o regress o confira duplica o antes de investigar o scan de 2026 08 23 subiu de 35 para 54 findings apenas repetindo detect non literal regexp 18 contados como 36 e um cve do brace expansion duas vezes e ainda listava dois achados j corrigidos",
+      "text": "Contagem maior num scan novo não é regressão: confira duplicação antes de investigar — o scan de 2026-08-23 subiu de 35 para 54 findings apenas repetindo detect-non-literal-regexp (18 contados como 36) e um CVE do brace-expansion duas vezes, e ainda listava dois achados já corrigidos.",
+      "signal": "ac_gap",
+      "scope": "processo de auditoria",
+      "status": "candidate",
+      "features": [
+        "ruido-scanners-seguranca"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "B8/B3 (processo de auditoria)"
+      ],
+      "created": "2026-08-24T18:43:02Z",
+      "last_seen": "2026-08-24T18:43:02Z"
     }
   ]
 }

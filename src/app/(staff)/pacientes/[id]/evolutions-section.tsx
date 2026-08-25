@@ -6,8 +6,8 @@ import type { EvolutionNoteDto, ProfessionalDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import { formatDateTime } from "@/lib/format";
 import { EmptyState, ErrorAlert } from "@/components/feedback";
-import { Button } from "@still-void/ui/react";
-import { accentButton, nativeField } from "@/lib/ui";
+import { Button, NativeSelect, Textarea } from "@still-void/ui/react";
+import { accentButton } from "@/lib/ui";
 
 interface EvolutionsSectionProps {
   patientId: string;
@@ -80,11 +80,10 @@ export function EvolutionsSection({ patientId, evolutions, onSaved }: Evolutions
           {activeProfessionals.length > 0 && (
             <label className="text-sm font-medium">
               Profissional responsável
-              {/* sv-gap: native-select */}
-              <select
+              <NativeSelect
                 value={professionalId}
                 onChange={(e) => setProfessionalId(e.target.value)}
-                className={`${nativeField} mt-1 w-full`}
+                className="mt-1 w-full"
               >
                 <option value="">— sem atribuição —</option>
                 {activeProfessionals.map((professional) => (
@@ -92,19 +91,18 @@ export function EvolutionsSection({ patientId, evolutions, onSaved }: Evolutions
                     {professional.fullName}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
           )}
           {SOAP_FIELDS.map((field) => (
             <label key={field.key} className="text-sm font-medium">
               {field.label}
-              {/* sv-gap: textarea */}
-              <textarea
+              <Textarea
                 rows={2}
                 value={values[field.key]}
                 placeholder={field.placeholder}
                 onChange={(e) => setValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
-                className={`${nativeField} mt-1 w-full`}
+                className="mt-1 w-full"
               />
             </label>
           ))}

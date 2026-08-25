@@ -23,8 +23,8 @@ import {
 import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert } from "@/components/feedback";
-import { Button, Input } from "@still-void/ui/react";
-import { accentButton, nativeField } from "@/lib/ui";
+import { Button, Input, NativeSelect, Textarea } from "@still-void/ui/react";
+import { accentButton } from "@/lib/ui";
 
 interface CarePlansSectionProps {
   patientId: string;
@@ -147,11 +147,10 @@ function OpenCarePlanForm({
       {error && <ErrorAlert message={error} />}
       <label className="text-sm font-medium">
         Condição associada
-        {/* sv-gap: native-select */}
-        <select
+        <NativeSelect
           value={conditionId}
           onChange={(e) => setConditionId(e.target.value)}
-          className={`mt-1 ${nativeField}`}
+          className="mt-1"
         >
           <option value="">Geral (sem condição específica)</option>
           {conditions.map((condition) => (
@@ -159,7 +158,7 @@ function OpenCarePlanForm({
               {condition.title}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
       <Button
         type="submit"
@@ -946,8 +945,7 @@ function EvaluateOutcomeForm({ outcome, onSaved }: { outcome: CarePlanOutcomeDto
       </fieldset>
       <label className="text-sm font-medium">
         Observações
-        {/* sv-gap: textarea */}
-        <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className={`mt-1 ${nativeField}`} />
+        <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className="mt-1" />
       </label>
       <Button
         type="submit"

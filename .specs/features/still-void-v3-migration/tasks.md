@@ -342,8 +342,8 @@ T37 → T38 → T39
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] Zero `<select`/`<textarea` cru nestes 4 arquivos (rádio de `care-plans-section.tsx` permanece — é escopo de T14)
-- [ ] `tests/pages/staff-paciente-detail.test.tsx` e `tests/pages/staff-paciente-care-plans.test.tsx` passam
+- [x] Zero `<select`/`<textarea` cru nestes 4 arquivos (rádio de `care-plans-section.tsx` permanece — é escopo de T14)
+- [x] `tests/pages/staff-paciente-detail.test.tsx` e `tests/pages/staff-paciente-care-plans.test.tsx` passam
 
 **Tests**: unit — `staff-paciente-detail.test.tsx`, `staff-paciente-care-plans.test.tsx`
 **Gate**: quick

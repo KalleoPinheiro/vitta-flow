@@ -3,8 +3,8 @@
 import { useState } from "react";
 import type { PartnerDto, PatientDto } from "@/lib/dto";
 import { ErrorAlert } from "@/components/feedback";
-import { Button, Input } from "@still-void/ui/react";
-import { accentButton, nativeField } from "@/lib/ui";
+import { Button, Input, NativeSelect, Textarea } from "@still-void/ui/react";
+import { accentButton } from "@/lib/ui";
 
 export interface PatientFormValues {
   fullName: string;
@@ -98,11 +98,10 @@ export function PatientForm({ initial, partners, onSubmit }: PatientFormProps) {
       </label>
       <label className="text-sm font-medium">
         Indicado por (médico parceiro)
-        {/* sv-gap: native-select */}
-        <select
+        <NativeSelect
           value={values.referredByPartnerId}
           onChange={(e) => set("referredByPartnerId")(e.target.value)}
-          className={`mt-1 ${nativeField}`}
+          className="mt-1"
         >
           <option value="">Sem indicação</option>
           {partners
@@ -113,16 +112,15 @@ export function PatientForm({ initial, partners, onSubmit }: PatientFormProps) {
                 {partner.specialty ? ` — ${partner.specialty}` : ""}
               </option>
             ))}
-        </select>
+        </NativeSelect>
       </label>
       <label className="text-sm font-medium">
         Observações clínicas
-        {/* sv-gap: textarea */}
-        <textarea
+        <Textarea
           rows={3}
           value={values.notes}
           onChange={(e) => set("notes")(e.target.value)}
-          className={`mt-1 ${nativeField}`}
+          className="mt-1"
         />
       </label>
       <Button

@@ -254,11 +254,11 @@ T37 → T38 → T39
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] Zero `<select`, `<textarea`, `<table`, `accentButton`, `sv-gap: card-as-element` neste arquivo
-- [ ] `name`, `value`/`defaultValue`, `onChange`, `required`, `disabled` de cada campo trocado preservados
-- [ ] O `<Card as="li">` continua filho direto de `<ul>`
-- [ ] `tests/pages/staff-paciente-detail.test.tsx` passa sem afrouxar consulta
-- [ ] `npm run test:e2e -- clinico triagem` (specs que exercitam condições clínicas) passam
+- [x] Zero `<select`, `<textarea`, `<table`, `accentButton`, `sv-gap: card-as-element` neste arquivo
+- [x] `name`, `value`/`defaultValue`, `onChange`, `required`, `disabled` de cada campo trocado preservados
+- [x] O `<Card as="li">` continua filho direto de `<ul>`
+- [x] `tests/pages/staff-paciente-detail.test.tsx` passa sem afrouxar consulta — 50/50, sem alteração no arquivo de teste
+- [x] `npm run test:e2e -- clinico triagem` (specs que exercitam condições clínicas) passam — 7/7
 
 **Tests**: unit — `tests/pages/staff-paciente-detail.test.tsx`; e2e — `e2e/clinico.spec.ts`, `e2e/triagem.spec.ts`
 **Gate**: full

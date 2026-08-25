@@ -363,8 +363,8 @@ T37 → T38 → T39
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] Zero `<select` cru nestes 2 arquivos
-- [ ] `tests/pages/staff-operations.test.tsx` passa
+- [x] Zero `<select` cru nestes 2 arquivos
+- [x] `tests/pages/staff-operations.test.tsx` passa
 
 **Tests**: unit — `tests/pages/staff-operations.test.tsx`
 **Gate**: quick

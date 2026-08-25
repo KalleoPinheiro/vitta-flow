@@ -8,8 +8,7 @@ import { formatDateTime } from "@/lib/format";
 import { ErrorAlert } from "@/components/feedback";
 import { LoadMoreButton } from "@/components/load-more-button";
 import { PagedList } from "@/components/paged-list";
-import { Card } from "@still-void/ui/react";
-import { nativeField } from "@/lib/ui";
+import { Card, NativeSelect } from "@still-void/ui/react";
 
 const PAGE_SIZE = 100;
 
@@ -52,19 +51,14 @@ export default function AuditPage() {
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="sv-display text-2xl font-bold">Auditoria de prontuário</h1>
-        {/* sv-gap: native-select */}
-        <select
-          value={patientId}
-          onChange={(e) => setPatientId(e.target.value)}
-          className={nativeField}
-        >
+        <NativeSelect value={patientId} onChange={(e) => setPatientId(e.target.value)}>
           <option value="">Todos os pacientes</option>
           {(patients ?? []).map((patient) => (
             <option key={patient.id} value={patient.id}>
               {patient.fullName}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </div>
 
       <p className="mb-4 text-sm text-ink-3">

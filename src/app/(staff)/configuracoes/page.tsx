@@ -7,8 +7,8 @@ import { useApiQuery } from "@/lib/use-api-query";
 import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
-import { Button, Input } from "@still-void/ui/react";
-import { accentButton, nativeField } from "@/lib/ui";
+import { Button, Input, NativeSelect } from "@still-void/ui/react";
+import { accentButton } from "@/lib/ui";
 
 const WEEKDAYS = [
   { value: 0, label: "Dom" },
@@ -313,11 +313,10 @@ function AccountForm({
       </label>
       <label className="text-sm font-medium">
         Profissional vinculado
-        {/* sv-gap: native-select */}
-        <select
+        <NativeSelect
           value={professionalId}
           onChange={(e) => setProfessionalId(e.target.value)}
-          className={`mt-1 ${nativeField}`}
+          className="mt-1"
         >
           <option value="">— nenhum (recepção/gestão) —</option>
           {professionals.map((professional) => (
@@ -325,7 +324,7 @@ function AccountForm({
               {professional.fullName}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
       <Button
         type="submit"

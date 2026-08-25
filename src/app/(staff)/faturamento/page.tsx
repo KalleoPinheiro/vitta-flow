@@ -17,8 +17,8 @@ import { ErrorAlert } from "@/components/feedback";
 import { LoadMoreButton } from "@/components/load-more-button";
 import { PagedList } from "@/components/paged-list";
 import { InvoiceForm, type InvoiceFormValues } from "./invoice-form";
-import { Button, Card, Input } from "@still-void/ui/react";
-import { accentButton, nativeField } from "@/lib/ui";
+import { Button, Card, Input, NativeSelect } from "@still-void/ui/react";
+import { accentButton } from "@/lib/ui";
 
 const STATUS_FILTERS = [
   { value: "", label: "Todas" },
@@ -348,27 +348,25 @@ function PackageForm({
       {error && <ErrorAlert message={error} />}
       <label className="text-sm font-medium">
         Paciente *
-        {/* sv-gap: native-select */}
-        <select required value={patientId} onChange={(e) => setPatientId(e.target.value)} className={`mt-1 ${nativeField}`}>
+        <NativeSelect required value={patientId} onChange={(e) => setPatientId(e.target.value)} className="mt-1">
           <option value="">Selecione…</option>
           {patients.map((patient) => (
             <option key={patient.id} value={patient.id}>
               {patient.fullName}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
       <label className="text-sm font-medium">
         Procedimento *
-        {/* sv-gap: native-select */}
-        <select required value={procedureId} onChange={(e) => setProcedureId(e.target.value)} className={`mt-1 ${nativeField}`}>
+        <NativeSelect required value={procedureId} onChange={(e) => setProcedureId(e.target.value)} className="mt-1">
           <option value="">Selecione…</option>
           {activeProcedures.map((procedure) => (
             <option key={procedure.id} value={procedure.id}>
               {procedure.name}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         {activeProcedures.length === 0 && (
           <span className="mt-1 block text-xs font-normal text-warning">
             Cadastre procedimentos no catálogo para vender pacotes.

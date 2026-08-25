@@ -106,15 +106,45 @@
 - **Date**: 2026-08-24
 - **Status**: active
 
+### AD-014
+- **Decision**: A adoção do `@still-void/ui` no VittaFlow é **port, não redesign**: quando uma release da lib passa a exportar um primitivo, o workaround local correspondente é trocado por ele; adotar um padrão de UI que o app ainda não tem (Tabs, Tooltip, DropdownMenu, AlertDialog, Badge, ThemeToggle, Prose) é feature nova e fica fora da migração.
+- **Reason**: decisão do usuário em 2026-08-25, ao especificar a 2.0.1 → 3.1.0. Sem essa fronteira, "usar o máximo dos recursos da lib" vira redesenho de navegação e interação embutido numa migração de dependência — e o diff deixa de ser revisável contra um baseline de comportamento.
+- **Trade-off**: recursos reais da lib (`fieldMessage` + `aria-invalid`, `Badge`, família `AlertDialog`) ficam sem adoção mesmo existindo necessidade latente; viram backlog próprio em vez de carona na migração.
+- **Scope**: src/**, docs/still-void-gaps.md, migrações do design system
+- **Date**: 2026-08-25
+- **Status**: active
+
+### AD-015
+- **Decision**: O `Modal` do app mantém o próprio botão de fechar (`aria-label="Fechar"`) e passa `showCloseButton={false}` ao `DialogContent` da `3.x`.
+- **Reason**: o botão que a `3.0.0` passou a renderizar por padrão tem nome acessível `"Close dialog"` **hardcoded** — verificado em `dist/react/client/index.js`; `DialogContentProps` expõe só `showCloseButton`, nenhuma prop de rótulo. Numa interface pt-BR isso é regressão de acessibilidade, e o contrato do app já é asserido por `tests/components/modal.test.tsx`.
+- **Trade-off**: a lacuna `dialog-close-button` continua tecnicamente fechada pela lib, mas o app não a consome; a dívida migra para uma lacuna nova, `dialog-close-label`, que é pedido de i18n na lib.
+- **Scope**: src/components/modal.tsx, docs/still-void-gaps.md
+- **Date**: 2026-08-25
+- **Status**: active
+
 ## Handoff
 
-- **Feature**: ruido-scanners-seguranca — **concluída e mergeada** (PR #10, squash `fcd6110`)
-- **Phase / Task**: —
-- **Completed**: confronto reproduzível do scan `cmt60oz29012twtz1z1duza2q`; `new RegExp` eliminado dos specs E2E via tagged template `rx`; 7 fixtures marcadas com `gitleaks:allow`; AD-008 corrigido; AD-011/012/013 registrados; procedimento de varredura do README corrigido após revisão do CodeRabbit e executado verbatim
+- **Feature**: still-void-v3-migration — **spec confirmada** pelo usuário em 2026-08-25
+- **Phase / Task**: Design confirmada. Tasks escrita (39 tasks, 8 fases). Próxima: confirmar ferramentas por task e oferta de sub-agentes, depois Execute
+- **Completed**: spec e design confirmados; tasks.md escrito — 39 tasks em 8 fases (T1-T5 base, T6 piloto conditions-section.tsx, T7-T13 campos de texto, T14-T18 escolha/arquivo, T19-T26 tabelas, T27-T36 botões/superfícies+apaga src/lib/ui.ts, T37 ícones, T38-T39 lacunas+fechamento); Test Coverage Matrix/Parallelism Assessment/Gate Commands gerados de vitest.config.ts+playwright.config.ts+README; as 3 validações obrigatórias (granularidade, cross-check diagrama, co-locação de teste) passaram sem violação
 - **In-progress** (file:line): —
-- **Next step**: nenhum trabalho em curso. Ao rodar o próximo scan GitGuard, comparar com o baseline abaixo antes de agir (AD-013)
+- **Next step**: perguntar ferramentas por task (MCP/Skill) e oferecer sub-agente por fase (8 fases > 3, gatilho do protocolo); depois iniciar Execute pela T1
 - **Blockers**: none
-- **Branch**: main @ `fcd6110`
+- **Branch**: `claude/pos-merge-ajustes-5a46b5` (worktree `tlc-spec-driven-audit-5a46b5`), a partir de `c30c632`
+
+### Baseline medido em `c30c632` (pré-migração v3)
+
+| Medição | Valor |
+|---|---|
+| `npm run check:sv` | verde, 7 checagens, zero achado |
+| `<select>` / `<textarea>` / `<table>` crus | 23 / 7 / 14 |
+| `<input type="file">` / `checkbox` / `radio` | 2 / 1 / 3 |
+| `accentButton` / `nativeField` (usos) | 59 / 45 |
+| marcações `sv-gap:` | 69, em 30 arquivos, 16 slugs |
+| glifos `✕` `⚠` `✓` `←` `→` | 1 / 3 / 1 / 3 / 11 |
+| utilitários `*-sv-*` no markup do app | 26 (bg-sv-surface 12, border-sv-border 10, text-sv-text 2, text-sv-bg 1, bg-sv-surface-2 1) |
+| cobertura exigida | 90% em lines/functions/branches/statements |
+| e2e | 64/64 |
 
 ### Baseline de segurança medido em `fcd6110`
 
@@ -132,3 +162,13 @@ Reproduza pelo procedimento do README (seção "Varredura de segurança").
 Um scan GitGuard sobre `fcd6110` deve cair de 54 para ~9 findings: 2 `hardcoded_secrets`
 deduplicados, 1 `unsafe-formatstring` e os 6 TRIVY obsoletos, que só somem quando o
 serviço reindexar o lockfile. Acima disso, reproduza localmente antes de agir.
+
+### Confronto pós-bump `@still-void/ui@3.1.0` (T4, AD-013)
+
+`npm audit` reexecutado após o bump para `^3.1.0` (6 dependências novas na árvore
+via `@still-void/ui`: `@heroicons/react`, `@radix-ui/react-alert-dialog`,
+`-dropdown-menu`, `-select`, `-tabs`, `-tooltip` — sem call site no app ainda,
+herdadas pelo pacote). Resultado idêntico ao baseline de `fcd6110`: **0
+HIGH/CRITICAL**, as mesmas **4 MODERATE de `esbuild`** via `drizzle-kit` (AD-009).
+Nenhuma das 6 dependências novas introduziu achado. Nada a reproduzir — o
+confronto não encontrou divergência.

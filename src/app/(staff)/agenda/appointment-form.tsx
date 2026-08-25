@@ -6,8 +6,8 @@ import { useApiQuery } from "@/lib/use-api-query";
 import { BUSINESS_HOURS, MIN_GAP_MINUTES } from "@/domain/scheduling/business-hours";
 import { ErrorAlert } from "@/components/feedback";
 import { dayKey } from "./calendar-grid";
-import { Button, Input } from "@still-void/ui/react";
-import { accentButton, nativeField } from "@/lib/ui";
+import { Button, Input, NativeSelect, Textarea } from "@still-void/ui/react";
+import { accentButton } from "@/lib/ui";
 
 export interface AppointmentFormValues {
   patientId: string;
@@ -96,12 +96,11 @@ export function AppointmentForm({
       </p>
       <label className="text-sm font-medium">
         Paciente *
-        {/* sv-gap: native-select */}
-        <select
+        <NativeSelect
           required
           value={values.patientId}
           onChange={(e) => setValues((prev) => ({ ...prev, patientId: e.target.value }))}
-          className={`mt-1 ${nativeField}`}
+          className="mt-1"
         >
           <option value="">Selecione…</option>
           {activePatients.map((patient) => (
@@ -109,17 +108,16 @@ export function AppointmentForm({
               {patient.fullName}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
       <label className="text-sm font-medium">
         Repetição
-        {/* sv-gap: native-select */}
-        <select
+        <NativeSelect
           value={values.occurrences}
           onChange={(e) =>
             setValues((prev) => ({ ...prev, occurrences: Number(e.target.value) }))
           }
-          className={`mt-1 ${nativeField}`}
+          className="mt-1"
         >
           <option value={1}>Consulta única</option>
           {[4, 6, 8, 10, 12].map((n) => (
@@ -127,16 +125,15 @@ export function AppointmentForm({
               Semanal — {n} sessões
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
       {professionals.length > 0 && (
         <label className="text-sm font-medium">
           Profissional
-          {/* sv-gap: native-select */}
-          <select
+          <NativeSelect
             value={values.professionalId}
             onChange={(e) => setValues((prev) => ({ ...prev, professionalId: e.target.value }))}
-            className={`mt-1 ${nativeField}`}
+            className="mt-1"
           >
             <option value="">— sem atribuição —</option>
             {professionals.map((professional) => (
@@ -144,7 +141,7 @@ export function AppointmentForm({
                 {professional.fullName}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
       )}
       <div className="grid grid-cols-3 gap-3">
@@ -170,30 +167,28 @@ export function AppointmentForm({
         </label>
         <label className="text-sm font-medium">
           Duração *
-          {/* sv-gap: native-select */}
-          <select
+          <NativeSelect
             value={values.durationMinutes}
             onChange={(e) =>
               setValues((prev) => ({ ...prev, durationMinutes: Number(e.target.value) }))
             }
-            className={`mt-1 ${nativeField}`}
+            className="mt-1"
           >
             {DURATION_OPTIONS.map((minutes) => (
               <option key={minutes} value={minutes}>
                 {minutes} min
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
       </div>
       {activeCatalog.length > 0 && (
         <label className="text-sm font-medium">
           Procedimento do catálogo
-          {/* sv-gap: native-select */}
-          <select
+          <NativeSelect
             value={values.procedureId}
             onChange={(e) => applyCatalogProcedure(e.target.value)}
-            className={`mt-1 ${nativeField}`}
+            className="mt-1"
           >
             <option value="">— escolher do catálogo —</option>
             {activeCatalog.map((procedure) => (
@@ -201,7 +196,7 @@ export function AppointmentForm({
                 {procedure.name} ({procedure.durationMinutes} min)
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
       )}
 
@@ -229,12 +224,11 @@ export function AppointmentForm({
       </label>
       <label className="text-sm font-medium">
         Observações
-        {/* sv-gap: textarea */}
-        <textarea
+        <Textarea
           rows={2}
           value={values.notes}
           onChange={(e) => setValues((prev) => ({ ...prev, notes: e.target.value }))}
-          className={`mt-1 ${nativeField}`}
+          className="mt-1"
         />
       </label>
       <Button

@@ -278,9 +278,9 @@ T37 → T38 → T39
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] Zero `<select`/`<textarea` cru nestes 3 arquivos
-- [ ] Atributos de validação preservados (`name`, `required`, `value`/`onChange`)
-- [ ] `tests/pages/staff-agenda.test.tsx` passa
+- [x] Zero `<select`/`<textarea` cru nestes 3 arquivos
+- [x] Atributos de validação preservados (`name`, `required`, `value`/`onChange`)
+- [x] `tests/pages/staff-agenda.test.tsx` passa
 
 **Tests**: unit — `tests/pages/staff-agenda.test.tsx`
 **Gate**: quick

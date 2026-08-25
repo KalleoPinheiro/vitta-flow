@@ -9,8 +9,8 @@ import { ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import { CalendarGrid } from "./calendar-grid";
 import { AppointmentForm, type AppointmentFormValues } from "./appointment-form";
 import { AppointmentDetail } from "./appointment-detail";
-import { Button } from "@still-void/ui/react";
-import { accentButton, nativeField } from "@/lib/ui";
+import { Button, NativeSelect } from "@still-void/ui/react";
+import { accentButton } from "@/lib/ui";
 
 function ProfessionalFilter({
   professionals,
@@ -25,19 +25,14 @@ function ProfessionalFilter({
     return null;
   }
   return (
-    // sv-gap: native-select
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className={nativeField}
-    >
+    <NativeSelect value={value} onChange={(e) => onChange(e.target.value)}>
       <option value="">Todos os profissionais</option>
       {professionals.map((professional) => (
         <option key={professional.id} value={professional.id}>
           {professional.fullName}
         </option>
       ))}
-    </select>
+    </NativeSelect>
   );
 }
 

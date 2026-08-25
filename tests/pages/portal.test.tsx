@@ -532,7 +532,7 @@ describe("Feature: Visão do paciente no portal", () => {
 
       await screen.findByText("Ferida perna E");
       expect(screen.getByText("Estomia resolvida")).toBeInTheDocument();
-      expect(screen.getAllByText("Enviar foto")).toHaveLength(1);
+      expect(screen.getAllByLabelText("Enviar foto")).toHaveLength(1);
       expect(screen.getByText("Em acompanhamento")).toBeInTheDocument();
       expect(screen.getByText("Resolvida")).toBeInTheDocument();
     });
@@ -650,7 +650,7 @@ describe("Feature: Visão do paciente no portal", () => {
       expect(
         screen.queryByText("Aceite o termo de consentimento acima para enviar fotos à equipe."),
       ).not.toBeInTheDocument();
-      expect(screen.getByText("Enviar foto")).toBeInTheDocument();
+      expect(screen.getByLabelText("Enviar foto")).toBeInTheDocument();
     });
   });
 

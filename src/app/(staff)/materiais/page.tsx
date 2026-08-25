@@ -8,8 +8,8 @@ import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
-import { Button, Card, Input } from "@still-void/ui/react";
-import { accentButton, nativeField } from "@/lib/ui";
+import { Button, Card, Input, NativeSelect } from "@still-void/ui/react";
+import { accentButton } from "@/lib/ui";
 
 interface SupplyInsightDto {
   supplyId: string;
@@ -449,15 +449,14 @@ function MovementForm({ supply, onSaved }: { supply: SupplyDto; onSaved: () => v
       <div className="grid grid-cols-2 gap-3">
         <label className="text-sm font-medium">
           Tipo *
-          {/* sv-gap: native-select */}
-          <select
+          <NativeSelect
             value={type}
             onChange={(e) => setType(e.target.value as "in" | "out")}
-            className={`mt-1 ${nativeField}`}
+            className="mt-1"
           >
             <option value="in">Entrada (compra/devolução)</option>
             <option value="out">Saída (uso/perda)</option>
-          </select>
+          </NativeSelect>
         </label>
         <label className="text-sm font-medium">
           Quantidade *
@@ -506,11 +505,10 @@ function MovementForm({ supply, onSaved }: { supply: SupplyDto; onSaved: () => v
       {type === "out" && (
         <label className="text-sm font-medium">
           Consulta atendida (custo por atendimento)
-          {/* sv-gap: native-select */}
-          <select
+          <NativeSelect
             value={appointmentId}
             onChange={(e) => setAppointmentId(e.target.value)}
-            className={`mt-1 ${nativeField}`}
+            className="mt-1"
           >
             <option value="">— sem vínculo —</option>
             {(todayAppointments ?? []).map((appointment) => (
@@ -522,7 +520,7 @@ function MovementForm({ supply, onSaved }: { supply: SupplyDto; onSaved: () => v
                 — {appointment.patientName ?? "Paciente"} ({appointment.procedure})
               </option>
             ))}
-          </select>
+          </NativeSelect>
           <span className="mt-1 block text-xs font-normal text-ink-3">
             Vincular a saída à consulta alimenta a margem por procedimento no relatório.
           </span>

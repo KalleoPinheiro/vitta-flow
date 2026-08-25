@@ -321,8 +321,8 @@ T37 → T38 → T39
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] Zero `<select` cru neste arquivo
-- [ ] `tests/pages/staff-materiais.test.tsx` passa
+- [x] Zero `<select` cru neste arquivo
+- [x] `tests/pages/staff-materiais.test.tsx` passa
 
 **Tests**: unit — `tests/pages/staff-materiais.test.tsx`
 **Gate**: quick

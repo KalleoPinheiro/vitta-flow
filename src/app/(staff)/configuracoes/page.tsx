@@ -7,7 +7,17 @@ import { useApiQuery } from "@/lib/use-api-query";
 import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
-import { Button, Input, NativeSelect } from "@still-void/ui/react";
+import {
+  Button,
+  Input,
+  NativeSelect,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@still-void/ui/react";
 import { accentButton } from "@/lib/ui";
 
 const WEEKDAYS = [
@@ -203,30 +213,29 @@ function AccountsSection() {
       ) : accounts.length === 0 ? (
         <EmptyState message="Nenhuma conta individual — todos usam a senha master (auditoria sem identificação pessoal)." />
       ) : (
-        // sv-gap: table
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-border text-xs uppercase text-ink-3">
-            <tr>
-              <th className="py-2 pr-3">Email</th>
-              <th className="py-2 pr-3">Profissional vinculado</th>
-              <th className="py-2 pr-3">Situação</th>
-              <th className="py-2 text-right">Ações</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
+        <Table className="w-full text-left text-sm">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="py-2 pr-3">Email</TableHead>
+              <TableHead className="py-2 pr-3">Profissional vinculado</TableHead>
+              <TableHead className="py-2 pr-3">Situação</TableHead>
+              <TableHead className="py-2 text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {accounts.map((account) => (
-              <tr key={account.id} className={account.active ? "" : "opacity-50"}>
-                <td className="py-2 pr-3 font-medium">{account.email}</td>
-                <td className="py-2 pr-3 text-ink-2">
+              <TableRow key={account.id} className={account.active ? "" : "opacity-50"}>
+                <TableCell className="py-2 pr-3 font-medium">{account.email}</TableCell>
+                <TableCell className="py-2 pr-3 text-ink-2">
                   {professionalName(account.professionalId)}
-                </td>
-                <td className="py-2 pr-3">
+                </TableCell>
+                <TableCell className="py-2 pr-3">
                   <StatusBadge
                     status={account.active ? "confirmed" : "cancelled"}
                     label={account.active ? "Ativa" : "Desativada"}
                   />
-                </td>
-                <td className="py-2 text-right">
+                </TableCell>
+                <TableCell className="py-2 text-right">
                   <Button
                     type="button"
                     onClick={() => void toggleActive(account)}
@@ -235,11 +244,11 @@ function AccountsSection() {
                   >
                     {account.active ? "Desativar" : "Reativar"}
                   </Button>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       )}
 
       {creating && (

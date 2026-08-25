@@ -12,6 +12,14 @@ import {
 import { ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import { DocumentFrame, type ClinicInfoDto } from "@/components/document-frame";
 import { HealingChart } from "@/components/healing-chart";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@still-void/ui/react";
 
 /**
  * Relatório de evolução clínica para o médico parceiro — mesma minimização do
@@ -82,33 +90,36 @@ function ReportContent({
       {chronological.length === 0 ? (
         <p>Nenhuma avaliação registrada até a data deste relatório.</p>
       ) : (
-        // sv-gap: table
-        <table className="w-full border-collapse text-xs">
-          <thead>
-            <tr className="border-b border-black text-left">
-              <th className="py-1 pr-2">Data</th>
-              <th className="py-1 pr-2">C×L×P (mm)</th>
-              <th className="py-1 pr-2">Área (mm²)</th>
-              <th className="py-1 pr-2">Tecido</th>
-              <th className="py-1 pr-2">Exsudato</th>
-              <th className="py-1">Dor</th>
-            </tr>
-          </thead>
-          <tbody>
+        // SPEC_DEVIATION: override neutro de impressão (AD-006) — literal
+        // border-black/text-black em vez de tokens --sv-*, para a folha
+        // continuar em preto-sobre-branco na impressora P&B. O utilitário
+        // vence layer(components), então o override é determinístico.
+        <Table className="w-full border-collapse text-xs text-black">
+          <TableHeader>
+            <TableRow className="border-b border-black text-left">
+              <TableHead className="py-1 pr-2 text-black">Data</TableHead>
+              <TableHead className="py-1 pr-2 text-black">C×L×P (mm)</TableHead>
+              <TableHead className="py-1 pr-2 text-black">Área (mm²)</TableHead>
+              <TableHead className="py-1 pr-2 text-black">Tecido</TableHead>
+              <TableHead className="py-1 pr-2 text-black">Exsudato</TableHead>
+              <TableHead className="py-1 text-black">Dor</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {chronological.map((a) => (
-              <tr key={a.id} className="border-b border-black/30">
-                <td className="py-1 pr-2">{formatDate(a.createdAt)}</td>
-                <td className="py-1 pr-2">
+              <TableRow key={a.id} className="border-b border-black/30">
+                <TableCell className="py-1 pr-2">{formatDate(a.createdAt)}</TableCell>
+                <TableCell className="py-1 pr-2">
                   {a.lengthMm != null ? `${a.lengthMm}×${a.widthMm ?? "—"}×${a.depthMm ?? "—"}` : "—"}
-                </td>
-                <td className="py-1 pr-2">{a.areaMm2 ?? "—"}</td>
-                <td className="py-1 pr-2">{a.tissueType ?? "—"}</td>
-                <td className="py-1 pr-2">{a.exudate ? (EXUDATE_LABELS[a.exudate] ?? a.exudate) : "—"}</td>
-                <td className="py-1">{a.painScale != null ? `${a.painScale}/10` : "—"}</td>
-              </tr>
+                </TableCell>
+                <TableCell className="py-1 pr-2">{a.areaMm2 ?? "—"}</TableCell>
+                <TableCell className="py-1 pr-2">{a.tissueType ?? "—"}</TableCell>
+                <TableCell className="py-1 pr-2">{a.exudate ? (EXUDATE_LABELS[a.exudate] ?? a.exudate) : "—"}</TableCell>
+                <TableCell className="py-1">{a.painScale != null ? `${a.painScale}/10` : "—"}</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       )}
     </DocumentFrame>
   );

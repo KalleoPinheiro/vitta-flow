@@ -13,6 +13,14 @@ import {
 } from "@/lib/format";
 import { ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import { DocumentFrame, type ClinicInfoDto } from "@/components/document-frame";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@still-void/ui/react";
 
 /**
  * Plano de cuidados (SAE) para impressão — diagnóstico (NANDA-I), resultado
@@ -77,60 +85,64 @@ function CarePlanDocumentContent({
       {detail.outcomes.length === 0 ? (
         <p className="mb-4">Nenhum resultado prescrito.</p>
       ) : (
-        // sv-gap: table
-        <table className="mb-4 w-full border-collapse text-xs">
-          <thead>
-            <tr className="border-b border-black text-left">
-              <th className="py-1 pr-2">Resultado</th>
-              <th className="py-1 pr-2">Basal</th>
-              <th className="py-1 pr-2">Atual</th>
-              <th className="py-1 pr-2">Meta</th>
-              <th className="py-1">Situação</th>
-            </tr>
-          </thead>
-          <tbody>
+        // SPEC_DEVIATION: override neutro de impressão (AD-006) — literal
+        // border-black/text-black em vez de tokens --sv-*, para a folha
+        // continuar em preto-sobre-branco na impressora P&B. O utilitário
+        // vence layer(components), então o override é determinístico.
+        <Table className="mb-4 w-full border-collapse text-xs text-black">
+          <TableHeader>
+            <TableRow className="border-b border-black text-left">
+              <TableHead className="py-1 pr-2 text-black">Resultado</TableHead>
+              <TableHead className="py-1 pr-2 text-black">Basal</TableHead>
+              <TableHead className="py-1 pr-2 text-black">Atual</TableHead>
+              <TableHead className="py-1 pr-2 text-black">Meta</TableHead>
+              <TableHead className="py-1 text-black">Situação</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {detail.outcomes.map((outcome) => (
-              <tr key={outcome.id} className="border-b border-black/30">
-                <td className="py-1 pr-2">
+              <TableRow key={outcome.id} className="border-b border-black/30">
+                <TableCell className="py-1 pr-2">
                   {outcome.outcomeCode} — {outcome.outcomeLabel}
-                </td>
-                <td className="py-1 pr-2">{outcome.baselineScore}</td>
-                <td className="py-1 pr-2">{outcome.currentScore ?? "—"}</td>
-                <td className="py-1 pr-2">{outcome.targetScore}</td>
-                <td className="py-1">{outcomeStatusLabel(outcome)}</td>
-              </tr>
+                </TableCell>
+                <TableCell className="py-1 pr-2">{outcome.baselineScore}</TableCell>
+                <TableCell className="py-1 pr-2">{outcome.currentScore ?? "—"}</TableCell>
+                <TableCell className="py-1 pr-2">{outcome.targetScore}</TableCell>
+                <TableCell className="py-1">{outcomeStatusLabel(outcome)}</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       )}
 
       <h3 className="mb-2 font-semibold">Intervenções de enfermagem (NIC)</h3>
       {detail.interventions.length === 0 ? (
         <p>Nenhuma intervenção prescrita.</p>
       ) : (
-        // sv-gap: table
-        <table className="w-full border-collapse text-xs">
-          <thead>
-            <tr className="border-b border-black text-left">
-              <th className="py-1 pr-2">Intervenção</th>
-              <th className="py-1 pr-2">Frequência</th>
-              <th className="py-1 pr-2">Prioridade</th>
-              <th className="py-1">Execuções</th>
-            </tr>
-          </thead>
-          <tbody>
+        // SPEC_DEVIATION: override neutro de impressão (AD-006) — ver
+        // comentário na tabela de resultados esperados (NOC) acima.
+        <Table className="w-full border-collapse text-xs text-black">
+          <TableHeader>
+            <TableRow className="border-b border-black text-left">
+              <TableHead className="py-1 pr-2 text-black">Intervenção</TableHead>
+              <TableHead className="py-1 pr-2 text-black">Frequência</TableHead>
+              <TableHead className="py-1 pr-2 text-black">Prioridade</TableHead>
+              <TableHead className="py-1 text-black">Execuções</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {detail.interventions.map((intervention) => (
-              <tr key={intervention.id} className="border-b border-black/30">
-                <td className="py-1 pr-2">
+              <TableRow key={intervention.id} className="border-b border-black/30">
+                <TableCell className="py-1 pr-2">
                   {intervention.interventionCode} — {intervention.interventionLabel}
-                </td>
-                <td className="py-1 pr-2">{intervention.frequency}</td>
-                <td className="py-1 pr-2">{INTERVENTION_PRIORITY_LABELS[intervention.priority]}</td>
-                <td className="py-1">{intervention.records.length}</td>
-              </tr>
+                </TableCell>
+                <TableCell className="py-1 pr-2">{intervention.frequency}</TableCell>
+                <TableCell className="py-1 pr-2">{INTERVENTION_PRIORITY_LABELS[intervention.priority]}</TableCell>
+                <TableCell className="py-1">{intervention.records.length}</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       )}
     </DocumentFrame>
   );

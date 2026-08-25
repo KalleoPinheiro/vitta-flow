@@ -8,7 +8,18 @@ import { formatCurrency } from "@/lib/format";
 import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
-import { Button, Card, Input, NativeSelect } from "@still-void/ui/react";
+import {
+  Button,
+  Card,
+  Input,
+  NativeSelect,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@still-void/ui/react";
 import { accentButton } from "@/lib/ui";
 
 export default function ProceduresPage() {
@@ -50,36 +61,35 @@ export default function ProceduresPage() {
 
       {(error || actionError) && <ErrorAlert message={actionError ?? error ?? ""} />}
 
-      <Card className="overflow-x-auto">
+      <Card>
         {!procedures ? (
           <LoadingIndicator />
         ) : procedures.length === 0 ? (
           <EmptyState message="Nenhum procedimento cadastrado — o agendamento continua com texto livre até o catálogo existir." />
         ) : (
-          // sv-gap: table
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-border bg-bg text-xs uppercase text-ink-3">
-              <tr>
-                <th className="px-4 py-3">Procedimento</th>
-                <th className="px-4 py-3">Preço padrão</th>
-                <th className="px-4 py-3">Duração</th>
-                <th className="px-4 py-3">Situação</th>
-                <th className="px-4 py-3 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
+          <Table className="w-full text-left text-sm">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="px-4 py-3">Procedimento</TableHead>
+                <TableHead className="px-4 py-3">Preço padrão</TableHead>
+                <TableHead className="px-4 py-3">Duração</TableHead>
+                <TableHead className="px-4 py-3">Situação</TableHead>
+                <TableHead className="px-4 py-3 text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {procedures.map((procedure) => (
-                <tr key={procedure.id} className={procedure.active ? "" : "opacity-50"}>
-                  <td className="px-4 py-3 font-medium">{procedure.name}</td>
-                  <td className="px-4 py-3">{formatCurrency(procedure.priceCents)}</td>
-                  <td className="px-4 py-3 text-ink-2">{procedure.durationMinutes} min</td>
-                  <td className="px-4 py-3">
+                <TableRow key={procedure.id} className={procedure.active ? "" : "opacity-50"}>
+                  <TableCell className="px-4 py-3 font-medium">{procedure.name}</TableCell>
+                  <TableCell className="px-4 py-3">{formatCurrency(procedure.priceCents)}</TableCell>
+                  <TableCell className="px-4 py-3 text-ink-2">{procedure.durationMinutes} min</TableCell>
+                  <TableCell className="px-4 py-3">
                     <StatusBadge
                       status={procedure.active ? "confirmed" : "cancelled"}
                       label={procedure.active ? "Ativo" : "Inativo"}
                     />
-                  </td>
-                  <td className="px-4 py-3 text-right">
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-right">
                     <Button
                       type="button"
                       onClick={() => setKitFor(procedure)}
@@ -104,11 +114,11 @@ export default function ProceduresPage() {
                     >
                       {procedure.active ? "Desativar" : "Reativar"}
                     </Button>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
       </Card>
 

@@ -232,9 +232,9 @@ T37 → T38 → T39
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] `npm run typecheck && npm run build && npm test && npm run test:e2e` saem 0
-- [ ] Cobertura mantém os limiares de 90% (`lines`/`functions`/`branches`/`statements`)
-- [ ] `test:e2e` mantém 64/64, incluindo `e2e/portal-paciente.spec.ts`/`portal-parceiro.spec.ts` (nav do `Header` sem regressão — SV3-03, verificado indiretamente já que não há teste unitário de `portal/layout.tsx`, excluído de cobertura por ser `layout.tsx`)
+- [x] `npm run typecheck && npm run build && npm test && npm run test:e2e` saem 0
+- [x] Cobertura mantém os limiares de 90% (`lines`/`functions`/`branches`/`statements`) — medido: statements 97.3%, branches 93.33%, functions 96.79%, lines 97.39%
+- [x] `test:e2e` mantém 64/64 (63 passed + 1 flaky que passou no retry do próprio `retries: 1` do projeto — `export-lgpd.spec.ts`, falha de timing não relacionada a esta migração), incluindo `e2e/portal-paciente.spec.ts`/`portal-parceiro.spec.ts` (nav do `Header` sem regressão — SV3-03, verificado indiretamente já que não há teste unitário de `portal/layout.tsx`, excluído de cobertura por ser `layout.tsx`)
 
 **Tests**: e2e (existente, sem caso novo)
 **Gate**: full

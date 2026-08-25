@@ -34,6 +34,17 @@ describe("Feature: Modal", () => {
 
       expect(onClose).toHaveBeenCalledTimes(1);
     });
+
+    it("Dado showCloseButton={false} no DialogContent (AD-015), Então há exatamente um botão com nome acessível Fechar e nenhum Close dialog", () => {
+      render(
+        <Modal title="Detalhes" onClose={vi.fn()}>
+          <p>Conteúdo</p>
+        </Modal>,
+      );
+
+      expect(screen.getAllByLabelText("Fechar")).toHaveLength(1);
+      expect(screen.queryByText("Close dialog")).not.toBeInTheDocument();
+    });
   });
 
   describe("Cenário: interação dentro do diálogo", () => {
@@ -62,7 +73,14 @@ describe("Feature: Modal", () => {
         </Modal>,
       );
 
-      const overlay = document.querySelector('[data-state="open"][class*="fixed inset-0"]');
+      // SPEC_DEVIATION: na 3.x o DialogOverlay do pacote emite a classe semântica
+      // `sv-overlay` (estilizada em style.css com position:fixed;inset:0) em vez das
+      // classes utilitárias Tailwind `fixed inset-0` da 2.x — mudança de
+      // implementação não listada nas 3 quebras do Problem Statement da spec.
+      // O comportamento (overlay fixo cobrindo a tela) é o mesmo; a asserção segue
+      // a classe real emitida pelo pacote em vez de um utilitário que ele não
+      // emite mais.
+      const overlay = document.querySelector('[data-state="open"].sv-overlay');
       expect(overlay).toBeInTheDocument();
     });
   });
@@ -86,8 +104,13 @@ describe("Feature: Modal", () => {
         </Modal>,
       );
 
-      // `bg-sv-surface` é emitido pelo <DialogContent> do pacote, não pelo app.
-      expect(screen.getByRole("dialog")).toHaveClass("bg-sv-surface");
+      // SPEC_DEVIATION: na 3.x o DialogContent do pacote emite a classe semântica
+      // `sv-dialog` (estilizada em style.css com background: var(--sv-surface)) em
+      // vez do utilitário Tailwind `bg-sv-surface` da 2.x — mesma mudança de
+      // implementação do overlay acima, não listada nas 3 quebras do Problem
+      // Statement da spec. A cor de fundo renderizada é a mesma; a asserção segue
+      // a classe real emitida pelo pacote.
+      expect(screen.getByRole("dialog")).toHaveClass("sv-dialog");
     });
 
     it("Dado o modal renderizado, Então não tem sombra — regra de fidelidade do Still Void", () => {

@@ -23,8 +23,11 @@ interface ModalProps {
  *   transição `open → false`, e os call sites daqui desmontam o `<Modal>` direto
  *   (o pai zera o estado), então essa transição nunca acontece.
  *
- * O botão de fechar também é do app: o `DialogContent` do pacote não empacota um
- * (o shadcn upstream empacota).
+ * O botão de fechar é do app, não do pacote: a partir da 3.0.0 o `DialogContent`
+ * passa a empacotar um próprio, mas com nome acessível `"Close dialog"` fixo em
+ * inglês (sem prop de rótulo) — regressão de acessibilidade numa UI pt-BR. Por
+ * isso `showCloseButton={false}` (AD-015), e o botão pt-BR abaixo continua sendo
+ * o único.
  */
 export function Modal({ title, onClose, children }: ModalProps) {
   const [previouslyFocused] = useState<HTMLElement | null>(() =>
@@ -48,10 +51,13 @@ export function Modal({ title, onClose, children }: ModalProps) {
     >
       {/* sv-gap: dialog-aria-modal */}
       {/* sv-gap: dialog-shadow */}
-      <DialogContent aria-modal="true" className="max-h-[90vh] overflow-y-auto shadow-none">
+      <DialogContent
+        aria-modal="true"
+        showCloseButton={false}
+        className="max-h-[90vh] overflow-y-auto shadow-none"
+      >
         <div className="flex items-center justify-between">
           <DialogTitle className="sv-display text-lg font-semibold">{title}</DialogTitle>
-          {/* sv-gap: dialog-close-button */}
           <DialogClose aria-label="Fechar" className="text-ink-3 hover:text-ink">
             ✕
           </DialogClose>

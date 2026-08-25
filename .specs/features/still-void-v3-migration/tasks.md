@@ -384,9 +384,9 @@ T37 → T38 → T39
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] Zero `<select` cru neste arquivo
-- [ ] `tests/pages/portal.test.tsx` passa
-- [ ] `npm run test:e2e -- followup` passa
+- [x] Zero `<select` cru neste arquivo
+- [x] `tests/pages/portal.test.tsx` passa
+- [x] `npm run test:e2e -- followup` passa
 
 **Tests**: unit — `tests/pages/portal.test.tsx`; e2e — `e2e/followup.spec.ts`
 **Gate**: full

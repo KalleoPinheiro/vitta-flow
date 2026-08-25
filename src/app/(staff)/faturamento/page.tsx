@@ -29,7 +29,6 @@ import {
   TableHeader,
   TableRow,
 } from "@still-void/ui/react";
-import { accentButton } from "@/lib/ui";
 
 const STATUS_FILTERS = [
   { value: "", label: "Todas" },
@@ -197,7 +196,7 @@ export default function BillingPage() {
           <Button
             type="button"
             onClick={() => setCreating(true)}
-            className={accentButton}
+            variant="accent"
           >
             + Nova fatura
           </Button>
@@ -408,7 +407,8 @@ function PackageForm({
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-1 ${accentButton}`}
+        variant="accent"
+        className="mt-1"
       >
         {saving ? "Vendendo…" : "Vender pacote"}
       </Button>

@@ -4,7 +4,6 @@ import { useState } from "react";
 import type { PatientDto } from "@/lib/dto";
 import { ErrorAlert } from "@/components/feedback";
 import { Button, Input, NativeSelect } from "@still-void/ui/react";
-import { accentButton } from "@/lib/ui";
 
 export interface InvoiceFormValues {
   patientId: string;
@@ -96,7 +95,8 @@ export function InvoiceForm({ patients, onSubmit }: InvoiceFormProps) {
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-2 ${accentButton}`}
+        variant="accent"
+        className="mt-2"
       >
         {saving ? "Emitindo…" : "Emitir fatura"}
       </Button>

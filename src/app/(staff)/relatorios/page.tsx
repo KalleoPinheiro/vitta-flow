@@ -5,7 +5,16 @@ import type { MonthlyReport } from "@/application/reports/get-monthly-report";
 import { useApiQuery } from "@/lib/use-api-query";
 import { APPOINTMENT_STATUS_LABELS, formatCurrency } from "@/lib/format";
 import { ErrorAlert, LoadingIndicator, EmptyState } from "@/components/feedback";
-import { Card, Input } from "@still-void/ui/react";
+import {
+  Card,
+  Input,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@still-void/ui/react";
 
 const currentMonth = () => {
   const now = new Date();
@@ -66,39 +75,38 @@ export default function ReportsPage() {
                 <EmptyState message="Nenhuma consulta concluída no mês." />
               ) : (
                 <>
-                  {/* sv-gap: table */}
-                  <table className="w-full text-left text-sm">
-                    <thead className="text-xs uppercase text-ink-3">
-                      <tr>
-                        <th className="py-2">Procedimento</th>
-                        <th className="py-2 text-right">Qtde</th>
-                        <th className="py-2 text-right">Receita</th>
-                        <th className="py-2 text-right">Insumos</th>
-                        <th className="py-2 text-right">Margem</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
+                  <Table className="w-full text-left text-sm">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="py-2">Procedimento</TableHead>
+                        <TableHead className="py-2 text-right">Qtde</TableHead>
+                        <TableHead className="py-2 text-right">Receita</TableHead>
+                        <TableHead className="py-2 text-right">Insumos</TableHead>
+                        <TableHead className="py-2 text-right">Margem</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {report.revenueByProcedure.map((row) => (
-                        <tr key={row.procedure}>
-                          <td className="py-2">{row.procedure}</td>
-                          <td className="py-2 text-right">{row.count}</td>
-                          <td className="py-2 text-right font-medium">
+                        <TableRow key={row.procedure}>
+                          <TableCell className="py-2">{row.procedure}</TableCell>
+                          <TableCell className="py-2 text-right">{row.count}</TableCell>
+                          <TableCell className="py-2 text-right font-medium">
                             {formatCurrency(row.totalCents)}
-                          </td>
-                          <td className="py-2 text-right text-ink-3">
+                          </TableCell>
+                          <TableCell className="py-2 text-right text-ink-3">
                             {formatCurrency(row.supplyCostCents)}
-                          </td>
-                          <td
+                          </TableCell>
+                          <TableCell
                             className={`py-2 text-right font-medium ${
                               row.marginCents >= 0 ? "text-success" : "text-danger"
                             }`}
                           >
                             {formatCurrency(row.marginCents)}
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                   {report.unattributedSupplyCostCents > 0 && (
                     <p className="mt-3 text-xs text-warning">
                       Custo de insumos não vinculado a consulta no mês:{" "}
@@ -115,31 +123,30 @@ export default function ReportsPage() {
             // sv-gap: card-as-element
             <section className="rounded-lg border border-sv-border bg-sv-surface p-5">
               <h2 className="mb-3 text-lg font-semibold">Produção por profissional</h2>
-              {/* sv-gap: table */}
-              <table className="w-full text-left text-sm">
-                <thead className="text-xs uppercase text-ink-3">
-                  <tr>
-                    <th className="py-2">Profissional</th>
-                    <th className="py-2 text-right">Concluídas</th>
-                    <th className="py-2 text-right">Receita</th>
-                    <th className="py-2 text-right">Repasse</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
+              <Table className="w-full text-left text-sm">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="py-2">Profissional</TableHead>
+                    <TableHead className="py-2 text-right">Concluídas</TableHead>
+                    <TableHead className="py-2 text-right">Receita</TableHead>
+                    <TableHead className="py-2 text-right">Repasse</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {report.productionByProfessional.map((row) => (
-                    <tr key={row.professionalId ?? "none"}>
-                      <td className="py-2">{row.professionalName}</td>
-                      <td className="py-2 text-right">{row.count}</td>
-                      <td className="py-2 text-right font-medium">
+                    <TableRow key={row.professionalId ?? "none"}>
+                      <TableCell className="py-2">{row.professionalName}</TableCell>
+                      <TableCell className="py-2 text-right">{row.count}</TableCell>
+                      <TableCell className="py-2 text-right font-medium">
                         {formatCurrency(row.totalCents)}
-                      </td>
-                      <td className="py-2 text-right text-ink-2">
+                      </TableCell>
+                      <TableCell className="py-2 text-right text-ink-2">
                         {row.commissionCents != null ? formatCurrency(row.commissionCents) : "—"}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </section>
           )}
         </div>

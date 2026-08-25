@@ -32,9 +32,12 @@ describe("Feature: Botão de logout", () => {
     it("Dado o componente, Então o botão vem do Button do Still Void", () => {
       render(<LogoutButton />);
 
-      // `hover:bg-sv-surface` é emitido pela variante ghost do <Button> do
-      // pacote, não pelo app: prova de que o botão é o componente da lib.
-      expect(screen.getByRole("button", { name: "Sair" })).toHaveClass("hover:bg-sv-surface");
+      // SPEC_DEVIATION: na 3.x a variante ghost do <Button> do pacote emite a
+      // classe semântica `sv-btn--ghost` em vez do utilitário Tailwind
+      // `hover:bg-sv-surface` da 2.x — mesma mudança de implementação do
+      // Dialog/Alert (ver tests/components/modal.test.tsx), não listada nas 3
+      // quebras do Problem Statement da spec. Prova de origem segue a classe real.
+      expect(screen.getByRole("button", { name: "Sair" })).toHaveClass("sv-btn--ghost");
     });
   });
 

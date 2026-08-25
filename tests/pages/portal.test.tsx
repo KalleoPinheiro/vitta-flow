@@ -181,8 +181,12 @@ describe("Feature: Página do portal", () => {
       const { container } = render(<PortalPage />);
       await screen.findByText("Ir para o sistema da clínica →");
 
-      // `bg-sv-surface` é emitido pelo <Card> do pacote, não pelo app.
-      expect(container.querySelector(".bg-sv-surface")).toBeInTheDocument();
+      // SPEC_DEVIATION: na 3.x o <Card> do pacote emite a classe semântica
+      // `sv-card` em vez do utilitário Tailwind `bg-sv-surface` da 2.x — mesma
+      // mudança de implementação do Dialog/Button/Alert/Input (ver
+      // tests/components/modal.test.tsx), não listada nas 3 quebras do Problem
+      // Statement da spec.
+      expect(container.querySelector(".sv-card")).toBeInTheDocument();
     });
   });
 

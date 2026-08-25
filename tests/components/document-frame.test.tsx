@@ -113,12 +113,14 @@ describe("Feature: Moldura de documento", () => {
         </DocumentFrame>,
       );
 
-      // `text-accent` e `bg-sv-surface` são emitidos pelas variantes link e
-      // default do <Button> do pacote, não pelo app.
-      expect(screen.getByRole("button", { name: "← Voltar" })).toHaveClass("text-accent");
-      expect(screen.getByRole("button", { name: "Imprimir / salvar PDF" })).toHaveClass(
-        "bg-sv-surface",
-      );
+      // SPEC_DEVIATION: na 3.x o <Button> do pacote emite classes semânticas
+      // `sv-btn`/`sv-btn--<variant>` em vez dos utilitários Tailwind
+      // `text-accent`/`bg-sv-surface` da 2.x — mudança de implementação real, não
+      // listada nas 3 quebras do Problem Statement da spec (mesma raiz do Dialog
+      // em tests/components/modal.test.tsx). A prova de origem (vem do Button do
+      // pacote, não é markup local) segue as classes reais.
+      expect(screen.getByRole("button", { name: "← Voltar" })).toHaveClass("sv-btn--link");
+      expect(screen.getByRole("button", { name: "Imprimir / salvar PDF" })).toHaveClass("sv-btn");
     });
 
     it("Dado a barra de ações, Então ela some na impressão e o corpo do documento fica em tinta preta", () => {

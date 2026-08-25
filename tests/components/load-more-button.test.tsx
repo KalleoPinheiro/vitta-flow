@@ -25,9 +25,12 @@ describe("Feature: Botão carregar mais", () => {
     it("Dado visible verdadeiro, Então o botão vem do Button do Still Void", () => {
       render(<LoadMoreButton visible={true} onClick={vi.fn()} />);
 
-      // `border-sv-border` é emitido pela variante outline do <Button> do
-      // pacote, não pelo app: prova de que o botão é o componente da lib.
-      expect(screen.getByRole("button", { name: "Carregar mais" })).toHaveClass("border-sv-border");
+      // SPEC_DEVIATION: na 3.x a variante outline do <Button> do pacote emite a
+      // classe semântica `sv-btn--outline` em vez do utilitário Tailwind
+      // `border-sv-border` da 2.x — mesma mudança de implementação do
+      // Dialog/Alert (ver tests/components/modal.test.tsx), não listada nas 3
+      // quebras do Problem Statement da spec. Prova de origem segue a classe real.
+      expect(screen.getByRole("button", { name: "Carregar mais" })).toHaveClass("sv-btn--outline");
     });
   });
 

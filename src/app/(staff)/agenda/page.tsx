@@ -10,7 +10,6 @@ import { CalendarGrid } from "./calendar-grid";
 import { AppointmentForm, type AppointmentFormValues } from "./appointment-form";
 import { AppointmentDetail } from "./appointment-detail";
 import { Button, NativeSelect } from "@still-void/ui/react";
-import { accentButton } from "@/lib/ui";
 
 function ProfessionalFilter({
   professionals,
@@ -180,7 +179,7 @@ export default function AgendaPage() {
         <Button
           type="button"
           onClick={() => setCreatingFor(new Date())}
-          className={accentButton}
+          variant="accent"
         >
           + Nova consulta
         </Button>

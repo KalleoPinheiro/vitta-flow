@@ -11,7 +11,6 @@ import {
 import { StatusBadge } from "@/components/status-badge";
 import { ErrorAlert } from "@/components/feedback";
 import { Button, Input, NativeSelect } from "@still-void/ui/react";
-import { accentButton } from "@/lib/ui";
 
 type AppointmentAction = "confirm" | "cancel" | "no_show" | "complete";
 
@@ -185,7 +184,7 @@ export function AppointmentDetail({ appointment, onAction, onReschedule }: Appoi
             type="button"
             disabled={busy}
             onClick={() => void handleReschedule()}
-            className={accentButton}
+            variant="accent"
           >
             Confirmar remarcação
           </Button>

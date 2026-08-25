@@ -765,9 +765,9 @@ como o "Done when" pede.
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] Zero `accentButton` nestes 3 arquivos
-- [ ] `type`, `disabled`, `onClick`, texto acessível preservados
-- [ ] `tests/pages/staff-agenda.test.tsx` passa
+- [x] Zero `accentButton` nestes 3 arquivos
+- [x] `type`, `disabled`, `onClick`, texto acessível preservados
+- [x] `tests/pages/staff-agenda.test.tsx` passa
 
 **Tests**: unit — `tests/pages/staff-agenda.test.tsx`
 **Gate**: quick

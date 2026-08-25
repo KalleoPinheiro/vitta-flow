@@ -7,7 +7,6 @@ import { BUSINESS_HOURS, MIN_GAP_MINUTES } from "@/domain/scheduling/business-ho
 import { ErrorAlert } from "@/components/feedback";
 import { dayKey } from "./calendar-grid";
 import { Button, Input, NativeSelect, Textarea } from "@still-void/ui/react";
-import { accentButton } from "@/lib/ui";
 
 export interface AppointmentFormValues {
   patientId: string;
@@ -234,7 +233,8 @@ export function AppointmentForm({
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-2 ${accentButton}`}
+        variant="accent"
+        className="mt-2"
       >
         {saving ? "Agendando…" : "Agendar consulta"}
       </Button>

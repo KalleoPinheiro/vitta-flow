@@ -406,9 +406,21 @@ T37 → T38 → T39
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] `npm run check:sv` reporta as checagens #8 e #9 como `✓` (zero achado) contra o app real
-- [ ] `tests/scripts/check-sv-adoption.test.ts` cobre as 2 checagens novas: 1 caso que planta `<select>`/`<textarea>` cru e prova que o gate acha, 1 caso limpo
-- [ ] `npm test` passa com a contagem de testes aumentada (sem deleção silenciosa)
+- [x] `npm run check:sv` reporta as checagens #8 e #9 como `✓` (zero achado) contra o app real
+- [x] `tests/scripts/check-sv-adoption.test.ts` cobre as 2 checagens novas: 1 caso que planta `<select>`/`<textarea>` cru e prova que o gate acha, 1 caso limpo
+- [x] `npm test` passa com a contagem de testes aumentada (sem deleção silenciosa)
+
+**Nota de execução**: `src/app/(staff)/procedimentos/page.tsx` tinha um `<select>`
+que não constava no "Where" de nenhuma task T6-T12 (as tasks somam 22 selects;
+`spec.md` declara baseline 23). Sem portá-lo, a checagem #8 não fechava zero
+contra o app real — foi migrado junto deste commit com marcador
+`SPEC_DEVIATION` no código. Além disso, `npm run check:sv` **geral** segue
+saindo 1 (checagem #7, `sv-gap órfão`): 2 achados já existiam antes da Fase 3
+(`dialog-close-button`, `tailwind-setup-v3-only`, confirmados no snapshot do
+commit `2e57a4d`) e um terceiro (`textarea`) é consequência esperada de T7-T12
+terem fechado todos os call sites reais — a limpeza de `docs/still-void-gaps.md`
+é escopo explícito de T38, não desta task. As checagens #8/#9, alvo desta task,
+reportam `✓` isoladamente, como o "Done when" pede.
 
 **Tests**: unit — `tests/scripts/check-sv-adoption.test.ts` (2+ casos novos)
 **Gate**: build

@@ -20,6 +20,12 @@
 # Um workaround que precisa sobreviver é marcado no código com
 # `// sv-gap: <slug>` na linha imediatamente acima, e o mesmo <slug> ganha uma
 # seção em docs/still-void-gaps.md. A checagem [7] mantém os dois em sincronia.
+#
+# Baseline pré-migração v3 (commit 2e57a4d, antes da Fase 3 ligar as checagens
+# de campo — T13 ativa [8]/[9] depois de T6-T12 portarem os call sites para
+# NativeSelect/Textarea):
+#   [8] <select> cru ...................... 23
+#   [9] <textarea> cru ....................  7
 
 set -uo pipefail
 cd "$(dirname "$0")/.."
@@ -123,6 +129,27 @@ if [ -f "$GAPS_DOC" ]; then
 else
   printf '· [sv-gap órfão] pulado — %s ainda não existe\n' "$GAPS_DOC"
 fi
+
+# --- [8] <select> cru ---------------------------------------------------------
+# Mesma guarda de linha-comentário e isenção por `sv-gap:` das checagens [2]/[3].
+hits=$(tsx_files | while read -r f; do
+  awk -v F="$f" '
+    /^[[:space:]]*(\*|\/\/|\{\/\*|\/\*)/ { prev = $0; next }
+    /<select/ && prev !~ /sv-gap:/ { printf "%s:%d: %s\n", F, NR, $0 }
+    { prev = $0 }
+  ' "$f"
+done)
+report "<select> cru" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
+
+# --- [9] <textarea> cru ---------------------------------------------------------
+hits=$(tsx_files | while read -r f; do
+  awk -v F="$f" '
+    /^[[:space:]]*(\*|\/\/|\{\/\*|\/\*)/ { prev = $0; next }
+    /<textarea/ && prev !~ /sv-gap:/ { printf "%s:%d: %s\n", F, NR, $0 }
+    { prev = $0 }
+  ' "$f"
+done)
+report "<textarea> cru" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
 
 printf '\n'
 if [ "$findings" -gt 0 ]; then

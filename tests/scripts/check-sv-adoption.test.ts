@@ -150,6 +150,53 @@ describe("Feature: Gate de adoção do Still Void", () => {
       }
     });
 
+    it("Dado <select> cru sem marcação sv-gap, Então reporta e sai com 1", () => {
+      writeFileSync(
+        join(src, "mau.tsx"),
+        'export const X = () => <select value="a" onChange={() => {}}><option value="a">a</option></select>;\n',
+      );
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.status).toBe(1);
+      expect(result.output).toContain("✗ [<select> cru] 1 achado(s)");
+      expect(result.output).toContain("mau.tsx");
+    });
+
+    it("Dado <select> cru COM marcação sv-gap, Então não reporta (workaround declarado)", () => {
+      writeFileSync(
+        join(src, "marcado.tsx"),
+        "export const X = () => (\n  // sv-gap: native-select\n  <select value=\"a\" onChange={() => {}}><option value=\"a\">a</option></select>\n);\n",
+      );
+      writeFileSync(gapsDoc, "# Lacunas\n\n### `native-select`\n\ntexto\n");
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.output).toContain("✓ [<select> cru]");
+    });
+
+    it("Dado <textarea> cru sem marcação sv-gap, Então reporta e sai com 1", () => {
+      writeFileSync(join(src, "mau.tsx"), 'export const X = () => <textarea rows={2} />;\n');
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.status).toBe(1);
+      expect(result.output).toContain("✗ [<textarea> cru] 1 achado(s)");
+      expect(result.output).toContain("mau.tsx");
+    });
+
+    it("Dado <textarea> cru COM marcação sv-gap, Então não reporta (workaround declarado)", () => {
+      writeFileSync(
+        join(src, "marcado.tsx"),
+        "export const X = () => (\n  // sv-gap: textarea\n  <textarea rows={2} />\n);\n",
+      );
+      writeFileSync(gapsDoc, "# Lacunas\n\n### `textarea`\n\ntexto\n");
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.output).toContain("✓ [<textarea> cru]");
+    });
+
     it("Dado utilitário de paleta fora da ponte de tokens, Então reporta e sai com 1", () => {
       writeFileSync(join(src, "mau.tsx"), 'export const X = () => <span className="text-slate-500" />;\n');
 

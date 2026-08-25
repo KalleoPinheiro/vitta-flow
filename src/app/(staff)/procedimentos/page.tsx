@@ -8,8 +8,8 @@ import { formatCurrency } from "@/lib/format";
 import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
-import { Button, Card, Input } from "@still-void/ui/react";
-import { accentButton, nativeField } from "@/lib/ui";
+import { Button, Card, Input, NativeSelect } from "@still-void/ui/react";
+import { accentButton } from "@/lib/ui";
 
 export default function ProceduresPage() {
   const { data: procedures, error, refresh } = useApiQuery<ProcedureDto[]>("/api/procedures");
@@ -291,13 +291,16 @@ function KitForm({ procedure, onSaved }: { procedure: ProcedureDto; onSaved: () 
       )}
       {items.map((item, index) => (
         <div key={`${item.supplyId}-${index}`} className="flex items-center gap-2">
-          {/* sv-gap: native-select */}
-          <select
+          {/* SPEC_DEVIATION: ported alongside T13, não T7-T12 — este <select> não
+              constava no "Where" de nenhuma task T6-T12 (tasks.md conta 22 selects
+              nelas, spec.md declara baseline 23). Sem portá-lo aqui, a checagem #8
+              do gate (T13) não fecha zero contra o app real. */}
+          <NativeSelect
             value={item.supplyId}
             onChange={(e) =>
               setEdits(items.map((it, i) => (i === index ? { ...it, supplyId: e.target.value } : it)))
             }
-            className={`flex-1 ${nativeField}`}
+            className="flex-1"
           >
             <option value="">Selecione o insumo…</option>
             {activeSupplies.map((supply) => (
@@ -308,7 +311,7 @@ function KitForm({ procedure, onSaved }: { procedure: ProcedureDto; onSaved: () 
             {item.supplyId && !activeSupplies.some((s) => s.id === item.supplyId) && (
               <option value={item.supplyId}>{supplyName(item.supplyId)}</option>
             )}
-          </select>
+          </NativeSelect>
           <Input
             type="number"
             min="1"

@@ -471,6 +471,43 @@ describe("Feature: Plano de Cuidados (SAE) na página do paciente", () => {
     expect(await screen.findByText(/Integridade da pele prejudicada/)).toBeInTheDocument();
   });
 
+  it("Dado grupo de tipo de diagnóstico, Quando selecionar uma opção, Então desmarca as demais do grupo (exclusividade mútua)", async () => {
+    mockFetch(createCarePlanServer());
+    await renderDetail();
+    await screen.findByText("Maria Souza");
+    await openCarePlanTab();
+
+    fireEvent.click(screen.getByText("+ Novo plano"));
+    fireEvent.click(screen.getByText("Abrir plano"));
+    await screen.findByText("Plano geral do paciente");
+    fireEvent.click(screen.getByText("Ver plano"));
+    await screen.findByText("Nenhum diagnóstico prescrito.");
+
+    fireEvent.click(screen.getByText("+ Diagnóstico"));
+    fireEvent.change(screen.getByLabelText("Buscar diagnóstico (NANDA-I)"), {
+      target: { value: "pele" },
+    });
+    fireEvent.click(await screen.findByText(/Integridade da pele prejudicada/));
+
+    const realRadio = screen.getByRole("radio", { name: "Real" });
+    const riscoRadio = screen.getByRole("radio", { name: "Risco" });
+    const promocaoRadio = screen.getByRole("radio", { name: "Promoção da saúde" });
+
+    expect(realRadio).toBeChecked();
+    expect(riscoRadio).not.toBeChecked();
+    expect(promocaoRadio).not.toBeChecked();
+
+    fireEvent.click(riscoRadio);
+    expect(riscoRadio).toBeChecked();
+    expect(realRadio).not.toBeChecked();
+    expect(promocaoRadio).not.toBeChecked();
+
+    fireEvent.click(promocaoRadio);
+    expect(promocaoRadio).toBeChecked();
+    expect(riscoRadio).not.toBeChecked();
+    expect(realRadio).not.toBeChecked();
+  });
+
   it("Dado diagnóstico não selecionado, Quando submeter, Então exibe erro de validação do formulário", async () => {
     mockFetch(createCarePlanServer());
     await renderDetail();

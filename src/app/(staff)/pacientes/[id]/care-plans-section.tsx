@@ -23,7 +23,7 @@ import {
 import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert } from "@/components/feedback";
-import { Button, Input, NativeSelect, Textarea } from "@still-void/ui/react";
+import { Button, Input, NativeSelect, RadioGroup, RadioGroupItem, Textarea } from "@still-void/ui/react";
 import { accentButton } from "@/lib/ui";
 
 interface CarePlansSectionProps {
@@ -628,21 +628,18 @@ function AddDiagnosisForm({ carePlanId, onSaved }: { carePlanId: string; onSaved
       {!selected && <TaxonomyOptionList options={results} linkedHint={null} onSelect={setSelected} />}
       {selected && (
         <>
-          <fieldset className="flex gap-3 text-sm">
-            <legend className="sr-only">Tipo de diagnóstico</legend>
+          <RadioGroup legend="Tipo de diagnóstico" legendHidden name="diagnosis-type" orientation="horizontal">
             {(["real", "risco", "promocao-saude"] as const).map((option) => (
-              <label key={option} className="flex items-center gap-1">
-                {/* sv-gap: radio-group */}
-                <input
-                  type="radio"
-                  name="diagnosis-type"
-                  checked={type === option}
-                  onChange={() => setType(option)}
-                />
+              <RadioGroupItem
+                key={option}
+                value={option}
+                checked={type === option}
+                onChange={() => setType(option)}
+              >
                 {CARE_PLAN_DIAGNOSIS_TYPE_LABELS[option]}
-              </label>
+              </RadioGroupItem>
             ))}
-          </fieldset>
+          </RadioGroup>
           {type !== "promocao-saude" && (
             <label className="text-sm font-medium">
               Relacionado a (etiologia)
@@ -871,21 +868,18 @@ function PrescribeInterventionForm({
               className="mt-1"
             />
           </label>
-          <fieldset className="flex gap-3 text-sm">
-            <legend className="sr-only">Prioridade da intervenção</legend>
+          <RadioGroup legend="Prioridade da intervenção" legendHidden name="intervention-priority" orientation="horizontal">
             {(["baixa", "media", "alta"] as const).map((option) => (
-              <label key={option} className="flex items-center gap-1">
-                {/* sv-gap: radio-group */}
-                <input
-                  type="radio"
-                  name="intervention-priority"
-                  checked={priority === option}
-                  onChange={() => setPriority(option)}
-                />
+              <RadioGroupItem
+                key={option}
+                value={option}
+                checked={priority === option}
+                onChange={() => setPriority(option)}
+              >
                 {INTERVENTION_PRIORITY_LABELS[option]}
-              </label>
+              </RadioGroupItem>
             ))}
-          </fieldset>
+          </RadioGroup>
         </>
       )}
       <Button
@@ -925,24 +919,16 @@ function EvaluateOutcomeForm({ outcome, onSaved }: { outcome: CarePlanOutcomeDto
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       {error && <ErrorAlert message={error} />}
-      <fieldset className="flex flex-col gap-2">
-        <legend className="mb-1 text-sm font-medium">Pontuação atual</legend>
+      <RadioGroup legend="Pontuação atual" name="outcome-score">
         {outcome.scaleAnchors.map((anchor, index) => {
           const value = index + 1;
           return (
-            <label key={value} className="flex items-center gap-2 text-sm">
-              {/* sv-gap: radio-group */}
-              <input
-                type="radio"
-                name="outcome-score"
-                checked={score === value}
-                onChange={() => setScore(value)}
-              />
+            <RadioGroupItem key={value} value={value} checked={score === value} onChange={() => setScore(value)}>
               <span className="font-medium">{value}</span> — {anchor}
-            </label>
+            </RadioGroupItem>
           );
         })}
-      </fieldset>
+      </RadioGroup>
       <label className="text-sm font-medium">
         Observações
         <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className="mt-1" />

@@ -8,7 +8,7 @@ import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
-import { Button, Card, Input, NativeSelect } from "@still-void/ui/react";
+import { Button, Card, Checkbox, Input, NativeSelect } from "@still-void/ui/react";
 import { accentButton } from "@/lib/ui";
 
 interface SupplyInsightDto {
@@ -374,9 +374,7 @@ function SupplyForm({ initial, onSaved }: { initial?: SupplyDto; onSaved: () => 
       </div>
       {initial && (
         <label className="flex items-center gap-2 text-sm font-medium">
-          {/* sv-gap: checkbox */}
-          <input
-            type="checkbox"
+          <Checkbox
             checked={values.active}
             onChange={(e) => setValues((prev) => ({ ...prev, active: e.target.checked }))}
           />

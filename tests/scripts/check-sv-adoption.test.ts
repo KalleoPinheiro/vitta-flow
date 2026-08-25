@@ -220,6 +220,31 @@ describe("Feature: Gate de adoção do Still Void", () => {
       expect(result.output).toContain('✓ [<input type="file|checkbox|radio"> cru]');
     });
 
+    it("Dado <table> cru sem marcação sv-gap, Então reporta e sai com 1", () => {
+      writeFileSync(
+        join(src, "mau.tsx"),
+        "export const X = () => (\n  <table>\n    <tbody>\n      <tr>\n        <td>a</td>\n      </tr>\n    </tbody>\n  </table>\n);\n",
+      );
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.status).toBe(1);
+      expect(result.output).toContain("✗ [<table> cru] 1 achado(s)");
+      expect(result.output).toContain("mau.tsx");
+    });
+
+    it("Dado <table> cru COM marcação sv-gap, Então não reporta (workaround declarado)", () => {
+      writeFileSync(
+        join(src, "marcado.tsx"),
+        "export const X = () => (\n  // sv-gap: table-legado\n  <table>\n    <tbody>\n      <tr>\n        <td>a</td>\n      </tr>\n    </tbody>\n  </table>\n);\n",
+      );
+      writeFileSync(gapsDoc, "# Lacunas\n\n### `table-legado`\n\ntexto\n");
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.output).toContain("✓ [<table> cru]");
+    });
+
     it("Dado utilitário de paleta fora da ponte de tokens, Então reporta e sai com 1", () => {
       writeFileSync(join(src, "mau.tsx"), 'export const X = () => <span className="text-slate-500" />;\n');
 

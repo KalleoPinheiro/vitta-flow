@@ -30,6 +30,10 @@
 # Baseline pré-migração v3 antes da Fase 4 (T18 ativa [10] depois de T14-T17
 # portarem os call sites para RadioGroup/Checkbox/FileInput):
 #   [10] <input type="file|checkbox|radio"> cru — file 2 / checkbox 1 / radio 3
+#
+# Baseline pré-migração v3 antes da Fase 5 (T26 ativa [11] depois de T19-T25
+# portarem os call sites para a família Table):
+#   [11] <table> cru .....................  14
 
 set -uo pipefail
 cd "$(dirname "$0")/.."
@@ -168,6 +172,18 @@ hits=$(tsx_files | while read -r f; do
   ' "$f"
 done)
 report "<input type=\"file|checkbox|radio\"> cru" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
+
+# --- [11] <table> cru ---------------------------------------------------------
+# Mesma guarda de linha-comentário e isenção por `sv-gap:` das checagens
+# [2]/[3]/[8]/[9]/[10].
+hits=$(tsx_files | while read -r f; do
+  awk -v F="$f" '
+    /^[[:space:]]*(\*|\/\/|\{\/\*|\/\*)/ { prev = $0; next }
+    /<table/ && prev !~ /sv-gap:/ { printf "%s:%d: %s\n", F, NR, $0 }
+    { prev = $0 }
+  ' "$f"
+done)
+report "<table> cru" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
 
 printf '\n'
 if [ "$findings" -gt 0 ]; then

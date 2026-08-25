@@ -8,7 +8,19 @@ import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
-import { Button, Card, Checkbox, Input, NativeSelect } from "@still-void/ui/react";
+import {
+  Button,
+  Card,
+  Checkbox,
+  Input,
+  NativeSelect,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@still-void/ui/react";
 import { accentButton } from "@/lib/ui";
 
 interface SupplyInsightDto {
@@ -168,26 +180,25 @@ interface SuppliesTableProps {
 function SuppliesTable({ supplies, insights, onMove, onHistory, onEdit }: SuppliesTableProps) {
   const insightBySupply = new Map(insights.map((i) => [i.supplyId, i]));
   return (
-    <Card className="overflow-x-auto">
+    <Card>
       {!supplies ? (
         <LoadingIndicator />
       ) : supplies.length === 0 ? (
         <EmptyState message="Nenhum insumo cadastrado." />
       ) : (
-        // sv-gap: table
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-border bg-bg text-xs uppercase text-ink-3">
-            <tr>
-              <th className="px-4 py-3">Insumo</th>
-              <th className="px-4 py-3">Estoque</th>
-              <th className="px-4 py-3">Mínimo</th>
-              <th className="px-4 py-3">Previsão</th>
-              <th className="px-4 py-3">Preço</th>
-              <th className="px-4 py-3">Situação</th>
-              <th className="px-4 py-3 text-right">Ações</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
+        <Table className="w-full text-left text-sm">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="px-4 py-3">Insumo</TableHead>
+              <TableHead className="px-4 py-3">Estoque</TableHead>
+              <TableHead className="px-4 py-3">Mínimo</TableHead>
+              <TableHead className="px-4 py-3">Previsão</TableHead>
+              <TableHead className="px-4 py-3">Preço</TableHead>
+              <TableHead className="px-4 py-3">Situação</TableHead>
+              <TableHead className="px-4 py-3 text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {supplies.map((supply) => (
               <SupplyRow
                 key={supply.id}
@@ -198,8 +209,8 @@ function SuppliesTable({ supplies, insights, onMove, onHistory, onEdit }: Suppli
                 onEdit={() => onEdit(supply)}
               />
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       )}
     </Card>
   );
@@ -228,28 +239,28 @@ function StockoutForecast({ insight }: { insight?: SupplyInsightDto }) {
 
 function SupplyRow({ supply, insight, onMove, onHistory, onEdit }: SupplyRowProps) {
   return (
-    <tr className={supply.active ? "" : "opacity-50"}>
-      <td className="px-4 py-3 font-medium">{supply.name}</td>
-      <td className="px-4 py-3">
+    <TableRow className={supply.active ? "" : "opacity-50"}>
+      <TableCell className="px-4 py-3 font-medium">{supply.name}</TableCell>
+      <TableCell className="px-4 py-3">
         {supply.stockQty} {supply.unit}
         {supply.active && supply.isLowStock && (
           <span className="ml-2">
             <StatusBadge status="pending" label="Estoque baixo" />
           </span>
         )}
-      </td>
-      <td className="px-4 py-3 text-ink-2">{supply.minQty}</td>
-      <td className="px-4 py-3">
+      </TableCell>
+      <TableCell className="px-4 py-3 text-ink-2">{supply.minQty}</TableCell>
+      <TableCell className="px-4 py-3">
         <StockoutForecast insight={insight} />
-      </td>
-      <td className="px-4 py-3">{formatCurrency(supply.priceCents)}</td>
-      <td className="px-4 py-3">
+      </TableCell>
+      <TableCell className="px-4 py-3">{formatCurrency(supply.priceCents)}</TableCell>
+      <TableCell className="px-4 py-3">
         <StatusBadge
           status={supply.active ? "confirmed" : "cancelled"}
           label={supply.active ? "Ativo" : "Inativo"}
         />
-      </td>
-      <td className="px-4 py-3 text-right text-sm">
+      </TableCell>
+      <TableCell className="px-4 py-3 text-right text-sm">
         <Button type="button" onClick={onMove}
           variant="link"
           className="h-auto p-0 mr-2 text-success"
@@ -268,8 +279,8 @@ function SupplyRow({ supply, insight, onMove, onHistory, onEdit }: SupplyRowProp
         >
           Editar
         </Button>
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }
 

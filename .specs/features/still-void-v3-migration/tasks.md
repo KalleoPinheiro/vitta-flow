@@ -512,10 +512,25 @@ reportam `✓` isoladamente, como o "Done when" pede.
 - [x] `tests/pages/portal.test.tsx` passa
 - [x] `npm run test:e2e -- portal-paciente` passa
 
+**Nota de execução**: o commit original (`74b4b81`) manteve `FileInput` escondido
+atrás de um `<label>` com texto próprio ("Enviar foto"/"Enviando…"), com
+`className="hidden"`, alegando (via `SPEC_DEVIATION` incorreto) que a mudança
+visual aprovada cobria só `condition-photos.tsx` (T16). Revisão do coordenador
+apontou o erro: `spec.md`, tabela de Assumptions & Open Questions, linha
+"`FileInput` muda a aparência dos **2 call sites**" — plural, cobrindo os dois
+call sites igualmente, confirmado pelo usuário em 2026-08-25. Corrigido em
+`659f0a6`: `FileInput` exposto sem wrapper, mesmo padrão de T16;
+`aria-label="Enviar foto"` preserva o nome acessível que o `<label>` antigo
+dava; `tests/pages/portal.test.tsx` (2 pontos, não 3 como o `SPEC_DEVIATION`
+original alegava) trocou `getByText`/`getAllByText("Enviar foto")` por
+`getByLabelText`/`getAllByLabelText`. Gate full (typecheck, build, test 1800/1800,
+test:e2e 64/64) verde após a correção; `npm run check:sv` reconfirmado com a
+checagem [10] `✓`, inalterada pela correção.
+
 **Tests**: unit — `tests/pages/portal.test.tsx`; e2e — `e2e/portal-paciente.spec.ts`
 **Gate**: full
 
-**Commit**: `refactor(portal): porta upload remoto de foto para FileInput`
+**Commit**: `refactor(portal): porta upload remoto de foto para FileInput` (corrigido por `fix(portal): expõe FileInput visível em consent-card.tsx (corrige T17)`, commit `659f0a6`)
 
 ---
 

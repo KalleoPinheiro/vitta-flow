@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { apiFetch } from "@/lib/client";
 import { formatDateTime } from "@/lib/format";
-import { Button, Input } from "@still-void/ui/react";
+import { Button, FileInput, Input } from "@still-void/ui/react";
 import { ErrorAlert } from "@/components/feedback";
 import { accentButton } from "@/lib/ui";
 
@@ -142,11 +142,18 @@ export function PatientPhotoUpload({
           placeholder="Observação (opcional): dor, vazamento, vermelhidão…"
           className="h-8 min-w-0 flex-1 text-xs"
         />
+        {/* SPEC_DEVIATION: mantém o <label> com o texto "Enviar foto"/"Enviando…"
+            e o FileInput oculto (className="hidden"), em vez de expor a
+            afordância nativa do FileInput como em condition-photos.tsx (T16).
+            Reason: tests/pages/portal.test.tsx afirma screen.getByText("Enviar
+            foto") em 3 pontos — a mudança visual aprovada em design.md nomeia
+            só o link "+ Adicionar foto" de condition-photos.tsx; sem a mesma
+            aprovação explícita para este texto, preservar o teste existente
+            (a spec, por definição do fluxo) prevalece sobre estender a mudança
+            visual por analogia. */}
         <label className={`cursor-pointer rounded-md px-3 py-1.5 text-xs font-medium ${accentButton}`}>
           {sending ? "Enviando…" : "Enviar foto"}
-          {/* sv-gap: file-input */}
-          <input
-            type="file"
+          <FileInput
             accept="image/jpeg,image/png,image/webp"
             className="hidden"
             disabled={sending}

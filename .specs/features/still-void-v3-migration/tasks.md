@@ -583,9 +583,9 @@ sobre o status geral do gate.
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] Zero `<table` cru neste arquivo
-- [ ] Mesma contagem e ordem de colunas/células de hoje
-- [ ] `tests/pages/staff-faturamento.test.tsx` passa
+- [x] Zero `<table` cru neste arquivo
+- [x] Mesma contagem e ordem de colunas/células de hoje
+- [x] `tests/pages/staff-faturamento.test.tsx` passa
 
 **Tests**: unit — `tests/pages/staff-faturamento.test.tsx`
 **Gate**: quick
@@ -605,8 +605,8 @@ sobre o status geral do gate.
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] Zero `<table` cru neste arquivo
-- [ ] `tests/pages/staff-materiais.test.tsx` passa
+- [x] Zero `<table` cru neste arquivo
+- [x] `tests/pages/staff-materiais.test.tsx` passa
 
 **Tests**: unit — `tests/pages/staff-materiais.test.tsx`
 **Gate**: quick
@@ -626,8 +626,8 @@ sobre o status geral do gate.
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] Zero `<table` cru neste arquivo
-- [ ] `tests/pages/staff-procedimentos.test.tsx` passa
+- [x] Zero `<table` cru neste arquivo
+- [x] `tests/pages/staff-procedimentos.test.tsx` passa
 
 **Tests**: unit — `tests/pages/staff-procedimentos.test.tsx`
 **Gate**: quick
@@ -647,8 +647,8 @@ sobre o status geral do gate.
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] Zero `<table` cru nestes 2 arquivos
-- [ ] `tests/pages/staff-operations.test.tsx` passa
+- [x] Zero `<table` cru nestes 2 arquivos
+- [x] `tests/pages/staff-operations.test.tsx` passa
 
 **Tests**: unit — `tests/pages/staff-operations.test.tsx`
 **Gate**: quick
@@ -668,8 +668,8 @@ sobre o status geral do gate.
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] Zero `<table` cru neste arquivo
-- [ ] `tests/pages/staff-relatorios.test.tsx` passa
+- [x] Zero `<table` cru neste arquivo
+- [x] `tests/pages/staff-relatorios.test.tsx` passa
 
 **Tests**: unit — `tests/pages/staff-relatorios.test.tsx`
 **Gate**: quick
@@ -689,8 +689,8 @@ sobre o status geral do gate.
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] Zero `<table` cru nestes 3 arquivos
-- [ ] `tests/pages/staff-pacientes-list.test.tsx` e `tests/pages/staff-operations.test.tsx` passam
+- [x] Zero `<table` cru nestes 3 arquivos
+- [x] `tests/pages/staff-pacientes-list.test.tsx` e `tests/pages/staff-operations.test.tsx` passam
 
 **Tests**: unit — `staff-pacientes-list.test.tsx`, `staff-operations.test.tsx`
 **Gate**: quick
@@ -710,9 +710,9 @@ sobre o status geral do gate.
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] Zero `<table` cru nestes 2 arquivos
-- [ ] O markup renderizado não contém nenhuma classe de token de tema (`border-sv-*`, `text-sv-*` etc.) — só `border-black`/`text-black`
-- [ ] `npm run test:e2e -- documentos plano-cuidados` passa, folha continua em preto
+- [x] Zero `<table` cru nestes 2 arquivos
+- [x] O markup renderizado não contém nenhuma classe de token de tema (`border-sv-*`, `text-sv-*` etc.) — só `border-black`/`text-black`
+- [x] `npm run test:e2e -- documentos plano-cuidados` passa, folha continua em preto
 
 **Tests**: e2e — `e2e/documentos.spec.ts`, `e2e/plano-cuidados.spec.ts` (excluído de cobertura unitária por `vitest.config.ts`)
 **Gate**: full
@@ -732,9 +732,20 @@ sobre o status geral do gate.
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] `npm run check:sv` reporta a checagem #11 como `✓`
-- [ ] Fixture novo prova que o gate acha `<table>` cru
-- [ ] `npm test` passa
+- [x] `npm run check:sv` reporta a checagem #11 como `✓`
+- [x] Fixture novo prova que o gate acha `<table>` cru
+- [x] `npm test` passa
+
+**Nota de execução**: mesmo achado documentado nas notas de T13/T18 —
+`npm run check:sv` **geral** segue saindo 1 (checagem #7, `sv-gap órfão`). T19-T25
+fecharam os 14 call sites reais de `<table>`, removendo os marcadores `sv-gap:
+table` correspondentes do código (correto — deixaram de ser workaround), o que
+órfã a seção `table` em `docs/still-void-gaps.md` (mais os 6 achados
+pré-existentes desde antes: `checkbox`, `dialog-close-button`, `file-input`,
+`radio-group`, `tailwind-setup-v3-only`, `textarea`). A limpeza de
+`docs/still-void-gaps.md` segue sendo escopo explícito de T38, não desta task —
+a checagem #11, alvo desta task, reporta `✓` isoladamente contra o app real,
+como o "Done when" pede.
 
 **Tests**: unit — `tests/scripts/check-sv-adoption.test.ts`
 **Gate**: build

@@ -139,14 +139,13 @@ describe("Feature: Gate de adoção do Still Void", () => {
       expect(result.output).toContain("mau.tsx");
     });
 
-    it("Dado <input> de tipo file, checkbox ou radio, Então não é reportado (lacuna conhecida da lib)", () => {
+    it("Dado <input> de tipo file, checkbox ou radio, Então não é contado pela checagem <input> textual cru (é escopo da checagem [10])", () => {
       for (const type of ["file", "checkbox", "radio"]) {
         writeFileSync(join(src, "mau.tsx"), `export const X = () => <input type="${type}" />;\n`);
 
         const result = runGate(src, gapsDoc);
 
-        expect(result.status, `type=${type}`).toBe(0);
-        expect(result.output).toContain("✓ [<input> textual cru]");
+        expect(result.output, `type=${type}`).toContain("✓ [<input> textual cru]");
       }
     });
 
@@ -195,6 +194,30 @@ describe("Feature: Gate de adoção do Still Void", () => {
       const result = runGate(src, gapsDoc);
 
       expect(result.output).toContain("✓ [<textarea> cru]");
+    });
+
+    it('Dado <input type="file|checkbox|radio"> cru sem marcação sv-gap, Então reporta e sai com 1', () => {
+      for (const type of ["file", "checkbox", "radio"]) {
+        writeFileSync(join(src, "mau.tsx"), `export const X = () => <input type="${type}" />;\n`);
+
+        const result = runGate(src, gapsDoc);
+
+        expect(result.status, `type=${type}`).toBe(1);
+        expect(result.output).toContain('✗ [<input type="file|checkbox|radio"> cru] 1 achado(s)');
+        expect(result.output).toContain("mau.tsx");
+      }
+    });
+
+    it('Dado <input type="file"> cru COM marcação sv-gap, Então não reporta (workaround declarado)', () => {
+      writeFileSync(
+        join(src, "marcado.tsx"),
+        'export const X = () => (\n  // sv-gap: upload-legado\n  <input type="file" />\n);\n',
+      );
+      writeFileSync(gapsDoc, "# Lacunas\n\n### `upload-legado`\n\ntexto\n");
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.output).toContain('✓ [<input type="file|checkbox|radio"> cru]');
     });
 
     it("Dado utilitário de paleta fora da ponte de tokens, Então reporta e sai com 1", () => {

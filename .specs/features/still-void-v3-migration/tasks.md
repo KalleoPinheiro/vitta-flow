@@ -440,10 +440,10 @@ reportam `✓` isoladamente, como o "Done when" pede.
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] Os 3 grupos usam `RadioGroup`/`RadioGroupItem` com o item como filho direto
-- [ ] Cada `RadioGroup` mantém `legend` com o texto atual do `<legend className="sr-only">`, via `legendHidden`
-- [ ] Selecionar um item desmarca os demais do mesmo `name` — teste de comportamento novo cobrindo isso
-- [ ] `tests/pages/staff-paciente-care-plans.test.tsx` passa
+- [x] Os 3 grupos usam `RadioGroup`/`RadioGroupItem` com o item como filho direto
+- [x] Cada `RadioGroup` mantém `legend` com o texto atual do `<legend className="sr-only">`, via `legendHidden` (o grupo `outcome-score`, cujo `<legend>` já era visível, não sr-only, mantém `legend` sem `legendHidden` — fiel ao markup original)
+- [x] Selecionar um item desmarca os demais do mesmo `name` — teste de comportamento novo cobrindo isso
+- [x] `tests/pages/staff-paciente-care-plans.test.tsx` passa
 
 **Tests**: unit — `tests/pages/staff-paciente-care-plans.test.tsx` (caso novo: exclusividade mútua do grupo)
 **Gate**: quick
@@ -463,9 +463,9 @@ reportam `✓` isoladamente, como o "Done when" pede.
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] Zero `type="checkbox"` cru neste arquivo
-- [ ] `checked`/`onChange` preservados, associação com o texto "Insumo ativo" mantida
-- [ ] `tests/pages/staff-materiais.test.tsx` passa
+- [x] Zero `type="checkbox"` cru neste arquivo
+- [x] `checked`/`onChange` preservados, associação com o texto "Insumo ativo" mantida
+- [x] `tests/pages/staff-materiais.test.tsx` passa
 
 **Tests**: unit — `tests/pages/staff-materiais.test.tsx`
 **Gate**: quick
@@ -485,9 +485,9 @@ reportam `✓` isoladamente, como o "Done when" pede.
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] Zero `type="file"` cru neste arquivo
-- [ ] `accept`, `disabled`, `onChange` (incluindo o reset `e.target.value = ""` pós-envio) preservados
-- [ ] `tests/pages/staff-paciente-detail.test.tsx` passa
+- [x] Zero `type="file"` cru neste arquivo
+- [x] `accept`, `disabled`, `onChange` (incluindo o reset `e.target.value = ""` pós-envio) preservados
+- [x] `tests/pages/staff-paciente-detail.test.tsx` passa
 
 **Tests**: unit — `tests/pages/staff-paciente-detail.test.tsx`
 **Gate**: quick
@@ -507,10 +507,10 @@ reportam `✓` isoladamente, como o "Done when" pede.
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] Zero `type="file"` cru neste arquivo
-- [ ] `accept`, `disabled`, `onChange` preservados
-- [ ] `tests/pages/portal.test.tsx` passa
-- [ ] `npm run test:e2e -- portal-paciente` passa
+- [x] Zero `type="file"` cru neste arquivo
+- [x] `accept`, `disabled`, `onChange` preservados
+- [x] `tests/pages/portal.test.tsx` passa
+- [x] `npm run test:e2e -- portal-paciente` passa
 
 **Tests**: unit — `tests/pages/portal.test.tsx`; e2e — `e2e/portal-paciente.spec.ts`
 **Gate**: full
@@ -530,9 +530,25 @@ reportam `✓` isoladamente, como o "Done when" pede.
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] `npm run check:sv` reporta a checagem #10 como `✓`
-- [ ] Fixture novo prova que o gate acha `type="file"`/`checkbox`/`radio` cru
-- [ ] `npm test` passa
+- [x] `npm run check:sv` reporta a checagem #10 como `✓`
+- [x] Fixture novo prova que o gate acha `type="file"`/`checkbox`/`radio` cru
+- [x] `npm test` passa
+
+**Nota de execução**: mesmo achado documentado na "Nota de execução" de T13 —
+`npm run check:sv` **geral** segue saindo 1 (checagem #7, `sv-gap órfão`). T14-T17
+fecharam os call sites reais de `checkbox`/`radio-group`/`file-input`, removendo
+os marcadores `sv-gap:` correspondentes do código (correto — deixaram de ser
+workaround), o que órfã as 3 seções equivalentes em `docs/still-void-gaps.md`
+(mais os 3 achados pré-existentes desde antes da Fase 3: `dialog-close-button`,
+`tailwind-setup-v3-only`, `textarea`). A limpeza de `docs/still-void-gaps.md`
+segue sendo escopo explícito de T38, não desta task — a checagem #10, alvo
+desta task, reporta `✓` isoladamente contra o app real, como o "Done when" pede.
+Também corrigido: o caso de teste pré-existente "<input> de tipo file, checkbox
+ou radio... não é reportado (lacuna conhecida da lib)" (linha 142) afirmava
+`status` 0 — verdade só enquanto a checagem [10] não existia. Ajustado para
+verificar apenas que a checagem `<input> textual cru` [3] continua sem contar
+esses 3 tipos (seu escopo original, inalterado), sem a afirmação agora falsa
+sobre o status geral do gate.
 
 **Tests**: unit — `tests/scripts/check-sv-adoption.test.ts`
 **Gate**: build

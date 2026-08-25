@@ -26,6 +26,10 @@
 # NativeSelect/Textarea):
 #   [8] <select> cru ...................... 23
 #   [9] <textarea> cru ....................  7
+#
+# Baseline pré-migração v3 antes da Fase 4 (T18 ativa [10] depois de T14-T17
+# portarem os call sites para RadioGroup/Checkbox/FileInput):
+#   [10] <input type="file|checkbox|radio"> cru — file 2 / checkbox 1 / radio 3
 
 set -uo pipefail
 cd "$(dirname "$0")/.."
@@ -150,6 +154,20 @@ hits=$(tsx_files | while read -r f; do
   ' "$f"
 done)
 report "<textarea> cru" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
+
+# --- [10] <input type="file|checkbox|radio"> cru -----------------------------
+# Mesma guarda de linha-comentário e isenção por `sv-gap:` das checagens
+# [2]/[3]/[8]/[9]. Estes 3 tipos eram excluídos da checagem [3] ("<input>
+# textual cru") por serem lacuna conhecida da lib antes da Fase 4 — agora que
+# Checkbox/RadioGroup/FileInput existem, ganham checagem própria.
+hits=$(tsx_files | while read -r f; do
+  awk -v F="$f" '
+    /^[[:space:]]*(\*|\/\/|\{\/\*|\/\*)/ { prev = $0; next }
+    /<input/ && $0 ~ /type="(checkbox|radio|file)"/ && prev !~ /sv-gap:/ { printf "%s:%d: %s\n", F, NR, $0 }
+    { prev = $0 }
+  ' "$f"
+done)
+report "<input type=\"file|checkbox|radio\"> cru" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
 
 printf '\n'
 if [ "$findings" -gt 0 ]; then

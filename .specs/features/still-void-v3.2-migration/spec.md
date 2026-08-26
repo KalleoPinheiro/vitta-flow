@@ -115,24 +115,24 @@ ação de código própria, só nota no doc).
 
 | Requirement ID | Story | Phase | Status |
 | --- | --- | --- | --- |
-| SV32-01 | P1: 4 lacunas com call site | Tasks | Pending |
-| SV32-02 | P1: 4 lacunas com call site | Tasks | Pending |
-| SV32-03 | P1: 4 lacunas com call site | Tasks | Pending |
-| SV32-04 | P1: 4 lacunas com call site | Tasks | Pending |
-| SV32-05 | P1: 4 lacunas com call site | Tasks | Pending |
-| SV32-06 | P1: 4 lacunas com call site | Tasks | Pending |
-| SV32-07 | P1: dialog-close-label/progress | Tasks | Pending |
-| SV32-08 | P1: dialog-close-label/progress | Tasks | Pending |
-| SV32-09 | P1: dialog-close-label/progress | Tasks | Pending |
-| SV32-10 | P1: dialog-close-label/progress | Tasks | Pending |
-| SV32-11 | Goals: versão da dependência | Tasks | Pending |
-| SV32-12 | Goals: gate completo | Tasks | Pending |
+| SV32-01 | P1: 4 lacunas com call site | T2 | Implemented |
+| SV32-02 | P1: 4 lacunas com call site | T3 | Implemented |
+| SV32-03 | P1: 4 lacunas com call site | T5 | Implemented |
+| SV32-04 | P1: 4 lacunas com call site | T4 | Implemented |
+| SV32-05 | P1: 4 lacunas com call site | T4 | Implemented |
+| SV32-06 | P1: 4 lacunas com call site | T8 | Implemented |
+| SV32-07 | P1: dialog-close-label/progress | T6+T7 | Implemented |
+| SV32-08 | P1: dialog-close-label/progress | T7 | Implemented |
+| SV32-09 | P1: dialog-close-label/progress | T8 | Implemented |
+| SV32-10 | P1: dialog-close-label/progress | T9 | Implemented |
+| SV32-11 | Goals: versão da dependência | T1 | Implemented |
+| SV32-12 | Goals: gate completo | T10 | Implemented |
 
 **ID format:** `SV32-NN`
 
 **Status values:** Pending → In Design → In Tasks → Implementing → Verified
 
-**Coverage:** 12 total, 12 a mapear em tasks.md, 0 unmapped
+**Coverage:** 12 total, 12 mapeados, 0 unmapped. Gate completo (T10) verde: `typecheck`/`build`/`test` (1817/1817)/`check:sv` (0 achados). Status final ("Verified" por item) aguarda o veredito do Verifier independente — ver `validation.md`.
 
 ---
 

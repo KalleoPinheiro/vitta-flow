@@ -1,9 +1,11 @@
 # Lacunas do `@still-void/ui` — backlog para a lib
 
-- **Status:** Aberto
-- **Data:** 2026-08-25
-- **Versão verificada:** `@still-void/ui@3.1.0`
-- **Origem:** migração 2.0 → 3.1 do VittaFlow (`.specs/features/still-void-v3-migration/`)
+- **Status:** Fechado — nenhuma seção aberta
+- **Data:** 2026-08-26
+- **Versão verificada:** `@still-void/ui@3.2.0`
+- **Origem:** migração 2.0 → 3.1 do VittaFlow (`.specs/features/still-void-v3-migration/`); as
+  6 lacunas levantadas ali foram fechadas pela migração 3.1 → 3.2
+  (`.specs/features/still-void-v3.2-migration/`) — ver histórico no fim deste documento.
 
 Componentes que o VittaFlow precisa e a `3.1.0` **não** exporta, mais os defeitos
 encontrados no que ela exporta. Cada entrada é candidata a issue no repositório
@@ -26,104 +28,78 @@ publicado, não a documentação.
 
 ---
 
-## Faltando no catálogo
+## Histórico — lacunas fechadas pela 3.2.0
 
-### `pagination`
+A `3.2.0` (2026-08-26) fechou, num único release, as 6 lacunas abaixo — as 4
+com workaround local marcado (`sv-gap: <slug>`) foram portadas para o artefato
+equivalente da lib; as 2 `doc-only` (`progress`, `dialog-close-label`) fecham
+por nota, sem call site próprio de código a migrar. Ver
+[.specs/features/still-void-v3.2-migration/](../.specs/features/still-void-v3.2-migration/)
+para spec, design, tasks e o veredito do Verifier independente.
 
-- **Componente proposto:** `Pagination`
-- **Call sites:** 1 padrão, replicado
-- **Exemplo:** [src/components/load-more-button.tsx](../src/components/load-more-button.tsx)
-- **Workaround atual:** um `Button variant="outline"` chamado "Carregar mais".
-  Funciona, mas não há nada no catálogo para paginação numerada, que é o que as
-  listas de auditoria e faturamento pedem conforme crescem.
-- **Reconferido contra a `3.1.0`:** nenhum símbolo `Pagination` na export line de
-  `dist/react/index.d.ts` nem de `dist/react/client/index.d.ts`. Lacuna segue real.
+#### pagination
 
-### `progress`
+A `3.2.0` passa a exportar `Pagination`/`PaginationContent`/`PaginationItem`/
+`PaginationNext`. [src/components/load-more-button.tsx](../src/components/load-more-button.tsx)
+foi migrado do `Button variant="outline"` avulso para
+`Pagination > PaginationContent > PaginationItem > PaginationNext label="Carregar mais"` —
+mesmo comportamento de cursor (`onClick`), agora com `<nav aria-label="pagination">`
+semântico. Commit `3a61988`.
 
-<!-- sv-gap-doc-only: necessidade real, mas hoje resolvida por SVG próprio já marcado como data-chart -->
+#### progress
 
-- **Componente proposto:** `Progress`
-- **Call sites:** 0 diretos, mas há necessidade real
-- **Exemplo:** [src/components/healing-chart.tsx](../src/components/healing-chart.tsx) desenha SVG à mão; os scores PUSH (0–17) e DET (0–15) e a escala de dor (0–10) são barras de progresso conceituais
-- **Nota:** o pacote exporta `ReadingProgress`, que é a barra de progresso de
-  leitura de artigo — não um `Progress` genérico com `value`/`max`.
-- **Reconferido contra a `3.1.0`:** nenhum símbolo `Progress` na export line de
-  `dist/react/index.d.ts` nem de `dist/react/client/index.d.ts`; só `ReadingProgress`
-  (`dist/react/client/index.d.ts`). Lacuna segue real.
+A `3.2.0` continua sem exportar um `Progress` genérico (só `ReadingProgress`,
+inalterado desde a `3.1.0`). A lacuna fecha porque a necessidade real —
+visualizar os scores PUSH/DET e a escala de dor — já é servida pelo
+`HealingChart` migrado (ver `data-chart` abaixo); nunca houve um segundo call
+site próprio marcado `sv-gap: progress` no código para portar. Junto do
+commit `03e5004`.
 
-### `separator`
+#### separator
 
-- **Componente proposto:** `Separator`
-- **Call sites:** 1
-- **Exemplo:** [src/app/login/page.tsx](../src/app/login/page.tsx) — o divisor "ou" entre Google e senha
-- **Workaround atual:** `<span className="h-px flex-1 bg-surface-2" />`, sem
-  `role="separator"`.
-- **Reconferido contra a `3.1.0`:** nenhum símbolo `Separator` na export line de
-  `dist/react/index.d.ts` nem de `dist/react/client/index.d.ts` (a lib exporta
-  `DropdownMenuSeparator`/`SelectSeparator`, específicos de menu/select, não um
-  `Separator` genérico). Lacuna segue real.
+A `3.2.0` passa a exportar `Separator`.
+[src/app/login/page.tsx](../src/app/login/page.tsx) foi migrado dos dois
+`<span className="h-px flex-1 bg-surface-2" />` para
+`<Separator decorative={false} className="flex-1" />`, expondo
+`role="separator"` — o texto "ou" continua como nó de texto solto ao lado.
+Commit `faaa974`.
 
-### `data-chart`
+#### data-chart
 
-- **Componente proposto:** primitivos de gráfico com os tokens do sistema
-- **Call sites:** 1 componente de 250 linhas
-- **Exemplo:** [src/components/healing-chart.tsx](../src/components/healing-chart.tsx)
-- **Nota:** o gráfico já usa `var(--sv-accent-ink)`, `var(--sv-info-ink)` e
-  `var(--sv-warning-ink)` para as séries, mas eixos, grade e rótulos são SVG
-  escrito à mão. Baixa prioridade — é o item mais específico do domínio clínico
-  desta lista e o que menos se generaliza.
-- **Reconferido contra a `3.1.0`:** nenhum símbolo contendo `Chart` na export line
-  de `dist/react/index.d.ts` nem de `dist/react/client/index.d.ts`. Lacuna segue real.
+A `3.2.0` passa a exportar primitivos de gráfico (`ChartContainer`,
+`ChartAxis`, `ChartLine`).
+[src/components/healing-chart.tsx](../src/components/healing-chart.tsx) foi
+migrado: `ChartContainer` substitui o `<svg role="img">` manual, `ChartAxis`
+substitui a `<line>` de base, e `ChartLine` substitui as 3 `<polyline>` de
+série; círculos de dado e textos de série continuam manuais — a lib não expõe
+marcador de ponto nem legenda livre. Commit `03e5004`.
 
-### `icon-set-gaps`
+#### icon-set-gaps
 
-- **Componente proposto:** três novos valores em `IconName`
-- **Call sites:** 3, em 2 arquivos
-- **Exemplos:** [(staff)/page.tsx](../src/app/(staff)/page.tsx) — 📷 "Fotos de pacientes aguardando triagem"; [(staff)/materiais/page.tsx](../src/app/(staff)/materiais/page.tsx) — ⛔ lote vencido, ⏳ lote a vencer
-- **Por que não dá para usar o que existe:** `IconName` da `3.1.0` tem exatamente
-  15 valores (`x`, `check`, `chevron-down`, `chevron-up`, `chevron-right`,
-  `chevron-left`, `info`, `alert-triangle`, `alert-circle`, `check-circle`,
-  `copy`, `sun`, `moon`, `search`, `menu`) — nenhum cobre câmera, bloqueado ou
-  pendente. `alert-triangle`/`alert-circle` são genéricos demais para substituir
-  o sentido específico de "vencido" (⛔) e "a vencer" (⏳) que o texto ao lado já
-  não deixa ambíguo, então trocar por um ícone errado pioraria a leitura.
-- **Workaround atual:** os três glifos (`📷`/`⛔`/`⏳`) permanecem como texto,
-  marcados `sv-gap: icon-set-gaps` no ponto do código.
-- **API sugerida:** adicionar `camera`, `blocked` e `pending` (ou equivalentes)
-  a `IconName`.
-- **Reconferido contra a `3.1.0`:** `type IconName` em `dist/react/index.d.ts`
-  lista exatamente os 15 nomes acima — confirmado por leitura direta do artefato
-  publicado. Lacuna segue real.
+A `3.2.0` adiciona `camera`, `blocked` e `pending` a `IconName`.
+[(staff)/page.tsx](../src/app/(staff)/page.tsx) e
+[(staff)/materiais/page.tsx](../src/app/(staff)/materiais/page.tsx) foram
+migrados dos glifos `📷`/`⛔`/`⏳` para
+`<Icon name="camera"|"blocked"|"pending" />`, decorativos — o texto adjacente
+já anuncia o significado. Commit `746939c`.
 
----
+#### dialog-close-label
 
-## Particularidades sem workaround local
-
-### `dialog-close-label`
-
-<!-- sv-gap-doc-only: é configuração via showCloseButton={false}, não workaround local com marcação sv-gap: no código -->
-
-- **Componente:** `DialogContent`
-- **Divergência:** a partir da `3.0.0`, `DialogContent` passa a empacotar seu
-  próprio botão de fechar (`showCloseButton`, `true` por padrão) — o que fecha a
-  antiga lacuna `dialog-close-button`. Mas o nome acessível desse botão é
-  **hardcoded em inglês**, `"Close dialog"` (`dist/react/client/index.js`), e
-  `DialogContentProps` expõe só `showCloseButton?: boolean`, nenhuma prop de
-  rótulo ou i18n — confirmado em `dist/react/client/index.d.ts`.
-- **Impacto:** numa UI pt-BR, expor esse botão sem tradução é regressão de
-  acessibilidade. Por isso o app optou por `showCloseButton={false}` e manter o
-  próprio botão pt-BR (`aria-label="Fechar"`) — ver
-  [src/components/modal.tsx](../src/components/modal.tsx) e AD-015 em
-  `.specs/STATE.md`.
-- **Ação sugerida:** expor uma prop de rótulo (`closeLabel`) ou aceitar
-  `children` no lugar do `<span className="sv-sr-only">` fixo, para permitir
-  i18n sem desabilitar o botão nativo.
+A `3.2.0` mantém `DialogContentProps.showCloseButton?: boolean` mas adiciona
+`closeLabel?: string`, que controla o texto do `<span className="sv-sr-only">`
+interno do botão nativo de fechar (antes hardcoded em inglês, `"Close dialog"`).
+[src/components/modal.tsx](../src/components/modal.tsx) foi migrado:
+`showCloseButton={false}` e o `DialogClose`/`Icon` manuais saem;
+`DialogContent` ganha `closeLabel="Fechar"`. AD-015 foi superseded por AD-016
+em `.specs/STATE.md`. Commit `252df2e`.
 
 ---
 
 ## Relacionado
 
+- [.specs/features/still-void-v3.2-migration/](../.specs/features/still-void-v3.2-migration/) —
+  spec, design e tasks da migração `3.1` → `3.2` que fechou as 6 lacunas
+  restantes (histórico acima).
 - [BACKLOG-DESIGN-SYSTEM.md](BACKLOG-DESIGN-SYSTEM.md) — backlog da adoção da 1.x;
   os itens 1, 2 e 3 são fechados pela migração para a `2.0.1`.
 - [.specs/features/still-void-v3-migration/](../.specs/features/still-void-v3-migration/) —

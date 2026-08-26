@@ -935,9 +935,9 @@ classe real. Gate quick (typecheck, test 1802/1802) verde.
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] Zero `accentButton` neste arquivo
-- [ ] `tests/pages/login.test.tsx` passa
-- [ ] `npm run test:e2e -- auth` passa
+- [x] Zero `accentButton` neste arquivo
+- [x] `tests/pages/login.test.tsx` passa
+- [x] `npm run test:e2e -- auth` passa
 
 **Tests**: unit — `tests/pages/login.test.tsx`; e2e — `e2e/auth.spec.ts`
 **Gate**: full

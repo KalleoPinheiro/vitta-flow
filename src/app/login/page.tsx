@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { apiFetch } from "@/lib/client";
 import { useApiQuery } from "@/lib/use-api-query";
 import { Button, Input } from "@still-void/ui/react";
-import { accentButton } from "@/lib/ui";
 import { ErrorAlert } from "@/components/feedback";
 
 interface Providers {
@@ -152,7 +151,7 @@ function PasswordForm() {
           className="mt-1"
         />
       </label>
-      <Button type="submit" disabled={submitting} className={`mt-4 w-full ${accentButton}`}>
+      <Button type="submit" disabled={submitting} variant="accent" className="mt-4 w-full">
         {submitting ? "Entrando…" : "Entrar"}
       </Button>
     </form>

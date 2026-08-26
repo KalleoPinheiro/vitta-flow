@@ -221,10 +221,12 @@ describe("Feature: Página de login", () => {
       // `sv-field` em vez do utilitário Tailwind `bg-sv-surface` da 2.x — mesma
       // mudança de implementação do Dialog/Button/Alert (ver
       // tests/components/modal.test.tsx), não listada nas 3 quebras do Problem
-      // Statement da spec. `bg-accent-ink` abaixo continua vindo do `accentButton`
-      // local (src/lib/ui.ts), inalterado até T35.
+      // Statement da spec. `sv-btn--accent` abaixo vem de `variant="accent"`
+      // (T34) — a receita local `accentButton` foi removida; a 3.x resolve a
+      // variante para a classe semântica em vez do utilitário Tailwind
+      // `bg-accent-ink` que a receita local emitia.
       expect(senha).toHaveClass("sv-field");
-      expect(screen.getByRole("button", { name: "Entrar" })).toHaveClass("bg-accent-ink");
+      expect(screen.getByRole("button", { name: "Entrar" })).toHaveClass("sv-btn--accent");
     });
   });
 });

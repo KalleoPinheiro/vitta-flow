@@ -132,24 +132,24 @@
 
 ## Handoff
 
-- **Feature**: still-void-v3-migration — **concluída e verificada**. 39 tasks (T1-T39) + ciclo fix→re-verify do Verifier independente (2 iterações) fechados. PASS.
+- **Feature**: still-void-v3.2-migration — **concluída e verificada**. 10 tasks (T1-T10, execução delegada a 4 sub-agentes de fase + 1 Verifier) fechadas. PASS de primeira (sem ciclo fix→re-verify — nenhum gap sobreviveu).
 - **Phase / Task**: Execute + Validate completos. Nada em aberto.
-- **Completed**: F1 base (T1-T5) · F2 piloto conditions-section.tsx (T6) · F3 campos de texto (T7-T13) · F4 escolha/arquivo (T14-T18) · F5 tabelas (T19-T26) · F6 botões/superfícies + apaga `src/lib/ui.ts` (T27-T36) · F7 ícones (T37) · F8 lacunas + fechamento (T38-T39) · **Verificação**: iteração 1 (author≠verifier) achou 3 gaps Major de cobertura de teste — RadioGroup só 1/3 grupos testado e mutante estrutural sobrevivia, override neutro de impressão sem proteção nenhuma, `Header` do portal sem nenhum teste; 5 fixes aplicados (`d1792ac`, `bcb2b41`, `26568ec`, `d6a076e`, `7a3e385`); iteração 2 confirmou os 3 gaps fechados por repetição da mutação que sobrevivera — **PASS, 21/21 requisitos**. Relatório completo em `.specs/features/still-void-v3-migration/validation.md`. Requirement Traceability de `spec.md`: os 21 requisitos `SV3-01`..`SV3-21` marcados `Implemented`/`Verified`.
-- **Achado da verificação (não é bug desta migração)**: `src/app/portal/layout.tsx` nunca passou a prop `items` ao `Header` — nem antes nem depois da migração (confirmado por histórico git). O AC4 de SV3-03 descrevia navegação que nunca existiu nessa tela; o teste novo (`tests/components/portal-layout.test.tsx`) protege o que é real (logo, ação de logout) em vez de simular nav inexistente. Registrado como lição candidata L-021.
-- **Gate final** (branch `claude/pos-merge-ajustes-5a46b5`, commit `f8b8fa1`):
+- **Completed**: T1 bump `@still-void/ui` 3.1.0→3.2.0 · T2-T5 (Fase 2, paralelas) fecham `pagination` (`Pagination`/`PaginationNext` em `LoadMoreButton`), `separator` (`Separator` no divisor "ou" do login), `icon-set-gaps` (`camera`/`blocked`/`pending`), `data-chart` (`ChartContainer`/`ChartAxis`/`ChartLine` no `HealingChart`) · T6+T7 (Fase 3) fecham `dialog-close-label` (`closeLabel="Fechar"` nativo no `Modal`) + ripple de 17 queries `getByLabelText`→`getByRole` em 6 arquivos de teste · T8 (Fase 4) arquiva as 6 seções em `docs/still-void-gaps.md` (nível `####`, fora do regex do gate) · T9 registra AD-016 (supersede AD-015) · T10 fecha traceability (12/12 `SV32-NN` `Implemented`) e dispara o Verifier — **PASS, 10/10 ACs**. Relatório completo em `.specs/features/still-void-v3.2-migration/validation.md`.
+- **Achado durante a execução (decisão do usuário, não bug)**: fechar `dialog-close-label` inverte a ordem de foco do `Modal` — a `3.2.0` anexa o botão nativo de fechar DEPOIS de `{children}` (`dist/react/client/index.js:506-527`), enquanto o botão manual removido ficava ANTES. Usuário confirmou adotar a ordem nova da lib em vez de manter o workaround; as 3 asserções de ordem de foco em `tests/components/modal.test.tsx` foram reescritas com `SPEC_DEVIATION` documentado (commit `252df2e`). Ver AD-016.
+- **Gate final** (branch `claude/pos-merge-ajustes-5a46b5`):
 
   | Comando | Resultado |
   |---|---|
   | `npm run typecheck` | 0 erros |
   | `npm run build` | 0 erros |
-  | `npm test` | 1815/1815 passaram |
-  | Cobertura | ≥ 90% em lines/statements/functions/branches |
-  | `npm run test:e2e` | 64/64 |
-  | `npm run check:sv` | 0 achados nas 13 checagens (a #13, override neutro de impressão, nasceu do fix da verificação) |
-  | `src/lib/ui.ts` | não existe mais |
+  | `npm test` | 1817/1817 passaram |
+  | `npm run test:e2e` | 64/64 (1 flaky não relacionado — `export-lgpd.spec.ts`, passou no retry) |
+  | `npm run check:sv` | 0 achados nas 13 checagens |
+  | Sensor de discriminação (Verifier) | 3/3 mutações mortas, 0 sobreviventes |
+  | `docs/still-void-gaps.md` | 0 lacunas ativas (6 arquivadas em histórico) |
 
 - **In-progress** (file:line): —
-- **Next step**: nenhum. Feature pronta para revisão/merge — 51 commits (`c30c632`..`f8b8fa1`) na branch atual, nenhum push feito ainda.
+- **Next step**: nenhum. Feature pronta para revisão/merge — nenhum push feito ainda.
 - **Blockers**: none
 - **Branch**: `claude/pos-merge-ajustes-5a46b5` (worktree `tlc-spec-driven-audit-5a46b5`)
 

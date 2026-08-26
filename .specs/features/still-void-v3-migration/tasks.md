@@ -859,8 +859,8 @@ classe). Gate quick (typecheck, test 1802/1802) verde após a correção.
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] Zero `accentButton` neste arquivo
-- [ ] `tests/pages/staff-procedimentos.test.tsx` passa
+- [x] Zero `accentButton` neste arquivo
+- [x] `tests/pages/staff-procedimentos.test.tsx` passa
 
 **Tests**: unit — `tests/pages/staff-procedimentos.test.tsx`
 **Gate**: quick

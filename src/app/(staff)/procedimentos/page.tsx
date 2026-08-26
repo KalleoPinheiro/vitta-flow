@@ -20,7 +20,6 @@ import {
   TableHeader,
   TableRow,
 } from "@still-void/ui/react";
-import { accentButton } from "@/lib/ui";
 
 export default function ProceduresPage() {
   const { data: procedures, error, refresh } = useApiQuery<ProcedureDto[]>("/api/procedures");
@@ -48,7 +47,7 @@ export default function ProceduresPage() {
         <Button
           type="button"
           onClick={() => setEditing("new")}
-          className={accentButton}
+          variant="accent"
         >
           + Novo procedimento
         </Button>
@@ -223,7 +222,8 @@ function ProcedureForm({
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-1 ${accentButton}`}
+        variant="accent"
+        className="mt-1"
       >
         {saving ? "Salvando…" : "Salvar"}
       </Button>
@@ -353,7 +353,8 @@ function KitForm({ procedure, onSaved }: { procedure: ProcedureDto; onSaved: () 
         type="button"
         disabled={saving}
         onClick={() => void save()}
-        className={`mt-1 self-start ${accentButton}`}
+        variant="accent"
+        className="mt-1 self-start"
       >
         {saving ? "Salvando…" : "Salvar kit"}
       </Button>

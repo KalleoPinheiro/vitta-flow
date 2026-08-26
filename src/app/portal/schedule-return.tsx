@@ -6,7 +6,6 @@ import { useApiQuery } from "@/lib/use-api-query";
 import type { ProcedureDto } from "@/lib/dto";
 import { formatTime } from "@/lib/format";
 import { Button, Card, CardContent, Input, NativeSelect } from "@still-void/ui/react";
-import { accentButton } from "@/lib/ui";
 import { ErrorAlert } from "@/components/feedback";
 
 interface AvailableSlotDto {
@@ -41,7 +40,8 @@ export function ScheduleReturn({ followUpId, onScheduled }: ScheduleReturnProps)
         type="button"
         size="sm"
         onClick={() => setOpen(true)}
-        className={`mt-2 ${accentButton}`}
+        variant="accent"
+        className="mt-2"
       >
         Agendar retorno
       </Button>

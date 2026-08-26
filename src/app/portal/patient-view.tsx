@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Button, Card, Hero } from "@still-void/ui/react";
-import { accentButton } from "@/lib/ui";
 import { apiFetch } from "@/lib/client";
 import type {
   FollowUpDto,
@@ -187,7 +186,7 @@ function AppointmentList({ appointments, onConfirm }: AppointmentListProps) {
               type="button"
               size="sm"
               onClick={() => onConfirm(appointment)}
-              className={accentButton}
+              variant="accent"
             >
               Confirmar presença
             </Button>

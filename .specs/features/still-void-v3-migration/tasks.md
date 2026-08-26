@@ -912,10 +912,10 @@ classe real. Gate quick (typecheck, test 1802/1802) verde.
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] Zero `accentButton`/`sv-gap: card-as-element` nestes 3 arquivos
-- [ ] O `Card as="section"` de `consent-card.tsx` mantém a cor de alerta (`border-warning`/`bg-warning-soft`) via `className`
-- [ ] `tests/pages/portal.test.tsx` passa
-- [ ] `npm run test:e2e -- portal-paciente followup` passa
+- [x] Zero `accentButton`/`sv-gap: card-as-element` nestes 3 arquivos
+- [x] O `Card as="section"` de `consent-card.tsx` mantém a cor de alerta (`border-warning`/`bg-warning-soft`) via `className`
+- [x] `tests/pages/portal.test.tsx` passa
+- [x] `npm run test:e2e -- portal-paciente followup` passa
 
 **Tests**: unit — `tests/pages/portal.test.tsx`; e2e — `e2e/portal-paciente.spec.ts`, `e2e/followup.spec.ts`
 **Gate**: full

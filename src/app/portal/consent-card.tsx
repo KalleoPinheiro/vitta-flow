@@ -3,9 +3,8 @@
 import { useState } from "react";
 import { apiFetch } from "@/lib/client";
 import { formatDateTime } from "@/lib/format";
-import { Button, FileInput, Input } from "@still-void/ui/react";
+import { Button, Card, FileInput, Input } from "@still-void/ui/react";
 import { ErrorAlert } from "@/components/feedback";
-import { accentButton } from "@/lib/ui";
 
 export interface ConsentStatusDto {
   consentText: string;
@@ -58,8 +57,7 @@ export function ConsentCard({
   };
 
   return (
-    // sv-gap: card-as-element
-    <section className="rounded-lg border border-warning bg-warning-soft p-4">
+    <Card as="section" className="border-warning bg-warning-soft p-4">
       <h2 className="mb-2 text-sm font-bold text-warning">
         Termo de consentimento pendente
       </h2>
@@ -71,11 +69,11 @@ export function ConsentCard({
         type="button"
         disabled={accepting}
         onClick={() => void accept()}
-        className={accentButton}
+        variant="accent"
       >
         {accepting ? "Registrando…" : "Li e aceito o termo"}
       </Button>
-    </section>
+    </Card>
   );
 }
 

@@ -808,8 +808,8 @@ como o "Done when" pede.
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] Zero `accentButton` neste arquivo
-- [ ] `tests/pages/staff-materiais.test.tsx` passa
+- [x] Zero `accentButton` neste arquivo
+- [x] `tests/pages/staff-materiais.test.tsx` passa
 
 **Tests**: unit — `tests/pages/staff-materiais.test.tsx`
 **Gate**: quick

@@ -21,7 +21,6 @@ import {
   TableHeader,
   TableRow,
 } from "@still-void/ui/react";
-import { accentButton } from "@/lib/ui";
 
 interface SupplyInsightDto {
   supplyId: string;
@@ -61,7 +60,7 @@ export default function SuppliesPage() {
         <Button
           type="button"
           onClick={() => setEditing("new")}
-          className={accentButton}
+          variant="accent"
         >
           + Novo insumo
         </Button>
@@ -395,7 +394,8 @@ function SupplyForm({ initial, onSaved }: { initial?: SupplyDto; onSaved: () => 
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-1 ${accentButton}`}
+        variant="accent"
+        className="mt-1"
       >
         {saving ? "Salvando…" : "Salvar"}
       </Button>
@@ -538,7 +538,8 @@ function MovementForm({ supply, onSaved }: { supply: SupplyDto; onSaved: () => v
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-1 ${accentButton}`}
+        variant="accent"
+        className="mt-1"
       >
         {saving ? "Registrando…" : "Registrar movimentação"}
       </Button>

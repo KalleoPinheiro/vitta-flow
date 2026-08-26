@@ -144,3 +144,20 @@
 - **Next step**: nenhum. Feature pronta para revisão/merge — 51 commits (`c30c632`..`f8b8fa1`) na branch atual, nenhum push feito ainda.
 - **Blockers**: none
 - **Branch**: `claude/pos-merge-ajustes-5a46b5` (worktree `tlc-spec-driven-audit-5a46b5`)
+
+### Baseline de segurança medido em `fcd6110`
+
+Reproduza pelo procedimento do README (seção "Varredura de segurança").
+
+| Medição | Valor esperado |
+|---|---|
+| `gitleaks dir .` sobre a árvore **sem** `.gitleaks.toml` | `no leaks found` |
+| Semgrep (`p/nodejsscan` + regexp + gcm + formatstring) | 58 findings |
+| — `node_secret` / `node_password` / `node_username` | 40 / 13 / 4 — falso positivo aceito (AD-012) |
+| — `unsafe-formatstring` | 1 — falso positivo (B9) |
+| — `detect-non-literal-regexp` | 0 |
+| `npm audit` | 0 HIGH/CRITICAL; 4 MODERATE de `esbuild` (AD-009) |
+
+Um scan GitGuard sobre `fcd6110` deve cair de 54 para ~9 findings: 2 `hardcoded_secrets`
+deduplicados, 1 `unsafe-formatstring` e os 6 TRIVY obsoletos, que só somem quando o
+serviço reindexar o lockfile. Acima disso, reproduza localmente antes de agir.

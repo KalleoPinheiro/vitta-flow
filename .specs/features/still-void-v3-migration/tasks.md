@@ -12,7 +12,7 @@ sub-agent delegation, adequacy review, Verifier, discrimination sensor).
 ---
 
 **Design**: `.specs/features/still-void-v3-migration/design.md`
-**Status**: Draft
+**Status**: Done — T1-T39 implementadas e commitadas; gate final verde
 
 ---
 
@@ -1110,11 +1110,20 @@ por status, não mais contorno de defeito). `npm test` (1807/1807) e
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] `npm run typecheck && npm run build && npm test && npm run test:e2e && npm run check:sv` saem 0
-- [ ] Cobertura ≥ 90% em `lines`/`functions`/`branches`/`statements`
-- [ ] `test:e2e` em 64/64
-- [ ] `spec.md` com os 21 requisitos marcados `Verified`
-- [ ] `STATE.md` Handoff atualizado
+- [x] `npm run typecheck && npm run build && npm test && npm run test:e2e && npm run check:sv` saem 0
+- [x] Cobertura ≥ 90% em `lines`/`functions`/`branches`/`statements`
+- [x] `test:e2e` em 64/64
+- [x] `spec.md` com os 21 requisitos marcados `Verified`
+- [x] `STATE.md` Handoff atualizado
+
+**Nota de execução**: gate final medido nesta branch — `typecheck` 0 erros,
+`build` 0 erros, `test` 1807/1807 (107 arquivos), cobertura lines 97.39% /
+statements 97.3% / functions 96.79% / branches 93.32% (todas ≥ 90%),
+`test:e2e` 64/64 (62 na primeira tentativa + 2 flaky que passaram no retry
+já configurado do projeto, exit 0), `check:sv` 0 achados nas 12 checagens. Os
+21 requisitos `SV3-01`..`SV3-21` marcados `Implemented`/`Verified` em
+`spec.md`; `STATE.md` Handoff substituído pelo snapshot final (Decisions
+intocado).
 
 **Tests**: full suite (nenhum caso novo)
 **Gate**: build

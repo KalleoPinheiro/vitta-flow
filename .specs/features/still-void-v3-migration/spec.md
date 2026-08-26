@@ -258,38 +258,38 @@ o bloco copiado à mão em `globals.css` pare de precisar ser mantido em sincron
 
 | Requirement ID | Story | Phase | Status |
 | --- | --- | --- | --- |
-| SV3-01 | P1: Versão — `^3.1.0` instalada e build verde | Design | Pending |
-| SV3-02 | P1: Versão — `Modal` com `showCloseButton={false}` e rótulo pt-BR único | Design | Pending |
-| SV3-03 | P1: Versão — `Header` sem regressão de navegação | Design | Pending |
-| SV3-04 | P1: Campos — `NativeSelect` nos 23 `<select>` | Design | Pending |
-| SV3-05 | P1: Campos — `Textarea` nos 7 `<textarea>` | Design | Pending |
-| SV3-06 | P1: Campos — `Checkbox`, `RadioGroup`, `FileInput` | Design | Pending |
-| SV3-07 | P1: Campos — `src/lib/ui.ts` eliminado | Design | Pending |
-| SV3-08 | P1: Tabelas — família `Table` nas 14 tabelas | Design | Pending |
-| SV3-09 | P1: Botões — `Button variant="accent"` nos 59 usos | Design | Pending |
-| SV3-10 | P1: Lacunas — documento reduzido às 4 reais + 2 novas | Design | Pending |
-| SV3-11 | Sweep: validação — atributos de campo preservados | Design | Pending |
-| SV3-12 | Sweep: falha parcial — gate verde por commit | Design | Pending |
-| SV3-13 | Sweep: fronteira server/client sem `"use client"` novo | Design | Pending |
-| SV3-14 | Sweep: dependência — lockfile e `npm audit` sem HIGH/CRITICAL novo | Design | Pending |
-| SV3-15 | Sweep: estado — campos controlados e exclusividade de rádio | Design | Pending |
-| SV3-16 | P1: Lacunas — `check:sv` estendido e testado contra fixture | Design | Pending |
-| SV3-17 | P2: `Card as`/`asChild` nos 9 pontos | - | Pending |
-| SV3-18 | P2: `Icon` nos glifos cobertos | - | Pending |
-| SV3-19 | P2: `Icon` — glifos não cobertos registrados como lacuna | - | Pending |
-| SV3-20 | P2: Ponte Tailwind via `@still-void/ui/tailwind.css` | - | Pending |
-| SV3-21 | P2: Ponte semântica do app (AD-006) preservada | - | Pending |
+| SV3-01 | P1: Versão — `^3.1.0` instalada e build verde | Implemented | Verified |
+| SV3-02 | P1: Versão — `Modal` com `showCloseButton={false}` e rótulo pt-BR único | Implemented | Verified |
+| SV3-03 | P1: Versão — `Header` sem regressão de navegação | Implemented | Verified |
+| SV3-04 | P1: Campos — `NativeSelect` nos 23 `<select>` | Implemented | Verified |
+| SV3-05 | P1: Campos — `Textarea` nos 7 `<textarea>` | Implemented | Verified |
+| SV3-06 | P1: Campos — `Checkbox`, `RadioGroup`, `FileInput` | Implemented | Verified |
+| SV3-07 | P1: Campos — `src/lib/ui.ts` eliminado | Implemented | Verified |
+| SV3-08 | P1: Tabelas — família `Table` nas 14 tabelas | Implemented | Verified |
+| SV3-09 | P1: Botões — `Button variant="accent"` nos 59 usos | Implemented | Verified |
+| SV3-10 | P1: Lacunas — documento reduzido às 4 reais + 2 novas | Implemented | Verified |
+| SV3-11 | Sweep: validação — atributos de campo preservados | Implemented | Verified |
+| SV3-12 | Sweep: falha parcial — gate verde por commit | Implemented | Verified |
+| SV3-13 | Sweep: fronteira server/client sem `"use client"` novo | Implemented | Verified |
+| SV3-14 | Sweep: dependência — lockfile e `npm audit` sem HIGH/CRITICAL novo | Implemented | Verified |
+| SV3-15 | Sweep: estado — campos controlados e exclusividade de rádio | Implemented | Verified |
+| SV3-16 | P1: Lacunas — `check:sv` estendido e testado contra fixture | Implemented | Verified |
+| SV3-17 | P2: `Card as`/`asChild` nos 9 pontos | Implemented | Verified |
+| SV3-18 | P2: `Icon` nos glifos cobertos | Implemented | Verified |
+| SV3-19 | P2: `Icon` — glifos não cobertos registrados como lacuna | Implemented | Verified |
+| SV3-20 | P2: Ponte Tailwind via `@still-void/ui/tailwind.css` | Implemented | Verified |
+| SV3-21 | P2: Ponte semântica do app (AD-006) preservada | Implemented | Verified |
 
 **ID format:** `SV3-[NUMBER]`
 **Status values:** Pending → In Design → In Tasks → Implementing → Verified
-**Coverage:** 21 total, 0 mapeados a tasks, 21 sem mapeamento ⚠️ (a fase de tasks ainda não rodou)
+**Coverage:** 21 total, 21 mapeados a tasks, 0 sem mapeamento — 39 tasks (T1-T39) em 8 fases, todas commitadas
 
 ---
 
 ## Success Criteria
 
-- [ ] `npm run typecheck && npm run build && npm test && npm run test:e2e` verdes, cobertura ≥ 90% mantida, e2e em 64/64
-- [ ] `npm run check:sv` verde com as checagens novas de `<select>`, `<textarea>`, `<table>`, `<input type="file|checkbox|radio">` e `accentButton`
-- [ ] `src/lib/ui.ts` não existe mais; as 69 marcações `sv-gap:` caem para as poucas que a `3.1.0` ainda justifica
-- [ ] `docs/still-void-gaps.md` lista **só** o que a `3.1.0` não tem, cada nome conferido contra a export line do artefato publicado
-- [ ] Nenhuma cor renderizada muda, com a única exceção declarada do frame de campo (14px → 15px)
+- [x] `npm run typecheck && npm run build && npm test && npm run test:e2e` verdes, cobertura ≥ 90% mantida, e2e em 64/64
+- [x] `npm run check:sv` verde com as checagens novas de `<select>`, `<textarea>`, `<table>`, `<input type="file|checkbox|radio">` e `accentButton`
+- [x] `src/lib/ui.ts` não existe mais; as 69 marcações `sv-gap:` caem para as poucas que a `3.1.0` ainda justifica
+- [x] `docs/still-void-gaps.md` lista **só** o que a `3.1.0` não tem, cada nome conferido contra a export line do artefato publicado
+- [x] Nenhuma cor renderizada muda, com a única exceção declarada do frame de campo (14px → 15px)

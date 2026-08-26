@@ -124,51 +124,23 @@
 
 ## Handoff
 
-- **Feature**: still-void-v3-migration — **spec confirmada** pelo usuário em 2026-08-25
-- **Phase / Task**: Design confirmada. Tasks escrita (39 tasks, 8 fases). Próxima: confirmar ferramentas por task e oferta de sub-agentes, depois Execute
-- **Completed**: spec e design confirmados; tasks.md escrito — 39 tasks em 8 fases (T1-T5 base, T6 piloto conditions-section.tsx, T7-T13 campos de texto, T14-T18 escolha/arquivo, T19-T26 tabelas, T27-T36 botões/superfícies+apaga src/lib/ui.ts, T37 ícones, T38-T39 lacunas+fechamento); Test Coverage Matrix/Parallelism Assessment/Gate Commands gerados de vitest.config.ts+playwright.config.ts+README; as 3 validações obrigatórias (granularidade, cross-check diagrama, co-locação de teste) passaram sem violação
+- **Feature**: still-void-v3-migration — **concluída**. Todas as 8 fases e 39 tasks (T1-T39) implementadas, verificadas e commitadas.
+- **Phase / Task**: Execute completo. T38 (`docs/still-void-gaps.md` reescrito para a `3.1.0`) e T39 (gate final + fechamento) commitados.
+- **Completed**: F1 base (T1-T5) · F2 piloto conditions-section.tsx (T6) · F3 campos de texto (T7-T13) · F4 escolha/arquivo (T14-T18) · F5 tabelas (T19-T26) · F6 botões/superfícies + apaga `src/lib/ui.ts` (T27-T36) · F7 ícones (T37) · F8 lacunas + fechamento (T38-T39). Requirement Traceability de `spec.md`: os 21 requisitos `SV3-01`..`SV3-21` marcados `Implemented`/`Verified`.
+- **Gate final** (medido nesta task, branch `claude/pos-merge-ajustes-5a46b5`):
+
+  | Comando | Resultado |
+  |---|---|
+  | `npm run typecheck` | 0 erros |
+  | `npm run build` | 0 erros |
+  | `npm test` | 1807/1807 passaram, 107 arquivos |
+  | Cobertura | lines 97.39% · statements 97.3% · functions 96.79% · branches 93.32% (todas ≥ 90%) |
+  | `npm run test:e2e` | 64/64 (62 na primeira tentativa, 2 flaky que passaram no retry configurado do projeto — exit 0) |
+  | `npm run check:sv` | 0 achados nas 12 checagens, incl. `sv-gap` órfão |
+  | `sv-gap:` no código | 69 → 6 marcações (`pagination`, `progress`\*, `separator`, `data-chart`, `icon-set-gaps` ×3) — \*`progress` é `sv-gap-doc-only`, sem marcação no código |
+  | `src/lib/ui.ts` | não existe mais |
+
 - **In-progress** (file:line): —
-- **Next step**: perguntar ferramentas por task (MCP/Skill) e oferecer sub-agente por fase (8 fases > 3, gatilho do protocolo); depois iniciar Execute pela T1
+- **Next step**: nenhum — aguardando o Verifier independente que o orquestrador despacha depois desta fase (author ≠ verifier; validação spec-anchored e discrimination sensor não são responsabilidade deste agente).
 - **Blockers**: none
-- **Branch**: `claude/pos-merge-ajustes-5a46b5` (worktree `tlc-spec-driven-audit-5a46b5`), a partir de `c30c632`
-
-### Baseline medido em `c30c632` (pré-migração v3)
-
-| Medição | Valor |
-|---|---|
-| `npm run check:sv` | verde, 7 checagens, zero achado |
-| `<select>` / `<textarea>` / `<table>` crus | 23 / 7 / 14 |
-| `<input type="file">` / `checkbox` / `radio` | 2 / 1 / 3 |
-| `accentButton` / `nativeField` (usos) | 59 / 45 |
-| marcações `sv-gap:` | 69, em 30 arquivos, 16 slugs |
-| glifos `✕` `⚠` `✓` `←` `→` | 1 / 3 / 1 / 3 / 11 |
-| utilitários `*-sv-*` no markup do app | 26 (bg-sv-surface 12, border-sv-border 10, text-sv-text 2, text-sv-bg 1, bg-sv-surface-2 1) |
-| cobertura exigida | 90% em lines/functions/branches/statements |
-| e2e | 64/64 |
-
-### Baseline de segurança medido em `fcd6110`
-
-Reproduza pelo procedimento do README (seção "Varredura de segurança").
-
-| Medição | Valor esperado |
-|---|---|
-| `gitleaks dir .` sobre a árvore **sem** `.gitleaks.toml` | `no leaks found` |
-| Semgrep (`p/nodejsscan` + regexp + gcm + formatstring) | 58 findings |
-| — `node_secret` / `node_password` / `node_username` | 40 / 13 / 4 — falso positivo aceito (AD-012) |
-| — `unsafe-formatstring` | 1 — falso positivo (B9) |
-| — `detect-non-literal-regexp` | 0 |
-| `npm audit` | 0 HIGH/CRITICAL; 4 MODERATE de `esbuild` (AD-009) |
-
-Um scan GitGuard sobre `fcd6110` deve cair de 54 para ~9 findings: 2 `hardcoded_secrets`
-deduplicados, 1 `unsafe-formatstring` e os 6 TRIVY obsoletos, que só somem quando o
-serviço reindexar o lockfile. Acima disso, reproduza localmente antes de agir.
-
-### Confronto pós-bump `@still-void/ui@3.1.0` (T4, AD-013)
-
-`npm audit` reexecutado após o bump para `^3.1.0` (6 dependências novas na árvore
-via `@still-void/ui`: `@heroicons/react`, `@radix-ui/react-alert-dialog`,
-`-dropdown-menu`, `-select`, `-tabs`, `-tooltip` — sem call site no app ainda,
-herdadas pelo pacote). Resultado idêntico ao baseline de `fcd6110`: **0
-HIGH/CRITICAL**, as mesmas **4 MODERATE de `esbuild`** via `drizzle-kit` (AD-009).
-Nenhuma das 6 dependências novas introduziu achado. Nada a reproduzir — o
-confronto não encontrou divergência.
+- **Branch**: `claude/pos-merge-ajustes-5a46b5` (worktree `tlc-spec-driven-audit-5a46b5`)

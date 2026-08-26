@@ -493,6 +493,13 @@ describe("Feature: Plano de Cuidados (SAE) na página do paciente", () => {
     const riscoRadio = screen.getByRole("radio", { name: "Risco" });
     const promocaoRadio = screen.getByRole("radio", { name: "Promoção da saúde" });
 
+    // Todos os inputs do grupo devem carregar o mesmo atributo `name` — é isso que
+    // detecta a regressão de `RadioGroupItem` deixar de ser filho direto do `RadioGroup`
+    // (a lib só injeta `name` via cloneElement em filhos diretos).
+    expect(realRadio).toHaveAttribute("name", "diagnosis-type");
+    expect(riscoRadio).toHaveAttribute("name", "diagnosis-type");
+    expect(promocaoRadio).toHaveAttribute("name", "diagnosis-type");
+
     expect(realRadio).toBeChecked();
     expect(riscoRadio).not.toBeChecked();
     expect(promocaoRadio).not.toBeChecked();
@@ -506,6 +513,92 @@ describe("Feature: Plano de Cuidados (SAE) na página do paciente", () => {
     expect(promocaoRadio).toBeChecked();
     expect(riscoRadio).not.toBeChecked();
     expect(realRadio).not.toBeChecked();
+  });
+
+  it("Dado grupo de prioridade da intervenção, Quando selecionar uma opção, Então desmarca as demais do grupo (exclusividade mútua)", async () => {
+    mockFetch(createCarePlanServer());
+    await renderDetail();
+    await screen.findByText("Maria Souza");
+    await openCarePlanTab();
+
+    fireEvent.click(screen.getByText("+ Novo plano"));
+    fireEvent.click(screen.getByText("Abrir plano"));
+    await screen.findByText("Plano geral do paciente");
+    fireEvent.click(screen.getByText("Ver plano"));
+    await screen.findByText("Nenhuma intervenção prescrita.");
+
+    fireEvent.click(screen.getByText("+ Intervenção"));
+    fireEvent.change(screen.getByLabelText("Buscar intervenção (NIC)"), {
+      target: { value: "lesões" },
+    });
+    fireEvent.click(await screen.findByText(/Cuidados com lesões/));
+
+    const baixaRadio = screen.getByRole("radio", { name: "Baixa" });
+    const mediaRadio = screen.getByRole("radio", { name: "Média" });
+    const altaRadio = screen.getByRole("radio", { name: "Alta" });
+
+    expect(baixaRadio).toHaveAttribute("name", "intervention-priority");
+    expect(mediaRadio).toHaveAttribute("name", "intervention-priority");
+    expect(altaRadio).toHaveAttribute("name", "intervention-priority");
+
+    expect(mediaRadio).toBeChecked();
+    expect(baixaRadio).not.toBeChecked();
+    expect(altaRadio).not.toBeChecked();
+
+    fireEvent.click(baixaRadio);
+    expect(baixaRadio).toBeChecked();
+    expect(mediaRadio).not.toBeChecked();
+    expect(altaRadio).not.toBeChecked();
+
+    fireEvent.click(altaRadio);
+    expect(altaRadio).toBeChecked();
+    expect(baixaRadio).not.toBeChecked();
+    expect(mediaRadio).not.toBeChecked();
+  });
+
+  it("Dado grupo de pontuação do resultado, Quando selecionar uma opção, Então desmarca as demais do grupo (exclusividade mútua)", async () => {
+    mockFetch(createCarePlanServer());
+    await renderDetail();
+    await screen.findByText("Maria Souza");
+    await openCarePlanTab();
+
+    fireEvent.click(screen.getByText("+ Novo plano"));
+    fireEvent.click(screen.getByText("Abrir plano"));
+    await screen.findByText("Plano geral do paciente");
+    fireEvent.click(screen.getByText("Ver plano"));
+    await screen.findByText("Nenhum resultado prescrito.");
+
+    fireEvent.click(screen.getByText("+ Resultado"));
+    fireEvent.change(screen.getByLabelText("Buscar resultado (NOC)"), {
+      target: { value: "tissular" },
+    });
+    fireEvent.click(await screen.findByText(/Integridade tissular: pele e mucosas/));
+    fireEvent.click(screen.getByText("Prescrever resultado"));
+    await waitFor(() => expect(screen.getByText("Basal 1")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByText("Avaliar"));
+    const scoreGroup = await screen.findByRole("group", { name: "Pontuação atual" });
+    const scoreRadios = within(scoreGroup).getAllByRole("radio");
+    expect(scoreRadios).toHaveLength(outcomeCatalog.scaleAnchors.length);
+
+    for (const radio of scoreRadios) {
+      expect(radio).toHaveAttribute("name", "outcome-score");
+    }
+
+    const [first, second, third] = scoreRadios;
+    expect(first).toBeChecked();
+    expect(second).not.toBeChecked();
+    expect(third).not.toBeChecked();
+
+    fireEvent.click(second);
+    expect(second).toBeChecked();
+    expect(first).not.toBeChecked();
+    expect(third).not.toBeChecked();
+
+    fireEvent.click(third);
+    expect(third).toBeChecked();
+    expect(second).not.toBeChecked();
+    expect(first).not.toBeChecked();
   });
 
   it("Dado diagnóstico não selecionado, Quando submeter, Então exibe erro de validação do formulário", async () => {

@@ -60,3 +60,10 @@ uploads/
 /playwright/.cache/
 /e2e/.auth/
 /e2e/support/seed-data.json
+
+# IA
+.agents
+.claude
+.cursor
+.windsurf
+.ai-jail

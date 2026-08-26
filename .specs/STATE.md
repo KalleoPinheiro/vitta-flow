@@ -124,23 +124,23 @@
 
 ## Handoff
 
-- **Feature**: still-void-v3-migration — **concluída**. Todas as 8 fases e 39 tasks (T1-T39) implementadas, verificadas e commitadas.
-- **Phase / Task**: Execute completo. T38 (`docs/still-void-gaps.md` reescrito para a `3.1.0`) e T39 (gate final + fechamento) commitados.
-- **Completed**: F1 base (T1-T5) · F2 piloto conditions-section.tsx (T6) · F3 campos de texto (T7-T13) · F4 escolha/arquivo (T14-T18) · F5 tabelas (T19-T26) · F6 botões/superfícies + apaga `src/lib/ui.ts` (T27-T36) · F7 ícones (T37) · F8 lacunas + fechamento (T38-T39). Requirement Traceability de `spec.md`: os 21 requisitos `SV3-01`..`SV3-21` marcados `Implemented`/`Verified`.
-- **Gate final** (medido nesta task, branch `claude/pos-merge-ajustes-5a46b5`):
+- **Feature**: still-void-v3-migration — **concluída e verificada**. 39 tasks (T1-T39) + ciclo fix→re-verify do Verifier independente (2 iterações) fechados. PASS.
+- **Phase / Task**: Execute + Validate completos. Nada em aberto.
+- **Completed**: F1 base (T1-T5) · F2 piloto conditions-section.tsx (T6) · F3 campos de texto (T7-T13) · F4 escolha/arquivo (T14-T18) · F5 tabelas (T19-T26) · F6 botões/superfícies + apaga `src/lib/ui.ts` (T27-T36) · F7 ícones (T37) · F8 lacunas + fechamento (T38-T39) · **Verificação**: iteração 1 (author≠verifier) achou 3 gaps Major de cobertura de teste — RadioGroup só 1/3 grupos testado e mutante estrutural sobrevivia, override neutro de impressão sem proteção nenhuma, `Header` do portal sem nenhum teste; 5 fixes aplicados (`d1792ac`, `bcb2b41`, `26568ec`, `d6a076e`, `7a3e385`); iteração 2 confirmou os 3 gaps fechados por repetição da mutação que sobrevivera — **PASS, 21/21 requisitos**. Relatório completo em `.specs/features/still-void-v3-migration/validation.md`. Requirement Traceability de `spec.md`: os 21 requisitos `SV3-01`..`SV3-21` marcados `Implemented`/`Verified`.
+- **Achado da verificação (não é bug desta migração)**: `src/app/portal/layout.tsx` nunca passou a prop `items` ao `Header` — nem antes nem depois da migração (confirmado por histórico git). O AC4 de SV3-03 descrevia navegação que nunca existiu nessa tela; o teste novo (`tests/components/portal-layout.test.tsx`) protege o que é real (logo, ação de logout) em vez de simular nav inexistente. Registrado como lição candidata L-021.
+- **Gate final** (branch `claude/pos-merge-ajustes-5a46b5`, commit `f8b8fa1`):
 
   | Comando | Resultado |
   |---|---|
   | `npm run typecheck` | 0 erros |
   | `npm run build` | 0 erros |
-  | `npm test` | 1807/1807 passaram, 107 arquivos |
-  | Cobertura | lines 97.39% · statements 97.3% · functions 96.79% · branches 93.32% (todas ≥ 90%) |
-  | `npm run test:e2e` | 64/64 (62 na primeira tentativa, 2 flaky que passaram no retry configurado do projeto — exit 0) |
-  | `npm run check:sv` | 0 achados nas 12 checagens, incl. `sv-gap` órfão |
-  | `sv-gap:` no código | 69 → 6 marcações (`pagination`, `progress`\*, `separator`, `data-chart`, `icon-set-gaps` ×3) — \*`progress` é `sv-gap-doc-only`, sem marcação no código |
+  | `npm test` | 1815/1815 passaram |
+  | Cobertura | ≥ 90% em lines/statements/functions/branches |
+  | `npm run test:e2e` | 64/64 |
+  | `npm run check:sv` | 0 achados nas 13 checagens (a #13, override neutro de impressão, nasceu do fix da verificação) |
   | `src/lib/ui.ts` | não existe mais |
 
 - **In-progress** (file:line): —
-- **Next step**: nenhum — aguardando o Verifier independente que o orquestrador despacha depois desta fase (author ≠ verifier; validação spec-anchored e discrimination sensor não são responsabilidade deste agente).
+- **Next step**: nenhum. Feature pronta para revisão/merge — 51 commits (`c30c632`..`f8b8fa1`) na branch atual, nenhum push feito ainda.
 - **Blockers**: none
 - **Branch**: `claude/pos-merge-ajustes-5a46b5` (worktree `tlc-spec-driven-audit-5a46b5`)

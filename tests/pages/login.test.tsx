@@ -109,6 +109,7 @@ describe("Feature: Página de login", () => {
 
       expect(await screen.findByText("Entrar com Google")).toBeInTheDocument();
       expect(screen.getByLabelText("Senha")).toBeInTheDocument();
+      expect(screen.getByRole("separator")).toBeInTheDocument();
       expect(screen.getByText("ou")).toBeInTheDocument();
     });
   });

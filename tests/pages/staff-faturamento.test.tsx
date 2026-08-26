@@ -274,7 +274,7 @@ describe("Feature: Faturamento", () => {
       fireEvent.click(screen.getByText("Receber"));
       expect(await screen.findByText("Registrar pagamento")).toBeInTheDocument();
 
-      fireEvent.click(screen.getByLabelText("Fechar"));
+      fireEvent.click(screen.getByRole("button", { name: "Fechar" }));
 
       expect(screen.queryByText("Registrar pagamento")).not.toBeInTheDocument();
       expect(
@@ -444,7 +444,7 @@ describe("Feature: Faturamento", () => {
       fireEvent.click(screen.getByText("+ Nova fatura"));
       expect(await screen.findByText("Emitir fatura")).toBeInTheDocument();
 
-      fireEvent.click(screen.getByLabelText("Fechar"));
+      fireEvent.click(screen.getByRole("button", { name: "Fechar" }));
 
       expect(screen.queryByText("Emitir fatura")).not.toBeInTheDocument();
     });
@@ -636,7 +636,7 @@ describe("Feature: Faturamento", () => {
       fireEvent.click(screen.getByText("Vender pacote"));
       expect(await screen.findByText("Vender pacote de sessões")).toBeInTheDocument();
 
-      fireEvent.click(screen.getByLabelText("Fechar"));
+      fireEvent.click(screen.getByRole("button", { name: "Fechar" }));
 
       expect(screen.queryByText("Vender pacote de sessões")).not.toBeInTheDocument();
     });

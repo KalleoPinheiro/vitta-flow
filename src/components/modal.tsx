@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Dialog, DialogClose, DialogContent, DialogTitle } from "@still-void/ui/react/client";
-import { Icon } from "@still-void/ui/react";
+import { Dialog, DialogContent, DialogTitle } from "@still-void/ui/react/client";
 
 interface ModalProps {
   title: string;
@@ -27,11 +26,10 @@ interface ModalProps {
  * aqui explícitos porque `tests/components/modal.test.tsx` já os asserte como
  * contrato do app.
  *
- * O botão de fechar é do app, não do pacote: a partir da 3.0.0 o `DialogContent`
- * passa a empacotar um próprio, mas com nome acessível `"Close dialog"` fixo em
- * inglês (sem prop de rótulo) — regressão de acessibilidade numa UI pt-BR. Por
- * isso `showCloseButton={false}` (AD-015), e o botão pt-BR abaixo continua sendo
- * o único.
+ * O botão de fechar volta a ser o nativo do pacote: a partir da `3.2.0`,
+ * `DialogContent` aceita `closeLabel`, que define o nome acessível do botão
+ * embutido (antes fixo em `"Close dialog"`, em inglês). `closeLabel="Fechar"`
+ * fecha essa lacuna de acessibilidade pt-BR sem precisar de um botão próprio.
  */
 export function Modal({ title, onClose, children }: ModalProps) {
   const [previouslyFocused] = useState<HTMLElement | null>(() =>
@@ -55,14 +53,11 @@ export function Modal({ title, onClose, children }: ModalProps) {
     >
       <DialogContent
         aria-modal="true"
-        showCloseButton={false}
+        closeLabel="Fechar"
         className="max-h-[90vh] overflow-y-auto shadow-none"
       >
         <div className="flex items-center justify-between">
           <DialogTitle className="sv-display text-lg font-semibold">{title}</DialogTitle>
-          <DialogClose aria-label="Fechar" className="text-ink-3 hover:text-ink">
-            <Icon name="x" />
-          </DialogClose>
         </div>
         {children}
       </DialogContent>

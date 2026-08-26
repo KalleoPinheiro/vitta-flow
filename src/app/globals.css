@@ -69,3 +69,20 @@
 
   --spacing-4: var(--sv-space-4);
 }
+
+/* HealingChart (still-void 3.2.0 data-chart): `ChartContainerProps` não aceita
+   `style` — só width/height/aria-label/className/children (dist/react/index.d.ts).
+   Fundo e borda que antes vinham de `style` inline no <svg> manual agora são
+   esta classe, aplicada via `className`. */
+.healing-chart__svg {
+  background: var(--sv-surface);
+  border-color: var(--sv-border);
+}
+
+/* `ChartLine` fixa `strokeWidth={2}` inline (dist/react/index.js) — a série de
+   dor precisa ficar mais fina e tracejada que as outras duas. CSS de maior
+   especificidade sobrepõe presentation attribute SVG. */
+.healing-chart__pain-line {
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}

@@ -219,8 +219,7 @@ function TriageQueue() {
   return (
     <Card className="mb-6 border-accent bg-accent-soft p-4">
       <h3 className="mb-2 text-sm font-bold text-accent-ink">
-        {/* sv-gap: icon-set-gaps */}
-        📷 Fotos de pacientes aguardando triagem ({queue.length})
+        <Icon name="camera" /> Fotos de pacientes aguardando triagem ({queue.length})
       </h3>
       {error && <ErrorAlert message={error} />}
       <ul className="flex flex-col gap-2">

@@ -1,5 +1,6 @@
 "use client";
 
+import { ChartAxis, ChartContainer, ChartLine } from "@still-void/ui/react";
 import type { AssessmentDto } from "@/lib/dto";
 import { formatDate } from "@/lib/format";
 
@@ -21,14 +22,22 @@ const PAD_BOTTOM = 28;
 const PAIN_MAX = 10;
 const MIN_MEASURED_POINTS = 2;
 
-function toPoints(values: SeriesPoint[], min: number, max: number, xOf: (d: Date) => number) {
+interface ChartPoint {
+  x: number;
+  y: number;
+}
+
+function toPoints(
+  values: SeriesPoint[],
+  min: number,
+  max: number,
+  xOf: (d: Date) => number,
+): ChartPoint[] {
   const span = max - min || 1;
-  return values
-    .map((p) => {
-      const y = PAD_TOP + (HEIGHT - PAD_TOP - PAD_BOTTOM) * (1 - (p.value - min) / span);
-      return `${xOf(p.date).toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
+  return values.map((p) => {
+    const y = PAD_TOP + (HEIGHT - PAD_TOP - PAD_BOTTOM) * (1 - (p.value - min) / span);
+    return { x: xOf(p.date), y };
+  });
 }
 
 const CLINICAL_SCORE_MAX = 17; // PUSH 0–17 (DET 0–15 compartilha o eixo)
@@ -105,9 +114,10 @@ function buildChartModel(assessments: AssessmentDto[]): ChartModel | null {
 
 /**
  * Tendência de cicatrização: área da ferida (C×L) e dor ao longo das avaliações.
- * SVG puro — sem dependência externa (CSP default-src 'self').
+ * SVG via primitivos do Still Void (ChartContainer/ChartAxis/ChartLine) onde a
+ * lib cobre; círculos de dado e todo `<text>` continuam manuais — a lib não
+ * expõe primitivo de marcador de ponto nem de legenda livre (AD-014).
  */
-// sv-gap: data-chart
 export function HealingChart({ assessments }: HealingChartProps) {
   const model = buildChartModel(assessments);
   if (!model) {
@@ -130,28 +140,25 @@ export function HealingChart({ assessments }: HealingChartProps) {
             : `Área aumentou ${trend}% desde a primeira medição`}
         </p>
       )}
-      <svg
-        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-        className="w-full rounded border"
-        style={{ background: "var(--sv-surface)", borderColor: "var(--sv-border)" }}
-        role="img"
+      {/*
+        SPEC_DEVIATION: ChartContainerProps (dist/react/index.d.ts) só aceita
+        width/height/aria-label/className/children — sem `style` nem `viewBox`
+        (o viewBox é montado internamente a partir de width/height). O
+        background/borda que antes vinham de `style` inline agora são a
+        classe `.healing-chart__svg` em globals.css; visual idêntico.
+      */}
+      <ChartContainer
+        width={WIDTH}
+        height={HEIGHT}
+        className="healing-chart__svg w-full rounded border"
         aria-label="Gráfico de evolução da condição"
       >
-        <line
-          x1={PAD_LEFT}
-          y1={HEIGHT - PAD_BOTTOM}
-          x2={WIDTH - PAD_RIGHT}
-          y2={HEIGHT - PAD_BOTTOM}
-          stroke="var(--sv-border-strong)"
-        />
+        <g transform={`translate(${PAD_LEFT}, ${HEIGHT - PAD_BOTTOM})`}>
+          <ChartAxis orientation="bottom" ticks={[]} length={WIDTH - PAD_LEFT - PAD_RIGHT} />
+        </g>
         {areaSeries.length >= MIN_MEASURED_POINTS && (
           <>
-            <polyline
-              points={toPoints(areaSeries, 0, areaMax, xOf)}
-              fill="none"
-              stroke={SERIES_AREA}
-              strokeWidth="2"
-            />
+            <ChartLine points={toPoints(areaSeries, 0, areaMax, xOf)} color={SERIES_AREA} />
             {areaSeries.map((p) => (
               <circle
                 key={`a-${p.date.getTime()}`}
@@ -170,11 +177,9 @@ export function HealingChart({ assessments }: HealingChartProps) {
         )}
         {scoreSeries.length >= MIN_MEASURED_POINTS && (
           <>
-            <polyline
+            <ChartLine
               points={toPoints(scoreSeries, 0, CLINICAL_SCORE_MAX, xOf)}
-              fill="none"
-              stroke={SERIES_SCORE}
-              strokeWidth="2"
+              color={SERIES_SCORE}
             />
             {scoreSeries.map((p) => (
               <circle
@@ -189,12 +194,10 @@ export function HealingChart({ assessments }: HealingChartProps) {
         )}
         {painSeries.length >= MIN_MEASURED_POINTS && (
           <>
-            <polyline
+            <ChartLine
               points={toPoints(painSeries, 0, PAIN_MAX, xOf)}
-              fill="none"
-              stroke={SERIES_PAIN}
-              strokeWidth="1.5"
-              strokeDasharray="4 3"
+              color={SERIES_PAIN}
+              className="healing-chart__pain-line"
             />
             <text x={WIDTH - PAD_RIGHT + 4} y={PAD_TOP + 4} fontSize="10" fill={SERIES_PAIN}>
               dor /10
@@ -207,7 +210,7 @@ export function HealingChart({ assessments }: HealingChartProps) {
         <text x={WIDTH - PAD_RIGHT} y={HEIGHT - 8} fontSize="10" fill="var(--sv-text-3)" textAnchor="end">
           {formatDate(new Date(maxT).toISOString())}
         </text>
-      </svg>
+      </ChartContainer>
       <p className="mt-1 text-[11px] text-ink-3">
         Sólida no accent: área (mm²) · sólida azul: score PUSH/DET · tracejada âmbar: dor (0–10)
       </p>

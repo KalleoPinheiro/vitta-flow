@@ -617,7 +617,7 @@ describe("Feature: SettingsPage", () => {
       fireEvent.click(screen.getByText("+ Nova conta"));
       expect(await screen.findByText("Nova conta de acesso")).toBeInTheDocument();
 
-      fireEvent.click(screen.getByLabelText("Fechar"));
+      fireEvent.click(screen.getByRole("button", { name: "Fechar" }));
 
       await waitFor(() => {
         expect(screen.queryByText("Nova conta de acesso")).not.toBeInTheDocument();
@@ -989,7 +989,7 @@ describe("Feature: PartnersPage", () => {
       fireEvent.click(screen.getByText("Editar"));
       expect(await screen.findByText("Editar parceiro")).toBeInTheDocument();
 
-      fireEvent.click(screen.getByLabelText("Fechar"));
+      fireEvent.click(screen.getByRole("button", { name: "Fechar" }));
 
       await waitFor(() => {
         expect(screen.queryByText("Editar parceiro")).not.toBeInTheDocument();
@@ -1262,7 +1262,7 @@ describe("Feature: ProfessionalsPage", () => {
       fireEvent.click(screen.getByText("Editar"));
       expect(await screen.findByText("Editar profissional")).toBeInTheDocument();
 
-      fireEvent.click(screen.getByLabelText("Fechar"));
+      fireEvent.click(screen.getByRole("button", { name: "Fechar" }));
 
       await waitFor(() => {
         expect(screen.queryByText("Editar profissional")).not.toBeInTheDocument();

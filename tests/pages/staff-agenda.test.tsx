@@ -465,7 +465,7 @@ describe("Feature: Página de agenda", () => {
       fireEvent.click(screen.getByText("+ Nova consulta"));
       await waitFor(() => expect(screen.getByText("Nova consulta")).toBeInTheDocument());
 
-      fireEvent.click(screen.getByLabelText("Fechar"));
+      fireEvent.click(screen.getByRole("button", { name: "Fechar" }));
 
       await waitFor(() => {
         expect(screen.queryByText("Nova consulta")).not.toBeInTheDocument();
@@ -493,7 +493,7 @@ describe("Feature: Página de agenda", () => {
       fireEvent.click(screen.getByText(/Maria Souza/));
       await waitFor(() => expect(screen.getByText("Detalhes da consulta")).toBeInTheDocument());
 
-      fireEvent.click(screen.getByLabelText("Fechar"));
+      fireEvent.click(screen.getByRole("button", { name: "Fechar" }));
 
       await waitFor(() => {
         expect(screen.queryByText("Detalhes da consulta")).not.toBeInTheDocument();

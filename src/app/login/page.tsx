@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiFetch } from "@/lib/client";
 import { useApiQuery } from "@/lib/use-api-query";
-import { Button, Input } from "@still-void/ui/react";
+import { Button, Input, Separator } from "@still-void/ui/react";
 import { ErrorAlert } from "@/components/feedback";
 
 interface Providers {
@@ -49,11 +49,9 @@ function ProviderButtons({ providers }: { providers: Providers }) {
     <>
       {providers.google && <GoogleLoginButton />}
       {providers.google && providers.password && (
-        // sv-gap: separator
         <div className="my-4 flex items-center gap-3 text-xs text-ink-3">
-          <span className="h-px flex-1 bg-surface-2" />
+          <Separator decorative={false} className="flex-1" />
           ou
-          <span className="h-px flex-1 bg-surface-2" />
         </div>
       )}
       {providers.password && <PasswordForm />}

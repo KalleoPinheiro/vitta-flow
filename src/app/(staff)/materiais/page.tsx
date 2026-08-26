@@ -150,15 +150,13 @@ function ExpiryBanner({ batches }: { batches: ExpiringBatchDto[] }) {
     <div className="mb-4 rounded-lg border border-danger bg-danger-soft px-4 py-3 text-sm text-danger">
       {expired.length > 0 && (
         <p>
-          {/* sv-gap: icon-set-gaps */}
-          ⛔ {expired.length} {expired.length === 1 ? "lote vencido" : "lotes vencidos"} com saldo:{" "}
+          <Icon name="blocked" /> {expired.length} {expired.length === 1 ? "lote vencido" : "lotes vencidos"} com saldo:{" "}
           {expired.map((b) => `${b.supplyName}${b.label ? ` (${b.label})` : ""}`).join(", ")}
         </p>
       )}
       {expiring.length > 0 && (
         <p>
-          {/* sv-gap: icon-set-gaps */}
-          ⏳ {expiring.length} {expiring.length === 1 ? "lote vence" : "lotes vencem"} em até 30
+          <Icon name="pending" /> {expiring.length} {expiring.length === 1 ? "lote vence" : "lotes vencem"} em até 30
           dias:{" "}
           {expiring
             .map(

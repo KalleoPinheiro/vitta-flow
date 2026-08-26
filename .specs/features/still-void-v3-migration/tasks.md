@@ -1063,11 +1063,34 @@ comportamento (clique, href, contagem, data), só a string literal mudou.
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] "Versão verificada" = `@still-void/ui@3.1.0`
-- [ ] Nenhuma das 14 seções fechadas permanece
-- [ ] As 4 lacunas remanescentes reconferidas contra a export line da `3.1.0`
-- [ ] `dialog-close-label` e `icon-set-gaps` presentes e pareadas com o código
-- [ ] `npm run check:sv` sai 0, zero `sv-gap` órfão nos dois sentidos
+- [x] "Versão verificada" = `@still-void/ui@3.1.0`
+- [x] Nenhuma das 14 seções fechadas permanece
+- [x] As 4 lacunas remanescentes reconferidas contra a export line da `3.1.0`
+- [x] `dialog-close-label` e `icon-set-gaps` presentes e pareadas com o código
+- [x] `npm run check:sv` sai 0, zero `sv-gap` órfão nos dois sentidos
+
+**Nota de execução**: as 14 seções fechadas foram confirmadas uma a uma contra
+`dist/react/index.d.ts`/`dist/react/client/index.d.ts` da `3.1.0` (todas as 10
+symbol-based — `native-select`, `textarea`, `table`+família, `checkbox`,
+`radio-group`, `file-input`, `card-as-element` (`Card.as`), `button-accent-variant`
+(`Button` variant `"accent"`), `alert-dialog` — aparecem na export line; as 4
+restantes são defeitos verificados por leitura do artefato: `DialogContent` da
+`3.1.0` já seta `aria-modal="true"` internamente, `.sv-dialog` não tem mais
+`box-shadow`, `showCloseButton` (default `true`) empacota um botão de fechar
+próprio, e `.sv-badge--destructive` resolve para `var(--sv-danger)` — nenhum
+`bg-red-500` cru). SPEC_DEVIATION: `Where` desta task listava só
+`docs/still-void-gaps.md`, mas remover as seções `dialog-aria-modal`,
+`dialog-shadow` e `badge-hardcoded-red` órfãou os 3 marcadores `sv-gap:`
+correspondentes que ainda sobreviviam em `src/components/modal.tsx` (2) e
+`src/components/status-badge.tsx` (1) — a checagem #7 exige sincronia nos dois
+sentidos (Done-when explícito desta task e AC5 de SV3-10 em spec.md), então os 3
+comentários foram removidos e o JSDoc de cada arquivo corrigido para não
+descrever mais gaps já fechados pela lib. Nenhuma prop, className ou
+comportamento foi alterado — `aria-modal="true"`/`shadow-none` seguem em
+`modal.tsx` porque `tests/components/modal.test.tsx` os assere como contrato do
+app, e `StatusBadge` segue usando `CategoryPill` (preferência de controle de cor
+por status, não mais contorno de defeito). `npm test` (1807/1807) e
+`npm run check:sv` (0 achados) confirmam nenhuma regressão.
 
 **Tests**: none (documento; verificado pela checagem #7 do gate, já existente)
 **Gate**: build

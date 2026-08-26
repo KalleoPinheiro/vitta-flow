@@ -15,14 +15,17 @@ interface ModalProps {
  * focus trap, o Escape e a dismissão por clique fora — tudo que antes era feito
  * à mão aqui.
  *
- * Dois ajustes que a lib não cobre no padrão de uso do app:
+ * Um ajuste que a lib não cobre no padrão de uso do app:
  *
- * - `aria-modal="true"` é passado explicitamente. A Radix não define o atributo:
- *   ela marca os irmãos com `aria-hidden`, que é equivalente para leitor de tela,
- *   mas o contrato de acessibilidade do app pede o atributo.
  * - O foco volta ao gatilho por um efeito próprio. A Radix restaura o foco na
  *   transição `open → false`, e os call sites daqui desmontam o `<Modal>` direto
  *   (o pai zera o estado), então essa transição nunca acontece.
+ *
+ * `aria-modal="true"` e a ausência de sombra (`shadow-none`) já são nativos do
+ * `DialogContent` a partir da `3.1.0` (as antigas lacunas `dialog-aria-modal` e
+ * `dialog-shadow` foram fechadas — ver `docs/still-void-gaps.md`); mantidos
+ * aqui explícitos porque `tests/components/modal.test.tsx` já os asserte como
+ * contrato do app.
  *
  * O botão de fechar é do app, não do pacote: a partir da 3.0.0 o `DialogContent`
  * passa a empacotar um próprio, mas com nome acessível `"Close dialog"` fixo em
@@ -50,8 +53,6 @@ export function Modal({ title, onClose, children }: ModalProps) {
         }
       }}
     >
-      {/* sv-gap: dialog-aria-modal */}
-      {/* sv-gap: dialog-shadow */}
       <DialogContent
         aria-modal="true"
         showCloseButton={false}

@@ -4,7 +4,6 @@ import { useState } from "react";
 import type { PartnerDto, PatientDto } from "@/lib/dto";
 import { ErrorAlert } from "@/components/feedback";
 import { Button, Input, NativeSelect, Textarea } from "@still-void/ui/react";
-import { accentButton } from "@/lib/ui";
 
 export interface PatientFormValues {
   fullName: string;
@@ -126,7 +125,8 @@ export function PatientForm({ initial, partners, onSubmit }: PatientFormProps) {
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-2 ${accentButton}`}
+        variant="accent"
+        className="mt-2"
       >
         {saving ? "Salvando…" : "Salvar"}
       </Button>

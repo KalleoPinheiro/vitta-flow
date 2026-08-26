@@ -5,7 +5,6 @@ import { apiFetch } from "@/lib/client";
 import type { AnamnesisDto } from "@/lib/dto";
 import { ErrorAlert } from "@/components/feedback";
 import { Button, Textarea } from "@still-void/ui/react";
-import { accentButton } from "@/lib/ui";
 
 interface AnamnesisSectionProps {
   patientId: string;
@@ -71,7 +70,7 @@ export function AnamnesisSection({ patientId, anamnesis, onSaved }: AnamnesisSec
         <Button
           type="submit"
           disabled={saving}
-          className={accentButton}
+          variant="accent"
         >
           {saving ? "Salvando…" : "Salvar anamnese"}
         </Button>

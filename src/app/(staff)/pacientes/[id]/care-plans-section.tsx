@@ -23,8 +23,15 @@ import {
 import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert } from "@/components/feedback";
-import { Button, Input, NativeSelect, RadioGroup, RadioGroupItem, Textarea } from "@still-void/ui/react";
-import { accentButton } from "@/lib/ui";
+import {
+  Button,
+  Card,
+  Input,
+  NativeSelect,
+  RadioGroup,
+  RadioGroupItem,
+  Textarea,
+} from "@still-void/ui/react";
 
 interface CarePlansSectionProps {
   patientId: string;
@@ -46,7 +53,7 @@ export function CarePlansSection({ patientId, conditions, plans, onChanged }: Ca
         <Button
           type="button"
           onClick={() => setCreating(true)}
-          className={accentButton}
+          variant="accent"
         >
           + Novo plano
         </Button>
@@ -60,8 +67,7 @@ export function CarePlansSection({ patientId, conditions, plans, onChanged }: Ca
             const condition = conditions.find((item) => item.id === plan.conditionId);
             const isOpen = expanded === plan.id;
             return (
-              /* sv-gap: card-as-element */
-              <li key={plan.id} className="rounded-lg border border-sv-border bg-sv-surface p-4">
+              <Card as="li" key={plan.id} className="p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <span className="mr-2 font-medium">
@@ -90,7 +96,7 @@ export function CarePlansSection({ patientId, conditions, plans, onChanged }: Ca
                   </div>
                 </div>
                 {isOpen && <CarePlanPanel planId={plan.id} onChanged={onChanged} />}
-              </li>
+              </Card>
             );
           })}
         </ul>
@@ -163,7 +169,8 @@ function OpenCarePlanForm({
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-1 ${accentButton}`}
+        variant="accent"
+        className="mt-1"
       >
         {saving ? "Abrindo…" : "Abrir plano"}
       </Button>
@@ -671,7 +678,8 @@ function AddDiagnosisForm({ carePlanId, onSaved }: { carePlanId: string; onSaved
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-1 ${accentButton}`}
+        variant="accent"
+        className="mt-1"
       >
         {saving ? "Salvando…" : "Prescrever diagnóstico"}
       </Button>
@@ -783,7 +791,8 @@ function PrescribeOutcomeForm({
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-1 ${accentButton}`}
+        variant="accent"
+        className="mt-1"
       >
         {saving ? "Salvando…" : "Prescrever resultado"}
       </Button>
@@ -885,7 +894,8 @@ function PrescribeInterventionForm({
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-1 ${accentButton}`}
+        variant="accent"
+        className="mt-1"
       >
         {saving ? "Salvando…" : "Prescrever intervenção"}
       </Button>
@@ -936,7 +946,8 @@ function EvaluateOutcomeForm({ outcome, onSaved }: { outcome: CarePlanOutcomeDto
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-1 ${accentButton}`}
+        variant="accent"
+        className="mt-1"
       >
         {saving ? "Salvando…" : "Registrar avaliação"}
       </Button>

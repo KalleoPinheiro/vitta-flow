@@ -6,8 +6,7 @@ import type { EvolutionNoteDto, ProfessionalDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import { formatDateTime } from "@/lib/format";
 import { EmptyState, ErrorAlert } from "@/components/feedback";
-import { Button, NativeSelect, Textarea } from "@still-void/ui/react";
-import { accentButton } from "@/lib/ui";
+import { Button, Card, NativeSelect, Textarea } from "@still-void/ui/react";
 
 interface EvolutionsSectionProps {
   patientId: string;
@@ -65,7 +64,7 @@ export function EvolutionsSection({ patientId, evolutions, onSaved }: Evolutions
         <Button
           type="button"
           onClick={() => setShowForm((v) => !v)}
-          className={accentButton}
+          variant="accent"
         >
           {showForm ? "Fechar" : "+ Nova evolução"}
         </Button>
@@ -109,7 +108,8 @@ export function EvolutionsSection({ patientId, evolutions, onSaved }: Evolutions
           <Button
             type="submit"
             disabled={saving}
-            className={`self-start ${accentButton}`}
+            variant="accent"
+            className="self-start"
           >
             {saving ? "Registrando…" : "Registrar evolução"}
           </Button>
@@ -121,8 +121,7 @@ export function EvolutionsSection({ patientId, evolutions, onSaved }: Evolutions
       ) : (
         <ul className="flex flex-col gap-3">
           {evolutions.map((note) => (
-            /* sv-gap: card-as-element */
-            <li key={note.id} className="rounded-lg border border-sv-border bg-sv-surface p-4">
+            <Card as="li" key={note.id} className="p-4">
               <p className="mb-2 text-xs font-medium text-ink-3">
                 {formatDateTime(note.createdAt)}
                 {professionalName(note.professionalId) && (
@@ -141,7 +140,7 @@ export function EvolutionsSection({ patientId, evolutions, onSaved }: Evolutions
                   ) : null,
                 )}
               </dl>
-            </li>
+            </Card>
           ))}
         </ul>
       )}

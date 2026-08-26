@@ -829,8 +829,8 @@ como o "Done when" pede.
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] Zero `accentButton`/`sv-gap: card-as-element` nestes 4 arquivos
-- [ ] `tests/pages/staff-paciente-detail.test.tsx` e `tests/pages/staff-paciente-care-plans.test.tsx` passam
+- [x] Zero `accentButton`/`sv-gap: card-as-element` nestes 4 arquivos
+- [x] `tests/pages/staff-paciente-detail.test.tsx` e `tests/pages/staff-paciente-care-plans.test.tsx` passam
 
 **Tests**: unit — `staff-paciente-detail.test.tsx`, `staff-paciente-care-plans.test.tsx`
 **Gate**: quick

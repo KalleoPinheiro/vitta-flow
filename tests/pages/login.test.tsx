@@ -217,10 +217,16 @@ describe("Feature: Página de login", () => {
       render(<LoginPage />);
 
       const senha = await screen.findByLabelText("Senha");
-      // `bg-sv-surface` no campo e no botão é emitido pelos <Input>/<Button> do
-      // pacote, não pelo app.
-      expect(senha).toHaveClass("bg-sv-surface");
-      expect(screen.getByRole("button", { name: "Entrar" })).toHaveClass("bg-accent-ink");
+      // SPEC_DEVIATION: na 3.x o <Input> do pacote emite a classe semântica
+      // `sv-field` em vez do utilitário Tailwind `bg-sv-surface` da 2.x — mesma
+      // mudança de implementação do Dialog/Button/Alert (ver
+      // tests/components/modal.test.tsx), não listada nas 3 quebras do Problem
+      // Statement da spec. `sv-btn--accent` abaixo vem de `variant="accent"`
+      // (T34) — a receita local `accentButton` foi removida; a 3.x resolve a
+      // variante para a classe semântica em vez do utilitário Tailwind
+      // `bg-accent-ink` que a receita local emitia.
+      expect(senha).toHaveClass("sv-field");
+      expect(screen.getByRole("button", { name: "Entrar" })).toHaveClass("sv-btn--accent");
     });
   });
 });

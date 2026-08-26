@@ -19,9 +19,12 @@ describe("Feature: Componentes de feedback", () => {
     it("Dado ErrorAlert renderizado, Então o alerta vem do Alert do Still Void", () => {
       render(<ErrorAlert message="Falha ao salvar paciente" />);
 
-      // `bg-sv-surface` é emitido pelo <Alert> do pacote, não pelo app: é a
-      // prova de que o alerta é o componente da lib e não markup local.
-      expect(screen.getByRole("alert")).toHaveClass("bg-sv-surface");
+      // SPEC_DEVIATION: na 3.x o <Alert> do pacote emite a classe semântica
+      // `sv-alert` em vez do utilitário Tailwind `bg-sv-surface` da 2.x — mesma
+      // mudança de implementação do Dialog/Button (ver
+      // tests/components/modal.test.tsx), não listada nas 3 quebras do Problem
+      // Statement da spec. Prova de origem segue a classe real.
+      expect(screen.getByRole("alert")).toHaveClass("sv-alert");
     });
 
     it("Dado ErrorAlert renderizado, Então usa o token semântico de erro, não o accent do site", () => {

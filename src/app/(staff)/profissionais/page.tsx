@@ -7,8 +7,17 @@ import { useApiQuery } from "@/lib/use-api-query";
 import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
-import { Button, Card, Input } from "@still-void/ui/react";
-import { accentButton } from "@/lib/ui";
+import {
+  Button,
+  Card,
+  Input,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@still-void/ui/react";
 
 export default function ProfessionalsPage() {
   const { data: professionals, error, refresh } = useApiQuery<ProfessionalDto[]>(
@@ -37,7 +46,7 @@ export default function ProfessionalsPage() {
         <Button
           type="button"
           onClick={() => setEditing("new")}
-          className={accentButton}
+          variant="accent"
         >
           + Novo profissional
         </Button>
@@ -45,34 +54,33 @@ export default function ProfessionalsPage() {
 
       {(error || actionError) && <ErrorAlert message={actionError ?? error ?? ""} />}
 
-      <Card className="overflow-x-auto">
+      <Card>
         {!professionals ? (
           <LoadingIndicator />
         ) : professionals.length === 0 ? (
           <EmptyState message="Nenhum profissional cadastrado. Consultas e evoluções podem ser atribuídas após o cadastro." />
         ) : (
-          // sv-gap: table
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-border bg-bg text-xs uppercase text-ink-3">
-              <tr>
-                <th className="px-4 py-3">Nome</th>
-                <th className="px-4 py-3">Registro</th>
-                <th className="px-4 py-3">Situação</th>
-                <th className="px-4 py-3 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
+          <Table className="w-full text-left text-sm">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="px-4 py-3">Nome</TableHead>
+                <TableHead className="px-4 py-3">Registro</TableHead>
+                <TableHead className="px-4 py-3">Situação</TableHead>
+                <TableHead className="px-4 py-3 text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {professionals.map((professional) => (
-                <tr key={professional.id} className={professional.active ? "" : "opacity-50"}>
-                  <td className="px-4 py-3 font-medium">{professional.fullName}</td>
-                  <td className="px-4 py-3 text-ink-2">{professional.registry ?? "—"}</td>
-                  <td className="px-4 py-3">
+                <TableRow key={professional.id} className={professional.active ? "" : "opacity-50"}>
+                  <TableCell className="px-4 py-3 font-medium">{professional.fullName}</TableCell>
+                  <TableCell className="px-4 py-3 text-ink-2">{professional.registry ?? "—"}</TableCell>
+                  <TableCell className="px-4 py-3">
                     <StatusBadge
                       status={professional.active ? "confirmed" : "cancelled"}
                       label={professional.active ? "Ativo" : "Inativo"}
                     />
-                  </td>
-                  <td className="px-4 py-3 text-right">
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-right">
                     <Button
                       type="button"
                       onClick={() => setEditing(professional)}
@@ -89,11 +97,11 @@ export default function ProfessionalsPage() {
                     >
                       {professional.active ? "Desativar" : "Reativar"}
                     </Button>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
       </Card>
 
@@ -173,7 +181,8 @@ function ProfessionalForm({
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-1 ${accentButton}`}
+        variant="accent"
+        className="mt-1"
       >
         {saving ? "Salvando…" : "Salvar"}
       </Button>

@@ -106,15 +106,44 @@
 - **Date**: 2026-08-24
 - **Status**: active
 
+### AD-014
+- **Decision**: A adoção do `@still-void/ui` no VittaFlow é **port, não redesign**: quando uma release da lib passa a exportar um primitivo, o workaround local correspondente é trocado por ele; adotar um padrão de UI que o app ainda não tem (Tabs, Tooltip, DropdownMenu, AlertDialog, Badge, ThemeToggle, Prose) é feature nova e fica fora da migração.
+- **Reason**: decisão do usuário em 2026-08-25, ao especificar a 2.0.1 → 3.1.0. Sem essa fronteira, "usar o máximo dos recursos da lib" vira redesenho de navegação e interação embutido numa migração de dependência — e o diff deixa de ser revisável contra um baseline de comportamento.
+- **Trade-off**: recursos reais da lib (`fieldMessage` + `aria-invalid`, `Badge`, família `AlertDialog`) ficam sem adoção mesmo existindo necessidade latente; viram backlog próprio em vez de carona na migração.
+- **Scope**: src/**, docs/still-void-gaps.md, migrações do design system
+- **Date**: 2026-08-25
+- **Status**: active
+
+### AD-015
+- **Decision**: O `Modal` do app mantém o próprio botão de fechar (`aria-label="Fechar"`) e passa `showCloseButton={false}` ao `DialogContent` da `3.x`.
+- **Reason**: o botão que a `3.0.0` passou a renderizar por padrão tem nome acessível `"Close dialog"` **hardcoded** — verificado em `dist/react/client/index.js`; `DialogContentProps` expõe só `showCloseButton`, nenhuma prop de rótulo. Numa interface pt-BR isso é regressão de acessibilidade, e o contrato do app já é asserido por `tests/components/modal.test.tsx`.
+- **Trade-off**: a lacuna `dialog-close-button` continua tecnicamente fechada pela lib, mas o app não a consome; a dívida migra para uma lacuna nova, `dialog-close-label`, que é pedido de i18n na lib.
+- **Scope**: src/components/modal.tsx, docs/still-void-gaps.md
+- **Date**: 2026-08-25
+- **Status**: active
+
 ## Handoff
 
-- **Feature**: ruido-scanners-seguranca — **concluída e mergeada** (PR #10, squash `fcd6110`)
-- **Phase / Task**: —
-- **Completed**: confronto reproduzível do scan `cmt60oz29012twtz1z1duza2q`; `new RegExp` eliminado dos specs E2E via tagged template `rx`; 7 fixtures marcadas com `gitleaks:allow`; AD-008 corrigido; AD-011/012/013 registrados; procedimento de varredura do README corrigido após revisão do CodeRabbit e executado verbatim
+- **Feature**: still-void-v3-migration — **concluída e verificada**. 39 tasks (T1-T39) + ciclo fix→re-verify do Verifier independente (2 iterações) fechados. PASS.
+- **Phase / Task**: Execute + Validate completos. Nada em aberto.
+- **Completed**: F1 base (T1-T5) · F2 piloto conditions-section.tsx (T6) · F3 campos de texto (T7-T13) · F4 escolha/arquivo (T14-T18) · F5 tabelas (T19-T26) · F6 botões/superfícies + apaga `src/lib/ui.ts` (T27-T36) · F7 ícones (T37) · F8 lacunas + fechamento (T38-T39) · **Verificação**: iteração 1 (author≠verifier) achou 3 gaps Major de cobertura de teste — RadioGroup só 1/3 grupos testado e mutante estrutural sobrevivia, override neutro de impressão sem proteção nenhuma, `Header` do portal sem nenhum teste; 5 fixes aplicados (`d1792ac`, `bcb2b41`, `26568ec`, `d6a076e`, `7a3e385`); iteração 2 confirmou os 3 gaps fechados por repetição da mutação que sobrevivera — **PASS, 21/21 requisitos**. Relatório completo em `.specs/features/still-void-v3-migration/validation.md`. Requirement Traceability de `spec.md`: os 21 requisitos `SV3-01`..`SV3-21` marcados `Implemented`/`Verified`.
+- **Achado da verificação (não é bug desta migração)**: `src/app/portal/layout.tsx` nunca passou a prop `items` ao `Header` — nem antes nem depois da migração (confirmado por histórico git). O AC4 de SV3-03 descrevia navegação que nunca existiu nessa tela; o teste novo (`tests/components/portal-layout.test.tsx`) protege o que é real (logo, ação de logout) em vez de simular nav inexistente. Registrado como lição candidata L-021.
+- **Gate final** (branch `claude/pos-merge-ajustes-5a46b5`, commit `f8b8fa1`):
+
+  | Comando | Resultado |
+  |---|---|
+  | `npm run typecheck` | 0 erros |
+  | `npm run build` | 0 erros |
+  | `npm test` | 1815/1815 passaram |
+  | Cobertura | ≥ 90% em lines/statements/functions/branches |
+  | `npm run test:e2e` | 64/64 |
+  | `npm run check:sv` | 0 achados nas 13 checagens (a #13, override neutro de impressão, nasceu do fix da verificação) |
+  | `src/lib/ui.ts` | não existe mais |
+
 - **In-progress** (file:line): —
-- **Next step**: nenhum trabalho em curso. Ao rodar o próximo scan GitGuard, comparar com o baseline abaixo antes de agir (AD-013)
+- **Next step**: nenhum. Feature pronta para revisão/merge — 51 commits (`c30c632`..`f8b8fa1`) na branch atual, nenhum push feito ainda.
 - **Blockers**: none
-- **Branch**: main @ `fcd6110`
+- **Branch**: `claude/pos-merge-ajustes-5a46b5` (worktree `tlc-spec-driven-audit-5a46b5`)
 
 ### Baseline de segurança medido em `fcd6110`
 

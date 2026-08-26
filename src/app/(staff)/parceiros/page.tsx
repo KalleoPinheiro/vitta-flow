@@ -7,8 +7,17 @@ import { useApiQuery } from "@/lib/use-api-query";
 import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
-import { Button, Card, Input } from "@still-void/ui/react";
-import { accentButton } from "@/lib/ui";
+import {
+  Button,
+  Card,
+  Input,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@still-void/ui/react";
 
 export default function PartnersPage() {
   const { data: partners, error, refresh } = useApiQuery<PartnerDto[]>("/api/partners");
@@ -35,7 +44,7 @@ export default function PartnersPage() {
         <Button
           type="button"
           onClick={() => setEditing("new")}
-          className={accentButton}
+          variant="accent"
         >
           + Novo parceiro
         </Button>
@@ -47,41 +56,40 @@ export default function PartnersPage() {
 
       {(error ?? actionError) && <ErrorAlert message={(actionError ?? error) as string} />}
 
-      <Card className="overflow-x-auto">
+      <Card>
         {!partners ? (
           <LoadingIndicator />
         ) : partners.length === 0 ? (
           <EmptyState message="Nenhum parceiro cadastrado." />
         ) : (
-          // sv-gap: table
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-border bg-bg text-xs uppercase text-ink-3">
-              <tr>
-                <th className="px-4 py-3">Nome</th>
-                <th className="px-4 py-3">Contato</th>
-                <th className="px-4 py-3">CRM</th>
-                <th className="px-4 py-3">Especialidade</th>
-                <th className="px-4 py-3">Situação</th>
-                <th className="px-4 py-3 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
+          <Table className="w-full text-left text-sm">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="px-4 py-3">Nome</TableHead>
+                <TableHead className="px-4 py-3">Contato</TableHead>
+                <TableHead className="px-4 py-3">CRM</TableHead>
+                <TableHead className="px-4 py-3">Especialidade</TableHead>
+                <TableHead className="px-4 py-3">Situação</TableHead>
+                <TableHead className="px-4 py-3 text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {partners.map((partner) => (
-                <tr key={partner.id} className={partner.active ? "" : "opacity-50"}>
-                  <td className="px-4 py-3 font-medium">{partner.fullName}</td>
-                  <td className="px-4 py-3 text-ink-2">
+                <TableRow key={partner.id} className={partner.active ? "" : "opacity-50"}>
+                  <TableCell className="px-4 py-3 font-medium">{partner.fullName}</TableCell>
+                  <TableCell className="px-4 py-3 text-ink-2">
                     <div>{partner.email}</div>
                     <div className="text-xs text-ink-3">{partner.phone}</div>
-                  </td>
-                  <td className="px-4 py-3 text-ink-2">{partner.crm ?? "—"}</td>
-                  <td className="px-4 py-3 text-ink-2">{partner.specialty ?? "—"}</td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-ink-2">{partner.crm ?? "—"}</TableCell>
+                  <TableCell className="px-4 py-3 text-ink-2">{partner.specialty ?? "—"}</TableCell>
+                  <TableCell className="px-4 py-3">
                     <StatusBadge
                       status={partner.active ? "confirmed" : "cancelled"}
                       label={partner.active ? "Ativo" : "Inativo"}
                     />
-                  </td>
-                  <td className="px-4 py-3 text-right">
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-right">
                     <Button
                       type="button"
                       onClick={() => setEditing(partner)}
@@ -98,11 +106,11 @@ export default function PartnersPage() {
                     >
                       {partner.active ? "Desativar" : "Reativar"}
                     </Button>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
       </Card>
 
@@ -212,7 +220,8 @@ function PartnerForm({ initial, onSaved }: { initial?: PartnerDto; onSaved: () =
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-1 ${accentButton}`}
+        variant="accent"
+        className="mt-1"
       >
         {saving ? "Salvando…" : "Salvar"}
       </Button>

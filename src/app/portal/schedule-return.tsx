@@ -5,8 +5,7 @@ import { apiFetch } from "@/lib/client";
 import { useApiQuery } from "@/lib/use-api-query";
 import type { ProcedureDto } from "@/lib/dto";
 import { formatTime } from "@/lib/format";
-import { Button, Card, CardContent, Input } from "@still-void/ui/react";
-import { accentButton, nativeField } from "@/lib/ui";
+import { Button, Card, CardContent, Input, NativeSelect } from "@still-void/ui/react";
 import { ErrorAlert } from "@/components/feedback";
 
 interface AvailableSlotDto {
@@ -41,7 +40,8 @@ export function ScheduleReturn({ followUpId, onScheduled }: ScheduleReturnProps)
         type="button"
         size="sm"
         onClick={() => setOpen(true)}
-        className={`mt-2 ${accentButton}`}
+        variant="accent"
+        className="mt-2"
       >
         Agendar retorno
       </Button>
@@ -97,12 +97,11 @@ function SchedulePanel({
       <div className="grid gap-2 sm:grid-cols-2">
         <label className="text-xs font-medium">
           Procedimento
-          {/* sv-gap: native-select */}
-          <select
+          <NativeSelect
             value={procedureId}
             disabled={saving}
             onChange={(e) => setProcedureId(e.target.value)}
-            className={`mt-1 ${nativeField} py-1.5 text-xs`}
+            className="mt-1 py-1.5 text-xs"
           >
             <option value="">Selecione…</option>
             {(procedures ?? []).map((procedure) => (
@@ -110,7 +109,7 @@ function SchedulePanel({
                 {procedure.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <label className="text-xs font-medium">
           Dia

@@ -20,6 +20,31 @@
 # Um workaround que precisa sobreviver é marcado no código com
 # `// sv-gap: <slug>` na linha imediatamente acima, e o mesmo <slug> ganha uma
 # seção em docs/still-void-gaps.md. A checagem [7] mantém os dois em sincronia.
+#
+# Baseline pré-migração v3 (commit 2e57a4d, antes da Fase 3 ligar as checagens
+# de campo — T13 ativa [8]/[9] depois de T6-T12 portarem os call sites para
+# NativeSelect/Textarea):
+#   [8] <select> cru ...................... 23
+#   [9] <textarea> cru ....................  7
+#
+# Baseline pré-migração v3 antes da Fase 4 (T18 ativa [10] depois de T14-T17
+# portarem os call sites para RadioGroup/Checkbox/FileInput):
+#   [10] <input type="file|checkbox|radio"> cru — file 2 / checkbox 1 / radio 3
+#
+# Baseline pré-migração v3 antes da Fase 5 (T26 ativa [11] depois de T19-T25
+# portarem os call sites para a família Table):
+#   [11] <table> cru .....................  14
+#
+# Baseline pré-migração v3 antes da Fase 6 (T36 ativa [12] depois de T27-T35
+# portarem os call sites para Button variant="accent"/Card as e apagarem
+# src/lib/ui.ts):
+#   [12] accentButton / nativeField / src/lib/ui.ts — 59 / 45 / 1
+#
+# Fix 2 do ciclo de verificação (.specs/features/still-void-v3-migration/validation.md):
+# o Verifier removeu `text-black` de uma <Table>/<TableHead> de impressão em
+# src/app/documentos/** e nada no gate (nem teste, nem check estático) detectou —
+# [13] fecha essa lacuna.
+#   [13] <Table>/<TableHead> sem text-black em src/app/documentos/** — 0 (protegido desde a origem)
 
 set -uo pipefail
 cd "$(dirname "$0")/.."
@@ -123,6 +148,86 @@ if [ -f "$GAPS_DOC" ]; then
 else
   printf '· [sv-gap órfão] pulado — %s ainda não existe\n' "$GAPS_DOC"
 fi
+
+# --- [8] <select> cru ---------------------------------------------------------
+# Mesma guarda de linha-comentário e isenção por `sv-gap:` das checagens [2]/[3].
+hits=$(tsx_files | while read -r f; do
+  awk -v F="$f" '
+    /^[[:space:]]*(\*|\/\/|\{\/\*|\/\*)/ { prev = $0; next }
+    /<select/ && prev !~ /sv-gap:/ { printf "%s:%d: %s\n", F, NR, $0 }
+    { prev = $0 }
+  ' "$f"
+done)
+report "<select> cru" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
+
+# --- [9] <textarea> cru ---------------------------------------------------------
+hits=$(tsx_files | while read -r f; do
+  awk -v F="$f" '
+    /^[[:space:]]*(\*|\/\/|\{\/\*|\/\*)/ { prev = $0; next }
+    /<textarea/ && prev !~ /sv-gap:/ { printf "%s:%d: %s\n", F, NR, $0 }
+    { prev = $0 }
+  ' "$f"
+done)
+report "<textarea> cru" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
+
+# --- [10] <input type="file|checkbox|radio"> cru -----------------------------
+# Mesma guarda de linha-comentário e isenção por `sv-gap:` das checagens
+# [2]/[3]/[8]/[9]. Estes 3 tipos eram excluídos da checagem [3] ("<input>
+# textual cru") por serem lacuna conhecida da lib antes da Fase 4 — agora que
+# Checkbox/RadioGroup/FileInput existem, ganham checagem própria.
+hits=$(tsx_files | while read -r f; do
+  awk -v F="$f" '
+    /^[[:space:]]*(\*|\/\/|\{\/\*|\/\*)/ { prev = $0; next }
+    /<input/ && $0 ~ /type="(checkbox|radio|file)"/ && prev !~ /sv-gap:/ { printf "%s:%d: %s\n", F, NR, $0 }
+    { prev = $0 }
+  ' "$f"
+done)
+report "<input type=\"file|checkbox|radio\"> cru" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
+
+# --- [11] <table> cru ---------------------------------------------------------
+# Mesma guarda de linha-comentário e isenção por `sv-gap:` das checagens
+# [2]/[3]/[8]/[9]/[10].
+hits=$(tsx_files | while read -r f; do
+  awk -v F="$f" '
+    /^[[:space:]]*(\*|\/\/|\{\/\*|\/\*)/ { prev = $0; next }
+    /<table/ && prev !~ /sv-gap:/ { printf "%s:%d: %s\n", F, NR, $0 }
+    { prev = $0 }
+  ' "$f"
+done)
+report "<table> cru" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
+
+# --- [12] accentButton/nativeField cru + existência de src/lib/ui.ts --------
+# Mesma guarda de linha-comentário e isenção por `sv-gap:` das checagens
+# [2]/[3]/[8]-[11]: uma menção em prosa (JSDoc, comentário) não conta como call
+# site. T35 apaga src/lib/ui.ts por inteiro — nenhuma referência real a
+# accentButton/nativeField deveria sobreviver, e o próprio arquivo não deveria
+# mais existir.
+hits=$(tsx_files | while read -r f; do
+  awk -v F="$f" '
+    /^[[:space:]]*(\*|\/\/|\{\/\*|\/\*)/ { prev = $0; next }
+    /accentButton|nativeField/ && prev !~ /sv-gap:/ { printf "%s:%d: %s\n", F, NR, $0 }
+    { prev = $0 }
+  ' "$f"
+done)
+if [ -f "$SRC/lib/ui.ts" ]; then
+  hits=$(printf '%s\n%s:1: arquivo não deveria mais existir (accentButton/nativeField removidos em T35)' "$hits" "$SRC/lib/ui.ts")
+fi
+report "accentButton/nativeField/src/lib/ui.ts" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
+
+# --- [13] override neutro de impressão (text-black) ausente em tabela de documentos --
+# As páginas de impressão em $SRC/app/documentos/** têm um SPEC_DEVIATION
+# documentado ao lado de cada tabela: `text-black` literal (em vez de token
+# --sv-*) para a folha continuar em preto-sobre-branco numa impressora P&B. Sem
+# ele, a cor do tema (que pode não ser preta) vaza para o PDF/impressão. Exige
+# `text-black` na mesma linha de abertura de `<Table ...>`/`<TableHead ...>`
+# (mesmo padrão de tag JSX de uma linha usado nessas páginas).
+hits=$(find "$SRC/app/documentos" -name '*.tsx' 2>/dev/null | sort | while read -r f; do
+  awk -v F="$f" '
+    /<Table[[:space:]>]/ && $0 !~ /text-black/ { printf "%s:%d: %s\n", F, NR, $0 }
+    /<TableHead[[:space:]>]/ && $0 !~ /text-black/ { printf "%s:%d: %s\n", F, NR, $0 }
+  ' "$f"
+done)
+report "override text-black ausente em tabela de documentos" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
 
 printf '\n'
 if [ "$findings" -gt 0 ]; then

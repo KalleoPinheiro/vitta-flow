@@ -25,8 +25,14 @@ interface StatusBadgeProps {
 /**
  * Selo de status como pílula do design system: ponto colorido + label, nunca
  * emoji (regra de fidelidade do Still Void).
+ *
+ * Usa `CategoryPill` com cor por token, não `Badge` — decisão original da
+ * migração v2, quando `Badge variant="destructive"` usava um degrau cru do
+ * Tailwind hardcoded (lacuna `badge-hardcoded-red`, fechada na `3.1.0`: hoje
+ * `sv-badge--destructive` resolve para `var(--sv-danger)`). `CategoryPill`
+ * segue sendo a escolha certa aqui por dar controle direto de cor por status,
+ * não por contornar mais nenhum defeito da lib.
  */
-// sv-gap: badge-hardcoded-red
 export function StatusBadge({ status, label }: StatusBadgeProps) {
   return <CategoryPill label={label} color={COLOR_BY_STATUS[status] ?? FALLBACK_COLOR} />;
 }

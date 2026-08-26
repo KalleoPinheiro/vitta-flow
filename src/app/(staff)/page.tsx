@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Button, Card, Hero } from "@still-void/ui/react";
+import { Button, Card, Hero, Icon } from "@still-void/ui/react";
 import type { AppointmentDto, FollowUpDto, SupplyDto } from "@/lib/dto";
 import type { BillingSummary } from "@/application/billing/get-billing-summary";
 import { apiFetch } from "@/lib/client";
@@ -67,7 +67,7 @@ export default function DashboardPage() {
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold">Consultas de hoje</h2>
             <Link href="/agenda" className="text-sm font-medium text-accent-ink hover:underline">
-              Ver agenda completa →
+              Ver agenda completa <Icon name="chevron-right" />
             </Link>
           </div>
           {summary.today.length === 0 ? (
@@ -119,7 +119,11 @@ export default function DashboardPage() {
                         followUp.isOverdue ? "text-danger" : "text-ink-3"
                       }`}
                     >
-                      {followUp.isOverdue ? "⚠ Atrasado — " : ""}
+                      {followUp.isOverdue ? (
+                        <>
+                          <Icon name="alert-triangle" /> Atrasado —{" "}
+                        </>
+                      ) : null}
                       {formatDate(followUp.dueDate)}
                     </span>
                     <Link
@@ -154,7 +158,7 @@ export default function DashboardPage() {
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold">Estoque baixo</h2>
               <Link href="/materiais" className="text-sm font-medium text-accent-ink hover:underline">
-                Ver materiais →
+                Ver materiais <Icon name="chevron-right" />
               </Link>
             </div>
             {lowStock.length === 0 ? (
@@ -215,6 +219,7 @@ function TriageQueue() {
   return (
     <Card className="mb-6 border-accent bg-accent-soft p-4">
       <h3 className="mb-2 text-sm font-bold text-accent-ink">
+        {/* sv-gap: icon-set-gaps */}
         📷 Fotos de pacientes aguardando triagem ({queue.length})
       </h3>
       {error && <ErrorAlert message={error} />}

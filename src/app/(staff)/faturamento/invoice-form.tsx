@@ -3,8 +3,7 @@
 import { useState } from "react";
 import type { PatientDto } from "@/lib/dto";
 import { ErrorAlert } from "@/components/feedback";
-import { Button, Input } from "@still-void/ui/react";
-import { accentButton, nativeField } from "@/lib/ui";
+import { Button, Input, NativeSelect } from "@still-void/ui/react";
 
 export interface InvoiceFormValues {
   patientId: string;
@@ -46,12 +45,11 @@ export function InvoiceForm({ patients, onSubmit }: InvoiceFormProps) {
       {error && <ErrorAlert message={error} />}
       <label className="text-sm font-medium">
         Paciente *
-        {/* sv-gap: native-select */}
-        <select
+        <NativeSelect
           required
           value={values.patientId}
           onChange={(e) => setValues((prev) => ({ ...prev, patientId: e.target.value }))}
-          className={`mt-1 ${nativeField}`}
+          className="mt-1"
         >
           <option value="">Selecione…</option>
           {patients.map((patient) => (
@@ -59,7 +57,7 @@ export function InvoiceForm({ patients, onSubmit }: InvoiceFormProps) {
               {patient.fullName}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
       <label className="text-sm font-medium">
         Descrição *
@@ -97,7 +95,8 @@ export function InvoiceForm({ patients, onSubmit }: InvoiceFormProps) {
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-2 ${accentButton}`}
+        variant="accent"
+        className="mt-2"
       >
         {saving ? "Emitindo…" : "Emitir fatura"}
       </Button>

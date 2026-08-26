@@ -166,7 +166,7 @@ describe("Feature: Página do portal", () => {
       expect(
         await screen.findByText((_, el) => el?.textContent === "Você está logado como equipe da clínica (ana@clinica.com)."),
       ).toBeInTheDocument();
-      const link = screen.getByText("Ir para o sistema da clínica →");
+      const link = screen.getByText("Ir para o sistema da clínica");
       expect(link.closest("a")).toHaveAttribute("href", "/");
     });
 
@@ -179,10 +179,14 @@ describe("Feature: Página do portal", () => {
       ]);
 
       const { container } = render(<PortalPage />);
-      await screen.findByText("Ir para o sistema da clínica →");
+      await screen.findByText("Ir para o sistema da clínica");
 
-      // `bg-sv-surface` é emitido pelo <Card> do pacote, não pelo app.
-      expect(container.querySelector(".bg-sv-surface")).toBeInTheDocument();
+      // SPEC_DEVIATION: na 3.x o <Card> do pacote emite a classe semântica
+      // `sv-card` em vez do utilitário Tailwind `bg-sv-surface` da 2.x — mesma
+      // mudança de implementação do Dialog/Button/Alert/Input (ver
+      // tests/components/modal.test.tsx), não listada nas 3 quebras do Problem
+      // Statement da spec.
+      expect(container.querySelector(".sv-card")).toBeInTheDocument();
     });
   });
 
@@ -528,7 +532,7 @@ describe("Feature: Visão do paciente no portal", () => {
 
       await screen.findByText("Ferida perna E");
       expect(screen.getByText("Estomia resolvida")).toBeInTheDocument();
-      expect(screen.getAllByText("Enviar foto")).toHaveLength(1);
+      expect(screen.getAllByLabelText("Enviar foto")).toHaveLength(1);
       expect(screen.getByText("Em acompanhamento")).toBeInTheDocument();
       expect(screen.getByText("Resolvida")).toBeInTheDocument();
     });
@@ -572,7 +576,7 @@ describe("Feature: Visão do paciente no portal", () => {
       fireEvent.click(screen.getByText("Li e aceito o termo"));
 
       expect(
-        await screen.findByText(`✓ Termo de consentimento aceito em ${formatDateTime("2026-02-01T09:00:00.000Z")}.`),
+        await screen.findByText(`Termo de consentimento aceito em ${formatDateTime("2026-02-01T09:00:00.000Z")}.`),
       ).toBeInTheDocument();
       expect(
         screen.getByPlaceholderText("Observação (opcional): dor, vazamento, vermelhidão…"),
@@ -646,7 +650,7 @@ describe("Feature: Visão do paciente no portal", () => {
       expect(
         screen.queryByText("Aceite o termo de consentimento acima para enviar fotos à equipe."),
       ).not.toBeInTheDocument();
-      expect(screen.getByText("Enviar foto")).toBeInTheDocument();
+      expect(screen.getByLabelText("Enviar foto")).toBeInTheDocument();
     });
   });
 
@@ -834,7 +838,7 @@ describe("Feature: Cartão de consentimento", () => {
       );
 
       expect(
-        screen.getByText(`✓ Termo de consentimento aceito em ${formatDateTime("2026-01-10T14:30:00.000Z")}.`),
+        screen.getByText(`Termo de consentimento aceito em ${formatDateTime("2026-01-10T14:30:00.000Z")}.`),
       ).toBeInTheDocument();
     });
   });
@@ -915,7 +919,16 @@ describe("Feature: Envio de foto pelo paciente", () => {
         target: { value: "Está coçando" },
       });
       const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      expect(input).toHaveAttribute("accept", "image/jpeg,image/png,image/webp");
+      expect(input).not.toBeDisabled();
+
       fireEvent.change(input, { target: { files: [makeFile()] } });
+
+      // Desabilita durante o envio (disabled={sending}) e reseta o value logo
+      // após disparar o upload (e.target.value = ""), evitando reenvio do
+      // mesmo arquivo se o usuário selecionar de novo.
+      expect(input).toBeDisabled();
+      expect(input.value).toBe("");
 
       await waitFor(() => {
         expect(onSent).toHaveBeenCalledTimes(1);
@@ -924,6 +937,7 @@ describe("Feature: Envio de foto pelo paciente", () => {
       expect(receivedBody).not.toBeNull();
       expect((receivedBody as unknown as FormData).get("conditionId")).toBe("cond-1");
       expect((receivedBody as unknown as FormData).get("note")).toBe("Está coçando");
+      await waitFor(() => expect(input).not.toBeDisabled());
     });
   });
 

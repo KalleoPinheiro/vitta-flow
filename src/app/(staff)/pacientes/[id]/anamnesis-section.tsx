@@ -4,8 +4,7 @@ import { useState } from "react";
 import { apiFetch } from "@/lib/client";
 import type { AnamnesisDto } from "@/lib/dto";
 import { ErrorAlert } from "@/components/feedback";
-import { Button } from "@still-void/ui/react";
-import { accentButton, nativeField } from "@/lib/ui";
+import { Button, Textarea } from "@still-void/ui/react";
 
 interface AnamnesisSectionProps {
   patientId: string;
@@ -58,13 +57,12 @@ export function AnamnesisSection({ patientId, anamnesis, onSaved }: AnamnesisSec
       {FIELDS.map((field) => (
         <label key={field.key} className="text-sm font-medium">
           {field.label}
-          {/* sv-gap: textarea */}
-          <textarea
+          <Textarea
             rows={2}
             value={values[field.key]}
             placeholder={field.placeholder}
             onChange={(e) => setValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
-            className={`${nativeField} mt-1 w-full`}
+            className="mt-1 w-full"
           />
         </label>
       ))}
@@ -72,7 +70,7 @@ export function AnamnesisSection({ patientId, anamnesis, onSaved }: AnamnesisSec
         <Button
           type="submit"
           disabled={saving}
-          className={accentButton}
+          variant="accent"
         >
           {saving ? "Salvando…" : "Salvar anamnese"}
         </Button>

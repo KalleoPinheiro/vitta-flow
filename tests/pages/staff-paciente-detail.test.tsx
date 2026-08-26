@@ -1110,7 +1110,16 @@ describe("Feature: PatientRecordPage", () => {
 
       const file = new File(["conteudo"], "foto.png", { type: "image/png" });
       const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      expect(input).toHaveAttribute("accept", "image/jpeg,image/png,image/webp");
+      expect(input).not.toBeDisabled();
+
       fireEvent.change(input, { target: { files: [file] } });
+
+      // Desabilita durante o envio (disabled={uploading}) e reseta o value
+      // logo após disparar o upload (e.target.value = ""), evitando reenvio
+      // do mesmo arquivo se o usuário selecionar de novo.
+      expect(input).toBeDisabled();
+      expect(input.value).toBe("");
 
       await waitFor(() => {
         expect(fetchMock).toHaveBeenCalledWith(
@@ -1118,6 +1127,7 @@ describe("Feature: PatientRecordPage", () => {
           expect.objectContaining({ method: "POST" }),
         );
       });
+      await waitFor(() => expect(input).not.toBeDisabled());
     });
 
     it("Dado arquivo maior que 5MB, Quando selecionado, Então exibe erro de validação local sem chamar a API", async () => {

@@ -184,7 +184,7 @@ describe("Feature: Materiais e estoque", () => {
       render(<SuppliesPage />);
 
       expect(
-        await screen.findByText("⚠ 1 insumo está com estoque baixo (≤ mínimo)."),
+        await screen.findByText("1 insumo está com estoque baixo (≤ mínimo)."),
       ).toBeInTheDocument();
       expect(screen.getByText("Estoque baixo")).toBeInTheDocument();
     });
@@ -209,7 +209,7 @@ describe("Feature: Materiais e estoque", () => {
       render(<SuppliesPage />);
 
       expect(
-        await screen.findByText("⚠ 2 insumos estão com estoque baixo (≤ mínimo)."),
+        await screen.findByText("2 insumos estão com estoque baixo (≤ mínimo)."),
       ).toBeInTheDocument();
     });
 

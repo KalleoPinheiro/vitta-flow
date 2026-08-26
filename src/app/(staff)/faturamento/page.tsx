@@ -17,8 +17,18 @@ import { ErrorAlert } from "@/components/feedback";
 import { LoadMoreButton } from "@/components/load-more-button";
 import { PagedList } from "@/components/paged-list";
 import { InvoiceForm, type InvoiceFormValues } from "./invoice-form";
-import { Button, Card, Input } from "@still-void/ui/react";
-import { accentButton, nativeField } from "@/lib/ui";
+import {
+  Button,
+  Card,
+  Input,
+  NativeSelect,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@still-void/ui/react";
 
 const STATUS_FILTERS = [
   { value: "", label: "Todas" },
@@ -37,42 +47,41 @@ interface InvoicesTableProps {
 
 function InvoicesTable({ invoices, onPay, onCancel }: InvoicesTableProps) {
   return (
-    // sv-gap: table
-    <table className="w-full text-left text-sm">
-      <thead className="border-b border-border bg-bg text-xs uppercase text-ink-3">
-        <tr>
-          <th className="px-4 py-3">Emissão</th>
-          <th className="px-4 py-3">Paciente</th>
-          <th className="px-4 py-3">Descrição</th>
-          <th className="px-4 py-3">Valor</th>
-          <th className="px-4 py-3">Status</th>
-          <th className="px-4 py-3">Pagamento</th>
-          <th className="px-4 py-3 text-right">Ações</th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-border">
+    <Table className="w-full text-left text-sm">
+      <TableHeader>
+        <TableRow>
+          <TableHead className="px-4 py-3">Emissão</TableHead>
+          <TableHead className="px-4 py-3">Paciente</TableHead>
+          <TableHead className="px-4 py-3">Descrição</TableHead>
+          <TableHead className="px-4 py-3">Valor</TableHead>
+          <TableHead className="px-4 py-3">Status</TableHead>
+          <TableHead className="px-4 py-3">Pagamento</TableHead>
+          <TableHead className="px-4 py-3 text-right">Ações</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {invoices.map((invoice) => (
-          <tr key={invoice.id}>
-            <td className="px-4 py-3 text-ink-2">{formatDate(invoice.issuedAt)}</td>
-            <td className="px-4 py-3 font-medium">{invoice.patientName}</td>
-            <td className="max-w-56 truncate px-4 py-3 text-ink-2">
+          <TableRow key={invoice.id}>
+            <TableCell className="px-4 py-3 text-ink-2">{formatDate(invoice.issuedAt)}</TableCell>
+            <TableCell className="px-4 py-3 font-medium">{invoice.patientName}</TableCell>
+            <TableCell className="max-w-56 truncate px-4 py-3 text-ink-2">
               {invoice.description}
-            </td>
-            <td className="px-4 py-3 font-medium">{formatCurrency(invoice.amountCents)}</td>
-            <td className="px-4 py-3">
+            </TableCell>
+            <TableCell className="px-4 py-3 font-medium">{formatCurrency(invoice.amountCents)}</TableCell>
+            <TableCell className="px-4 py-3">
               <StatusBadge
                 status={invoice.status}
                 label={INVOICE_STATUS_LABELS[invoice.status] ?? invoice.status}
               />
-            </td>
-            <td className="px-4 py-3 text-ink-2">
+            </TableCell>
+            <TableCell className="px-4 py-3 text-ink-2">
               {invoice.paymentMethod
                 ? `${PAYMENT_METHOD_LABELS[invoice.paymentMethod] ?? invoice.paymentMethod}${
                     invoice.paidAt ? ` em ${formatDate(invoice.paidAt)}` : ""
                   }`
                 : "—"}
-            </td>
-            <td className="px-4 py-3 text-right">
+            </TableCell>
+            <TableCell className="px-4 py-3 text-right">
               {invoice.status === "pending" && (
                 <>
                   <Button
@@ -93,11 +102,11 @@ function InvoicesTable({ invoices, onPay, onCancel }: InvoicesTableProps) {
                   </Button>
                 </>
               )}
-            </td>
-          </tr>
+            </TableCell>
+          </TableRow>
         ))}
-      </tbody>
-    </table>
+      </TableBody>
+    </Table>
   );
 }
 
@@ -187,7 +196,7 @@ export default function BillingPage() {
           <Button
             type="button"
             onClick={() => setCreating(true)}
-            className={accentButton}
+            variant="accent"
           >
             + Nova fatura
           </Button>
@@ -224,7 +233,7 @@ export default function BillingPage() {
         ))}
       </div>
 
-      <Card className="overflow-x-auto">
+      <Card>
         <PagedList
           items={invoices}
           emptyMessage="Nenhuma fatura encontrada."
@@ -348,27 +357,25 @@ function PackageForm({
       {error && <ErrorAlert message={error} />}
       <label className="text-sm font-medium">
         Paciente *
-        {/* sv-gap: native-select */}
-        <select required value={patientId} onChange={(e) => setPatientId(e.target.value)} className={`mt-1 ${nativeField}`}>
+        <NativeSelect required value={patientId} onChange={(e) => setPatientId(e.target.value)} className="mt-1">
           <option value="">Selecione…</option>
           {patients.map((patient) => (
             <option key={patient.id} value={patient.id}>
               {patient.fullName}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
       <label className="text-sm font-medium">
         Procedimento *
-        {/* sv-gap: native-select */}
-        <select required value={procedureId} onChange={(e) => setProcedureId(e.target.value)} className={`mt-1 ${nativeField}`}>
+        <NativeSelect required value={procedureId} onChange={(e) => setProcedureId(e.target.value)} className="mt-1">
           <option value="">Selecione…</option>
           {activeProcedures.map((procedure) => (
             <option key={procedure.id} value={procedure.id}>
               {procedure.name}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         {activeProcedures.length === 0 && (
           <span className="mt-1 block text-xs font-normal text-warning">
             Cadastre procedimentos no catálogo para vender pacotes.
@@ -400,7 +407,8 @@ function PackageForm({
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-1 ${accentButton}`}
+        variant="accent"
+        className="mt-1"
       >
         {saving ? "Vendendo…" : "Vender pacote"}
       </Button>

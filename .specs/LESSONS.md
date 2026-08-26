@@ -108,6 +108,42 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: AC-004.1 (docs,README)
 - last seen: 2026-08-24T19:16:17Z
 
+### L-017 — For every P1 acceptance criterion covering a shared layout component (Header, nav, layout wrapper), add an explicit test asserting that behavior directly — do not assume other pages that import the layout give it implicit coverage.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `testing` · harmful: 0
+- features: still-void-v3-migration
+- evidence: spec.md SV3-03 P1 AC4 / src/app/portal/layout.tsx:8-18 (testing)
+- last seen: 2026-08-26T01:21:24Z
+
+### L-018 — When a library derives a shared DOM attribute (e.g. radio name) from React.Children.map over direct children, assert that attribute directly on the rendered element in addition to app-level controlled-state behavior, since state-driven exclusivity tests can pass even when the library's direct-child contract is silently broken.
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `still-void-ui` · harmful: 0
+- features: still-void-v3-migration
+- evidence: care-plans-section.tsx:638-649 mutation #1 (RadioGroupItem nested in wrapper div) (still-void-ui)
+- last seen: 2026-08-26T01:21:24Z
+
+### L-019 — Print/document pages that apply a neutral color override for print output need their own test or static check asserting the override classes are present, because routes with zero test/e2e coverage let color-override regressions ship silently.
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `documentos` · harmful: 0
+- features: still-void-v3-migration
+- evidence: src/app/documentos/plano-cuidados/[carePlanId]/page.tsx:92 mutation #2 (removed text-black override) (documentos)
+- last seen: 2026-08-26T01:21:24Z
+
+### L-020 — When a spec requires zero elements with a given accessible name, assert via queryByRole/queryByLabelText (accessible name), not queryByText (text content), since the two diverge once markup changes even when equivalent today.
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `testing` · harmful: 0
+- features: still-void-v3-migration
+- evidence: spec.md SV3-02 AC2 / tests/components/modal.test.tsx:46 (testing)
+- last seen: 2026-08-26T01:21:24Z
+
+### L-021 — Before accepting a spec AC as describing a migration regression, confirm the described pre-migration behavior actually existed in the code/history — a spec can assert a behavior (e.g. nav items) that never existed in the app, making the AC itself imprecise rather than the implementation regressed
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `specs` · harmful: 0
+- features: still-void-v3-migration
+- evidence: spec.md SV3-03 AC4 vs src/app/portal/layout.tsx history (commits 161f074, f14dec5, untouched by c30c632..7a3e385) (specs)
+- last seen: 2026-08-26T02:04:06Z
+
+### L-022 — In jsdom, a file input's .value getter reads as empty string regardless of whether code resets it after upload, so expect(input.value).toBe('') never discriminates a missing reset — assert the reset via a change handler spy or accept the behavior as untestable in jsdom and document it
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `testing` · harmful: 0
+- features: still-void-v3-migration
+- evidence: consent-card.tsx:162 mutation (removed e.target.value = "") — tests/pages/portal.test.tsx:930 expect(input.value).toBe("") still passed (testing)
+- last seen: 2026-08-26T02:04:06Z
+
 ## Quarantined (failed when applied — ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

@@ -9,8 +9,7 @@ import { ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import { CalendarGrid } from "./calendar-grid";
 import { AppointmentForm, type AppointmentFormValues } from "./appointment-form";
 import { AppointmentDetail } from "./appointment-detail";
-import { Button } from "@still-void/ui/react";
-import { accentButton, nativeField } from "@/lib/ui";
+import { Button, Icon, NativeSelect } from "@still-void/ui/react";
 
 function ProfessionalFilter({
   professionals,
@@ -25,19 +24,14 @@ function ProfessionalFilter({
     return null;
   }
   return (
-    // sv-gap: native-select
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className={nativeField}
-    >
+    <NativeSelect value={value} onChange={(e) => onChange(e.target.value)}>
       <option value="">Todos os profissionais</option>
       {professionals.map((professional) => (
         <option key={professional.id} value={professional.id}>
           {professional.fullName}
         </option>
       ))}
-    </select>
+    </NativeSelect>
   );
 }
 
@@ -185,7 +179,7 @@ export default function AgendaPage() {
         <Button
           type="button"
           onClick={() => setCreatingFor(new Date())}
-          className={accentButton}
+          variant="accent"
         >
           + Nova consulta
         </Button>
@@ -201,7 +195,7 @@ export default function AgendaPage() {
           variant="outline"
           className="hover:bg-surface-2"
         >
-          ←
+          <Icon name="chevron-left" />
         </Button>
         <span className="min-w-48 text-center text-lg font-semibold capitalize">
           {monthLabel(monthDate)}
@@ -213,7 +207,7 @@ export default function AgendaPage() {
           variant="outline"
           className="hover:bg-surface-2"
         >
-          →
+          <Icon name="chevron-right" />
         </Button>
         <ProfessionalFilter
           professionals={professionals ?? []}

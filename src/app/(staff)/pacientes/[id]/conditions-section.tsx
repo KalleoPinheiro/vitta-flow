@@ -15,8 +15,19 @@ import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert } from "@/components/feedback";
 import { HealingChart } from "@/components/healing-chart";
 import { ConditionPhotos } from "./condition-photos";
-import { Button, Input } from "@still-void/ui/react";
-import { accentButton, nativeField } from "@/lib/ui";
+import {
+  Button,
+  Card,
+  Input,
+  NativeSelect,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Textarea,
+} from "@still-void/ui/react";
 
 interface ConditionsSectionProps {
   patientId: string;
@@ -66,7 +77,7 @@ export function ConditionsSection({ patientId, conditions, onChanged }: Conditio
         <Button
           type="button"
           onClick={() => setCreating(true)}
-          className={accentButton}
+          variant="accent"
         >
           + Nova condição
         </Button>
@@ -80,11 +91,7 @@ export function ConditionsSection({ patientId, conditions, onChanged }: Conditio
             const conditionAssessments = assessments[condition.id] ?? [];
             const isOpen = expanded === condition.id;
             return (
-              /* sv-gap: card-as-element */
-              <li
-                key={condition.id}
-                className="rounded-lg border border-sv-border bg-sv-surface p-4"
-              >
+              <Card as="li" key={condition.id} className="p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <span className="mr-2 font-medium">{condition.title}</span>
@@ -149,50 +156,49 @@ export function ConditionsSection({ patientId, conditions, onChanged }: Conditio
                         <div className="mb-3">
                           <HealingChart assessments={conditionAssessments} />
                         </div>
-                        {/* sv-gap: table */}
-                        <table className="w-full text-left text-xs">
-                          <thead className="text-ink-3">
-                            <tr>
-                              <th className="py-1 pr-3">Data</th>
-                              <th className="py-1 pr-3">C×L×P (mm)</th>
-                              <th className="py-1 pr-3">Área (mm²)</th>
-                              <th className="py-1 pr-3">Tecido</th>
-                              <th className="py-1 pr-3">Exsudato</th>
-                              <th className="py-1 pr-3">Dor</th>
-                              <th className="py-1 pr-3">PUSH/DET</th>
-                              <th className="py-1 pr-3">Pele periestomal</th>
-                              <th className="py-1">Complicações</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-border">
+                        <Table className="text-left text-xs">
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="py-1 pr-3">Data</TableHead>
+                              <TableHead className="py-1 pr-3">C×L×P (mm)</TableHead>
+                              <TableHead className="py-1 pr-3">Área (mm²)</TableHead>
+                              <TableHead className="py-1 pr-3">Tecido</TableHead>
+                              <TableHead className="py-1 pr-3">Exsudato</TableHead>
+                              <TableHead className="py-1 pr-3">Dor</TableHead>
+                              <TableHead className="py-1 pr-3">PUSH/DET</TableHead>
+                              <TableHead className="py-1 pr-3">Pele periestomal</TableHead>
+                              <TableHead className="py-1">Complicações</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
                             {conditionAssessments.map((a) => (
-                              <tr key={a.id}>
-                                <td className="py-1.5 pr-3">{formatDateTime(a.createdAt)}</td>
-                                <td className="py-1.5 pr-3">
+                              <TableRow key={a.id}>
+                                <TableCell className="py-1.5 pr-3">{formatDateTime(a.createdAt)}</TableCell>
+                                <TableCell className="py-1.5 pr-3">
                                   {a.lengthMm != null
                                     ? `${a.lengthMm}×${a.widthMm ?? "—"}×${a.depthMm ?? "—"}`
                                     : "—"}
-                                </td>
-                                <td className="py-1.5 pr-3">{a.areaMm2 ?? "—"}</td>
-                                <td className="py-1.5 pr-3">{a.tissueType ?? "—"}</td>
-                                <td className="py-1.5 pr-3">
+                                </TableCell>
+                                <TableCell className="py-1.5 pr-3">{a.areaMm2 ?? "—"}</TableCell>
+                                <TableCell className="py-1.5 pr-3">{a.tissueType ?? "—"}</TableCell>
+                                <TableCell className="py-1.5 pr-3">
                                   {a.exudate ? EXUDATE_LABELS[a.exudate] : "—"}
-                                </td>
-                                <td className="py-1.5 pr-3">
+                                </TableCell>
+                                <TableCell className="py-1.5 pr-3">
                                   {a.painScale != null ? `${a.painScale}/10` : "—"}
-                                </td>
-                                <td className="py-1.5 pr-3 font-medium">{scoreLabel(a)}</td>
-                                <td className="py-1.5 pr-3">{a.skinCondition ?? "—"}</td>
-                                <td className="py-1.5">{a.complications ?? "—"}</td>
-                              </tr>
+                                </TableCell>
+                                <TableCell className="py-1.5 pr-3 font-medium">{scoreLabel(a)}</TableCell>
+                                <TableCell className="py-1.5 pr-3">{a.skinCondition ?? "—"}</TableCell>
+                                <TableCell className="py-1.5">{a.complications ?? "—"}</TableCell>
+                              </TableRow>
                             ))}
-                          </tbody>
-                        </table>
+                          </TableBody>
+                        </Table>
                       </div>
                     )}
                   </div>
                 )}
-              </li>
+              </Card>
             );
           })}
         </ul>
@@ -263,31 +269,29 @@ function ConditionForm({ patientId, onSaved }: { patientId: string; onSaved: () 
       {error && <ErrorAlert message={error} />}
       <label className="text-sm font-medium">
         Tipo *
-        {/* sv-gap: native-select */}
-        <select
+        <NativeSelect
           value={kind}
           onChange={(e) => setKind(e.target.value as "stoma" | "wound")}
-          className={`mt-1 ${nativeField}`}
+          className="mt-1"
         >
           <option value="stoma">Estomia</option>
           <option value="wound">Ferida</option>
-        </select>
+        </NativeSelect>
       </label>
       {kind === "stoma" && (
         <label className="text-sm font-medium">
           Tipo de estomia *
-          {/* sv-gap: native-select */}
-          <select
+          <NativeSelect
             value={stomaType}
             onChange={(e) => setStomaType(e.target.value)}
-            className={`mt-1 ${nativeField}`}
+            className="mt-1"
           >
             {Object.entries(STOMA_TYPE_LABELS).map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
       )}
       <label className="text-sm font-medium">
@@ -311,13 +315,13 @@ function ConditionForm({ patientId, onSaved }: { patientId: string; onSaved: () 
       </label>
       <label className="text-sm font-medium">
         Observações
-        {/* sv-gap: textarea */}
-        <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className={`mt-1 ${nativeField}`} />
+        <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className="mt-1" />
       </label>
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-1 ${accentButton}`}
+        variant="accent"
+        className="mt-1"
       >
         {saving ? "Salvando…" : "Criar condição"}
       </Button>
@@ -459,8 +463,7 @@ function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSav
           <div className="grid grid-cols-2 gap-3">
             <label className="text-sm font-medium">
               Tecido predominante
-              {/* sv-gap: native-select */}
-              <select value={values.tissueType} onChange={(e) => set("tissueType")(e.target.value)} className={`mt-1 ${nativeField}`}>
+              <NativeSelect value={values.tissueType} onChange={(e) => set("tissueType")(e.target.value)} className="mt-1">
                 <option value="">—</option>
                 {/* Valores canônicos do PUSH 3.0 — texto livre legado permanece no histórico. */}
                 <option value="closed">Fechado (0)</option>
@@ -468,19 +471,18 @@ function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSav
                 <option value="granulation">Granulação (2)</option>
                 <option value="slough">Esfacelo (3)</option>
                 <option value="necrotic">Necrose (4)</option>
-              </select>
+              </NativeSelect>
             </label>
             <label className="text-sm font-medium">
               Exsudato
-              {/* sv-gap: native-select */}
-              <select value={values.exudate} onChange={(e) => set("exudate")(e.target.value)} className={`mt-1 ${nativeField}`}>
+              <NativeSelect value={values.exudate} onChange={(e) => set("exudate")(e.target.value)} className="mt-1">
                 <option value="">—</option>
                 {Object.entries(EXUDATE_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>
                     {label}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
           </div>
         </>
@@ -561,13 +563,13 @@ function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSav
       </label>
       <label className="text-sm font-medium">
         Observações
-        {/* sv-gap: textarea */}
-        <textarea rows={2} value={values.notes} onChange={(e) => set("notes")(e.target.value)} className={`mt-1 ${nativeField}`} />
+        <Textarea rows={2} value={values.notes} onChange={(e) => set("notes")(e.target.value)} className="mt-1" />
       </label>
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-1 ${accentButton}`}
+        variant="accent"
+        className="mt-1"
       >
         {saving ? "Registrando…" : "Registrar avaliação"}
       </Button>

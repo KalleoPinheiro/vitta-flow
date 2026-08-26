@@ -5,7 +5,7 @@ import { apiFetch } from "@/lib/client";
 import type { ConditionPhotoDto } from "@/lib/dto";
 import { formatDate } from "@/lib/format";
 import { ErrorAlert } from "@/components/feedback";
-import { Button } from "@still-void/ui/react";
+import { Button, FileInput } from "@still-void/ui/react";
 
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
@@ -90,21 +90,15 @@ export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps
       <div className="mb-2 flex items-center justify-between">
         <h4 className="text-xs font-semibold uppercase text-ink-3">Fotos de evolução</h4>
         {canUpload && (
-          <label className="cursor-pointer text-xs font-medium text-accent-ink hover:underline">
-            {uploading ? "Enviando…" : "+ Adicionar foto"}
-            {/* sv-gap: file-input */}
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="hidden"
-              disabled={uploading}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) void upload(file);
-                e.target.value = "";
-              }}
-            />
-          </label>
+          <FileInput
+            accept="image/jpeg,image/png,image/webp"
+            disabled={uploading}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void upload(file);
+              e.target.value = "";
+            }}
+          />
         )}
       </div>
 

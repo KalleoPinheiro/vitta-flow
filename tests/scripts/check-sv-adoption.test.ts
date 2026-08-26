@@ -139,15 +139,213 @@ describe("Feature: Gate de adoção do Still Void", () => {
       expect(result.output).toContain("mau.tsx");
     });
 
-    it("Dado <input> de tipo file, checkbox ou radio, Então não é reportado (lacuna conhecida da lib)", () => {
+    it("Dado <input> de tipo file, checkbox ou radio, Então não é contado pela checagem <input> textual cru (é escopo da checagem [10])", () => {
       for (const type of ["file", "checkbox", "radio"]) {
         writeFileSync(join(src, "mau.tsx"), `export const X = () => <input type="${type}" />;\n`);
 
         const result = runGate(src, gapsDoc);
 
-        expect(result.status, `type=${type}`).toBe(0);
-        expect(result.output).toContain("✓ [<input> textual cru]");
+        expect(result.output, `type=${type}`).toContain("✓ [<input> textual cru]");
       }
+    });
+
+    it("Dado <select> cru sem marcação sv-gap, Então reporta e sai com 1", () => {
+      writeFileSync(
+        join(src, "mau.tsx"),
+        'export const X = () => <select value="a" onChange={() => {}}><option value="a">a</option></select>;\n',
+      );
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.status).toBe(1);
+      expect(result.output).toContain("✗ [<select> cru] 1 achado(s)");
+      expect(result.output).toContain("mau.tsx");
+    });
+
+    it("Dado <select> cru COM marcação sv-gap, Então não reporta (workaround declarado)", () => {
+      writeFileSync(
+        join(src, "marcado.tsx"),
+        "export const X = () => (\n  // sv-gap: native-select\n  <select value=\"a\" onChange={() => {}}><option value=\"a\">a</option></select>\n);\n",
+      );
+      writeFileSync(gapsDoc, "# Lacunas\n\n### `native-select`\n\ntexto\n");
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.output).toContain("✓ [<select> cru]");
+    });
+
+    it("Dado <textarea> cru sem marcação sv-gap, Então reporta e sai com 1", () => {
+      writeFileSync(join(src, "mau.tsx"), 'export const X = () => <textarea rows={2} />;\n');
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.status).toBe(1);
+      expect(result.output).toContain("✗ [<textarea> cru] 1 achado(s)");
+      expect(result.output).toContain("mau.tsx");
+    });
+
+    it("Dado <textarea> cru COM marcação sv-gap, Então não reporta (workaround declarado)", () => {
+      writeFileSync(
+        join(src, "marcado.tsx"),
+        "export const X = () => (\n  // sv-gap: textarea\n  <textarea rows={2} />\n);\n",
+      );
+      writeFileSync(gapsDoc, "# Lacunas\n\n### `textarea`\n\ntexto\n");
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.output).toContain("✓ [<textarea> cru]");
+    });
+
+    it('Dado <input type="file|checkbox|radio"> cru sem marcação sv-gap, Então reporta e sai com 1', () => {
+      for (const type of ["file", "checkbox", "radio"]) {
+        writeFileSync(join(src, "mau.tsx"), `export const X = () => <input type="${type}" />;\n`);
+
+        const result = runGate(src, gapsDoc);
+
+        expect(result.status, `type=${type}`).toBe(1);
+        expect(result.output).toContain('✗ [<input type="file|checkbox|radio"> cru] 1 achado(s)');
+        expect(result.output).toContain("mau.tsx");
+      }
+    });
+
+    it('Dado <input type="file"> cru COM marcação sv-gap, Então não reporta (workaround declarado)', () => {
+      writeFileSync(
+        join(src, "marcado.tsx"),
+        'export const X = () => (\n  // sv-gap: upload-legado\n  <input type="file" />\n);\n',
+      );
+      writeFileSync(gapsDoc, "# Lacunas\n\n### `upload-legado`\n\ntexto\n");
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.output).toContain('✓ [<input type="file|checkbox|radio"> cru]');
+    });
+
+    it("Dado <table> cru sem marcação sv-gap, Então reporta e sai com 1", () => {
+      writeFileSync(
+        join(src, "mau.tsx"),
+        "export const X = () => (\n  <table>\n    <tbody>\n      <tr>\n        <td>a</td>\n      </tr>\n    </tbody>\n  </table>\n);\n",
+      );
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.status).toBe(1);
+      expect(result.output).toContain("✗ [<table> cru] 1 achado(s)");
+      expect(result.output).toContain("mau.tsx");
+    });
+
+    it("Dado <table> cru COM marcação sv-gap, Então não reporta (workaround declarado)", () => {
+      writeFileSync(
+        join(src, "marcado.tsx"),
+        "export const X = () => (\n  // sv-gap: table-legado\n  <table>\n    <tbody>\n      <tr>\n        <td>a</td>\n      </tr>\n    </tbody>\n  </table>\n);\n",
+      );
+      writeFileSync(gapsDoc, "# Lacunas\n\n### `table-legado`\n\ntexto\n");
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.output).toContain("✓ [<table> cru]");
+    });
+
+    it("Dado accentButton cru sem marcação sv-gap, Então reporta e sai com 1", () => {
+      writeFileSync(
+        join(src, "mau.tsx"),
+        'import { accentButton } from "@/lib/ui";\nexport const X = () => <button type="button" className={accentButton}>x</button>;\n',
+      );
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.status).toBe(1);
+      expect(result.output).toContain("✗ [accentButton/nativeField/src/lib/ui.ts]");
+      expect(result.output).toContain("mau.tsx");
+    });
+
+    it("Dado nativeField cru sem marcação sv-gap, Então reporta e sai com 1", () => {
+      writeFileSync(
+        join(src, "mau.tsx"),
+        'import { nativeField } from "@/lib/ui";\nexport const X = () => <select className={nativeField} />;\n',
+      );
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.status).toBe(1);
+      expect(result.output).toContain("✗ [accentButton/nativeField/src/lib/ui.ts]");
+      expect(result.output).toContain("mau.tsx");
+    });
+
+    it("Dado accentButton cru COM marcação sv-gap, Então não reporta (workaround declarado)", () => {
+      writeFileSync(
+        join(src, "marcado.tsx"),
+        "export const X = () => (\n  // sv-gap: accent-legado\n  <button type=\"button\" className={accentButton}>x</button>\n);\n",
+      );
+      writeFileSync(gapsDoc, "# Lacunas\n\n### `accent-legado`\n\ntexto\n");
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.output).toContain("✓ [accentButton/nativeField/src/lib/ui.ts]");
+    });
+
+    it("Dado src/lib/ui.ts existente, Então reporta e sai com 1 mesmo sem accentButton/nativeField no resto do código", () => {
+      mkdirSync(join(src, "lib"), { recursive: true });
+      writeFileSync(join(src, "lib", "ui.ts"), "export const somethingElse = 1;\n");
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.status).toBe(1);
+      expect(result.output).toContain("✗ [accentButton/nativeField/src/lib/ui.ts]");
+      expect(result.output).toContain("arquivo não deveria mais existir");
+    });
+
+    it("Dado nem accentButton/nativeField nem src/lib/ui.ts, Então não reporta", () => {
+      const result = runGate(src, gapsDoc);
+
+      expect(result.output).toContain("✓ [accentButton/nativeField/src/lib/ui.ts]");
+    });
+
+    it("Dado <Table> sem text-black em src/app/documentos/**, Então reporta e sai com 1", () => {
+      mkdirSync(join(src, "app", "documentos", "plano-cuidados"), { recursive: true });
+      writeFileSync(
+        join(src, "app", "documentos", "plano-cuidados", "mau.tsx"),
+        'export const X = () => <Table className="w-full border-collapse text-xs">conteúdo</Table>;\n',
+      );
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.status).toBe(1);
+      expect(result.output).toContain("✗ [override text-black ausente em tabela de documentos] 1 achado(s)");
+      expect(result.output).toContain("mau.tsx");
+    });
+
+    it("Dado <TableHead> sem text-black em src/app/documentos/**, Então reporta e sai com 1", () => {
+      mkdirSync(join(src, "app", "documentos", "relatorio"), { recursive: true });
+      writeFileSync(
+        join(src, "app", "documentos", "relatorio", "mau.tsx"),
+        'export const X = () => <TableHead className="py-1 pr-2">Data</TableHead>;\n',
+      );
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.status).toBe(1);
+      expect(result.output).toContain("✗ [override text-black ausente em tabela de documentos] 1 achado(s)");
+      expect(result.output).toContain("mau.tsx");
+    });
+
+    it("Dado <Table>/<TableHead> COM text-black em src/app/documentos/**, Então não reporta (caso limpo, espelha as páginas reais)", () => {
+      mkdirSync(join(src, "app", "documentos", "plano-cuidados"), { recursive: true });
+      writeFileSync(
+        join(src, "app", "documentos", "plano-cuidados", "ok.tsx"),
+        'export const X = () => (\n  <Table className="w-full border-collapse text-xs text-black">\n    <TableHead className="py-1 pr-2 text-black">Data</TableHead>\n  </Table>\n);\n',
+      );
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.output).toContain("✓ [override text-black ausente em tabela de documentos]");
+    });
+
+    it("Dado <Table> sem text-black FORA de src/app/documentos/**, Então não reporta (fora do escopo do override de impressão)", () => {
+      writeFileSync(join(src, "mau.tsx"), 'export const X = () => <Table className="w-full">conteúdo</Table>;\n');
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.output).toContain("✓ [override text-black ausente em tabela de documentos]");
     });
 
     it("Dado utilitário de paleta fora da ponte de tokens, Então reporta e sai com 1", () => {

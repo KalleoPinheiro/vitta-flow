@@ -12,8 +12,17 @@ import { ErrorAlert } from "@/components/feedback";
 import { LoadMoreButton } from "@/components/load-more-button";
 import { PagedList } from "@/components/paged-list";
 import { PatientForm, type PatientFormValues } from "./patient-form";
-import { Button, Card, Input } from "@still-void/ui/react";
-import { accentButton } from "@/lib/ui";
+import {
+  Button,
+  Card,
+  Input,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@still-void/ui/react";
 
 const PAGE_SIZE = 100;
 
@@ -27,35 +36,34 @@ interface PatientsTableProps {
 
 function PatientsTable({ patients, onEdit, onToggleActive }: PatientsTableProps) {
   return (
-    // sv-gap: table
-    <table className="w-full text-left text-sm">
-      <thead className="border-b border-border bg-bg text-xs uppercase text-ink-3">
-        <tr>
-          <th className="px-4 py-3">Nome</th>
-          <th className="px-4 py-3">Contato</th>
-          <th className="px-4 py-3">Nascimento</th>
-          <th className="px-4 py-3">Situação</th>
-          <th className="px-4 py-3 text-right">Ações</th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-border">
+    <Table className="w-full text-left text-sm">
+      <TableHeader>
+        <TableRow>
+          <TableHead className="px-4 py-3">Nome</TableHead>
+          <TableHead className="px-4 py-3">Contato</TableHead>
+          <TableHead className="px-4 py-3">Nascimento</TableHead>
+          <TableHead className="px-4 py-3">Situação</TableHead>
+          <TableHead className="px-4 py-3 text-right">Ações</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {patients.map((patient) => (
-          <tr key={patient.id} className={patient.active ? "" : "opacity-50"}>
-            <td className="px-4 py-3 font-medium">{patient.fullName}</td>
-            <td className="px-4 py-3 text-ink-2">
+          <TableRow key={patient.id} className={patient.active ? "" : "opacity-50"}>
+            <TableCell className="px-4 py-3 font-medium">{patient.fullName}</TableCell>
+            <TableCell className="px-4 py-3 text-ink-2">
               <div>{patient.email}</div>
               <div className="text-xs text-ink-3">{patient.phone}</div>
-            </td>
-            <td className="px-4 py-3 text-ink-2">
+            </TableCell>
+            <TableCell className="px-4 py-3 text-ink-2">
               {patient.birthDate ? formatDate(patient.birthDate) : "—"}
-            </td>
-            <td className="px-4 py-3">
+            </TableCell>
+            <TableCell className="px-4 py-3">
               <StatusBadge
                 status={patient.active ? "confirmed" : "cancelled"}
                 label={patient.active ? "Ativo" : "Inativo"}
               />
-            </td>
-            <td className="px-4 py-3 text-right">
+            </TableCell>
+            <TableCell className="px-4 py-3 text-right">
               <a
                 href={`/pacientes/${patient.id}`}
                 className="mr-2 font-medium text-accent-ink hover:underline"
@@ -78,11 +86,11 @@ function PatientsTable({ patients, onEdit, onToggleActive }: PatientsTableProps)
               >
                 {patient.active ? "Desativar" : "Reativar"}
               </Button>
-            </td>
-          </tr>
+            </TableCell>
+          </TableRow>
         ))}
-      </tbody>
-    </table>
+      </TableBody>
+    </Table>
   );
 }
 
@@ -154,7 +162,7 @@ export default function PatientsPage() {
         <Button
           type="button"
           onClick={() => setEditing("new")}
-          className={accentButton}
+          variant="accent"
         >
           + Novo paciente
         </Button>
@@ -170,7 +178,7 @@ export default function PatientsPage() {
         className="mb-4 w-full"
       />
 
-      <Card className="overflow-x-auto">
+      <Card>
         <PagedList
           items={patients}
           emptyMessage="Nenhum paciente encontrado."

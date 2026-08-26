@@ -8,8 +8,20 @@ import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
-import { Button, Card, Input } from "@still-void/ui/react";
-import { accentButton, nativeField } from "@/lib/ui";
+import {
+  Button,
+  Card,
+  Checkbox,
+  Icon,
+  Input,
+  NativeSelect,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@still-void/ui/react";
 
 interface SupplyInsightDto {
   supplyId: string;
@@ -49,7 +61,7 @@ export default function SuppliesPage() {
         <Button
           type="button"
           onClick={() => setEditing("new")}
-          className={accentButton}
+          variant="accent"
         >
           + Novo insumo
         </Button>
@@ -122,7 +134,8 @@ function LowStockBanner({ supplies }: { supplies: SupplyDto[] | null }) {
   }
   return (
     <div className="mb-4 rounded-lg border border-warning bg-warning-soft px-4 py-3 text-sm text-warning">
-      ⚠ {count} {count === 1 ? "insumo está" : "insumos estão"} com estoque baixo (≤ mínimo).
+      <Icon name="alert-triangle" /> {count}{" "}
+      {count === 1 ? "insumo está" : "insumos estão"} com estoque baixo (≤ mínimo).
     </div>
   );
 }
@@ -137,12 +150,14 @@ function ExpiryBanner({ batches }: { batches: ExpiringBatchDto[] }) {
     <div className="mb-4 rounded-lg border border-danger bg-danger-soft px-4 py-3 text-sm text-danger">
       {expired.length > 0 && (
         <p>
+          {/* sv-gap: icon-set-gaps */}
           ⛔ {expired.length} {expired.length === 1 ? "lote vencido" : "lotes vencidos"} com saldo:{" "}
           {expired.map((b) => `${b.supplyName}${b.label ? ` (${b.label})` : ""}`).join(", ")}
         </p>
       )}
       {expiring.length > 0 && (
         <p>
+          {/* sv-gap: icon-set-gaps */}
           ⏳ {expiring.length} {expiring.length === 1 ? "lote vence" : "lotes vencem"} em até 30
           dias:{" "}
           {expiring
@@ -168,26 +183,25 @@ interface SuppliesTableProps {
 function SuppliesTable({ supplies, insights, onMove, onHistory, onEdit }: SuppliesTableProps) {
   const insightBySupply = new Map(insights.map((i) => [i.supplyId, i]));
   return (
-    <Card className="overflow-x-auto">
+    <Card>
       {!supplies ? (
         <LoadingIndicator />
       ) : supplies.length === 0 ? (
         <EmptyState message="Nenhum insumo cadastrado." />
       ) : (
-        // sv-gap: table
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-border bg-bg text-xs uppercase text-ink-3">
-            <tr>
-              <th className="px-4 py-3">Insumo</th>
-              <th className="px-4 py-3">Estoque</th>
-              <th className="px-4 py-3">Mínimo</th>
-              <th className="px-4 py-3">Previsão</th>
-              <th className="px-4 py-3">Preço</th>
-              <th className="px-4 py-3">Situação</th>
-              <th className="px-4 py-3 text-right">Ações</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
+        <Table className="w-full text-left text-sm">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="px-4 py-3">Insumo</TableHead>
+              <TableHead className="px-4 py-3">Estoque</TableHead>
+              <TableHead className="px-4 py-3">Mínimo</TableHead>
+              <TableHead className="px-4 py-3">Previsão</TableHead>
+              <TableHead className="px-4 py-3">Preço</TableHead>
+              <TableHead className="px-4 py-3">Situação</TableHead>
+              <TableHead className="px-4 py-3 text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {supplies.map((supply) => (
               <SupplyRow
                 key={supply.id}
@@ -198,8 +212,8 @@ function SuppliesTable({ supplies, insights, onMove, onHistory, onEdit }: Suppli
                 onEdit={() => onEdit(supply)}
               />
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       )}
     </Card>
   );
@@ -228,28 +242,28 @@ function StockoutForecast({ insight }: { insight?: SupplyInsightDto }) {
 
 function SupplyRow({ supply, insight, onMove, onHistory, onEdit }: SupplyRowProps) {
   return (
-    <tr className={supply.active ? "" : "opacity-50"}>
-      <td className="px-4 py-3 font-medium">{supply.name}</td>
-      <td className="px-4 py-3">
+    <TableRow className={supply.active ? "" : "opacity-50"}>
+      <TableCell className="px-4 py-3 font-medium">{supply.name}</TableCell>
+      <TableCell className="px-4 py-3">
         {supply.stockQty} {supply.unit}
         {supply.active && supply.isLowStock && (
           <span className="ml-2">
             <StatusBadge status="pending" label="Estoque baixo" />
           </span>
         )}
-      </td>
-      <td className="px-4 py-3 text-ink-2">{supply.minQty}</td>
-      <td className="px-4 py-3">
+      </TableCell>
+      <TableCell className="px-4 py-3 text-ink-2">{supply.minQty}</TableCell>
+      <TableCell className="px-4 py-3">
         <StockoutForecast insight={insight} />
-      </td>
-      <td className="px-4 py-3">{formatCurrency(supply.priceCents)}</td>
-      <td className="px-4 py-3">
+      </TableCell>
+      <TableCell className="px-4 py-3">{formatCurrency(supply.priceCents)}</TableCell>
+      <TableCell className="px-4 py-3">
         <StatusBadge
           status={supply.active ? "confirmed" : "cancelled"}
           label={supply.active ? "Ativo" : "Inativo"}
         />
-      </td>
-      <td className="px-4 py-3 text-right text-sm">
+      </TableCell>
+      <TableCell className="px-4 py-3 text-right text-sm">
         <Button type="button" onClick={onMove}
           variant="link"
           className="h-auto p-0 mr-2 text-success"
@@ -268,8 +282,8 @@ function SupplyRow({ supply, insight, onMove, onHistory, onEdit }: SupplyRowProp
         >
           Editar
         </Button>
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }
 
@@ -374,9 +388,7 @@ function SupplyForm({ initial, onSaved }: { initial?: SupplyDto; onSaved: () => 
       </div>
       {initial && (
         <label className="flex items-center gap-2 text-sm font-medium">
-          {/* sv-gap: checkbox */}
-          <input
-            type="checkbox"
+          <Checkbox
             checked={values.active}
             onChange={(e) => setValues((prev) => ({ ...prev, active: e.target.checked }))}
           />
@@ -386,7 +398,8 @@ function SupplyForm({ initial, onSaved }: { initial?: SupplyDto; onSaved: () => 
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-1 ${accentButton}`}
+        variant="accent"
+        className="mt-1"
       >
         {saving ? "Salvando…" : "Salvar"}
       </Button>
@@ -449,15 +462,14 @@ function MovementForm({ supply, onSaved }: { supply: SupplyDto; onSaved: () => v
       <div className="grid grid-cols-2 gap-3">
         <label className="text-sm font-medium">
           Tipo *
-          {/* sv-gap: native-select */}
-          <select
+          <NativeSelect
             value={type}
             onChange={(e) => setType(e.target.value as "in" | "out")}
-            className={`mt-1 ${nativeField}`}
+            className="mt-1"
           >
             <option value="in">Entrada (compra/devolução)</option>
             <option value="out">Saída (uso/perda)</option>
-          </select>
+          </NativeSelect>
         </label>
         <label className="text-sm font-medium">
           Quantidade *
@@ -506,11 +518,10 @@ function MovementForm({ supply, onSaved }: { supply: SupplyDto; onSaved: () => v
       {type === "out" && (
         <label className="text-sm font-medium">
           Consulta atendida (custo por atendimento)
-          {/* sv-gap: native-select */}
-          <select
+          <NativeSelect
             value={appointmentId}
             onChange={(e) => setAppointmentId(e.target.value)}
-            className={`mt-1 ${nativeField}`}
+            className="mt-1"
           >
             <option value="">— sem vínculo —</option>
             {(todayAppointments ?? []).map((appointment) => (
@@ -522,7 +533,7 @@ function MovementForm({ supply, onSaved }: { supply: SupplyDto; onSaved: () => v
                 — {appointment.patientName ?? "Paciente"} ({appointment.procedure})
               </option>
             ))}
-          </select>
+          </NativeSelect>
           <span className="mt-1 block text-xs font-normal text-ink-3">
             Vincular a saída à consulta alimenta a margem por procedimento no relatório.
           </span>
@@ -531,7 +542,8 @@ function MovementForm({ supply, onSaved }: { supply: SupplyDto; onSaved: () => v
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-1 ${accentButton}`}
+        variant="accent"
+        className="mt-1"
       >
         {saving ? "Registrando…" : "Registrar movimentação"}
       </Button>

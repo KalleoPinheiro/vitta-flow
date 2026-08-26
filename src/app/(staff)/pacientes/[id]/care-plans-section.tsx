@@ -23,8 +23,15 @@ import {
 import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert } from "@/components/feedback";
-import { Button, Input } from "@still-void/ui/react";
-import { accentButton, nativeField } from "@/lib/ui";
+import {
+  Button,
+  Card,
+  Input,
+  NativeSelect,
+  RadioGroup,
+  RadioGroupItem,
+  Textarea,
+} from "@still-void/ui/react";
 
 interface CarePlansSectionProps {
   patientId: string;
@@ -46,7 +53,7 @@ export function CarePlansSection({ patientId, conditions, plans, onChanged }: Ca
         <Button
           type="button"
           onClick={() => setCreating(true)}
-          className={accentButton}
+          variant="accent"
         >
           + Novo plano
         </Button>
@@ -60,8 +67,7 @@ export function CarePlansSection({ patientId, conditions, plans, onChanged }: Ca
             const condition = conditions.find((item) => item.id === plan.conditionId);
             const isOpen = expanded === plan.id;
             return (
-              /* sv-gap: card-as-element */
-              <li key={plan.id} className="rounded-lg border border-sv-border bg-sv-surface p-4">
+              <Card as="li" key={plan.id} className="p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <span className="mr-2 font-medium">
@@ -90,7 +96,7 @@ export function CarePlansSection({ patientId, conditions, plans, onChanged }: Ca
                   </div>
                 </div>
                 {isOpen && <CarePlanPanel planId={plan.id} onChanged={onChanged} />}
-              </li>
+              </Card>
             );
           })}
         </ul>
@@ -147,11 +153,10 @@ function OpenCarePlanForm({
       {error && <ErrorAlert message={error} />}
       <label className="text-sm font-medium">
         Condição associada
-        {/* sv-gap: native-select */}
-        <select
+        <NativeSelect
           value={conditionId}
           onChange={(e) => setConditionId(e.target.value)}
-          className={`mt-1 ${nativeField}`}
+          className="mt-1"
         >
           <option value="">Geral (sem condição específica)</option>
           {conditions.map((condition) => (
@@ -159,12 +164,13 @@ function OpenCarePlanForm({
               {condition.title}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-1 ${accentButton}`}
+        variant="accent"
+        className="mt-1"
       >
         {saving ? "Abrindo…" : "Abrir plano"}
       </Button>
@@ -629,21 +635,18 @@ function AddDiagnosisForm({ carePlanId, onSaved }: { carePlanId: string; onSaved
       {!selected && <TaxonomyOptionList options={results} linkedHint={null} onSelect={setSelected} />}
       {selected && (
         <>
-          <fieldset className="flex gap-3 text-sm">
-            <legend className="sr-only">Tipo de diagnóstico</legend>
+          <RadioGroup legend="Tipo de diagnóstico" legendHidden name="diagnosis-type" orientation="horizontal">
             {(["real", "risco", "promocao-saude"] as const).map((option) => (
-              <label key={option} className="flex items-center gap-1">
-                {/* sv-gap: radio-group */}
-                <input
-                  type="radio"
-                  name="diagnosis-type"
-                  checked={type === option}
-                  onChange={() => setType(option)}
-                />
+              <RadioGroupItem
+                key={option}
+                value={option}
+                checked={type === option}
+                onChange={() => setType(option)}
+              >
                 {CARE_PLAN_DIAGNOSIS_TYPE_LABELS[option]}
-              </label>
+              </RadioGroupItem>
             ))}
-          </fieldset>
+          </RadioGroup>
           {type !== "promocao-saude" && (
             <label className="text-sm font-medium">
               Relacionado a (etiologia)
@@ -675,7 +678,8 @@ function AddDiagnosisForm({ carePlanId, onSaved }: { carePlanId: string; onSaved
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-1 ${accentButton}`}
+        variant="accent"
+        className="mt-1"
       >
         {saving ? "Salvando…" : "Prescrever diagnóstico"}
       </Button>
@@ -787,7 +791,8 @@ function PrescribeOutcomeForm({
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-1 ${accentButton}`}
+        variant="accent"
+        className="mt-1"
       >
         {saving ? "Salvando…" : "Prescrever resultado"}
       </Button>
@@ -872,27 +877,25 @@ function PrescribeInterventionForm({
               className="mt-1"
             />
           </label>
-          <fieldset className="flex gap-3 text-sm">
-            <legend className="sr-only">Prioridade da intervenção</legend>
+          <RadioGroup legend="Prioridade da intervenção" legendHidden name="intervention-priority" orientation="horizontal">
             {(["baixa", "media", "alta"] as const).map((option) => (
-              <label key={option} className="flex items-center gap-1">
-                {/* sv-gap: radio-group */}
-                <input
-                  type="radio"
-                  name="intervention-priority"
-                  checked={priority === option}
-                  onChange={() => setPriority(option)}
-                />
+              <RadioGroupItem
+                key={option}
+                value={option}
+                checked={priority === option}
+                onChange={() => setPriority(option)}
+              >
                 {INTERVENTION_PRIORITY_LABELS[option]}
-              </label>
+              </RadioGroupItem>
             ))}
-          </fieldset>
+          </RadioGroup>
         </>
       )}
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-1 ${accentButton}`}
+        variant="accent"
+        className="mt-1"
       >
         {saving ? "Salvando…" : "Prescrever intervenção"}
       </Button>
@@ -926,33 +929,25 @@ function EvaluateOutcomeForm({ outcome, onSaved }: { outcome: CarePlanOutcomeDto
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       {error && <ErrorAlert message={error} />}
-      <fieldset className="flex flex-col gap-2">
-        <legend className="mb-1 text-sm font-medium">Pontuação atual</legend>
+      <RadioGroup legend="Pontuação atual" name="outcome-score">
         {outcome.scaleAnchors.map((anchor, index) => {
           const value = index + 1;
           return (
-            <label key={value} className="flex items-center gap-2 text-sm">
-              {/* sv-gap: radio-group */}
-              <input
-                type="radio"
-                name="outcome-score"
-                checked={score === value}
-                onChange={() => setScore(value)}
-              />
+            <RadioGroupItem key={value} value={value} checked={score === value} onChange={() => setScore(value)}>
               <span className="font-medium">{value}</span> — {anchor}
-            </label>
+            </RadioGroupItem>
           );
         })}
-      </fieldset>
+      </RadioGroup>
       <label className="text-sm font-medium">
         Observações
-        {/* sv-gap: textarea */}
-        <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className={`mt-1 ${nativeField}`} />
+        <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className="mt-1" />
       </label>
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-1 ${accentButton}`}
+        variant="accent"
+        className="mt-1"
       >
         {saving ? "Salvando…" : "Registrar avaliação"}
       </Button>

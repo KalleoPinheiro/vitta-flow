@@ -3,9 +3,8 @@
 import { useState } from "react";
 import { apiFetch } from "@/lib/client";
 import { formatDateTime } from "@/lib/format";
-import { Button, Input } from "@still-void/ui/react";
+import { Button, Card, FileInput, Icon, Input } from "@still-void/ui/react";
 import { ErrorAlert } from "@/components/feedback";
-import { accentButton } from "@/lib/ui";
 
 export interface ConsentStatusDto {
   consentText: string;
@@ -33,7 +32,7 @@ export function ConsentCard({
   if (status.accepted) {
     return (
       <p className="rounded-lg border border-success-soft bg-success-soft px-4 py-3 text-sm text-success">
-        ✓ Termo de consentimento aceito
+        <Icon name="check-circle" /> Termo de consentimento aceito
         {status.acceptedAt ? ` em ${formatDateTime(status.acceptedAt)}` : ""}.
       </p>
     );
@@ -58,8 +57,7 @@ export function ConsentCard({
   };
 
   return (
-    // sv-gap: card-as-element
-    <section className="rounded-lg border border-warning bg-warning-soft p-4">
+    <Card as="section" className="border-warning bg-warning-soft p-4">
       <h2 className="mb-2 text-sm font-bold text-warning">
         Termo de consentimento pendente
       </h2>
@@ -71,11 +69,11 @@ export function ConsentCard({
         type="button"
         disabled={accepting}
         onClick={() => void accept()}
-        className={accentButton}
+        variant="accent"
       >
         {accepting ? "Registrando…" : "Li e aceito o termo"}
       </Button>
-    </section>
+    </Card>
   );
 }
 
@@ -142,21 +140,28 @@ export function PatientPhotoUpload({
           placeholder="Observação (opcional): dor, vazamento, vermelhidão…"
           className="h-8 min-w-0 flex-1 text-xs"
         />
-        <label className={`cursor-pointer rounded-md px-3 py-1.5 text-xs font-medium ${accentButton}`}>
-          {sending ? "Enviando…" : "Enviar foto"}
-          {/* sv-gap: file-input */}
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            disabled={sending}
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) void upload(file);
-              e.target.value = "";
-            }}
-          />
-        </label>
+        {/* Afordância nativa do FileInput, visível — mesmo padrão de
+            condition-photos.tsx (T16). spec.md, tabela de Assumptions & Open
+            Questions, linha "FileInput muda a aparência dos 2 call sites":
+            os dois call sites (este e condition-photos.tsx) perdem o link
+            estilizado em favor do controle nativo com botão de seleção
+            estilizado — confirmado pelo usuário em 2026-08-25, não é
+            mudança restrita a um dos dois. `aria-label` preserva o nome
+            acessível que o texto do <label> antigo dava ("Enviar foto"); o
+            estado de envio em curso é comunicado só por `disabled={sending}`
+            (nenhum texto "Enviando…" equivalente sobrevive — mesma escolha
+            já aceita em T16, que também não preservou o texto de estado do
+            link antigo). */}
+        <FileInput
+          accept="image/jpeg,image/png,image/webp"
+          aria-label="Enviar foto"
+          disabled={sending}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) void upload(file);
+            e.target.value = "";
+          }}
+        />
       </div>
     </div>
   );

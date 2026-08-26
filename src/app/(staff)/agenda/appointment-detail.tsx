@@ -10,8 +10,7 @@ import {
 } from "@/lib/format";
 import { StatusBadge } from "@/components/status-badge";
 import { ErrorAlert } from "@/components/feedback";
-import { Button, Input } from "@still-void/ui/react";
-import { accentButton, nativeField } from "@/lib/ui";
+import { Button, Input, NativeSelect } from "@still-void/ui/react";
 
 type AppointmentAction = "confirm" | "cancel" | "no_show" | "complete";
 
@@ -113,18 +112,16 @@ export function AppointmentDetail({ appointment, onAction, onReschedule }: Appoi
       {visibleActions.includes("complete") && (
         <label className="mt-1 text-xs font-medium text-ink-2">
           Ao concluir, programar retorno:
-          {/* sv-gap: native-select */}
-          <select
+          <NativeSelect
             value={followUpInDays}
             onChange={(e) => setFollowUpInDays(Number(e.target.value))}
-            className={nativeField}
           >
             {FOLLOW_UP_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
       )}
 
@@ -187,7 +184,7 @@ export function AppointmentDetail({ appointment, onAction, onReschedule }: Appoi
             type="button"
             disabled={busy}
             onClick={() => void handleReschedule()}
-            className={accentButton}
+            variant="accent"
           >
             Confirmar remarcação
           </Button>

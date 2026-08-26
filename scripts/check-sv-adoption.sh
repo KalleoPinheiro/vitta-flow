@@ -39,6 +39,12 @@
 # portarem os call sites para Button variant="accent"/Card as e apagarem
 # src/lib/ui.ts):
 #   [12] accentButton / nativeField / src/lib/ui.ts — 59 / 45 / 1
+#
+# Fix 2 do ciclo de verificação (.specs/features/still-void-v3-migration/validation.md):
+# o Verifier removeu `text-black` de uma <Table>/<TableHead> de impressão em
+# src/app/documentos/** e nada no gate (nem teste, nem check estático) detectou —
+# [13] fecha essa lacuna.
+#   [13] <Table>/<TableHead> sem text-black em src/app/documentos/** — 0 (protegido desde a origem)
 
 set -uo pipefail
 cd "$(dirname "$0")/.."
@@ -207,6 +213,21 @@ if [ -f "$SRC/lib/ui.ts" ]; then
   hits=$(printf '%s\n%s:1: arquivo não deveria mais existir (accentButton/nativeField removidos em T35)' "$hits" "$SRC/lib/ui.ts")
 fi
 report "accentButton/nativeField/src/lib/ui.ts" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
+
+# --- [13] override neutro de impressão (text-black) ausente em tabela de documentos --
+# As páginas de impressão em $SRC/app/documentos/** têm um SPEC_DEVIATION
+# documentado ao lado de cada tabela: `text-black` literal (em vez de token
+# --sv-*) para a folha continuar em preto-sobre-branco numa impressora P&B. Sem
+# ele, a cor do tema (que pode não ser preta) vaza para o PDF/impressão. Exige
+# `text-black` na mesma linha de abertura de `<Table ...>`/`<TableHead ...>`
+# (mesmo padrão de tag JSX de uma linha usado nessas páginas).
+hits=$(find "$SRC/app/documentos" -name '*.tsx' 2>/dev/null | sort | while read -r f; do
+  awk -v F="$f" '
+    /<Table[[:space:]>]/ && $0 !~ /text-black/ { printf "%s:%d: %s\n", F, NR, $0 }
+    /<TableHead[[:space:]>]/ && $0 !~ /text-black/ { printf "%s:%d: %s\n", F, NR, $0 }
+  ' "$f"
+done)
+report "override text-black ausente em tabela de documentos" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
 
 printf '\n'
 if [ "$findings" -gt 0 ]; then

@@ -300,6 +300,54 @@ describe("Feature: Gate de adoção do Still Void", () => {
       expect(result.output).toContain("✓ [accentButton/nativeField/src/lib/ui.ts]");
     });
 
+    it("Dado <Table> sem text-black em src/app/documentos/**, Então reporta e sai com 1", () => {
+      mkdirSync(join(src, "app", "documentos", "plano-cuidados"), { recursive: true });
+      writeFileSync(
+        join(src, "app", "documentos", "plano-cuidados", "mau.tsx"),
+        'export const X = () => <Table className="w-full border-collapse text-xs">conteúdo</Table>;\n',
+      );
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.status).toBe(1);
+      expect(result.output).toContain("✗ [override text-black ausente em tabela de documentos] 1 achado(s)");
+      expect(result.output).toContain("mau.tsx");
+    });
+
+    it("Dado <TableHead> sem text-black em src/app/documentos/**, Então reporta e sai com 1", () => {
+      mkdirSync(join(src, "app", "documentos", "relatorio"), { recursive: true });
+      writeFileSync(
+        join(src, "app", "documentos", "relatorio", "mau.tsx"),
+        'export const X = () => <TableHead className="py-1 pr-2">Data</TableHead>;\n',
+      );
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.status).toBe(1);
+      expect(result.output).toContain("✗ [override text-black ausente em tabela de documentos] 1 achado(s)");
+      expect(result.output).toContain("mau.tsx");
+    });
+
+    it("Dado <Table>/<TableHead> COM text-black em src/app/documentos/**, Então não reporta (caso limpo, espelha as páginas reais)", () => {
+      mkdirSync(join(src, "app", "documentos", "plano-cuidados"), { recursive: true });
+      writeFileSync(
+        join(src, "app", "documentos", "plano-cuidados", "ok.tsx"),
+        'export const X = () => (\n  <Table className="w-full border-collapse text-xs text-black">\n    <TableHead className="py-1 pr-2 text-black">Data</TableHead>\n  </Table>\n);\n',
+      );
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.output).toContain("✓ [override text-black ausente em tabela de documentos]");
+    });
+
+    it("Dado <Table> sem text-black FORA de src/app/documentos/**, Então não reporta (fora do escopo do override de impressão)", () => {
+      writeFileSync(join(src, "mau.tsx"), 'export const X = () => <Table className="w-full">conteúdo</Table>;\n');
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.output).toContain("✓ [override text-black ausente em tabela de documentos]");
+    });
+
     it("Dado utilitário de paleta fora da ponte de tokens, Então reporta e sai com 1", () => {
       writeFileSync(join(src, "mau.tsx"), 'export const X = () => <span className="text-slate-500" />;\n');
 

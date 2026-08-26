@@ -349,7 +349,7 @@ describe("Feature: Catálogo de procedimentos", () => {
       expect(screen.getByText("Novo procedimento")).toBeInTheDocument();
 
       const callsBeforeClose = fetchMock.mock.calls.length;
-      fireEvent.click(screen.getByLabelText("Fechar"));
+      fireEvent.click(screen.getByRole("button", { name: "Fechar" }));
 
       expect(screen.queryByText("Novo procedimento")).not.toBeInTheDocument();
       expect(fetchMock.mock.calls.length).toBe(callsBeforeClose);

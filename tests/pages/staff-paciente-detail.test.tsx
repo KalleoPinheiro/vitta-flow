@@ -782,7 +782,7 @@ describe("Feature: PatientRecordPage", () => {
       fireEvent.click(screen.getByText("+ Nova condição"));
       expect(screen.getByText("Criar condição")).toBeInTheDocument();
 
-      fireEvent.click(screen.getByLabelText("Fechar"));
+      fireEvent.click(screen.getByRole("button", { name: "Fechar" }));
 
       expect(screen.queryByText("Criar condição")).not.toBeInTheDocument();
       expect(
@@ -799,7 +799,7 @@ describe("Feature: PatientRecordPage", () => {
       fireEvent.click(screen.getByText("+ Avaliação"));
       expect(screen.getByText("Avaliação — Úlcera venosa perna E")).toBeInTheDocument();
 
-      fireEvent.click(screen.getByLabelText("Fechar"));
+      fireEvent.click(screen.getByRole("button", { name: "Fechar" }));
 
       expect(screen.queryByText("Registrar avaliação")).not.toBeInTheDocument();
       expect(

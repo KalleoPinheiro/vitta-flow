@@ -43,7 +43,7 @@ describe("Feature: Modal", () => {
       );
 
       expect(screen.getAllByLabelText("Fechar")).toHaveLength(1);
-      expect(screen.queryByText("Close dialog")).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Close dialog" })).not.toBeInTheDocument();
     });
   });
 

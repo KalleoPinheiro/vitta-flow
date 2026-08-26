@@ -245,6 +245,61 @@ describe("Feature: Gate de adoção do Still Void", () => {
       expect(result.output).toContain("✓ [<table> cru]");
     });
 
+    it("Dado accentButton cru sem marcação sv-gap, Então reporta e sai com 1", () => {
+      writeFileSync(
+        join(src, "mau.tsx"),
+        'import { accentButton } from "@/lib/ui";\nexport const X = () => <button type="button" className={accentButton}>x</button>;\n',
+      );
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.status).toBe(1);
+      expect(result.output).toContain("✗ [accentButton/nativeField/src/lib/ui.ts]");
+      expect(result.output).toContain("mau.tsx");
+    });
+
+    it("Dado nativeField cru sem marcação sv-gap, Então reporta e sai com 1", () => {
+      writeFileSync(
+        join(src, "mau.tsx"),
+        'import { nativeField } from "@/lib/ui";\nexport const X = () => <select className={nativeField} />;\n',
+      );
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.status).toBe(1);
+      expect(result.output).toContain("✗ [accentButton/nativeField/src/lib/ui.ts]");
+      expect(result.output).toContain("mau.tsx");
+    });
+
+    it("Dado accentButton cru COM marcação sv-gap, Então não reporta (workaround declarado)", () => {
+      writeFileSync(
+        join(src, "marcado.tsx"),
+        "export const X = () => (\n  // sv-gap: accent-legado\n  <button type=\"button\" className={accentButton}>x</button>\n);\n",
+      );
+      writeFileSync(gapsDoc, "# Lacunas\n\n### `accent-legado`\n\ntexto\n");
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.output).toContain("✓ [accentButton/nativeField/src/lib/ui.ts]");
+    });
+
+    it("Dado src/lib/ui.ts existente, Então reporta e sai com 1 mesmo sem accentButton/nativeField no resto do código", () => {
+      mkdirSync(join(src, "lib"), { recursive: true });
+      writeFileSync(join(src, "lib", "ui.ts"), "export const somethingElse = 1;\n");
+
+      const result = runGate(src, gapsDoc);
+
+      expect(result.status).toBe(1);
+      expect(result.output).toContain("✗ [accentButton/nativeField/src/lib/ui.ts]");
+      expect(result.output).toContain("arquivo não deveria mais existir");
+    });
+
+    it("Dado nem accentButton/nativeField nem src/lib/ui.ts, Então não reporta", () => {
+      const result = runGate(src, gapsDoc);
+
+      expect(result.output).toContain("✓ [accentButton/nativeField/src/lib/ui.ts]");
+    });
+
     it("Dado utilitário de paleta fora da ponte de tokens, Então reporta e sai com 1", () => {
       writeFileSync(join(src, "mau.tsx"), 'export const X = () => <span className="text-slate-500" />;\n');
 

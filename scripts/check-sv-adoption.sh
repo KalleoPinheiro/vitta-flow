@@ -34,6 +34,11 @@
 # Baseline pré-migração v3 antes da Fase 5 (T26 ativa [11] depois de T19-T25
 # portarem os call sites para a família Table):
 #   [11] <table> cru .....................  14
+#
+# Baseline pré-migração v3 antes da Fase 6 (T36 ativa [12] depois de T27-T35
+# portarem os call sites para Button variant="accent"/Card as e apagarem
+# src/lib/ui.ts):
+#   [12] accentButton / nativeField / src/lib/ui.ts — 59 / 45 / 1
 
 set -uo pipefail
 cd "$(dirname "$0")/.."
@@ -184,6 +189,24 @@ hits=$(tsx_files | while read -r f; do
   ' "$f"
 done)
 report "<table> cru" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
+
+# --- [12] accentButton/nativeField cru + existência de src/lib/ui.ts --------
+# Mesma guarda de linha-comentário e isenção por `sv-gap:` das checagens
+# [2]/[3]/[8]-[11]: uma menção em prosa (JSDoc, comentário) não conta como call
+# site. T35 apaga src/lib/ui.ts por inteiro — nenhuma referência real a
+# accentButton/nativeField deveria sobreviver, e o próprio arquivo não deveria
+# mais existir.
+hits=$(tsx_files | while read -r f; do
+  awk -v F="$f" '
+    /^[[:space:]]*(\*|\/\/|\{\/\*|\/\*)/ { prev = $0; next }
+    /accentButton|nativeField/ && prev !~ /sv-gap:/ { printf "%s:%d: %s\n", F, NR, $0 }
+    { prev = $0 }
+  ' "$f"
+done)
+if [ -f "$SRC/lib/ui.ts" ]; then
+  hits=$(printf '%s\n%s:1: arquivo não deveria mais existir (accentButton/nativeField removidos em T35)' "$hits" "$SRC/lib/ui.ts")
+fi
+report "accentButton/nativeField/src/lib/ui.ts" "$(printf '%s' "$hits" | grep -c . || true)" "$hits"
 
 printf '\n'
 if [ "$findings" -gt 0 ]; then

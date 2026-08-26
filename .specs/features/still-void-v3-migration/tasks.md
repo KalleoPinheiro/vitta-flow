@@ -997,9 +997,9 @@ anteriores e ficam fora do escopo desta Fase 6.
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] `npm run check:sv` reporta a checagem #12 como `✓`
-- [ ] Fixture novo prova que o gate acha `accentButton`/`nativeField`/`src/lib/ui.ts`
-- [ ] `npm test` passa
+- [x] `npm run check:sv` reporta a checagem #12 como `✓`
+- [x] Fixture novo prova que o gate acha `accentButton`/`nativeField`/`src/lib/ui.ts`
+- [x] `npm test` passa
 
 **Tests**: unit — `tests/scripts/check-sv-adoption.test.ts`
 **Gate**: build

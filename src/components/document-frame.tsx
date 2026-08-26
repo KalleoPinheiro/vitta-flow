@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Button } from "@still-void/ui/react";
+import { Button, Icon } from "@still-void/ui/react";
 
 export interface ClinicInfoDto {
   name: string;
@@ -34,7 +34,7 @@ export function DocumentFrame({ clinic, title, children }: DocumentFrameProps) {
     <div className="text-black">
       <div className="mb-6 flex items-center justify-between border-b border-border pb-4 print:hidden">
         <Button type="button" variant="link" onClick={() => window.history.back()}>
-          ← Voltar
+          <Icon name="chevron-left" /> Voltar
         </Button>
         <Button type="button" onClick={() => window.print()}>
           Imprimir / salvar PDF

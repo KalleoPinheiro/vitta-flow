@@ -18,7 +18,7 @@ import { ConditionsSection } from "./conditions-section";
 import { EvolutionsSection } from "./evolutions-section";
 import { CarePlansSection } from "./care-plans-section";
 import { PackagesSection } from "./packages-section";
-import { Button, Card } from "@still-void/ui/react";
+import { Button, Card, Icon } from "@still-void/ui/react";
 
 const TABS = [
   { key: "anamnese", label: "Anamnese" },
@@ -88,7 +88,9 @@ function AllergyBanner({ allergies }: { allergies?: string }) {
   }
   return (
     <div className="mb-6 rounded-lg border border-danger bg-danger-soft px-4 py-3 text-sm">
-      <span className="font-bold text-danger">⚠ Alergias: </span>
+      <span className="font-bold text-danger">
+        <Icon name="alert-triangle" /> Alergias:{" "}
+      </span>
       <span className="text-danger">{allergies}</span>
     </div>
   );
@@ -136,7 +138,7 @@ export default function PatientRecordPage({ params }: { params: Promise<{ id: st
     <div>
       <div className="mb-1 text-sm">
         <Link href="/pacientes" className="text-accent-ink hover:underline">
-          ← Pacientes
+          <Icon name="chevron-left" /> Pacientes
         </Link>
       </div>
       <PatientHeader patient={patient} />

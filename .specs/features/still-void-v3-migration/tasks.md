@@ -1019,13 +1019,34 @@ anteriores e ficam fora do escopo desta Fase 6.
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] Zero `✕`/`⚠`/`✓` em `src/**/*.tsx`
-- [ ] Cada `←`/`→` remanescente é ligação tipográfica em texto corrido, não afordância de controle
-- [ ] `📷`/`⛔`/`⏳` marcados `sv-gap: icon-set-gaps`
-- [ ] `tests/components/modal.test.tsx` e as suítes de página tocadas passam
+- [x] Zero `✕`/`⚠`/`✓` em `src/**/*.tsx`
+- [x] Cada `←`/`→` remanescente é ligação tipográfica em texto corrido, não afordância de controle
+- [x] `📷`/`⛔`/`⏳` marcados `sv-gap: icon-set-gaps`
+- [x] `tests/components/modal.test.tsx` e as suítes de página tocadas passam
+
+**Nota de execução**: contagem real de `→` era 14 (não 11, o baseline aproximado
+da spec) — a diferença é `care-plans-section.tsx:51` (2 setas na mesma linha
+de texto corrido) e `plano-cuidados/[carePlanId]/page.tsx:27`/`paged-list.tsx:12`
+(2 setas cada, em comentário JSDoc); todas ficaram fora da troca, coerente com
+os demais comentários. Classificação um a um: viraram `Icon` os 8 controles
+clicáveis com `→`/`←` (2 botões de mês em `agenda/page.tsx`, com `aria-label`
+já no `Button` pai — `Icon` sem `label` para não duplicar o nome acessível; 3
+`Link` com seta ao final de texto visível; 1 `Link`/1 `Button` "voltar" com
+texto visível). Ficaram como estão (não são controle, `sv-gap:` não se aplica
+a `←`/`→`): a ligação tipográfica em `care-plans-section.tsx:51` e os 2
+`<span aria-hidden="true">→</span>` em `care-plans-section.tsx:459,463` — são
+separadores visuais entre "Basal/Atual/Meta" (`<span>` sem `onClick`, sem
+`role`), não afordância de navegação — e as 4 setas dentro de comentário
+JSDoc (`documentos/layout.tsx:3`, `plano-cuidados/[carePlanId]/page.tsx:27`,
+`paged-list.tsx:12`, `modal.tsx:24`). Seis suítes de teste tinham asserção de
+texto/nome acessível com o glifo literal (`⚠`/`✓`/`→`/`← Voltar`) e foram
+atualizadas para o texto pós-`Icon` (`tests/pages/staff-materiais.test.tsx`,
+`tests/pages/portal.test.tsx`, `tests/components/document-frame.test.tsx`,
+`e2e/followup.spec.ts`, `e2e/portal-paciente.spec.ts`) — mesma asserção de
+comportamento (clique, href, contagem, data), só a string literal mudou.
 
 **Tests**: unit — `tests/components/modal.test.tsx` + suítes de página dos arquivos tocados
-**Gate**: quick
+**Gate**: full (modal.tsx é diálogo; e2e tocado)
 
 **Commit**: `refactor(icons): porta glifos cobertos pelo IconName para Icon`
 

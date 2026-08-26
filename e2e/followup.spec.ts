@@ -28,7 +28,7 @@ test.describe("retornos (follow-ups)", () => {
 
     await page.goto("/");
     const item = page.locator("li", { hasText: reason });
-    await expect(item.getByText(/⚠ Atrasado —/)).toBeVisible();
+    await expect(item.getByText(/Atrasado —/)).toBeVisible();
 
     await item.getByRole("button", { name: "Cancelar" }).click();
     await expect(page.locator("li", { hasText: reason })).toHaveCount(0);

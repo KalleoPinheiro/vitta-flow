@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { apiFetch } from "@/lib/client";
 import { formatDateTime } from "@/lib/format";
-import { Button, Card, FileInput, Input } from "@still-void/ui/react";
+import { Button, Card, FileInput, Icon, Input } from "@still-void/ui/react";
 import { ErrorAlert } from "@/components/feedback";
 
 export interface ConsentStatusDto {
@@ -32,7 +32,7 @@ export function ConsentCard({
   if (status.accepted) {
     return (
       <p className="rounded-lg border border-success-soft bg-success-soft px-4 py-3 text-sm text-success">
-        ✓ Termo de consentimento aceito
+        <Icon name="check-circle" /> Termo de consentimento aceito
         {status.acceptedAt ? ` em ${formatDateTime(status.acceptedAt)}` : ""}.
       </p>
     );

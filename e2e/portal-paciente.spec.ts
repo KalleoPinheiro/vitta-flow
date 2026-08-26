@@ -40,7 +40,7 @@ test.describe("portal do paciente", () => {
     // Consentimento digital (LGPD).
     await expect(page.getByRole("heading", { name: "Termo de consentimento pendente" })).toBeVisible();
     await page.getByRole("button", { name: "Li e aceito o termo" }).click();
-    await expect(page.getByText("✓ Termo de consentimento aceito")).toBeVisible();
+    await expect(page.getByText("Termo de consentimento aceito")).toBeVisible();
 
     // Confirmação de presença.
     const appointmentItem = page.locator("li", { hasText: procedure });

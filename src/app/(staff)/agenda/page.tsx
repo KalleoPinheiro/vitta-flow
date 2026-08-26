@@ -9,7 +9,7 @@ import { ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import { CalendarGrid } from "./calendar-grid";
 import { AppointmentForm, type AppointmentFormValues } from "./appointment-form";
 import { AppointmentDetail } from "./appointment-detail";
-import { Button, NativeSelect } from "@still-void/ui/react";
+import { Button, Icon, NativeSelect } from "@still-void/ui/react";
 
 function ProfessionalFilter({
   professionals,
@@ -195,7 +195,7 @@ export default function AgendaPage() {
           variant="outline"
           className="hover:bg-surface-2"
         >
-          ←
+          <Icon name="chevron-left" />
         </Button>
         <span className="min-w-48 text-center text-lg font-semibold capitalize">
           {monthLabel(monthDate)}
@@ -207,7 +207,7 @@ export default function AgendaPage() {
           variant="outline"
           className="hover:bg-surface-2"
         >
-          →
+          <Icon name="chevron-right" />
         </Button>
         <ProfessionalFilter
           professionals={professionals ?? []}

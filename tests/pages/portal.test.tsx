@@ -166,7 +166,7 @@ describe("Feature: Página do portal", () => {
       expect(
         await screen.findByText((_, el) => el?.textContent === "Você está logado como equipe da clínica (ana@clinica.com)."),
       ).toBeInTheDocument();
-      const link = screen.getByText("Ir para o sistema da clínica →");
+      const link = screen.getByText("Ir para o sistema da clínica");
       expect(link.closest("a")).toHaveAttribute("href", "/");
     });
 
@@ -179,7 +179,7 @@ describe("Feature: Página do portal", () => {
       ]);
 
       const { container } = render(<PortalPage />);
-      await screen.findByText("Ir para o sistema da clínica →");
+      await screen.findByText("Ir para o sistema da clínica");
 
       // SPEC_DEVIATION: na 3.x o <Card> do pacote emite a classe semântica
       // `sv-card` em vez do utilitário Tailwind `bg-sv-surface` da 2.x — mesma
@@ -576,7 +576,7 @@ describe("Feature: Visão do paciente no portal", () => {
       fireEvent.click(screen.getByText("Li e aceito o termo"));
 
       expect(
-        await screen.findByText(`✓ Termo de consentimento aceito em ${formatDateTime("2026-02-01T09:00:00.000Z")}.`),
+        await screen.findByText(`Termo de consentimento aceito em ${formatDateTime("2026-02-01T09:00:00.000Z")}.`),
       ).toBeInTheDocument();
       expect(
         screen.getByPlaceholderText("Observação (opcional): dor, vazamento, vermelhidão…"),
@@ -838,7 +838,7 @@ describe("Feature: Cartão de consentimento", () => {
       );
 
       expect(
-        screen.getByText(`✓ Termo de consentimento aceito em ${formatDateTime("2026-01-10T14:30:00.000Z")}.`),
+        screen.getByText(`Termo de consentimento aceito em ${formatDateTime("2026-01-10T14:30:00.000Z")}.`),
       ).toBeInTheDocument();
     });
   });

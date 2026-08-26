@@ -88,7 +88,7 @@ describe("Feature: Moldura de documento", () => {
           <p>Corpo</p>
         </DocumentFrame>,
       );
-      fireEvent.click(screen.getByRole("button", { name: "← Voltar" }));
+      fireEvent.click(screen.getByRole("button", { name: "Voltar" }));
 
       expect(backSpy).toHaveBeenCalledTimes(1);
     });
@@ -119,7 +119,7 @@ describe("Feature: Moldura de documento", () => {
       // listada nas 3 quebras do Problem Statement da spec (mesma raiz do Dialog
       // em tests/components/modal.test.tsx). A prova de origem (vem do Button do
       // pacote, não é markup local) segue as classes reais.
-      expect(screen.getByRole("button", { name: "← Voltar" })).toHaveClass("sv-btn--link");
+      expect(screen.getByRole("button", { name: "Voltar" })).toHaveClass("sv-btn--link");
       expect(screen.getByRole("button", { name: "Imprimir / salvar PDF" })).toHaveClass("sv-btn");
     });
 
@@ -132,7 +132,7 @@ describe("Feature: Moldura de documento", () => {
 
       expect(container.firstElementChild).toHaveClass("text-black");
       expect(
-        screen.getByRole("button", { name: "← Voltar" }).closest(".print\\:hidden"),
+        screen.getByRole("button", { name: "Voltar" }).closest(".print\\:hidden"),
       ).toBeInTheDocument();
     });
   });

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Card, CardContent } from "@still-void/ui/react";
+import { Card, CardContent, Icon } from "@still-void/ui/react";
 import { useApiQuery } from "@/lib/use-api-query";
 import { ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import { PatientPortalView } from "./patient-view";
@@ -28,7 +28,7 @@ export default function PortalPage() {
           Você está logado como <strong>equipe da clínica</strong> ({me.subject}).
         </p>
         <Link href="/" className="font-medium text-accent-ink hover:underline">
-          Ir para o sistema da clínica →
+          Ir para o sistema da clínica <Icon name="chevron-right" />
         </Link>
       </CardContent>
     </Card>

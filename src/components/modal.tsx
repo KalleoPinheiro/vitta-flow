@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Dialog, DialogClose, DialogContent, DialogTitle } from "@still-void/ui/react/client";
+import { Icon } from "@still-void/ui/react";
 
 interface ModalProps {
   title: string;
@@ -59,7 +60,7 @@ export function Modal({ title, onClose, children }: ModalProps) {
         <div className="flex items-center justify-between">
           <DialogTitle className="sv-display text-lg font-semibold">{title}</DialogTitle>
           <DialogClose aria-label="Fechar" className="text-ink-3 hover:text-ink">
-            ✕
+            <Icon name="x" />
           </DialogClose>
         </div>
         {children}

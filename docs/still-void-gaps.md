@@ -28,24 +28,6 @@ publicado, não a documentação. Onde a doc diverge do artefato, está anotado.
 
 ## Faltando no catálogo
 
-### `native-select`
-
-- **Componente proposto:** `NativeSelect`
-- **Call sites:** 23, em 14 arquivos
-- **Exemplos:** [agenda/appointment-form.tsx](../src/app/(staff)/agenda/appointment-form.tsx), [pacientes/patient-form.tsx](../src/app/(staff)/pacientes/patient-form.tsx), [portal/schedule-return.tsx](../src/app/portal/schedule-return.tsx)
-- **Por que não dá para usar o que existe:** a `2.0.1` exporta a família `Select`
-  (Radix) de `@still-void/ui/react/client`. É um *combobox* custom: renderiza
-  `div[role=combobox]` + listbox em portal, exige boundary client e não é
-  substituto drop-in de um `<select name>` dentro de `<form>`. Trocar quebraria
-  `userEvent.selectOptions` em ~8 arquivos de teste do app e mudaria a interação
-  em campo de formulário. Registrado como decisão na spec da migração.
-- **Workaround atual:** `<select>` nativo com a receita `nativeField` de
-  [src/lib/ui.ts](../src/lib/ui.ts), que espelha borda, raio, superfície e anel de
-  foco do `<Input>` do pacote para os dois não destoarem lado a lado.
-- **API sugerida:** `<NativeSelect>` com a mesma assinatura de `<Input>` —
-  `React.SelectHTMLAttributes<HTMLSelectElement>`, `children` sendo `<option>`.
-  Server-safe, sem Radix. Coexiste com `Select`: um é campo, o outro é combobox.
-
 ### `textarea`
 
 - **Componente proposto:** `Textarea`
@@ -103,37 +85,6 @@ publicado, não a documentação. Onde a doc diverge do artefato, está anotado.
 - **API sugerida:** `FileInput` que encapsule exatamente esse padrão
   (`label` + `input` escondido) e exponha `accept`, `disabled`, `onChange` e o
   rótulo como children.
-
-### `card-as-element`
-
-- **Mudança proposta:** `asChild` (ou prop `as`) no `Card`
-- **Call sites:** 9, em 6 arquivos
-- **Exemplos:** [relatorios/page.tsx](../src/app/(staff)/relatorios/page.tsx) (`<section>`), [pacientes/[id]/care-plans-section.tsx](../src/app/(staff)/pacientes/[id]/care-plans-section.tsx) (`<li>`)
-- **Por que não dá para usar o que existe:** `Card` renderiza `<div>` fixo. Onde
-  a superfície de cartão precisa ser um `<section>` (landmark) ou um `<li>`
-  (obrigatório dentro de `<ul>`), usar `Card` apagaria a semântica do elemento.
-- **Workaround atual:** o elemento correto com a superfície escrita à mão
-  (`rounded-lg border border-sv-border bg-sv-surface`) — duplicando exatamente o
-  que o `Card` já emite.
-- **API sugerida:** `asChild` via `@radix-ui/react-slot` (já é dependência
-  transitiva das famílias Radix do pacote), ou uma prop `as="section" | "li"`.
-
-### `button-accent-variant`
-
-- **Mudança proposta:** variante `accent` (ou `primary`) no `Button`
-- **Call sites:** ~20 ações primárias
-- **Exemplo:** [src/lib/ui.ts](../src/lib/ui.ts) — a receita `accentButton`
-- **Por que não dá para usar o que existe:** `Button` tem seis variantes
-  (`default`, `destructive`, `outline`, `secondary`, `ghost`, `link`) e nenhuma é
-  preenchida com o accent do site — `default` é `bg-sv-surface text-sv-text`,
-  superfície neutra. Um app com ação primária em cada tela não tem como expressar
-  "botão principal" pelo catálogo.
-- **Workaround atual:** a constante `accentButton`
-  (`bg-accent-ink text-sv-bg hover:bg-accent-strong`), passada via `className` —
-  o `tailwind-merge` interno do `Button` resolve o conflito de `bg-*` a favor
-  dela.
-- **API sugerida:** `variant="accent"` usando `bg-sv-accent-ink` /
-  `hover:bg-sv-accent-ink/90` / `text-sv-bg`.
 
 ### `alert-dialog`
 

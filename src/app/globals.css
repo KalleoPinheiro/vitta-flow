@@ -36,14 +36,6 @@
   --color-border: var(--sv-border);
   --color-border-strong: var(--sv-border-strong);
 
-  /* --- nomes exigidos por `nativeField` (src/lib/ui.ts) ---
-     Único consumidor remanescente: ring-ring/ring-offset-background/bg-destructive.
-     Somem junto com o arquivo em T35. */
-  --color-background: var(--sv-bg);
-  --color-ring: var(--sv-accent);
-  --color-destructive: var(--sv-danger);
-  --color-destructive-foreground: var(--sv-bg);
-
   /* --- papéis que o app usa e ainda não tinham nome semântico --- */
   --color-surface-2: var(--sv-surface-2);
   --color-bg-elev: var(--sv-bg-elev);

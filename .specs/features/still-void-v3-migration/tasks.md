@@ -957,10 +957,27 @@ classe real. Gate quick (typecheck, test 1802/1802) verde.
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] `src/lib/ui.ts` não existe
-- [ ] `grep -rn "nativeField\|accentButton" src` retorna vazio
-- [ ] `globals.css` não contém mais os 4 tokens órfãos
-- [ ] `npm run build` sai 0
+- [x] `src/lib/ui.ts` não existe
+- [x] `grep -rn "nativeField\|accentButton" src` retorna vazio
+- [x] `globals.css` não contém mais os 4 tokens órfãos
+- [x] `npm run build` sai 0
+
+**Nota de execução**: `npm run check:sv` tem uma checagem pré-existente
+("sv-gap órfão", da spec `still-void-v2-migration`, não numerada #1-#12 e não
+listada no Test Coverage Matrix/Gate Check Commands desta spec) que já falhava
+com 7 achados **antes** desta task (`afd8bdb`, checkbox/dialog-close-button/
+file-input/radio-group/table/tailwind-setup-v3-only/textarea — dívida de
+T1-T26 não relacionada a T27-T36). Apagar `src/lib/ui.ts` removeu os últimos
+marcadores `sv-gap:` de dois gaps que as tasks deste plano resolveram por
+completo (`native-select`, adotado em T7-T9; `button-accent-variant`, adotado
+em T27-T34) — sem a atualização, esses viravam órfãos novos. Os mesmos
+markers de `card-as-element` (resolvido em T30, T32, T33) também ficaram
+órfãos. Removidas as 3 seções correspondentes de
+`docs/still-void-gaps.md` (gaps genuinamente fechados: o componente existe na
+`3.1.0` e está adotado). `npm run check:sv` volta a reportar exatamente os
+mesmos 7 achados pré-existentes de `afd8bdb` — paridade confirmada, nenhuma
+dívida nova introduzida por T27-T35. Os 7 remanescentes são de fases
+anteriores e ficam fora do escopo desta Fase 6.
 
 **Tests**: none (remoção; cobertura das páginas já provada pelas tasks anteriores)
 **Gate**: build

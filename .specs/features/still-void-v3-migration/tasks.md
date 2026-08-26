@@ -832,10 +832,19 @@ como o "Done when" pede.
 - [x] Zero `accentButton`/`sv-gap: card-as-element` nestes 4 arquivos
 - [x] `tests/pages/staff-paciente-detail.test.tsx` e `tests/pages/staff-paciente-care-plans.test.tsx` passam
 
+**Nota de execução**: o inventário desta task cobria só `pacientes/[id]/*` e
+`patient-form.tsx`. Um `accentButton` residual em `src/app/(staff)/pacientes/page.tsx`
+(lista de pacientes, tocada por T22/T26 para tabela, mas nunca listada em
+nenhuma task de T27-T36) ficou de fora do inventário original. Migrado como
+desvio em commit separado (`fix(pacientes): porta accentButton esquecido do
+inventário em pacientes/page.tsx`, `8e44ed4`), mesmo padrão `variant="accent"`,
+sem tocar `tests/pages/staff-pacientes-list.test.tsx` (nenhuma asserção de
+classe). Gate quick (typecheck, test 1802/1802) verde após a correção.
+
 **Tests**: unit — `staff-paciente-detail.test.tsx`, `staff-paciente-care-plans.test.tsx`
 **Gate**: quick
 
-**Commit**: `refactor(prontuario): porta accentButton/card-as-element para Button/Card`
+**Commit**: `refactor(prontuario): porta accentButton/card-as-element para Button/Card` (complementado por `fix(pacientes): porta accentButton esquecido do inventário em pacientes/page.tsx`, commit `8e44ed4`)
 
 ---
 

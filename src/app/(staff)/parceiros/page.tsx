@@ -18,7 +18,6 @@ import {
   TableHeader,
   TableRow,
 } from "@still-void/ui/react";
-import { accentButton } from "@/lib/ui";
 
 export default function PartnersPage() {
   const { data: partners, error, refresh } = useApiQuery<PartnerDto[]>("/api/partners");
@@ -45,7 +44,7 @@ export default function PartnersPage() {
         <Button
           type="button"
           onClick={() => setEditing("new")}
-          className={accentButton}
+          variant="accent"
         >
           + Novo parceiro
         </Button>
@@ -221,7 +220,8 @@ function PartnerForm({ initial, onSaved }: { initial?: PartnerDto; onSaved: () =
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-1 ${accentButton}`}
+        variant="accent"
+        className="mt-1"
       >
         {saving ? "Salvando…" : "Salvar"}
       </Button>

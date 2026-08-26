@@ -18,7 +18,6 @@ import {
   TableHeader,
   TableRow,
 } from "@still-void/ui/react";
-import { accentButton } from "@/lib/ui";
 
 export default function ProfessionalsPage() {
   const { data: professionals, error, refresh } = useApiQuery<ProfessionalDto[]>(
@@ -47,7 +46,7 @@ export default function ProfessionalsPage() {
         <Button
           type="button"
           onClick={() => setEditing("new")}
-          className={accentButton}
+          variant="accent"
         >
           + Novo profissional
         </Button>
@@ -182,7 +181,8 @@ function ProfessionalForm({
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-1 ${accentButton}`}
+        variant="accent"
+        className="mt-1"
       >
         {saving ? "Salvando…" : "Salvar"}
       </Button>

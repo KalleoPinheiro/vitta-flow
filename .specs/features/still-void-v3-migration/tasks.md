@@ -880,8 +880,19 @@ classe). Gate quick (typecheck, test 1802/1802) verde após a correção.
 **Tools**: MCP: NONE · Skill: NONE
 
 **Done when**:
-- [ ] Zero `accentButton`/`sv-gap: card-as-element` nestes 4 arquivos
-- [ ] `tests/pages/staff-operations.test.tsx` e `tests/pages/staff-relatorios.test.tsx` passam
+- [x] Zero `accentButton`/`sv-gap: card-as-element` nestes 4 arquivos
+- [x] `tests/pages/staff-operations.test.tsx` e `tests/pages/staff-relatorios.test.tsx` passam
+
+**Nota de execução**: `configuracoes/page.tsx` tinha um `accentButton` aplicado
+condicionalmente (toggle de dia da semana: `variant={selected ? "default" :
+"outline"}` + `accentButton` só quando selecionado). Sem uma variante que
+combine, a troca de mesma intenção do design é `variant={selected ? "accent" :
+"outline"}`, className reduzido a `"rounded-full"`. SPEC_DEVIATION em
+`tests/pages/staff-operations.test.tsx` (4 asserções, 2 casos): a 3.x resolve
+`variant="accent"` para a classe semântica `sv-btn--accent`, não para o
+utilitário Tailwind `bg-accent-ink` que a receita local emitia — mesmo padrão
+de `aef6144` (T1). Asserção mantida na mesma especificidade, só aponta para a
+classe real. Gate quick (typecheck, test 1802/1802) verde.
 
 **Tests**: unit — `staff-operations.test.tsx`, `staff-relatorios.test.tsx`
 **Gate**: quick

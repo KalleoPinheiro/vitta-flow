@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import {
   Button,
+  Card,
   Input,
   NativeSelect,
   Table,
@@ -18,7 +19,6 @@ import {
   TableHeader,
   TableRow,
 } from "@still-void/ui/react";
-import { accentButton } from "@/lib/ui";
 
 const WEEKDAYS = [
   { value: 0, label: "Dom" },
@@ -88,8 +88,7 @@ function ScheduleSection() {
   };
 
   return (
-    // sv-gap: card-as-element
-    <section className="rounded-lg border border-sv-border bg-sv-surface p-5">
+    <Card as="section" className="p-5">
       <h2 className="mb-1 text-lg font-semibold">Grade de horários</h2>
       <p className="mb-4 text-sm text-ink-3">
         Define dias e janela de atendimento usados na validação da agenda.
@@ -109,11 +108,9 @@ function ScheduleSection() {
             type="button"
             onClick={() => toggleDay(day.value)}
             size="sm"
-            variant={draft.weekdays.includes(day.value) ? "default" : "outline"}
+            variant={draft.weekdays.includes(day.value) ? "accent" : "outline"}
             aria-pressed={draft.weekdays.includes(day.value)}
-            className={`rounded-full ${
-              draft.weekdays.includes(day.value) ? accentButton : ""
-            }`}
+            className="rounded-full"
           >
             {day.label}
           </Button>
@@ -159,11 +156,12 @@ function ScheduleSection() {
       <Button
         type="button"
         onClick={() => void save()}
-        className={`mt-4 ${accentButton}`}
+        variant="accent"
+        className="mt-4"
       >
         Salvar grade
       </Button>
-    </section>
+    </Card>
   );
 }
 
@@ -190,14 +188,13 @@ function AccountsSection() {
   };
 
   return (
-    // sv-gap: card-as-element
-    <section className="rounded-lg border border-sv-border bg-sv-surface p-5">
+    <Card as="section" className="p-5">
       <div className="mb-1 flex items-center justify-between">
         <h2 className="text-lg font-semibold">Contas de acesso da equipe</h2>
         <Button
           type="button"
           onClick={() => setCreating(true)}
-          className={accentButton}
+          variant="accent"
         >
           + Nova conta
         </Button>
@@ -262,7 +259,7 @@ function AccountsSection() {
           />
         </Modal>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -338,7 +335,8 @@ function AccountForm({
       <Button
         type="submit"
         disabled={saving}
-        className={`mt-1 ${accentButton}`}
+        variant="accent"
+        className="mt-1"
       >
         {saving ? "Criando…" : "Criar conta"}
       </Button>

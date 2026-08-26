@@ -53,8 +53,7 @@ export default function ReportsPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            {/* sv-gap: card-as-element */}
-            <section className="rounded-lg border border-sv-border bg-sv-surface p-5">
+            <Card as="section" className="p-5">
               <h2 className="mb-3 text-lg font-semibold">Consultas por status</h2>
               <ul className="divide-y divide-border text-sm">
                 {Object.entries(report.byStatus).map(([status, count]) => (
@@ -64,10 +63,9 @@ export default function ReportsPage() {
                   </li>
                 ))}
               </ul>
-            </section>
+            </Card>
 
-            {/* sv-gap: card-as-element */}
-            <section className="rounded-lg border border-sv-border bg-sv-surface p-5">
+            <Card as="section" className="p-5">
               <h2 className="mb-3 text-lg font-semibold">
                 Receita e margem por procedimento (concluídas)
               </h2>
@@ -116,12 +114,11 @@ export default function ReportsPage() {
                   )}
                 </>
               )}
-            </section>
+            </Card>
           </div>
 
           {report.productionByProfessional.length > 0 && (
-            // sv-gap: card-as-element
-            <section className="rounded-lg border border-sv-border bg-sv-surface p-5">
+            <Card as="section" className="p-5">
               <h2 className="mb-3 text-lg font-semibold">Produção por profissional</h2>
               <Table className="w-full text-left text-sm">
                 <TableHeader>
@@ -147,7 +144,7 @@ export default function ReportsPage() {
                   ))}
                 </TableBody>
               </Table>
-            </section>
+            </Card>
           )}
         </div>
       )}

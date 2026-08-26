@@ -221,10 +221,16 @@ describe("Feature: SettingsPage", () => {
 
       const domButton = screen.getByRole("button", { name: "Dom" });
       expect(domButton).toHaveAttribute("aria-pressed", "false");
-      expect(domButton.className).not.toContain("bg-accent-ink");
+      // SPEC_DEVIATION: o dia selecionado usava a receita local accentButton
+      // (classe utilitária `bg-accent-ink`) como override de className sobre o
+      // Button; migrado para `variant="accent"` (T32), que o pacote 3.x resolve
+      // para a classe semântica `sv-btn--accent` em vez de um utilitário
+      // Tailwind. O comportamento (dia selecionado ganha a cor de destaque) é o
+      // mesmo; a asserção segue a classe real emitida pelo pacote.
+      expect(domButton.className).not.toContain("sv-btn--accent");
       fireEvent.click(domButton);
       expect(domButton).toHaveAttribute("aria-pressed", "true");
-      expect(domButton.className).toContain("bg-accent-ink");
+      expect(domButton.className).toContain("sv-btn--accent");
     });
 
     it("Dado clique em salvar grade, Quando a chamada é bem-sucedida, Então exibe confirmação", async () => {
@@ -308,10 +314,12 @@ describe("Feature: SettingsPage", () => {
 
       const segButton = screen.getByRole("button", { name: "Seg" });
       expect(segButton).toHaveAttribute("aria-pressed", "true");
-      expect(segButton.className).toContain("bg-accent-ink");
+      // SPEC_DEVIATION: mesma migração accentButton → variant="accent" (T32);
+      // ver nota no primeiro teste desta seção.
+      expect(segButton.className).toContain("sv-btn--accent");
       fireEvent.click(segButton);
       expect(segButton).toHaveAttribute("aria-pressed", "false");
-      expect(segButton.className).not.toContain("bg-accent-ink");
+      expect(segButton.className).not.toContain("sv-btn--accent");
     });
 
     it("Dado alteração dos campos de abertura, fechamento e intervalo, Quando editados, Então refletem os novos valores", async () => {

@@ -23,7 +23,6 @@ import {
   TableHeader,
   TableRow,
 } from "@still-void/ui/react";
-import { accentButton } from "@/lib/ui";
 
 const PAGE_SIZE = 100;
 
@@ -163,7 +162,7 @@ export default function PatientsPage() {
         <Button
           type="button"
           onClick={() => setEditing("new")}
-          className={accentButton}
+          variant="accent"
         >
           + Novo paciente
         </Button>

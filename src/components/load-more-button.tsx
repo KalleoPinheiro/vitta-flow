@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@still-void/ui/react";
+import { Pagination, PaginationContent, PaginationItem, PaginationNext } from "@still-void/ui/react";
 
 interface LoadMoreButtonProps {
   visible: boolean;
@@ -12,11 +12,12 @@ export function LoadMoreButton({ visible, onClick }: LoadMoreButtonProps) {
     return null;
   }
   return (
-    // sv-gap: pagination
-    <div className="mt-4 text-center">
-      <Button type="button" variant="outline" size="sm" onClick={onClick}>
-        Carregar mais
-      </Button>
-    </div>
+    <Pagination className="mt-4">
+      <PaginationContent className="justify-center">
+        <PaginationItem>
+          <PaginationNext label="Carregar mais" onClick={onClick} />
+        </PaginationItem>
+      </PaginationContent>
+    </Pagination>
   );
 }

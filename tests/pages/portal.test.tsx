@@ -919,7 +919,16 @@ describe("Feature: Envio de foto pelo paciente", () => {
         target: { value: "Está coçando" },
       });
       const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      expect(input).toHaveAttribute("accept", "image/jpeg,image/png,image/webp");
+      expect(input).not.toBeDisabled();
+
       fireEvent.change(input, { target: { files: [makeFile()] } });
+
+      // Desabilita durante o envio (disabled={sending}) e reseta o value logo
+      // após disparar o upload (e.target.value = ""), evitando reenvio do
+      // mesmo arquivo se o usuário selecionar de novo.
+      expect(input).toBeDisabled();
+      expect(input.value).toBe("");
 
       await waitFor(() => {
         expect(onSent).toHaveBeenCalledTimes(1);
@@ -928,6 +937,7 @@ describe("Feature: Envio de foto pelo paciente", () => {
       expect(receivedBody).not.toBeNull();
       expect((receivedBody as unknown as FormData).get("conditionId")).toBe("cond-1");
       expect((receivedBody as unknown as FormData).get("note")).toBe("Está coçando");
+      await waitFor(() => expect(input).not.toBeDisabled());
     });
   });
 

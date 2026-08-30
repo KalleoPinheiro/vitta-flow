@@ -4,7 +4,7 @@
 
 **Escopo:** as 18 superfícies do produto — 14 páginas + 4 documentos clínicos imprimíveis.
 
-**Documento irmão:** [`AUDITORIA-DESIGN-SYSTEM-2026-08.md`](AUDITORIA-DESIGN-SYSTEM-2026-08.md) — gaps do `@still-void/ui` consolidados e deduplicados entre as 9 análises.
+**Documento irmão:** [`auditoria-design-system-2026-08.md`](auditoria-design-system-2026-08.md) — gaps do `@still-void/ui` consolidados e deduplicados entre as 9 análises.
 
 ---
 

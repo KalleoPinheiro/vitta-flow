@@ -28,7 +28,7 @@ Next.js 16 (App Router), React 19, TypeScript 5, Drizzle ORM + Postgres 16, Tail
 
 ## @still-void/ui adoption (in progress)
 
-Raw `<button>`, `<input>`, `<select>`, `<textarea>`, `<table>`, and raw Tailwind color utilities are banned — use `@still-void/ui` components instead. `npm run check:sv` enforces this. A deliberate exception needs a `// sv-gap: <slug>` comment matched by an entry in `docs/still-void-gaps.md`. Migration status/history: `.specs/features/still-void-*-migration/`, `docs/BACKLOG-DESIGN-SYSTEM.md`.
+Raw `<button>`, `<input>`, `<select>`, `<textarea>`, `<table>`, and raw Tailwind color utilities are banned — use `@still-void/ui` components instead. `npm run check:sv` enforces this. A deliberate exception needs a `// sv-gap: <slug>` comment matched by an entry in `docs/still-void-gaps.md`. Migration status/history: `.specs/features/still-void-*-migration/`, `docs/backlog-design-system.md`.
 
 ## Auth (fails closed)
 
@@ -61,3 +61,7 @@ Default canonical labels (needs-triage, needs-info, ready-for-agent, ready-for-h
 ### Domain docs
 
 Single-context layout: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+### Planning docs
+
+Where phase/product/audit planning lives in `docs/`, and how it relates to `.specs/features/` and the two decision logs (`docs/adr/` vs `.specs/STATE.md`). See `docs/agents/planning.md`.

@@ -8,7 +8,7 @@ status: draft
 
 ## Problem Statement
 
-A auditoria UX completa (`docs/AUDITORIA-UX-2026-08.md`, 18 superfícies) e a auditoria de design system (`docs/AUDITORIA-DESIGN-SYSTEM-2026-08.md`) identificaram 3 gaps de maior alcance na versão então instalada (`3.2.0`): sidebar sem breakpoint (come 57% do viewport em 390px, 11/18 superfícies), zero notificação transitória de ação de escrita (9/18), e `Alert` sem variantes semânticas forçando repintura manual em ~8 lugares (9/18). A `3.3.0`, já publicada e instalada (`package.json` em `^3.3.0`), fecha os três. Esta feature é a adoção no app — port, não redesenho (AD-014: só troca workaround por primitivo já existente na lib, nenhum padrão novo).
+A auditoria UX completa (`docs/audits/auditoria-ux-2026-08.md`, 18 superfícies) e a auditoria de design system (`docs/audits/auditoria-design-system-2026-08.md`) identificaram 3 gaps de maior alcance na versão então instalada (`3.2.0`): sidebar sem breakpoint (come 57% do viewport em 390px, 11/18 superfícies), zero notificação transitória de ação de escrita (9/18), e `Alert` sem variantes semânticas forçando repintura manual em ~8 lugares (9/18). A `3.3.0`, já publicada e instalada (`package.json` em `^3.3.0`), fecha os três. Esta feature é a adoção no app — port, não redesenho (AD-014: só troca workaround por primitivo já existente na lib, nenhum padrão novo).
 
 ## Goals
 

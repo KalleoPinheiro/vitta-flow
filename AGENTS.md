@@ -50,6 +50,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 Issues live in GitHub Issues for `KalleoPinheiro/vitta-flow`, managed via the `gh` CLI. See `docs/agents/issue-tracker.md`.
 
+### Triage labels
+
+Default canonical labels (needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix). See `docs/agents/triage-labels.md`.
+
 ### Domain docs
 
 Single-context layout: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { apiFetch } from "@/lib/client";
+import { useToast } from "@still-void/ui/react/client";
 import type { ProfessionalDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import { Modal } from "@/components/modal";
@@ -20,6 +21,7 @@ import {
 } from "@still-void/ui/react";
 
 export default function ProfessionalsPage() {
+  const { toast } = useToast();
   const { data: professionals, error, refresh } = useApiQuery<ProfessionalDto[]>(
     "/api/professionals",
   );
@@ -31,6 +33,10 @@ export default function ProfessionalsPage() {
       await apiFetch(`/api/professionals/${professional.id}`, {
         method: "PATCH",
         body: JSON.stringify({ active: !professional.active }),
+      });
+      toast({
+        description: professional.active ? "Profissional desativado" : "Profissional ativado",
+        variant: "success",
       });
       setActionError(null);
       refresh();
@@ -130,6 +136,7 @@ function ProfessionalForm({
   initial?: ProfessionalDto;
   onSaved: () => void;
 }) {
+  const { toast } = useToast();
   const [fullName, setFullName] = useState(initial?.fullName ?? "");
   const [registry, setRegistry] = useState(initial?.registry ?? "");
   const [error, setError] = useState<string | null>(null);
@@ -149,6 +156,10 @@ function ProfessionalForm({
       } else {
         await apiFetch("/api/professionals", { method: "POST", body: JSON.stringify(payload) });
       }
+      toast({
+        description: "Profissional salvo",
+        variant: "success",
+      });
       onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao salvar profissional");

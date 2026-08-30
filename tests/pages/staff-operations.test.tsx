@@ -5,6 +5,7 @@ import AuditPage from "@/app/(staff)/auditoria/page";
 import SettingsPage from "@/app/(staff)/configuracoes/page";
 import PartnersPage from "@/app/(staff)/parceiros/page";
 import ProfessionalsPage from "@/app/(staff)/profissionais/page";
+import { renderWithToast } from "@/../tests/support/render-with-toast";
 
 interface FetchCall {
   url: string;
@@ -1101,7 +1102,7 @@ describe("Feature: ProfessionalsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<ProfessionalsPage />);
+      renderWithToast(<ProfessionalsPage />);
 
       expect(
         await screen.findByText(
@@ -1120,7 +1121,7 @@ describe("Feature: ProfessionalsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<ProfessionalsPage />);
+      renderWithToast(<ProfessionalsPage />);
 
       expect(await screen.findByText("Dra. Ana")).toBeInTheDocument();
       expect(screen.getByText("COREN-SP 123")).toBeInTheDocument();
@@ -1133,7 +1134,7 @@ describe("Feature: ProfessionalsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<ProfessionalsPage />);
+      renderWithToast(<ProfessionalsPage />);
 
       expect(await screen.findByRole("alert")).toBeInTheDocument();
     });
@@ -1155,7 +1156,7 @@ describe("Feature: ProfessionalsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<ProfessionalsPage />);
+      renderWithToast(<ProfessionalsPage />);
       await screen.findByText("Dra. Ana");
 
       fireEvent.click(screen.getByText("Desativar"));
@@ -1176,7 +1177,7 @@ describe("Feature: ProfessionalsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<ProfessionalsPage />);
+      renderWithToast(<ProfessionalsPage />);
       await screen.findByText("Dra. Ana");
 
       fireEvent.click(screen.getByText("Desativar"));
@@ -1197,7 +1198,7 @@ describe("Feature: ProfessionalsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<ProfessionalsPage />);
+      renderWithToast(<ProfessionalsPage />);
       await screen.findByText("Dra. Ana");
 
       fireEvent.click(screen.getByText("Desativar"));
@@ -1217,7 +1218,7 @@ describe("Feature: ProfessionalsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<ProfessionalsPage />);
+      renderWithToast(<ProfessionalsPage />);
 
       expect(await screen.findByText("Dr. Bruno")).toBeInTheDocument();
       expect(screen.getByText("Inativo")).toBeInTheDocument();
@@ -1235,7 +1236,7 @@ describe("Feature: ProfessionalsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<ProfessionalsPage />);
+      renderWithToast(<ProfessionalsPage />);
       await screen.findByText("Dra. Ana");
 
       fireEvent.click(screen.getByText("Editar"));
@@ -1255,7 +1256,7 @@ describe("Feature: ProfessionalsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<ProfessionalsPage />);
+      renderWithToast(<ProfessionalsPage />);
       await screen.findByText("Dra. Ana");
 
       fireEvent.click(screen.getByText("Editar"));
@@ -1283,7 +1284,7 @@ describe("Feature: ProfessionalsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<ProfessionalsPage />);
+      renderWithToast(<ProfessionalsPage />);
       await screen.findByText("Dra. Ana");
 
       fireEvent.click(screen.getByText("Editar"));
@@ -1310,7 +1311,7 @@ describe("Feature: ProfessionalsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<ProfessionalsPage />);
+      renderWithToast(<ProfessionalsPage />);
       await screen.findByText(
         "Nenhum profissional cadastrado. Consultas e evoluções podem ser atribuídas após o cadastro.",
       );
@@ -1333,7 +1334,7 @@ describe("Feature: ProfessionalsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<ProfessionalsPage />);
+      renderWithToast(<ProfessionalsPage />);
       await screen.findByText(
         "Nenhum profissional cadastrado. Consultas e evoluções podem ser atribuídas após o cadastro.",
       );
@@ -1356,7 +1357,7 @@ describe("Feature: ProfessionalsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<ProfessionalsPage />);
+      renderWithToast(<ProfessionalsPage />);
       await screen.findByText(
         "Nenhum profissional cadastrado. Consultas e evoluções podem ser atribuídas após o cadastro.",
       );

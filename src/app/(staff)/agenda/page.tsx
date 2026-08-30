@@ -138,24 +138,21 @@ export default function AgendaPage() {
       setCreatingFor(null);
       refresh();
     } else {
-      try {
-        await apiFetch<AppointmentDto>("/api/appointments", {
-          method: "POST",
-          body: JSON.stringify({ ...payload, followUpId: recall?.followUpId ?? null }),
-        });
-        toast({
-          description: "Consulta criada",
-          variant: "success",
-        });
-        setSeriesNotice(null);
-        setCreatingFor(null);
-        refresh();
-      } catch (err) {
-        toast({
-          description: err instanceof Error ? err.message : "Erro ao criar consulta",
-          variant: "danger",
-        });
-      }
+      // Sem try/catch aqui de propósito: AppointmentForm já envolve este
+      // onSubmit no próprio catch (mostra ErrorAlert inline e mantém o modal
+      // aberto) — interceptar o erro aqui engoliria essa mensagem antes dela
+      // chegar lá (ex.: "Horário indisponível", "fora da grade").
+      await apiFetch<AppointmentDto>("/api/appointments", {
+        method: "POST",
+        body: JSON.stringify({ ...payload, followUpId: recall?.followUpId ?? null }),
+      });
+      toast({
+        description: "Consulta criada",
+        variant: "success",
+      });
+      setSeriesNotice(null);
+      setCreatingFor(null);
+      refresh();
     }
   };
 

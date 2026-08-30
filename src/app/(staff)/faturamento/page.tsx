@@ -134,28 +134,24 @@ export default function BillingPage() {
   const error = actionError ?? loadError;
 
   const handleCreate = async (values: InvoiceFormValues) => {
-    try {
-      await apiFetch<InvoiceDto>("/api/invoices", {
-        method: "POST",
-        body: JSON.stringify({
-          patientId: values.patientId,
-          description: values.description,
-          amountCents: Math.round(Number(values.amount) * 100),
-          dueDate: values.dueDate ? new Date(values.dueDate).toISOString() : null,
-        }),
-      });
-      toast({
-        description: "Fatura criada",
-        variant: "success",
-      });
-      setCreating(false);
-      refresh();
-    } catch (err) {
-      toast({
-        description: err instanceof Error ? err.message : "Erro ao criar fatura",
-        variant: "danger",
-      });
-    }
+    // Sem try/catch aqui de propósito: InvoiceForm já envolve este onSubmit
+    // no próprio catch (mostra ErrorAlert inline e mantém o modal aberto) —
+    // interceptar o erro aqui engoliria essa mensagem antes dela chegar lá.
+    await apiFetch<InvoiceDto>("/api/invoices", {
+      method: "POST",
+      body: JSON.stringify({
+        patientId: values.patientId,
+        description: values.description,
+        amountCents: Math.round(Number(values.amount) * 100),
+        dueDate: values.dueDate ? new Date(values.dueDate).toISOString() : null,
+      }),
+    });
+    toast({
+      description: "Fatura criada",
+      variant: "success",
+    });
+    setCreating(false);
+    refresh();
   };
 
   const handlePay = async (invoice: InvoiceDto, method: string) => {

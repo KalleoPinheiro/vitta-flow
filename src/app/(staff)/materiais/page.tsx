@@ -9,6 +9,8 @@ import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import {
+  Alert,
+  AlertDescription,
   Button,
   Card,
   Checkbox,
@@ -133,10 +135,12 @@ function LowStockBanner({ supplies }: { supplies: SupplyDto[] | null }) {
     return null;
   }
   return (
-    <div className="mb-4 rounded-lg border border-warning bg-warning-soft px-4 py-3 text-sm text-warning">
-      <Icon name="alert-triangle" /> {count}{" "}
-      {count === 1 ? "insumo está" : "insumos estão"} com estoque baixo (≤ mínimo).
-    </div>
+    <Alert variant="warning" className="mb-4">
+      <AlertDescription>
+        <Icon name="alert-triangle" /> {count}{" "}
+        {count === 1 ? "insumo está" : "insumos estão"} com estoque baixo (≤ mínimo).
+      </AlertDescription>
+    </Alert>
   );
 }
 
@@ -147,26 +151,30 @@ function ExpiryBanner({ batches }: { batches: ExpiringBatchDto[] }) {
   const expired = batches.filter((b) => b.isExpired);
   const expiring = batches.filter((b) => !b.isExpired);
   return (
-    <div className="mb-4 rounded-lg border border-danger bg-danger-soft px-4 py-3 text-sm text-danger">
+    <>
       {expired.length > 0 && (
-        <p>
-          <Icon name="blocked" /> {expired.length} {expired.length === 1 ? "lote vencido" : "lotes vencidos"} com saldo:{" "}
-          {expired.map((b) => `${b.supplyName}${b.label ? ` (${b.label})` : ""}`).join(", ")}
-        </p>
+        <Alert variant="danger" className="mb-4">
+          <AlertDescription>
+            <Icon name="blocked" /> {expired.length} {expired.length === 1 ? "lote vencido" : "lotes vencidos"} com saldo:{" "}
+            {expired.map((b) => `${b.supplyName}${b.label ? ` (${b.label})` : ""}`).join(", ")}
+          </AlertDescription>
+        </Alert>
       )}
       {expiring.length > 0 && (
-        <p>
-          <Icon name="pending" /> {expiring.length} {expiring.length === 1 ? "lote vence" : "lotes vencem"} em até 30
-          dias:{" "}
-          {expiring
-            .map(
-              (b) =>
-                `${b.supplyName}${b.label ? ` (${b.label})` : ""} — ${formatDate(b.expiresAt)}`,
-            )
-            .join(", ")}
-        </p>
+        <Alert variant="warning" className="mb-4">
+          <AlertDescription>
+            <Icon name="pending" /> {expiring.length} {expiring.length === 1 ? "lote vence" : "lotes vencem"} em até 30
+            dias:{" "}
+            {expiring
+              .map(
+                (b) =>
+                  `${b.supplyName}${b.label ? ` (${b.label})` : ""} — ${formatDate(b.expiresAt)}`,
+              )
+              .join(", ")}
+          </AlertDescription>
+        </Alert>
       )}
-    </div>
+    </>
   );
 }
 

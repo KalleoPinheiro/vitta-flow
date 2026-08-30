@@ -245,6 +245,8 @@ describe("Feature: Materiais e estoque", () => {
 
       render(<SuppliesPage />);
 
+      const alerts = await screen.findAllByRole("alert");
+      expect(alerts.length).toBe(3); // low stock (warning), expired (danger), and expiring (warning)
       expect(await screen.findByText(/lote vencido com saldo/)).toBeInTheDocument();
       expect(screen.getByText(/lote vence em até 30/)).toBeInTheDocument();
     });
@@ -299,6 +301,8 @@ describe("Feature: Materiais e estoque", () => {
 
       render(<SuppliesPage />);
 
+      const alerts = await screen.findAllByRole("alert");
+      expect(alerts.length).toBe(3); // low stock (warning), expired (danger), and expiring (warning)
       expect(await screen.findByText(/2 lotes vencidos com saldo/)).toBeInTheDocument();
       expect(screen.getByText(/2 lotes vencem em até 30/)).toBeInTheDocument();
     });

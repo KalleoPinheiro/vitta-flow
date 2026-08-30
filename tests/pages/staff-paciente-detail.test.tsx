@@ -1132,6 +1132,7 @@ describe("Feature: PatientRecordPage", () => {
         );
       });
       await waitFor(() => expect(input).not.toBeDisabled());
+      expect(await screen.findByText("Foto enviada")).toBeInTheDocument();
     });
 
     it("Dado arquivo maior que 5MB, Quando selecionado, Então exibe erro de validação local sem chamar a API", async () => {
@@ -1202,6 +1203,7 @@ describe("Feature: PatientRecordPage", () => {
           expect.objectContaining({ method: "DELETE" }),
         );
       });
+      expect(await screen.findByText("Foto excluída")).toBeInTheDocument();
     });
 
     it("Dado resposta de erro sem corpo JSON válido, Quando enviar foto, Então exibe mensagem padrão de erro", async () => {

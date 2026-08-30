@@ -435,6 +435,7 @@ describe("Feature: Materiais e estoque", () => {
       fireEvent.click(screen.getByText("Salvar"));
 
       await waitFor(() => expect(created).toBe(true));
+      expect(await screen.findByText("Insumo salvo")).toBeInTheDocument();
     });
 
     it("Dado edição de um insumo existente, Quando o modal abre, Então preenche os campos com os dados atuais", async () => {
@@ -563,6 +564,7 @@ describe("Feature: Materiais e estoque", () => {
         batchLabel: "L2026-091",
         expiresAt: new Date("2026-12-31").toISOString(),
       });
+      expect(await screen.findByText("Entrada registrada")).toBeInTheDocument();
     });
 
     it("Dado saída de estoque vinculada a uma consulta do dia, Quando submetido, Então envia o appointmentId", async () => {
@@ -598,6 +600,7 @@ describe("Feature: Materiais e estoque", () => {
       await waitFor(() => expect(sentBody).toBeDefined());
       const payload = JSON.parse(sentBody as string);
       expect(payload).toMatchObject({ type: "out", appointmentId: "appt-1" });
+      expect(await screen.findByText("Saída registrada")).toBeInTheDocument();
     });
 
     it("Dado falha ao registrar movimentação, Quando submetido, Então exibe alerta de erro", async () => {

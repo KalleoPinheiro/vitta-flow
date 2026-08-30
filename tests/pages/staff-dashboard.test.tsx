@@ -279,6 +279,20 @@ describe("Feature: Dashboard do painel interno", () => {
       });
     });
 
+    it("Dado clique em Cancelar com sucesso, Quando executado, Então exibe toast de sucesso 'Retorno cancelado'", async () => {
+      mockFetch({ followUps: [followUpFixture] });
+      renderWithToast(<DashboardPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Cancelar")).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByText("Cancelar"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Retorno cancelado")).toBeInTheDocument();
+      });
+    });
+
     it("Dado falha ao concluir retorno, Quando acionado, Então exibe toast de erro", async () => {
       vi.stubGlobal(
         "fetch",

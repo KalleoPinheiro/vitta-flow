@@ -186,6 +186,7 @@ describe("Feature: Catálogo de procedimentos", () => {
           }),
         ]);
       });
+      expect(await screen.findByText("Procedimento desativado")).toBeInTheDocument();
     });
 
     it("Dado clique em Reativar em um procedimento inativo, Quando acionado, Então envia PATCH com active true", async () => {
@@ -215,6 +216,7 @@ describe("Feature: Catálogo de procedimentos", () => {
           }),
         ]);
       });
+      expect(await screen.findByText("Procedimento ativado")).toBeInTheDocument();
     });
 
     it("Dado falha ao alternar situação, Quando acionado, Então exibe alerta de erro", async () => {
@@ -289,6 +291,7 @@ describe("Feature: Catálogo de procedimentos", () => {
       fireEvent.click(screen.getByText("Salvar"));
 
       await waitFor(() => expect(created).toBe(true));
+      expect(await screen.findByText("Procedimento salvo")).toBeInTheDocument();
     });
 
     it("Dado edição de procedimento existente, Quando o modal abre, Então preenche os campos atuais", async () => {
@@ -477,6 +480,7 @@ describe("Feature: Catálogo de procedimentos", () => {
       expect(JSON.parse(sentBody as string)).toEqual({
         items: [{ supplyId: "sup-1", quantity: 3 }],
       });
+      expect(await screen.findByText("Kit atualizado")).toBeInTheDocument();
     });
 
     it("Dado remoção de um item do kit, Quando acionado, Então o item some da lista", async () => {

@@ -790,6 +790,7 @@ describe("Feature: PartnersPage", () => {
       fireEvent.click(screen.getByText("Desativar"));
 
       await waitFor(() => expect(calls).toBeGreaterThanOrEqual(2));
+      expect(await screen.findByText("Parceiro desativado")).toBeInTheDocument();
     });
 
     it("Dado erro ao alternar situação, Quando falha, Então exibe alerta de erro", async () => {
@@ -906,6 +907,7 @@ describe("Feature: PartnersPage", () => {
       fireEvent.click(screen.getByText("Salvar"));
 
       await waitFor(() => expect(created).toBe(true));
+      expect(await screen.findByText("Parceiro salvo")).toBeInTheDocument();
     });
 
     it("Dado clique em editar parceiro existente, Quando o modal abre, Então preenche os campos com os dados atuais", async () => {
@@ -1036,6 +1038,7 @@ describe("Feature: PartnersPage", () => {
           expect.objectContaining({ crm: "CRM-SP 999", specialty: "Dermatologia" }),
         );
       });
+      expect(await screen.findByText("Parceiro salvo")).toBeInTheDocument();
     });
 
     it("Dado erro ao salvar parceiro, Quando a chamada falha, Então exibe alerta no formulário", async () => {
@@ -1162,6 +1165,7 @@ describe("Feature: ProfessionalsPage", () => {
       fireEvent.click(screen.getByText("Desativar"));
 
       await waitFor(() => expect(calls).toBeGreaterThanOrEqual(2));
+      expect(await screen.findByText("Profissional desativado")).toBeInTheDocument();
     });
 
     it("Dado erro ao alternar situação, Quando falha, Então exibe alerta de erro", async () => {
@@ -1296,6 +1300,7 @@ describe("Feature: ProfessionalsPage", () => {
       await waitFor(() => {
         expect(sentBody).toEqual(expect.objectContaining({ registry: "COREN-SP 456" }));
       });
+      expect(await screen.findByText("Profissional salvo")).toBeInTheDocument();
     });
   });
 
@@ -1323,6 +1328,7 @@ describe("Feature: ProfessionalsPage", () => {
       fireEvent.click(screen.getByText("Salvar"));
 
       await waitFor(() => expect(created).toBe(true));
+      expect(await screen.findByText("Profissional salvo")).toBeInTheDocument();
     });
 
     it("Dado erro ao salvar profissional, Quando a chamada falha, Então exibe alerta no formulário", async () => {

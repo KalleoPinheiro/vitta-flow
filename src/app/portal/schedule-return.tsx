@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { apiFetch } from "@/lib/client";
+import { useToast } from "@still-void/ui/react/client";
 import { useApiQuery } from "@/lib/use-api-query";
 import type { ProcedureDto } from "@/lib/dto";
 import { formatTime } from "@/lib/format";
@@ -65,6 +66,7 @@ function SchedulePanel({
   onScheduled,
   onCancel,
 }: ScheduleReturnProps & { onCancel: () => void }) {
+  const { toast } = useToast();
   const { data: procedures } = useApiQuery<ProcedureDto[]>("/api/portal/patient/procedures");
   const [procedureId, setProcedureId] = useState("");
   // Janela de oferta fixada na montagem (o relógio não pode ser lido em render).
@@ -82,6 +84,10 @@ function SchedulePanel({
       await apiFetch("/api/portal/patient/appointments", {
         method: "POST",
         body: JSON.stringify({ procedureId, startsAt: slot.startsAt, followUpId }),
+      });
+      toast({
+        description: "Retorno agendado",
+        variant: "success",
       });
       onScheduled();
     } catch (err) {

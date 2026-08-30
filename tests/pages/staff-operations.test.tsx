@@ -254,9 +254,8 @@ describe("Feature: SettingsPage", () => {
 
       fireEvent.click(screen.getByText("Salvar grade"));
 
-      expect(
-        await screen.findByText(/Grade salva — vale imediatamente para novos agendamentos\./),
-      ).toBeInTheDocument();
+      const alert = await screen.findByRole("status");
+      expect(alert).toHaveTextContent(/Grade salva — vale imediatamente para novos agendamentos./);
     });
 
     it("Dado erro ao salvar grade, Quando falha a chamada, Então exibe alerta de erro", async () => {

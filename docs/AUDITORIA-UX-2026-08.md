@@ -1,6 +1,6 @@
 # Auditoria UX/UI — VittaFlow (2026-08)
 
-**Method:** dual-agent per superfície — 9 agentes opus rodaram em paralelo, cada um com leitura de código-fonte + screenshots reais (desktop 1440×900 e mobile 390×844) do app rodando localmente (Docker Postgres + `next dev`, modo aberto, dados de seed mínimos: 1 paciente com colostomia, 1 profissional, 1 procedimento, 1 insumo, 1 consulta futura, 1 condição clínica + plano de cuidados ativos). Detector estático `impeccable/detect.mjs` rodou limpo (0 achados) sobre `src/app` e `src/components` — consistente com o gate `npm run check:sv` 100% verde: **a adoção do design system é limpa na origem (zero HTML cru), mas isso não garante qualidade de UX** — é exatamente o que esta auditoria mede.
+**Method:** dual-agent per superfície — 9 agentes opus rodaram em paralelo, cada um com leitura de código-fonte + screenshots reais (desktop 1440×900 e mobile 390×844) do app rodando localmente (Docker Postgres + `next dev`, modo aberto, dados de seed mínimos: 1 paciente com colostomia, 1 profissional, 1 procedimento, 1 insumo, 1 consulta futura, 1 condição clínica + plano de cuidados ativos). Detector estático `impeccable/detect.mjs` rodou limpo (0 achados) sobre `src/app` e `src/components` — consistente com o gate `npm run check:sv` 100% verde: **os dois gates confirmam zero degrau de paleta crua e zero elemento nativo (`<button>`/`<input>`/`<select>`/`<table>`) fora do catálogo do design system, mas não cobrem todo HTML** — a própria auditoria abaixo encontra `<div onClick>` e `<img>` crus (e o documento irmão registra um `<circle>` cru), e isso não garante qualidade de UX — é exatamente o que esta auditoria mede.
 
 **Escopo:** as 18 superfícies do produto — 14 páginas + 4 documentos clínicos imprimíveis.
 
@@ -69,6 +69,7 @@ Cada seção abaixo reproduz o relatório completo do agente responsável: o que
 ---
 
 <a id="dashboard"></a>
+
 ## 1. Dashboard (staff home) — `/`
 
 ### O que funciona bem
@@ -138,6 +139,7 @@ Cada seção abaixo reproduz o relatório completo do agente responsável: o que
 ---
 
 <a id="agenda"></a>
+
 ## 2. Agenda — `/agenda`
 
 ### O que funciona bem
@@ -207,6 +209,7 @@ Cada seção abaixo reproduz o relatório completo do agente responsável: o que
 ---
 
 <a id="prontuario"></a>
+
 ## 3. Pacientes e Prontuário — `/pacientes`, `/pacientes/[id]`
 
 > Superfície de maior risco clínico do sistema. Todo achado confirmado em código ou screenshot; nada especulativo.
@@ -328,6 +331,7 @@ Cada seção abaixo reproduz o relatório completo do agente responsável: o que
 ---
 
 <a id="catalogo"></a>
+
 ## 4. Procedimentos e Materiais — `/procedimentos`, `/materiais`
 
 ### Procedimentos — O que funciona bem
@@ -415,6 +419,7 @@ H5 Prevenção **1** (`minQty` default `0` ⇒ todo insumo novo nasce "estoque b
 ---
 
 <a id="financeiro"></a>
+
 ## 5. Faturamento e Relatórios — `/faturamento`, `/relatorios`
 
 ### Faturamento — O que funciona bem
@@ -495,6 +500,7 @@ H1 Status **1** (erro deixa a tela num skeleton infinito — `aria-live` em loop
 ---
 
 <a id="diretorios"></a>
+
 ## 6. Profissionais e Parceiros — `/profissionais`, `/parceiros`
 
 ### Profissionais — O que funciona bem
@@ -575,6 +581,7 @@ O esqueleto é o mesmo — bom sinal. Mas cada divergência é assinatura de pad
 ---
 
 <a id="admin"></a>
+
 ## 7. Auditoria e Configurações — `/auditoria`, `/configuracoes`
 
 ### Auditoria — O que funciona bem
@@ -655,6 +662,7 @@ H5 Prevenção **0** (zero validação no cliente; limpar campo numérico manda 
 ---
 
 <a id="acesso"></a>
+
 ## 8. Login e Portal — `/login`, `/portal`
 
 > **Achado transversal que muda a leitura das duas telas:** paciente e parceiro entram pelo `/login` — não existe magic link em lugar nenhum do código. A tela que diz "Acesso restrito à equipe da clínica" é a porta de entrada obrigatória de todo paciente.
@@ -758,6 +766,7 @@ H2 Mundo real **0** (a legenda do gráfico diz literalmente "Sólida no accent" 
 ---
 
 <a id="documentos"></a>
+
 ## 9. Documentos clínicos — atestado, consentimento, plano de cuidados, relatório
 
 > **Contexto verificado no código:** `<html data-theme="light">` é hardcoded em `layout.tsx:34` — não há `ThemeToggle` em lugar nenhum do app. O cenário "dark mode destrói o PDF" não é reproduzível hoje, e `bg-white`/`text-black` literais estão corretos e documentados. Mas é uma mina: no dia em que alguém adotar o `ThemeToggle` do catálogo, `HealingChart` e todo `text-ink-3` do relatório viram lixo no papel — porque **não existe uma única regra `@media print`** em `globals.css`. Todo o "modo impressão" do sistema hoje é três utilitários (`print:hidden`, `print:max-w-none`, `print:p-0`).

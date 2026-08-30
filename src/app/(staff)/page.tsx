@@ -212,12 +212,17 @@ const TRIAGE_ATTENTION_HOURS = 24;
 function TriageQueue() {
   const { data: queue, refresh } = useApiQuery<TriagePhotoDto[]>("/api/photos/triage");
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const triage = async (photo: TriagePhotoDto, decision: "reviewed" | "escalated") => {
     try {
       await apiFetch(`/api/photos/${photo.id}`, {
         method: "PATCH",
         body: JSON.stringify({ triage: decision }),
+      });
+      toast({
+        description: decision === "reviewed" ? "Foto revisada" : "Foto escalada",
+        variant: "success",
       });
       setError(null);
       refresh();

@@ -3,6 +3,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 import type { ProcedureDto, SupplyDto } from "@/lib/dto";
 import ProceduresPage from "@/app/(staff)/procedimentos/page";
+import { renderWithToast } from "@/../tests/support/render-with-toast";
 
 interface FetchCall {
   url: string;
@@ -118,7 +119,7 @@ describe("Feature: Catálogo de procedimentos", () => {
         return jsonResponse([]);
       });
 
-      render(<ProceduresPage />);
+      renderWithToast(<ProceduresPage />);
 
       expect(screen.getByText("Carregando…")).toBeInTheDocument();
     });
@@ -126,7 +127,7 @@ describe("Feature: Catálogo de procedimentos", () => {
     it("Dado nenhum procedimento, Quando a página carrega, Então exibe mensagem de vazio", async () => {
       mockFetch(buildRouter());
 
-      render(<ProceduresPage />);
+      renderWithToast(<ProceduresPage />);
 
       expect(
         await screen.findByText(
@@ -138,7 +139,7 @@ describe("Feature: Catálogo de procedimentos", () => {
     it("Dado erro ao carregar procedimentos, Quando a página carrega, Então exibe alerta de erro", async () => {
       mockFetch(buildRouter({ proceduresError: true }));
 
-      render(<ProceduresPage />);
+      renderWithToast(<ProceduresPage />);
 
       expect(await screen.findByRole("alert")).toBeInTheDocument();
     });
@@ -146,7 +147,7 @@ describe("Feature: Catálogo de procedimentos", () => {
     it("Dado procedimentos ativos e inativos, Quando a página carrega, Então lista com preço, duração e situação", async () => {
       mockFetch(buildRouter({ procedures: [activeProcedure, inactiveProcedure] }));
 
-      render(<ProceduresPage />);
+      renderWithToast(<ProceduresPage />);
 
       expect(await screen.findByText("Troca de bolsa de colostomia")).toBeInTheDocument();
       expect(screen.getByText("Curativo simples")).toBeInTheDocument();
@@ -171,7 +172,7 @@ describe("Feature: Catálogo de procedimentos", () => {
         }),
       );
 
-      render(<ProceduresPage />);
+      renderWithToast(<ProceduresPage />);
       await screen.findByText("Troca de bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Desativar"));
@@ -200,7 +201,7 @@ describe("Feature: Catálogo de procedimentos", () => {
         }),
       );
 
-      render(<ProceduresPage />);
+      renderWithToast(<ProceduresPage />);
       await screen.findByText("Curativo simples");
 
       fireEvent.click(screen.getByText("Reativar"));
@@ -229,7 +230,7 @@ describe("Feature: Catálogo de procedimentos", () => {
         }),
       );
 
-      render(<ProceduresPage />);
+      renderWithToast(<ProceduresPage />);
       await screen.findByText("Troca de bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Desativar"));
@@ -250,7 +251,7 @@ describe("Feature: Catálogo de procedimentos", () => {
         }),
       );
 
-      render(<ProceduresPage />);
+      renderWithToast(<ProceduresPage />);
       await screen.findByText("Troca de bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Desativar"));
@@ -274,7 +275,7 @@ describe("Feature: Catálogo de procedimentos", () => {
         }),
       );
 
-      render(<ProceduresPage />);
+      renderWithToast(<ProceduresPage />);
       await screen.findByText(
         "Nenhum procedimento cadastrado — o agendamento continua com texto livre até o catálogo existir.",
       );
@@ -293,7 +294,7 @@ describe("Feature: Catálogo de procedimentos", () => {
     it("Dado edição de procedimento existente, Quando o modal abre, Então preenche os campos atuais", async () => {
       mockFetch(buildRouter({ procedures: [activeProcedure] }));
 
-      render(<ProceduresPage />);
+      renderWithToast(<ProceduresPage />);
       await screen.findByText("Troca de bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Editar"));
@@ -319,7 +320,7 @@ describe("Feature: Catálogo de procedimentos", () => {
         }),
       );
 
-      render(<ProceduresPage />);
+      renderWithToast(<ProceduresPage />);
       await screen.findByText("Troca de bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Editar"));
@@ -340,7 +341,7 @@ describe("Feature: Catálogo de procedimentos", () => {
     it("Dado clique no botão Fechar do modal de novo procedimento, Quando acionado, Então fecha o modal sem salvar", async () => {
       const fetchMock = mockFetch(buildRouter());
 
-      render(<ProceduresPage />);
+      renderWithToast(<ProceduresPage />);
       await screen.findByText(
         "Nenhum procedimento cadastrado — o agendamento continua com texto livre até o catálogo existir.",
       );
@@ -367,7 +368,7 @@ describe("Feature: Catálogo de procedimentos", () => {
         }),
       );
 
-      render(<ProceduresPage />);
+      renderWithToast(<ProceduresPage />);
       await screen.findByText(
         "Nenhum procedimento cadastrado — o agendamento continua com texto livre até o catálogo existir.",
       );
@@ -394,7 +395,7 @@ describe("Feature: Catálogo de procedimentos", () => {
         }),
       );
 
-      render(<ProceduresPage />);
+      renderWithToast(<ProceduresPage />);
       await screen.findByText(
         "Nenhum procedimento cadastrado — o agendamento continua com texto livre até o catálogo existir.",
       );
@@ -414,7 +415,7 @@ describe("Feature: Catálogo de procedimentos", () => {
     it("Dado kit vazio, Quando abrir o modal, Então exibe mensagem de nenhum item", async () => {
       mockFetch(buildRouter({ procedures: [activeProcedure], supplies: [supplyFixture], kitItems: [] }));
 
-      render(<ProceduresPage />);
+      renderWithToast(<ProceduresPage />);
       await screen.findByText("Troca de bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Kit"));
@@ -433,7 +434,7 @@ describe("Feature: Catálogo de procedimentos", () => {
         }),
       );
 
-      render(<ProceduresPage />);
+      renderWithToast(<ProceduresPage />);
       await screen.findByText("Troca de bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Kit"));
@@ -459,7 +460,7 @@ describe("Feature: Catálogo de procedimentos", () => {
         }),
       );
 
-      render(<ProceduresPage />);
+      renderWithToast(<ProceduresPage />);
       await screen.findByText("Troca de bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Kit"));
@@ -487,7 +488,7 @@ describe("Feature: Catálogo de procedimentos", () => {
         }),
       );
 
-      render(<ProceduresPage />);
+      renderWithToast(<ProceduresPage />);
       await screen.findByText("Troca de bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Kit"));
@@ -515,7 +516,7 @@ describe("Feature: Catálogo de procedimentos", () => {
         }),
       );
 
-      render(<ProceduresPage />);
+      renderWithToast(<ProceduresPage />);
       await screen.findByText("Troca de bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Kit"));
@@ -541,7 +542,7 @@ describe("Feature: Catálogo de procedimentos", () => {
         }),
       );
 
-      render(<ProceduresPage />);
+      renderWithToast(<ProceduresPage />);
       await screen.findByText("Troca de bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Kit"));
@@ -561,7 +562,7 @@ describe("Feature: Catálogo de procedimentos", () => {
         }),
       );
 
-      render(<ProceduresPage />);
+      renderWithToast(<ProceduresPage />);
       await screen.findByText("Troca de bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Kit"));
@@ -581,7 +582,7 @@ describe("Feature: Catálogo de procedimentos", () => {
         }),
       );
 
-      render(<ProceduresPage />);
+      renderWithToast(<ProceduresPage />);
       await screen.findByText("Troca de bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Kit"));
@@ -602,7 +603,7 @@ describe("Feature: Catálogo de procedimentos", () => {
         }),
       );
 
-      render(<ProceduresPage />);
+      renderWithToast(<ProceduresPage />);
       await screen.findByText("Troca de bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Kit"));
@@ -628,7 +629,7 @@ describe("Feature: Catálogo de procedimentos", () => {
         }),
       );
 
-      render(<ProceduresPage />);
+      renderWithToast(<ProceduresPage />);
       await screen.findByText("Troca de bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Kit"));
@@ -659,7 +660,7 @@ describe("Feature: Catálogo de procedimentos", () => {
         }),
       );
 
-      render(<ProceduresPage />);
+      renderWithToast(<ProceduresPage />);
       await screen.findByText("Troca de bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Kit"));

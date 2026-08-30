@@ -1391,6 +1391,7 @@ describe("Feature: PatientRecordPage", () => {
       await waitFor(() => {
         expect(screen.queryByText("Registrar evolução")).not.toBeInTheDocument();
       });
+      expect(await screen.findByText("Evolução registrada")).toBeInTheDocument();
     });
 
     it("Dado erro ao registrar evolução, Quando a chamada falha, Então exibe alerta de erro", async () => {

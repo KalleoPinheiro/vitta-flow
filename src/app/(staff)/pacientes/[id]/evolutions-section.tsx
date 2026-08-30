@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from "@still-void/ui/react/client";
 import { apiFetch } from "@/lib/client";
 import type { EvolutionNoteDto, ProfessionalDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
@@ -26,6 +27,7 @@ type SoapKey = (typeof SOAP_FIELDS)[number]["key"];
 const EMPTY: Record<SoapKey, string> = { subjective: "", objective: "", assessment: "", plan: "" };
 
 export function EvolutionsSection({ patientId, evolutions, onSaved }: EvolutionsSectionProps) {
+  const { toast } = useToast();
   const [values, setValues] = useState(EMPTY);
   const [professionalId, setProfessionalId] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +47,7 @@ export function EvolutionsSection({ patientId, evolutions, onSaved }: Evolutions
         method: "POST",
         body: JSON.stringify({ ...values, professionalId: professionalId || null }),
       });
+      toast({ description: "Evolução registrada", variant: "success" });
       setValues(EMPTY);
       setShowForm(false);
       onSaved();

@@ -5,6 +5,7 @@ import AuditPage from "@/app/(staff)/auditoria/page";
 import SettingsPage from "@/app/(staff)/configuracoes/page";
 import PartnersPage from "@/app/(staff)/parceiros/page";
 import ProfessionalsPage from "@/app/(staff)/profissionais/page";
+import { renderWithToast } from "@/../tests/support/render-with-toast";
 
 interface FetchCall {
   url: string;
@@ -254,9 +255,8 @@ describe("Feature: SettingsPage", () => {
 
       fireEvent.click(screen.getByText("Salvar grade"));
 
-      expect(
-        await screen.findByText(/Grade salva — vale imediatamente para novos agendamentos\./),
-      ).toBeInTheDocument();
+      const alert = await screen.findByRole("status");
+      expect(alert).toHaveTextContent(/Grade salva — vale imediatamente para novos agendamentos./);
     });
 
     it("Dado erro ao salvar grade, Quando falha a chamada, Então exibe alerta de erro", async () => {
@@ -717,7 +717,7 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
 
       expect(await screen.findByText("Nenhum parceiro cadastrado.")).toBeInTheDocument();
     });
@@ -740,7 +740,7 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
 
       expect(await screen.findByText("Dr. João")).toBeInTheDocument();
       expect(screen.getByText("CRM-SP 123")).toBeInTheDocument();
@@ -754,7 +754,7 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
 
       expect(await screen.findByRole("alert")).toBeInTheDocument();
     });
@@ -784,12 +784,13 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
       await screen.findByText("Dr. João");
 
       fireEvent.click(screen.getByText("Desativar"));
 
       await waitFor(() => expect(calls).toBeGreaterThanOrEqual(2));
+      expect(await screen.findByText("Parceiro desativado")).toBeInTheDocument();
     });
 
     it("Dado erro ao alternar situação, Quando falha, Então exibe alerta de erro", async () => {
@@ -813,7 +814,7 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
       await screen.findByText("Dr. João");
 
       fireEvent.click(screen.getByText("Desativar"));
@@ -842,7 +843,7 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
       await screen.findByText("Dr. João");
 
       fireEvent.click(screen.getByText("Desativar"));
@@ -870,11 +871,43 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
 
       expect(await screen.findByText("Dr. Carlos")).toBeInTheDocument();
       expect(screen.getByText("Inativo")).toBeInTheDocument();
       expect(screen.getByText("Reativar")).toBeInTheDocument();
+    });
+
+    it("Dado clique em reativar, Quando a chamada é bem-sucedida, Então exibe toast 'Parceiro ativado'", async () => {
+      let calls = 0;
+      mockFetch(({ url, init }) => {
+        if (url === "/api/partners/pt3" && init?.method === "PUT") {
+          return jsonResponse({ id: "pt3", active: true });
+        }
+        if (url.startsWith("/api/partners")) {
+          calls += 1;
+          return jsonResponse([
+            {
+              id: "pt3",
+              fullName: "Dr. Carlos",
+              email: "carlos@parceiro.com",
+              phone: "11977777777",
+              crm: null,
+              specialty: null,
+              active: false,
+            },
+          ]);
+        }
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<PartnersPage />);
+      await screen.findByText("Dr. Carlos");
+
+      fireEvent.click(screen.getByText("Reativar"));
+
+      await waitFor(() => expect(calls).toBeGreaterThanOrEqual(2));
+      expect(await screen.findByText("Parceiro ativado")).toBeInTheDocument();
     });
   });
 
@@ -890,7 +923,7 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
       await screen.findByText("Nenhum parceiro cadastrado.");
 
       fireEvent.click(screen.getByText("+ Novo parceiro"));
@@ -906,6 +939,7 @@ describe("Feature: PartnersPage", () => {
       fireEvent.click(screen.getByText("Salvar"));
 
       await waitFor(() => expect(created).toBe(true));
+      expect(await screen.findByText("Parceiro salvo")).toBeInTheDocument();
     });
 
     it("Dado clique em editar parceiro existente, Quando o modal abre, Então preenche os campos com os dados atuais", async () => {
@@ -926,7 +960,7 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
       await screen.findByText("Dr. João");
 
       fireEvent.click(screen.getByText("Editar"));
@@ -954,7 +988,7 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
       await screen.findByText("Dra. Beatriz");
 
       fireEvent.click(screen.getByText("Editar"));
@@ -983,7 +1017,7 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
       await screen.findByText("Dr. João");
 
       fireEvent.click(screen.getByText("Editar"));
@@ -1019,7 +1053,7 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
       await screen.findByText("Dr. João");
 
       fireEvent.click(screen.getByText("Editar"));
@@ -1036,6 +1070,7 @@ describe("Feature: PartnersPage", () => {
           expect.objectContaining({ crm: "CRM-SP 999", specialty: "Dermatologia" }),
         );
       });
+      expect(await screen.findByText("Parceiro salvo")).toBeInTheDocument();
     });
 
     it("Dado erro ao salvar parceiro, Quando a chamada falha, Então exibe alerta no formulário", async () => {
@@ -1047,7 +1082,7 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
       await screen.findByText("Nenhum parceiro cadastrado.");
 
       fireEvent.click(screen.getByText("+ Novo parceiro"));
@@ -1074,7 +1109,7 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
       await screen.findByText("Nenhum parceiro cadastrado.");
 
       fireEvent.click(screen.getByText("+ Novo parceiro"));
@@ -1102,7 +1137,7 @@ describe("Feature: ProfessionalsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<ProfessionalsPage />);
+      renderWithToast(<ProfessionalsPage />);
 
       expect(
         await screen.findByText(
@@ -1121,7 +1156,7 @@ describe("Feature: ProfessionalsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<ProfessionalsPage />);
+      renderWithToast(<ProfessionalsPage />);
 
       expect(await screen.findByText("Dra. Ana")).toBeInTheDocument();
       expect(screen.getByText("COREN-SP 123")).toBeInTheDocument();
@@ -1134,7 +1169,7 @@ describe("Feature: ProfessionalsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<ProfessionalsPage />);
+      renderWithToast(<ProfessionalsPage />);
 
       expect(await screen.findByRole("alert")).toBeInTheDocument();
     });
@@ -1156,12 +1191,37 @@ describe("Feature: ProfessionalsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<ProfessionalsPage />);
+      renderWithToast(<ProfessionalsPage />);
       await screen.findByText("Dra. Ana");
 
       fireEvent.click(screen.getByText("Desativar"));
 
       await waitFor(() => expect(calls).toBeGreaterThanOrEqual(2));
+      expect(await screen.findByText("Profissional desativado")).toBeInTheDocument();
+    });
+
+    it("Dado clique em reativar, Quando a chamada é bem-sucedida, Então exibe toast 'Profissional ativado'", async () => {
+      let calls = 0;
+      mockFetch(({ url, init }) => {
+        if (url === "/api/professionals/pr3" && init?.method === "PATCH") {
+          return jsonResponse({ id: "pr3", active: true });
+        }
+        if (url.startsWith("/api/professionals")) {
+          calls += 1;
+          return jsonResponse([
+            { id: "pr3", fullName: "Dr. Bruno", registry: null, commissionPct: null, active: false },
+          ]);
+        }
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<ProfessionalsPage />);
+      await screen.findByText("Dr. Bruno");
+
+      fireEvent.click(screen.getByText("Reativar"));
+
+      await waitFor(() => expect(calls).toBeGreaterThanOrEqual(2));
+      expect(await screen.findByText("Profissional ativado")).toBeInTheDocument();
     });
 
     it("Dado erro ao alternar situação, Quando falha, Então exibe alerta de erro", async () => {
@@ -1177,7 +1237,7 @@ describe("Feature: ProfessionalsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<ProfessionalsPage />);
+      renderWithToast(<ProfessionalsPage />);
       await screen.findByText("Dra. Ana");
 
       fireEvent.click(screen.getByText("Desativar"));
@@ -1198,7 +1258,7 @@ describe("Feature: ProfessionalsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<ProfessionalsPage />);
+      renderWithToast(<ProfessionalsPage />);
       await screen.findByText("Dra. Ana");
 
       fireEvent.click(screen.getByText("Desativar"));
@@ -1218,7 +1278,7 @@ describe("Feature: ProfessionalsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<ProfessionalsPage />);
+      renderWithToast(<ProfessionalsPage />);
 
       expect(await screen.findByText("Dr. Bruno")).toBeInTheDocument();
       expect(screen.getByText("Inativo")).toBeInTheDocument();
@@ -1236,7 +1296,7 @@ describe("Feature: ProfessionalsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<ProfessionalsPage />);
+      renderWithToast(<ProfessionalsPage />);
       await screen.findByText("Dra. Ana");
 
       fireEvent.click(screen.getByText("Editar"));
@@ -1256,7 +1316,7 @@ describe("Feature: ProfessionalsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<ProfessionalsPage />);
+      renderWithToast(<ProfessionalsPage />);
       await screen.findByText("Dra. Ana");
 
       fireEvent.click(screen.getByText("Editar"));
@@ -1284,7 +1344,7 @@ describe("Feature: ProfessionalsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<ProfessionalsPage />);
+      renderWithToast(<ProfessionalsPage />);
       await screen.findByText("Dra. Ana");
 
       fireEvent.click(screen.getByText("Editar"));
@@ -1296,6 +1356,7 @@ describe("Feature: ProfessionalsPage", () => {
       await waitFor(() => {
         expect(sentBody).toEqual(expect.objectContaining({ registry: "COREN-SP 456" }));
       });
+      expect(await screen.findByText("Profissional salvo")).toBeInTheDocument();
     });
   });
 
@@ -1311,7 +1372,7 @@ describe("Feature: ProfessionalsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<ProfessionalsPage />);
+      renderWithToast(<ProfessionalsPage />);
       await screen.findByText(
         "Nenhum profissional cadastrado. Consultas e evoluções podem ser atribuídas após o cadastro.",
       );
@@ -1323,6 +1384,7 @@ describe("Feature: ProfessionalsPage", () => {
       fireEvent.click(screen.getByText("Salvar"));
 
       await waitFor(() => expect(created).toBe(true));
+      expect(await screen.findByText("Profissional salvo")).toBeInTheDocument();
     });
 
     it("Dado erro ao salvar profissional, Quando a chamada falha, Então exibe alerta no formulário", async () => {
@@ -1334,7 +1396,7 @@ describe("Feature: ProfessionalsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<ProfessionalsPage />);
+      renderWithToast(<ProfessionalsPage />);
       await screen.findByText(
         "Nenhum profissional cadastrado. Consultas e evoluções podem ser atribuídas após o cadastro.",
       );
@@ -1357,7 +1419,7 @@ describe("Feature: ProfessionalsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<ProfessionalsPage />);
+      renderWithToast(<ProfessionalsPage />);
       await screen.findByText(
         "Nenhum profissional cadastrado. Consultas e evoluções podem ser atribuídas após o cadastro.",
       );

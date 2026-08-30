@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
+import { screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 import type { AppointmentDto, FollowUpDto, SupplyDto } from "@/lib/dto";
 import { formatDate } from "@/lib/format";
 import DashboardPage from "@/app/(staff)/page";
+import { renderWithToast } from "@/../tests/support/render-with-toast";
 
 interface TriagePhotoFixture {
   id: string;
@@ -133,7 +134,7 @@ describe("Feature: Dashboard do painel interno", () => {
   describe("Cenário: carregando", () => {
     it("Dado que o resumo ainda não chegou, Quando renderizar, Então exibe indicador de carregamento", () => {
       mockFetch();
-      render(<DashboardPage />);
+      renderWithToast(<DashboardPage />);
 
       expect(screen.getByText("Carregando…")).toBeInTheDocument();
     });
@@ -142,7 +143,7 @@ describe("Feature: Dashboard do painel interno", () => {
   describe("Cenário: erro ao carregar resumo", () => {
     it("Dado falha na API de resumo, Quando renderizar, Então exibe alerta de erro", async () => {
       mockFetch({ summaryError: "Erro ao buscar resumo" });
-      render(<DashboardPage />);
+      renderWithToast(<DashboardPage />);
 
       await waitFor(() => {
         expect(screen.getByText("Erro ao buscar resumo")).toBeInTheDocument();
@@ -157,7 +158,7 @@ describe("Feature: Dashboard do painel interno", () => {
         followUps: [followUpFixture],
         supplies: [supplyFixture],
       });
-      render(<DashboardPage />);
+      renderWithToast(<DashboardPage />);
 
       await waitFor(() => {
         expect(screen.getByText("R$ 1.500,00")).toBeInTheDocument();
@@ -181,7 +182,7 @@ describe("Feature: Dashboard do painel interno", () => {
           today: [{ ...appointmentFixture, status: "rescheduled" }],
         },
       });
-      render(<DashboardPage />);
+      renderWithToast(<DashboardPage />);
 
       await waitFor(() => {
         expect(screen.getByText("rescheduled")).toBeInTheDocument();
@@ -192,7 +193,7 @@ describe("Feature: Dashboard do painel interno", () => {
       mockFetch({
         followUps: [{ ...followUpFixture, isOverdue: false }],
       });
-      render(<DashboardPage />);
+      renderWithToast(<DashboardPage />);
 
       await waitFor(() => {
         expect(screen.getByText(formatDate(followUpFixture.dueDate))).toBeInTheDocument();
@@ -204,7 +205,7 @@ describe("Feature: Dashboard do painel interno", () => {
   describe("Cenário: listas vazias", () => {
     it("Dado nenhuma consulta hoje, nenhum retorno e nenhum insumo baixo, Quando renderizar, Então exibe mensagens de estado vazio", async () => {
       mockFetch();
-      render(<DashboardPage />);
+      renderWithToast(<DashboardPage />);
 
       await waitFor(() => {
         expect(screen.getByText("Nenhuma consulta agendada para hoje.")).toBeInTheDocument();
@@ -215,7 +216,7 @@ describe("Feature: Dashboard do painel interno", () => {
 
     it("Dado insumos existentes mas nenhum abaixo do mínimo, Quando renderizar, Então filtra a lista de estoque baixo", async () => {
       mockFetch({ supplies: [{ ...supplyFixture, isLowStock: false }] });
-      render(<DashboardPage />);
+      renderWithToast(<DashboardPage />);
 
       await waitFor(() => {
         expect(screen.getByText("Nenhum insumo abaixo do mínimo.")).toBeInTheDocument();
@@ -226,7 +227,7 @@ describe("Feature: Dashboard do painel interno", () => {
   describe("Cenário: ações de retorno pendente", () => {
     it("Dado clique em Concluir, Quando acionado, Então chama PATCH e atualiza a lista", async () => {
       mockFetch({ followUps: [followUpFixture] });
-      render(<DashboardPage />);
+      renderWithToast(<DashboardPage />);
 
       await waitFor(() => {
         expect(screen.getByText("Concluir")).toBeInTheDocument();
@@ -246,7 +247,7 @@ describe("Feature: Dashboard do painel interno", () => {
 
     it("Dado clique em Cancelar, Quando acionado, Então chama PATCH com status cancelled", async () => {
       mockFetch({ followUps: [followUpFixture] });
-      render(<DashboardPage />);
+      renderWithToast(<DashboardPage />);
 
       await waitFor(() => {
         expect(screen.getByText("Cancelar")).toBeInTheDocument();
@@ -263,12 +264,70 @@ describe("Feature: Dashboard do painel interno", () => {
         );
       });
     });
+
+    it("Dado clique em Concluir com sucesso, Quando executado, Então exibe toast de sucesso 'Retorno concluído'", async () => {
+      mockFetch({ followUps: [followUpFixture] });
+      renderWithToast(<DashboardPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Concluir")).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByText("Concluir"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Retorno concluído")).toBeInTheDocument();
+      });
+    });
+
+    it("Dado clique em Cancelar com sucesso, Quando executado, Então exibe toast de sucesso 'Retorno cancelado'", async () => {
+      mockFetch({ followUps: [followUpFixture] });
+      renderWithToast(<DashboardPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Cancelar")).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByText("Cancelar"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Retorno cancelado")).toBeInTheDocument();
+      });
+    });
+
+    it("Dado falha ao concluir retorno, Quando acionado, Então exibe toast de erro", async () => {
+      vi.stubGlobal(
+        "fetch",
+        // eslint-disable-next-line complexity -- roteador de mock por url/método, ramificação inerente ao padrão
+        vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+          const url = typeof input === "string" ? input : input.toString();
+          const method = init?.method ?? "GET";
+          if (url.startsWith("/api/summary")) return jsonResponse(true, summaryFixture);
+          if (url.startsWith("/api/follow-ups") && method === "GET")
+            return jsonResponse(true, [followUpFixture]);
+          if (url.startsWith("/api/follow-ups/") && method === "PATCH") {
+            throw new Error("Erro ao atualizar retorno");
+          }
+          if (url.startsWith("/api/supplies")) return jsonResponse(true, []);
+          if (url.startsWith("/api/photos/triage")) return jsonResponse(true, []);
+          throw new Error(`URL não mapeada: ${method} ${url}`);
+        }),
+      );
+      renderWithToast(<DashboardPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Concluir")).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByText("Concluir"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Erro ao atualizar retorno")).toBeInTheDocument();
+      });
+    });
   });
 
   describe("Cenário: fila de triagem de fotos", () => {
     it("Dado fila vazia, Quando renderizar, Então não exibe a seção de triagem", async () => {
       mockFetch();
-      render(<DashboardPage />);
+      renderWithToast(<DashboardPage />);
 
       await waitFor(() => {
         expect(screen.getByText("Nenhum retorno pendente.")).toBeInTheDocument();
@@ -278,7 +337,7 @@ describe("Feature: Dashboard do painel interno", () => {
 
     it("Dado fotos aguardando triagem, Quando renderizar, Então exibe a fila com paciente e observação", async () => {
       mockFetch({ triage: [triageFixture] });
-      render(<DashboardPage />);
+      renderWithToast(<DashboardPage />);
 
       await waitFor(() => {
         expect(screen.getByText(/aguardando triagem \(1\)/)).toBeInTheDocument();
@@ -293,7 +352,7 @@ describe("Feature: Dashboard do painel interno", () => {
           { ...triageFixture, waitingHours: 30, latestScore: { kind: "push", value: 9 } },
         ],
       });
-      render(<DashboardPage />);
+      renderWithToast(<DashboardPage />);
 
       await waitFor(() => {
         expect(screen.getByText("PUSH 9")).toBeInTheDocument();
@@ -306,7 +365,7 @@ describe("Feature: Dashboard do painel interno", () => {
 
     it("Dado pendência recente sem score, Quando renderizar, Então idade sem destaque e sem badge (COMP3-05)", async () => {
       mockFetch({ triage: [triageFixture] });
-      render(<DashboardPage />);
+      renderWithToast(<DashboardPage />);
 
       await waitFor(() => {
         expect(screen.getByText(/aguardando há 2h/)).toBeInTheDocument();
@@ -317,7 +376,7 @@ describe("Feature: Dashboard do painel interno", () => {
 
     it("Dado clique em 'Ok, manter plano', Quando acionado, Então envia triagem reviewed", async () => {
       mockFetch({ triage: [triageFixture] });
-      render(<DashboardPage />);
+      renderWithToast(<DashboardPage />);
 
       await waitFor(() => {
         expect(screen.getByText("Ok, manter plano")).toBeInTheDocument();
@@ -333,11 +392,12 @@ describe("Feature: Dashboard do painel interno", () => {
           }),
         );
       });
+      expect(await screen.findByText("Foto revisada")).toBeInTheDocument();
     });
 
     it("Dado clique em 'Antecipar retorno', Quando acionado, Então envia triagem escalated", async () => {
       mockFetch({ triage: [triageFixture] });
-      render(<DashboardPage />);
+      renderWithToast(<DashboardPage />);
 
       await waitFor(() => {
         expect(screen.getByText("Antecipar retorno")).toBeInTheDocument();
@@ -353,11 +413,12 @@ describe("Feature: Dashboard do painel interno", () => {
           }),
         );
       });
+      expect(await screen.findByText("Foto escalada")).toBeInTheDocument();
     });
 
     it("Dado foto sem observação do paciente, Quando renderizar, Então exibe 'sem observação'", async () => {
       mockFetch({ triage: [{ ...triageFixture, patientNote: null }] });
-      render(<DashboardPage />);
+      renderWithToast(<DashboardPage />);
 
       await waitFor(() => {
         expect(screen.getByText(/sem observação/)).toBeInTheDocument();
@@ -382,7 +443,7 @@ describe("Feature: Dashboard do painel interno", () => {
           throw new Error(`URL não mapeada: ${method} ${url}`);
         }),
       );
-      render(<DashboardPage />);
+      renderWithToast(<DashboardPage />);
 
       await waitFor(() => {
         expect(screen.getByText("Ok, manter plano")).toBeInTheDocument();
@@ -410,7 +471,7 @@ describe("Feature: Dashboard do painel interno", () => {
           throw new Error(`URL não mapeada: ${method} ${url}`);
         }),
       );
-      render(<DashboardPage />);
+      renderWithToast(<DashboardPage />);
 
       await waitFor(() => {
         expect(screen.getByText("Ok, manter plano")).toBeInTheDocument();

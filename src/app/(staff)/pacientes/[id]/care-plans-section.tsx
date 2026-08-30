@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from "@still-void/ui/react/client";
 import { apiFetch } from "@/lib/client";
 import { useApiQuery } from "@/lib/use-api-query";
 import type {
@@ -127,6 +128,7 @@ function OpenCarePlanForm({
   conditions: ConditionDto[];
   onSaved: () => void;
 }) {
+  const { toast } = useToast();
   const [conditionId, setConditionId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -140,6 +142,7 @@ function OpenCarePlanForm({
         method: "POST",
         body: JSON.stringify({ conditionId: conditionId || null }),
       });
+      toast({ description: "Plano de cuidados aberto", variant: "success" });
       onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao abrir plano");
@@ -179,6 +182,7 @@ function OpenCarePlanForm({
 }
 
 function CarePlanPanel({ planId, onChanged }: { planId: string; onChanged: () => void }) {
+  const { toast } = useToast();
   const { data: detail, error, refresh } = useApiQuery<CarePlanDetailDto>(`/api/care-plans/${planId}`);
   const [addingDiagnosis, setAddingDiagnosis] = useState(false);
   const [addingOutcome, setAddingOutcome] = useState(false);
@@ -197,6 +201,7 @@ function CarePlanPanel({ planId, onChanged }: { planId: string; onChanged: () =>
         method: "PATCH",
         body: JSON.stringify({ action: "resolve" }),
       });
+      toast({ description: "Plano de cuidados encerrado", variant: "success" });
       refresh();
       onChanged();
     } catch (err) {
@@ -494,6 +499,7 @@ function RecordInterventionButton({
   interventionId: string;
   onRecorded: () => void;
 }) {
+  const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -505,6 +511,7 @@ function RecordInterventionButton({
         method: "POST",
         body: JSON.stringify({}),
       });
+      toast({ description: "Execução registrada", variant: "success" });
       onRecorded();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao registrar execução");
@@ -583,6 +590,7 @@ function TaxonomyOptionList<T extends TaxonomyOption>({
 }
 
 function AddDiagnosisForm({ carePlanId, onSaved }: { carePlanId: string; onSaved: () => void }) {
+  const { toast } = useToast();
   const { term, setTerm, results } = useTaxonomySearch<NursingDiagnosisDto>("diagnoses");
   const [selected, setSelected] = useState<NursingDiagnosisDto | null>(null);
   const [type, setType] = useState<"real" | "risco" | "promocao-saude">("real");
@@ -609,6 +617,7 @@ function AddDiagnosisForm({ carePlanId, onSaved }: { carePlanId: string; onSaved
           definingCharacteristics: definingCharacteristics || null,
         }),
       });
+      toast({ description: "Diagnóstico adicionado", variant: "success" });
       onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao prescrever diagnóstico");
@@ -696,6 +705,7 @@ function PrescribeOutcomeForm({
   diagnosisCode: string | null;
   onSaved: () => void;
 }) {
+  const { toast } = useToast();
   const { data: linked } = useApiQuery<{ outcomes: NursingOutcomeDto[] }>(
     diagnosisCode ? `/api/taxonomy/diagnoses/${diagnosisCode}/linked-terms` : null,
   );
@@ -726,6 +736,7 @@ function PrescribeOutcomeForm({
           targetScore: Number(targetScore),
         }),
       });
+      toast({ description: "Resultado prescrito", variant: "success" });
       onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao prescrever resultado");
@@ -809,6 +820,7 @@ function PrescribeInterventionForm({
   diagnosisCode: string | null;
   onSaved: () => void;
 }) {
+  const { toast } = useToast();
   const { data: linked } = useApiQuery<{ interventions: NursingInterventionDto[] }>(
     diagnosisCode ? `/api/taxonomy/diagnoses/${diagnosisCode}/linked-terms` : null,
   );
@@ -835,6 +847,7 @@ function PrescribeInterventionForm({
         method: "POST",
         body: JSON.stringify({ interventionCode: selected.code, frequency, priority }),
       });
+      toast({ description: "Intervenção prescrita", variant: "success" });
       onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao prescrever intervenção");
@@ -904,6 +917,7 @@ function PrescribeInterventionForm({
 }
 
 function EvaluateOutcomeForm({ outcome, onSaved }: { outcome: CarePlanOutcomeDto; onSaved: () => void }) {
+  const { toast } = useToast();
   const [score, setScore] = useState(outcome.currentScore ?? outcome.baselineScore);
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -918,6 +932,7 @@ function EvaluateOutcomeForm({ outcome, onSaved }: { outcome: CarePlanOutcomeDto
         method: "POST",
         body: JSON.stringify({ score, notes: notes || null }),
       });
+      toast({ description: "Avaliação de resultado registrada", variant: "success" });
       onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao registrar avaliação");

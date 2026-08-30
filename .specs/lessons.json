@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 23,
+  "next_id": 26,
   "lessons": [
     {
       "id": "L-001",
@@ -402,6 +402,60 @@
       ],
       "created": "2026-08-26T02:04:06Z",
       "last_seen": "2026-08-26T02:04:06Z"
+    },
+    {
+      "id": "L-023",
+      "key": "ac_gap::when adding toast text test coverage for a binary toggle handler e g toggleactive the off deactivate branch tends to get covered first and the on reactivate branch is silently skipped happened twice in one fix commit across two different files profissionais and parceiros always add or extend both branches together not just the one with an existing test to append to",
+      "text": "When adding toast-text test coverage for a binary toggle handler (e.g. toggleActive), the 'off'/deactivate branch tends to get covered first and the 'on'/reactivate branch is silently skipped — happened twice in one fix commit across two different files (profissionais and parceiros); always add or extend both branches together, not just the one with an existing test to append to.",
+      "signal": "ac_gap",
+      "scope": "tests/pages/staff-operations.test.tsx",
+      "status": "candidate",
+      "features": [
+        "still-void-v3.3-adoption"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "tests/pages/staff-operations.test.tsx (profissionais.toggleActive, parceiros.toggleActive) (tests/pages/staff-operations.test.tsx)"
+      ],
+      "created": "2026-08-30T07:01:31Z",
+      "last_seen": "2026-08-30T07:01:31Z"
+    },
+    {
+      "id": "L-024",
+      "key": "ac_gap::antes de envolver um handlex values passado como onsubmit de um form filho em try catch novo confirme se o form j tem seu pr prio catch ao redor de await onsubmit values sen o o novo catch engole o erro antes do form mostrar erroralert inline e manter o modal aberto",
+      "text": "Antes de envolver um handleX(values) passado como onSubmit de um form filho em try/catch novo, confirme se o form já tem seu próprio catch ao redor de 'await onSubmit(values)' — senão o novo catch engole o erro antes do form mostrar ErrorAlert inline e manter o modal aberto.",
+      "signal": "ac_gap",
+      "scope": "src/app/(staff)",
+      "status": "candidate",
+      "features": [
+        "still-void-v3.3-adoption"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "src/app/(staff)/agenda/page.tsx:141, src/app/(staff)/faturamento/page.tsx:137 (pré-fix) (src/app/(staff))"
+      ],
+      "created": "2026-08-30T07:13:52Z",
+      "last_seen": "2026-08-30T07:13:52Z"
+    },
+    {
+      "id": "L-025",
+      "key": "gate_fail::sidebarprovider da still void ui tem defaultopen true pensado pro rail de desktop que ignora open em qualquer app que usa o modo drawer offcanvas em mobile passe defaultopen false explicitamente ou o drawer nasce aberto sem clique do usu rio rode e2e com repeat each 3 pra pegar flakes de timing de hidrata o antes de considerar uma feature de layout responsivo fechada",
+      "text": "SidebarProvider da @still-void/ui tem defaultOpen=true (pensado pro rail de desktop, que ignora open); em qualquer app que usa o modo drawer/offcanvas em mobile, passe defaultOpen={false} explicitamente ou o drawer nasce aberto sem clique do usuário. Rode e2e com --repeat-each>=3 pra pegar flakes de timing de hidratação antes de considerar uma feature de layout responsivo fechada.",
+      "signal": "gate_fail",
+      "scope": "src/app/(staff), still-void-ui SidebarProvider",
+      "status": "candidate",
+      "features": [
+        "still-void-v3.3-adoption"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "src/app/(staff)/staff-layout-client.tsx (pré-fix), e2e/sidebar-responsive.spec.ts flaky 2/3 repeats (src/app/(staff), still-void-ui SidebarProvider)"
+      ],
+      "created": "2026-08-30T07:13:58Z",
+      "last_seen": "2026-08-30T07:13:58Z"
     }
   ]
 }

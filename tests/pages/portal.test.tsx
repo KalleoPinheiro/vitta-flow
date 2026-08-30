@@ -18,6 +18,7 @@ import { PatientPortalView } from "@/app/portal/patient-view";
 import { PartnerPortalView } from "@/app/portal/partner-view";
 import { ConsentCard, PatientPhotoUpload } from "@/app/portal/consent-card";
 import { ConditionProgress, type ConditionWithAssessmentsDto } from "@/app/portal/condition-progress";
+import { renderWithToast } from "@/../tests/support/render-with-toast";
 
 function jsonResponse(success: boolean, data: unknown, error: string | null = null) {
   return {
@@ -226,7 +227,7 @@ describe("Feature: Visão do paciente no portal", () => {
     it("Dado que os dados ainda não chegaram, Quando renderizar, Então exibe indicador de carregamento", () => {
       mockFetch([{ path: "/api/portal/patient", respond: () => jsonResponse(true, emptyPatientBundle) }]);
 
-      render(<PatientPortalView />);
+      renderWithToast(<PatientPortalView />);
 
       expect(screen.getByText("Carregando…")).toBeInTheDocument();
     });
@@ -236,7 +237,7 @@ describe("Feature: Visão do paciente no portal", () => {
     it("Dado falha na API, Quando renderizar, Então exibe alerta de erro", async () => {
       mockFetch([{ path: "/api/portal/patient", respond: () => jsonResponse(false, null, "Erro ao buscar paciente") }]);
 
-      render(<PatientPortalView />);
+      renderWithToast(<PatientPortalView />);
 
       expect(await screen.findByText("Erro ao buscar paciente")).toBeInTheDocument();
     });
@@ -249,7 +250,7 @@ describe("Feature: Visão do paciente no portal", () => {
         { path: "/api/portal/patient", respond: () => jsonResponse(true, emptyPatientBundle) },
       ]);
 
-      render(<PatientPortalView />);
+      renderWithToast(<PatientPortalView />);
 
       expect(await screen.findByText("Nenhuma consulta agendada. Entre em contato com a clínica para agendar.")).toBeInTheDocument();
       expect(screen.queryByText("Retornos recomendados")).not.toBeInTheDocument();
@@ -282,7 +283,7 @@ describe("Feature: Visão do paciente no portal", () => {
         },
       ]);
 
-      render(<PatientPortalView />);
+      renderWithToast(<PatientPortalView />);
 
       const confirmButton = await screen.findByText("Confirmar presença");
       fireEvent.click(confirmButton);
@@ -311,7 +312,7 @@ describe("Feature: Visão do paciente no portal", () => {
         },
       ]);
 
-      render(<PatientPortalView />);
+      renderWithToast(<PatientPortalView />);
 
       const confirmButton = await screen.findByText("Confirmar presença");
       fireEvent.click(confirmButton);
@@ -334,7 +335,7 @@ describe("Feature: Visão do paciente no portal", () => {
         },
       ]);
 
-      render(<PatientPortalView />);
+      renderWithToast(<PatientPortalView />);
 
       expect(await screen.findByText("Nenhuma consulta agendada. Entre em contato com a clínica para agendar.")).toBeInTheDocument();
       expect(screen.getByText("Cancelada")).toBeInTheDocument();
@@ -360,7 +361,7 @@ describe("Feature: Visão do paciente no portal", () => {
         },
       ]);
 
-      render(<PatientPortalView />);
+      renderWithToast(<PatientPortalView />);
 
       expect(await screen.findByText("Retornos recomendados")).toBeInTheDocument();
       expect(screen.getByText(/Retorno para avaliação de ferida/)).toBeInTheDocument();
@@ -434,7 +435,7 @@ describe("Feature: Visão do paciente no portal", () => {
         return rawFetch(input, init);
       });
 
-      render(<PatientPortalView />);
+      renderWithToast(<PatientPortalView />);
 
       fireEvent.click(await screen.findByText("Agendar retorno"));
       fireEvent.change(await screen.findByLabelText(/Procedimento/), {
@@ -456,6 +457,7 @@ describe("Feature: Visão do paciente no portal", () => {
       // Ancorado na data/hora da consulta — "Curativo" sozinho também casaria a
       // <option> do select de procedimento, passando sem a consulta renderizar.
       expect(await screen.findByText(formatDateTime(scheduled.startsAt))).toBeInTheDocument();
+      expect(await screen.findByText("Retorno agendado")).toBeInTheDocument();
       await waitFor(() => {
         expect(screen.queryByText("Retornos recomendados")).not.toBeInTheDocument();
       });
@@ -497,7 +499,7 @@ describe("Feature: Visão do paciente no portal", () => {
         },
       ]);
 
-      render(<PatientPortalView />);
+      renderWithToast(<PatientPortalView />);
 
       fireEvent.click(await screen.findByText("Agendar retorno"));
       fireEvent.change(await screen.findByLabelText(/Procedimento/), {
@@ -528,7 +530,7 @@ describe("Feature: Visão do paciente no portal", () => {
         },
       ]);
 
-      render(<PatientPortalView />);
+      renderWithToast(<PatientPortalView />);
 
       await screen.findByText("Ferida perna E");
       expect(screen.getByText("Estomia resolvida")).toBeInTheDocument();
@@ -565,12 +567,11 @@ describe("Feature: Visão do paciente no portal", () => {
         },
       ]);
 
-      render(<PatientPortalView />);
+      renderWithToast(<PatientPortalView />);
 
       expect(await screen.findByText("Termo de consentimento pendente")).toBeInTheDocument();
-      expect(
-        screen.getByText("Aceite o termo de consentimento acima para enviar fotos à equipe."),
-      ).toBeInTheDocument();
+      const warning = screen.getByRole("alert");
+      expect(warning).toHaveTextContent("Aceite o termo de consentimento acima para enviar fotos à equipe.");
       expect(document.querySelector('input[type="file"]')).toBeNull();
 
       fireEvent.click(screen.getByText("Li e aceito o termo"));
@@ -614,7 +615,7 @@ describe("Feature: Visão do paciente no portal", () => {
         },
       ]);
 
-      render(<PatientPortalView />);
+      renderWithToast(<PatientPortalView />);
 
       const button = await screen.findByText("Li e aceito o termo");
       fireEvent.click(button);
@@ -644,7 +645,7 @@ describe("Feature: Visão do paciente no portal", () => {
         },
       ]);
 
-      render(<PatientPortalView />);
+      renderWithToast(<PatientPortalView />);
 
       await screen.findByText("Ferida perna E");
       expect(
@@ -676,7 +677,7 @@ describe("Feature: Visão do paciente no portal", () => {
         },
       ]);
 
-      render(<PatientPortalView />);
+      renderWithToast(<PatientPortalView />);
 
       expect(await screen.findByText("Troca de bolsa de colostomia")).toBeInTheDocument();
       expect(screen.getByText("R$ 150,00")).toBeInTheDocument();
@@ -700,7 +701,7 @@ describe("Feature: Visão do paciente no portal", () => {
         },
       ]);
 
-      render(<PatientPortalView />);
+      renderWithToast(<PatientPortalView />);
 
       expect(await screen.findByText(formatDateTime(pastAppointment.startsAt))).toBeInTheDocument();
       expect(screen.queryByText("Confirmar presença")).not.toBeInTheDocument();
@@ -837,9 +838,8 @@ describe("Feature: Cartão de consentimento", () => {
         />,
       );
 
-      expect(
-        screen.getByText(`Termo de consentimento aceito em ${formatDateTime("2026-01-10T14:30:00.000Z")}.`),
-      ).toBeInTheDocument();
+      const alert = screen.getByRole("status");
+      expect(alert).toHaveTextContent(`Termo de consentimento aceito em ${formatDateTime("2026-01-10T14:30:00.000Z")}.`);
     });
   });
 

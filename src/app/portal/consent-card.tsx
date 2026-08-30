@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { apiFetch } from "@/lib/client";
 import { formatDateTime } from "@/lib/format";
-import { Button, Card, FileInput, Icon, Input } from "@still-void/ui/react";
+import { Alert, AlertDescription, Button, Card, FileInput, Icon, Input } from "@still-void/ui/react";
 import { ErrorAlert } from "@/components/feedback";
 
 export interface ConsentStatusDto {
@@ -31,10 +31,12 @@ export function ConsentCard({
 
   if (status.accepted) {
     return (
-      <p className="rounded-lg border border-success-soft bg-success-soft px-4 py-3 text-sm text-success">
-        <Icon name="check-circle" /> Termo de consentimento aceito
-        {status.acceptedAt ? ` em ${formatDateTime(status.acceptedAt)}` : ""}.
-      </p>
+      <Alert variant="success">
+        <AlertDescription>
+          <Icon name="check-circle" /> Termo de consentimento aceito
+          {status.acceptedAt ? ` em ${formatDateTime(status.acceptedAt)}` : ""}.
+        </AlertDescription>
+      </Alert>
     );
   }
 
@@ -56,6 +58,8 @@ export function ConsentCard({
     }
   };
 
+  // Ponto 2: Card permanece manual (não vira Alert — fora de escopo da phase).
+  // Apenas documentado aqui; cores e estrutura continuam com classes warning.
   return (
     <Card as="section" className="border-warning bg-warning-soft p-4">
       <h2 className="mb-2 text-sm font-bold text-warning">
@@ -119,9 +123,11 @@ export function PatientPhotoUpload({
 
   if (consentPending) {
     return (
-      <p className="mt-2 rounded-lg border border-warning-soft bg-warning-soft px-3 py-2 text-xs text-warning">
-        Aceite o termo de consentimento acima para enviar fotos à equipe.
-      </p>
+      <Alert variant="warning" className="mt-2">
+        <AlertDescription>
+          Aceite o termo de consentimento acima para enviar fotos à equipe.
+        </AlertDescription>
+      </Alert>
     );
   }
 

@@ -8,6 +8,8 @@ import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import {
+  Alert,
+  AlertDescription,
   Button,
   Card,
   Input,
@@ -96,9 +98,9 @@ function ScheduleSection() {
       </p>
       {saveError && <ErrorAlert message={saveError} />}
       {saved && (
-        <p className="mb-3 rounded-lg bg-success-soft px-3 py-2 text-sm text-success">
-          Grade salva — vale imediatamente para novos agendamentos.
-        </p>
+        <Alert variant="success" className="mb-3">
+          <AlertDescription>Grade salva — vale imediatamente para novos agendamentos.</AlertDescription>
+        </Alert>
       )}
 
       <div className="mb-4 flex flex-wrap gap-2">

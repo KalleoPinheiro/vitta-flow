@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Sora, Manrope, JetBrains_Mono } from "next/font/google";
+import { Providers } from "./providers";
 import "./globals.css";
 
 const sora = Sora({
@@ -39,7 +40,9 @@ export default function RootLayout({
     >
       {/* sv-body é o seletor base do Still Void: background, cor, família,
           escala tipográfica e antialiasing vêm todos do design system. */}
-      <body className="sv-body min-h-screen">{children}</body>
+      <body className="sv-body min-h-screen">
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

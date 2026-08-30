@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { apiFetch } from "@/lib/client";
+import { useToast } from "@still-void/ui/react/client";
 import type { PartnerDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import { Modal } from "@/components/modal";
@@ -20,6 +21,7 @@ import {
 } from "@still-void/ui/react";
 
 export default function PartnersPage() {
+  const { toast } = useToast();
   const { data: partners, error, refresh } = useApiQuery<PartnerDto[]>("/api/partners");
   const [editing, setEditing] = useState<PartnerDto | "new" | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -29,6 +31,10 @@ export default function PartnersPage() {
       await apiFetch<PartnerDto>(`/api/partners/${partner.id}`, {
         method: "PUT",
         body: JSON.stringify({ active: !partner.active }),
+      });
+      toast({
+        description: partner.active ? "Parceiro desativado" : "Parceiro ativado",
+        variant: "success",
       });
       setActionError(null);
       refresh();
@@ -154,6 +160,7 @@ const toFormValues = (initial?: PartnerDto): PartnerFormValues => {
 };
 
 function PartnerForm({ initial, onSaved }: { initial?: PartnerDto; onSaved: () => void }) {
+  const { toast } = useToast();
   const [values, setValues] = useState<PartnerFormValues>(() => toFormValues(initial));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -184,6 +191,10 @@ function PartnerForm({ initial, onSaved }: { initial?: PartnerDto; onSaved: () =
           body: JSON.stringify(payload),
         });
       }
+      toast({
+        description: "Parceiro salvo",
+        variant: "success",
+      });
       onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao salvar parceiro");

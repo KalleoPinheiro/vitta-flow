@@ -13,6 +13,7 @@ import type {
 import { formatDate, formatDateTime } from "@/lib/format";
 import PatientRecordPage from "@/app/(staff)/pacientes/[id]/page";
 import type { PackageDto } from "@/app/(staff)/pacientes/[id]/packages-section";
+import { renderWithToast } from "@/../tests/support/render-with-toast";
 
 interface FetchCall {
   url: string;
@@ -50,7 +51,7 @@ afterEach(() => {
 
 async function renderDetail(id = "pac-1") {
   await act(async () => {
-    render(<PatientRecordPage params={Promise.resolve({ id })} />);
+    renderWithToast(<PatientRecordPage params={Promise.resolve({ id })} />);
   });
 }
 
@@ -277,9 +278,9 @@ describe("Feature: PatientRecordPage", () => {
       await renderDetail();
 
       expect(await screen.findByText("Maria Souza")).toBeInTheDocument();
-      const allergyLabel = screen.getByText(/Alergias:/);
-      expect(allergyLabel).toBeInTheDocument();
-      expect(allergyLabel.parentElement).toHaveTextContent("Látex");
+      const allergyAlert = screen.getByRole("alert");
+      expect(allergyAlert).toHaveTextContent("Alergias:");
+      expect(allergyAlert).toHaveTextContent("Látex");
     });
 
     it("Dado condições e evoluções cadastradas, Quando renderizar, Então mostra contagem nas abas e alterna entre elas", async () => {
@@ -384,7 +385,7 @@ describe("Feature: PatientRecordPage", () => {
           expect.objectContaining({ method: "PUT" }),
         );
       });
-      expect(await screen.findByText(/Salvo às/)).toBeInTheDocument();
+      expect(await screen.findByText("Anamnese salva")).toBeInTheDocument();
     });
 
     it("Dado erro ao salvar anamnese, Quando a chamada falha, Então exibe alerta de erro", async () => {
@@ -474,6 +475,7 @@ describe("Feature: PatientRecordPage", () => {
           }),
         );
       });
+      expect(await screen.findByText("Condição registrada")).toBeInTheDocument();
     });
 
     it("Dado clique em nova condição do tipo estomia (padrão), Quando submetido, Então envia POST com tipo de estomia", async () => {
@@ -571,6 +573,7 @@ describe("Feature: PatientRecordPage", () => {
       ) as [string, RequestInit];
       const payload = JSON.parse(String(requestInit.body)) as { painScale: number };
       expect(payload.painScale).toBe(4);
+      expect(await screen.findByText("Avaliação registrada")).toBeInTheDocument();
     });
 
     it("Dado condição de estomia, Quando abrir avaliação DET e marcar complicação, Então envia complicationCodes preenchido", async () => {
@@ -678,6 +681,7 @@ describe("Feature: PatientRecordPage", () => {
           }),
         );
       });
+      expect(await screen.findByText("Condição resolvida")).toBeInTheDocument();
     });
 
     it("Dado erro ao resolver condição, Quando a chamada falha, Então exibe alerta de erro", async () => {
@@ -1128,6 +1132,7 @@ describe("Feature: PatientRecordPage", () => {
         );
       });
       await waitFor(() => expect(input).not.toBeDisabled());
+      expect(await screen.findByText("Foto enviada")).toBeInTheDocument();
     });
 
     it("Dado arquivo maior que 5MB, Quando selecionado, Então exibe erro de validação local sem chamar a API", async () => {
@@ -1198,6 +1203,7 @@ describe("Feature: PatientRecordPage", () => {
           expect.objectContaining({ method: "DELETE" }),
         );
       });
+      expect(await screen.findByText("Foto excluída")).toBeInTheDocument();
     });
 
     it("Dado resposta de erro sem corpo JSON válido, Quando enviar foto, Então exibe mensagem padrão de erro", async () => {
@@ -1387,6 +1393,7 @@ describe("Feature: PatientRecordPage", () => {
       await waitFor(() => {
         expect(screen.queryByText("Registrar evolução")).not.toBeInTheDocument();
       });
+      expect(await screen.findByText("Evolução registrada")).toBeInTheDocument();
     });
 
     it("Dado erro ao registrar evolução, Quando a chamada falha, Então exibe alerta de erro", async () => {

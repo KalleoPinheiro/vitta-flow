@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { useToast } from "@still-void/ui/react/client";
 import { apiFetch } from "@/lib/client";
 import type { AssessmentDto, ConditionDto } from "@/lib/dto";
 import {
@@ -36,6 +37,7 @@ interface ConditionsSectionProps {
 }
 
 export function ConditionsSection({ patientId, conditions, onChanged }: ConditionsSectionProps) {
+  const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [assessing, setAssessing] = useState<ConditionDto | null>(null);
@@ -61,6 +63,7 @@ export function ConditionsSection({ patientId, conditions, onChanged }: Conditio
         method: "PATCH",
         body: JSON.stringify({ action: "resolve" }),
       });
+      toast({ description: "Condição resolvida", variant: "success" });
       onChanged();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao resolver condição");
@@ -233,6 +236,7 @@ export function ConditionsSection({ patientId, conditions, onChanged }: Conditio
 }
 
 function ConditionForm({ patientId, onSaved }: { patientId: string; onSaved: () => void }) {
+  const { toast } = useToast();
   const [kind, setKind] = useState<"stoma" | "wound">("stoma");
   const [title, setTitle] = useState("");
   const [stomaType, setStomaType] = useState("colostomia");
@@ -256,6 +260,7 @@ function ConditionForm({ patientId, onSaved }: { patientId: string; onSaved: () 
           notes: notes || null,
         }),
       });
+      toast({ description: "Condição registrada", variant: "success" });
       onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao criar condição");
@@ -391,6 +396,7 @@ const toAssessmentPayload = (values: AssessmentFormValues) => ({
 });
 
 function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSaved: () => void }) {
+  const { toast } = useToast();
   const isWound = condition.kind === "wound";
   const [values, setValues] = useState<AssessmentFormValues>({
     lengthMm: "",
@@ -433,6 +439,7 @@ function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSav
         method: "POST",
         body: JSON.stringify(toAssessmentPayload(values)),
       });
+      toast({ description: "Avaliação registrada", variant: "success" });
       onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao registrar avaliação");

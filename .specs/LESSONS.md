@@ -144,6 +144,24 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: consent-card.tsx:162 mutation (removed e.target.value = "") — tests/pages/portal.test.tsx:930 expect(input.value).toBe("") still passed (testing)
 - last seen: 2026-08-26T02:04:06Z
 
+### L-023 — When adding toast-text test coverage for a binary toggle handler (e.g. toggleActive), the 'off'/deactivate branch tends to get covered first and the 'on'/reactivate branch is silently skipped — happened twice in one fix commit across two different files (profissionais and parceiros); always add or extend both branches together, not just the one with an existing test to append to.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `tests/pages/staff-operations.test.tsx` · harmful: 0
+- features: still-void-v3.3-adoption
+- evidence: tests/pages/staff-operations.test.tsx (profissionais.toggleActive, parceiros.toggleActive) (tests/pages/staff-operations.test.tsx)
+- last seen: 2026-08-30T07:01:31Z
+
+### L-024 — Antes de envolver um handleX(values) passado como onSubmit de um form filho em try/catch novo, confirme se o form já tem seu próprio catch ao redor de 'await onSubmit(values)' — senão o novo catch engole o erro antes do form mostrar ErrorAlert inline e manter o modal aberto.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `src/app/(staff)` · harmful: 0
+- features: still-void-v3.3-adoption
+- evidence: src/app/(staff)/agenda/page.tsx:141, src/app/(staff)/faturamento/page.tsx:137 (pré-fix) (src/app/(staff))
+- last seen: 2026-08-30T07:13:52Z
+
+### L-025 — SidebarProvider da @still-void/ui tem defaultOpen=true (pensado pro rail de desktop, que ignora open); em qualquer app que usa o modo drawer/offcanvas em mobile, passe defaultOpen={false} explicitamente ou o drawer nasce aberto sem clique do usuário. Rode e2e com --repeat-each>=3 pra pegar flakes de timing de hidratação antes de considerar uma feature de layout responsivo fechada.
+- signal: `gate_fail` · recurrence: 1 feature(s) · scope: `src/app/(staff), still-void-ui SidebarProvider` · harmful: 0
+- features: still-void-v3.3-adoption
+- evidence: src/app/(staff)/staff-layout-client.tsx (pré-fix), e2e/sidebar-responsive.spec.ts flaky 2/3 repeats (src/app/(staff), still-void-ui SidebarProvider)
+- last seen: 2026-08-30T07:13:58Z
+
 ## Quarantined (failed when applied — ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

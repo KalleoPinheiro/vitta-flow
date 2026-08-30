@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from "@still-void/ui/react/client";
 import { apiFetch } from "@/lib/client";
 import type { AnamnesisDto } from "@/lib/dto";
 import { ErrorAlert } from "@/components/feedback";
@@ -28,10 +29,10 @@ const toFormValues = (anamnesis: AnamnesisDto | null): Record<FieldKey, string> 
 };
 
 export function AnamnesisSection({ patientId, anamnesis, onSaved }: AnamnesisSectionProps) {
+  const { toast } = useToast();
   const [values, setValues] = useState<Record<FieldKey, string>>(() => toFormValues(anamnesis));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [savedAt, setSavedAt] = useState<string | null>(null);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -42,7 +43,7 @@ export function AnamnesisSection({ patientId, anamnesis, onSaved }: AnamnesisSec
         method: "PUT",
         body: JSON.stringify(values),
       });
-      setSavedAt(new Date().toLocaleTimeString("pt-BR"));
+      toast({ description: "Anamnese salva", variant: "success" });
       onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao salvar anamnese");
@@ -74,7 +75,6 @@ export function AnamnesisSection({ patientId, anamnesis, onSaved }: AnamnesisSec
         >
           {saving ? "Salvando…" : "Salvar anamnese"}
         </Button>
-        {savedAt && <span className="text-xs text-ink-3">Salvo às {savedAt}</span>}
       </div>
     </form>
   );

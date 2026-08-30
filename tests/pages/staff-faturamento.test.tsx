@@ -3,6 +3,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 import type { InvoiceDto, PatientDto, ProcedureDto } from "@/lib/dto";
 import BillingPage from "@/app/(staff)/faturamento/page";
+import { renderWithToast } from "@/../tests/support/render-with-toast";
 
 interface FetchCall {
   url: string;
@@ -126,7 +127,7 @@ describe("Feature: Faturamento", () => {
         return jsonResponse([]);
       });
 
-      render(<BillingPage />);
+      renderWithToast(<BillingPage />);
 
       expect(screen.getByText("Carregando…")).toBeInTheDocument();
     });
@@ -134,7 +135,7 @@ describe("Feature: Faturamento", () => {
     it("Dado nenhuma fatura, Quando a página carrega, Então exibe mensagem de vazio", async () => {
       mockFetch(defaultRouter());
 
-      render(<BillingPage />);
+      renderWithToast(<BillingPage />);
 
       expect(await screen.findByText("Nenhuma fatura encontrada.")).toBeInTheDocument();
     });
@@ -142,7 +143,7 @@ describe("Feature: Faturamento", () => {
     it("Dado faturas pendentes e pagas, Quando a página carrega, Então lista dados e calcula totais", async () => {
       mockFetch(defaultRouter({ invoices: [invoicePending, invoicePaid] }));
 
-      render(<BillingPage />);
+      renderWithToast(<BillingPage />);
 
       expect(await screen.findByText("Maria Souza")).toBeInTheDocument();
       expect(screen.getByText("João Lima")).toBeInTheDocument();
@@ -157,7 +158,7 @@ describe("Feature: Faturamento", () => {
         return jsonResponse([]);
       });
 
-      render(<BillingPage />);
+      renderWithToast(<BillingPage />);
 
       expect(await screen.findByRole("alert")).toBeInTheDocument();
     });
@@ -171,7 +172,7 @@ describe("Feature: Faturamento", () => {
       };
       mockFetch(defaultRouter({ invoices: [invoiceUnknownStatus] }));
 
-      render(<BillingPage />);
+      renderWithToast(<BillingPage />);
 
       expect(await screen.findByText("Ana Ramos")).toBeInTheDocument();
       expect(screen.getByText("refunded")).toBeInTheDocument();
@@ -187,7 +188,7 @@ describe("Feature: Faturamento", () => {
       };
       mockFetch(defaultRouter({ invoices: [invoiceUnknownPayment] }));
 
-      render(<BillingPage />);
+      renderWithToast(<BillingPage />);
 
       expect(await screen.findByText("Carla Nunes")).toBeInTheDocument();
       expect(screen.getByText("boleto")).toBeInTheDocument();
@@ -198,7 +199,7 @@ describe("Feature: Faturamento", () => {
     it("Dado clique no filtro Pendentes, Quando acionado, Então refaz a busca com status=pending", async () => {
       const fetchMock = mockFetch(defaultRouter({ invoices: [invoicePending] }));
 
-      render(<BillingPage />);
+      renderWithToast(<BillingPage />);
       await screen.findByText("Maria Souza");
 
       fireEvent.click(screen.getByText("Pendentes"));
@@ -225,7 +226,7 @@ describe("Feature: Faturamento", () => {
         }),
       );
 
-      render(<BillingPage />);
+      renderWithToast(<BillingPage />);
       await screen.findByText("Maria Souza");
 
       fireEvent.click(screen.getByText("Receber"));
@@ -256,7 +257,7 @@ describe("Feature: Faturamento", () => {
         }),
       );
 
-      render(<BillingPage />);
+      renderWithToast(<BillingPage />);
       await screen.findByText("Maria Souza");
 
       fireEvent.click(screen.getByText("Receber"));
@@ -268,7 +269,7 @@ describe("Feature: Faturamento", () => {
     it("Dado clique em Fechar no modal de pagamento, Quando acionado, Então fecha sem registrar pagamento", async () => {
       const fetchMock = mockFetch(defaultRouter({ invoices: [invoicePending] }));
 
-      render(<BillingPage />);
+      renderWithToast(<BillingPage />);
       await screen.findByText("Maria Souza");
 
       fireEvent.click(screen.getByText("Receber"));
@@ -282,6 +283,30 @@ describe("Feature: Faturamento", () => {
           ([, init]) => (init as RequestInit | undefined)?.method === "PATCH",
         ),
       ).toBe(false);
+    });
+
+    it("Dado sucesso ao registrar pagamento, Quando confirmado, Então exibe toast de sucesso 'Pagamento registrado'", async () => {
+      mockFetch(
+        defaultRouter({
+          invoices: [invoicePending],
+          patchInvoice: ({ url, init }) => {
+            if (url === "/api/invoices/inv-1" && init?.method === "PATCH") {
+              return jsonResponse({ ...invoicePending, status: "paid" });
+            }
+            return null;
+          },
+        }),
+      );
+
+      renderWithToast(<BillingPage />);
+      await screen.findByText("Maria Souza");
+
+      fireEvent.click(screen.getByText("Receber"));
+      fireEvent.click(await screen.findByText("Pix"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Pagamento registrado")).toBeInTheDocument();
+      });
     });
   });
 
@@ -299,7 +324,7 @@ describe("Feature: Faturamento", () => {
         }),
       );
 
-      render(<BillingPage />);
+      renderWithToast(<BillingPage />);
       await screen.findByText("Maria Souza");
 
       fireEvent.click(screen.getByText("Cancelar"));
@@ -328,12 +353,35 @@ describe("Feature: Faturamento", () => {
         }),
       );
 
-      render(<BillingPage />);
+      renderWithToast(<BillingPage />);
       await screen.findByText("Maria Souza");
 
       fireEvent.click(screen.getByText("Cancelar"));
 
       expect(await screen.findByText("Erro ao cancelar fatura")).toBeInTheDocument();
+    });
+
+    it("Dado sucesso ao cancelar, Quando acionado, Então exibe toast de sucesso 'Fatura cancelada'", async () => {
+      mockFetch(
+        defaultRouter({
+          invoices: [invoicePending],
+          patchInvoice: ({ url, init }) => {
+            if (url === "/api/invoices/inv-1" && init?.method === "PATCH") {
+              return jsonResponse({ ...invoicePending, status: "cancelled" });
+            }
+            return null;
+          },
+        }),
+      );
+
+      renderWithToast(<BillingPage />);
+      await screen.findByText("Maria Souza");
+
+      fireEvent.click(screen.getByText("Cancelar"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Fatura cancelada")).toBeInTheDocument();
+      });
     });
   });
 
@@ -351,7 +399,7 @@ describe("Feature: Faturamento", () => {
         return jsonResponse(null, false);
       });
 
-      render(<BillingPage />);
+      renderWithToast(<BillingPage />);
       await screen.findByText("Nenhuma fatura encontrada.");
 
       fireEvent.click(screen.getByText("+ Nova fatura"));
@@ -377,7 +425,7 @@ describe("Feature: Faturamento", () => {
         return jsonResponse(null, false);
       });
 
-      render(<BillingPage />);
+      renderWithToast(<BillingPage />);
       await screen.findByText("Nenhuma fatura encontrada.");
 
       fireEvent.click(screen.getByText("+ Nova fatura"));
@@ -405,7 +453,7 @@ describe("Feature: Faturamento", () => {
         return jsonResponse(null, false);
       });
 
-      render(<BillingPage />);
+      renderWithToast(<BillingPage />);
       await screen.findByText("Nenhuma fatura encontrada.");
 
       fireEvent.click(screen.getByText("+ Nova fatura"));
@@ -438,7 +486,7 @@ describe("Feature: Faturamento", () => {
     it("Dado clique em Fechar no modal de nova fatura, Quando acionado, Então fecha sem criar fatura", async () => {
       mockFetch(defaultRouter({ patients: [patientFixture] }));
 
-      render(<BillingPage />);
+      renderWithToast(<BillingPage />);
       await screen.findByText("Nenhuma fatura encontrada.");
 
       fireEvent.click(screen.getByText("+ Nova fatura"));
@@ -456,7 +504,7 @@ describe("Feature: Faturamento", () => {
         return jsonResponse(null, false);
       });
 
-      render(<BillingPage />);
+      renderWithToast(<BillingPage />);
       await screen.findByText("Nenhuma fatura encontrada.");
 
       fireEvent.click(screen.getByText("+ Nova fatura"));
@@ -464,6 +512,33 @@ describe("Feature: Faturamento", () => {
       const select = (await screen.findByLabelText(/Paciente/)) as HTMLSelectElement;
       expect(select.options.length).toBe(1);
       expect(select.options[0]?.value).toBe("");
+    });
+
+    it("Dado sucesso ao emitir fatura, Quando submetido, Então exibe toast de sucesso 'Fatura criada'", async () => {
+      mockFetch(({ url, init }) => {
+        const method = init?.method ?? "GET";
+        if (url === "/api/invoices" && method === "POST") {
+          return jsonResponse(invoicePending);
+        }
+        if (url.startsWith("/api/invoices")) return jsonResponse([]);
+        if (url.startsWith("/api/patients")) return jsonResponse([patientFixture]);
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<BillingPage />);
+      await screen.findByText("Nenhuma fatura encontrada.");
+
+      fireEvent.click(screen.getByText("+ Nova fatura"));
+      fireEvent.change(screen.getByLabelText(/Paciente/), { target: { value: "pat-1" } });
+      fireEvent.change(screen.getByLabelText(/Descrição/), {
+        target: { value: "Sessão avulsa" },
+      });
+      fireEvent.change(screen.getByLabelText(/Valor/), { target: { value: "150" } });
+      fireEvent.click(screen.getByText("Emitir fatura"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Fatura criada")).toBeInTheDocument();
+      });
     });
   });
 
@@ -482,7 +557,7 @@ describe("Feature: Faturamento", () => {
         return jsonResponse(null, false);
       });
 
-      render(<BillingPage />);
+      renderWithToast(<BillingPage />);
       await screen.findByText("Nenhuma fatura encontrada.");
 
       fireEvent.click(screen.getByText("Vender pacote"));
@@ -498,6 +573,36 @@ describe("Feature: Faturamento", () => {
       await waitFor(() => expect(createdPackage).toBe(true));
     });
 
+    it("Dado sucesso ao vender pacote, Quando submetido, Então exibe toast de sucesso 'Pacote vendido'", async () => {
+      mockFetch(({ url, init }) => {
+        const method = init?.method ?? "GET";
+        if (url === "/api/packages" && method === "POST") {
+          return jsonResponse({ id: "pkg-1" });
+        }
+        if (url.startsWith("/api/invoices")) return jsonResponse([]);
+        if (url.startsWith("/api/patients")) return jsonResponse([patientFixture]);
+        if (url.startsWith("/api/procedures")) return jsonResponse([procedureFixture]);
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<BillingPage />);
+      await screen.findByText("Nenhuma fatura encontrada.");
+
+      fireEvent.click(screen.getByText("Vender pacote"));
+      fireEvent.change(await screen.findByLabelText(/Paciente/), {
+        target: { value: "pat-1" },
+      });
+      fireEvent.change(screen.getByLabelText(/Procedimento/), {
+        target: { value: "proc-1" },
+      });
+      fireEvent.change(screen.getByLabelText(/Preço total/), { target: { value: "1000" } });
+      fireEvent.click(screen.getByText("Vender pacote", { selector: "button[type=submit]" }));
+
+      await waitFor(() => {
+        expect(screen.getByText("Pacote vendido")).toBeInTheDocument();
+      });
+    });
+
     it("Dado nenhum procedimento ativo, Quando o modal de venda abre, Então exibe aviso para cadastrar catálogo", async () => {
       mockFetch(({ url }) => {
         if (url.startsWith("/api/invoices")) return jsonResponse([]);
@@ -506,7 +611,7 @@ describe("Feature: Faturamento", () => {
         return jsonResponse(null, false);
       });
 
-      render(<BillingPage />);
+      renderWithToast(<BillingPage />);
       await screen.findByText("Nenhuma fatura encontrada.");
 
       fireEvent.click(screen.getByText("Vender pacote"));
@@ -528,7 +633,7 @@ describe("Feature: Faturamento", () => {
         return jsonResponse(null, false);
       });
 
-      render(<BillingPage />);
+      renderWithToast(<BillingPage />);
       await screen.findByText("Nenhuma fatura encontrada.");
 
       fireEvent.click(screen.getByText("Vender pacote"));
@@ -556,7 +661,7 @@ describe("Feature: Faturamento", () => {
         return jsonResponse(null, false);
       });
 
-      render(<BillingPage />);
+      renderWithToast(<BillingPage />);
       await screen.findByText("Nenhuma fatura encontrada.");
 
       fireEvent.click(screen.getByText("Vender pacote"));
@@ -599,7 +704,7 @@ describe("Feature: Faturamento", () => {
         return jsonResponse(null, false);
       });
 
-      render(<BillingPage />);
+      renderWithToast(<BillingPage />);
       await screen.findByText("Nenhuma fatura encontrada.");
 
       fireEvent.click(screen.getByText("Vender pacote"));
@@ -630,7 +735,7 @@ describe("Feature: Faturamento", () => {
     it("Dado clique em Fechar no modal de venda de pacote, Quando acionado, Então fecha sem criar pacote", async () => {
       mockFetch(defaultRouter({ patients: [patientFixture], procedures: [procedureFixture] }));
 
-      render(<BillingPage />);
+      renderWithToast(<BillingPage />);
       await screen.findByText("Nenhuma fatura encontrada.");
 
       fireEvent.click(screen.getByText("Vender pacote"));
@@ -657,7 +762,7 @@ describe("Feature: Faturamento", () => {
         return jsonResponse(null, false);
       });
 
-      render(<BillingPage />);
+      renderWithToast(<BillingPage />);
       await screen.findByText("Carregar mais");
 
       fireEvent.click(screen.getByText("Carregar mais"));

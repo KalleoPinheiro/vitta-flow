@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { apiFetch } from "@/lib/client";
+import { useToast } from "@still-void/ui/react/client";
 import type { ProcedureDto, SupplyDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import { formatCurrency } from "@/lib/format";
@@ -22,6 +23,7 @@ import {
 } from "@still-void/ui/react";
 
 export default function ProceduresPage() {
+  const { toast } = useToast();
   const { data: procedures, error, refresh } = useApiQuery<ProcedureDto[]>("/api/procedures");
   const [editing, setEditing] = useState<ProcedureDto | "new" | null>(null);
   const [kitFor, setKitFor] = useState<ProcedureDto | null>(null);
@@ -32,6 +34,10 @@ export default function ProceduresPage() {
       await apiFetch(`/api/procedures/${procedure.id}`, {
         method: "PATCH",
         body: JSON.stringify({ active: !procedure.active }),
+      });
+      toast({
+        description: procedure.active ? "Procedimento desativado" : "Procedimento ativado",
+        variant: "success",
       });
       setActionError(null);
       refresh();
@@ -148,6 +154,7 @@ function ProcedureForm({
   initial?: ProcedureDto;
   onSaved: () => void;
 }) {
+  const { toast } = useToast();
   const [name, setName] = useState(initial?.name ?? "");
   const [price, setPrice] = useState(initial ? String(initial.priceCents / 100) : "");
   const [duration, setDuration] = useState(initial ? String(initial.durationMinutes) : "60");
@@ -172,6 +179,10 @@ function ProcedureForm({
       } else {
         await apiFetch("/api/procedures", { method: "POST", body: JSON.stringify(payload) });
       }
+      toast({
+        description: "Procedimento salvo",
+        variant: "success",
+      });
       onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao salvar procedimento");
@@ -255,6 +266,7 @@ interface KitItemDraft {
 
 /** Kit padrão do procedimento: baixado automaticamente ao concluir a consulta. */
 function KitForm({ procedure, onSaved }: { procedure: ProcedureDto; onSaved: () => void }) {
+  const { toast } = useToast();
   const { data: supplies } = useApiQuery<SupplyDto[]>("/api/supplies");
   const { data: kit } = useApiQuery<{ items: Array<{ supplyId: string; quantity: number }> }>(
     `/api/procedures/${procedure.id}/kit`,
@@ -281,6 +293,10 @@ function KitForm({ procedure, onSaved }: { procedure: ProcedureDto; onSaved: () 
             .filter((item) => item.supplyId)
             .map((item) => ({ supplyId: item.supplyId, quantity: Number(item.quantity) || 1 })),
         }),
+      });
+      toast({
+        description: "Kit atualizado",
+        variant: "success",
       });
       onSaved();
     } catch (err) {

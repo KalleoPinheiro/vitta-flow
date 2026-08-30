@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useToast } from "@still-void/ui/react/client";
 import { apiFetch } from "@/lib/client";
 import type { ConditionPhotoDto } from "@/lib/dto";
 import { formatDate } from "@/lib/format";
@@ -16,6 +17,7 @@ interface ConditionPhotosProps {
 
 /** Galeria de fotos de evolução da condição: upload, comparação primeira × última, exclusão. */
 export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps) {
+  const { toast } = useToast();
   const [photos, setPhotos] = useState<ConditionPhotoDto[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -59,6 +61,7 @@ export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps
         const payload = (await response.json().catch(() => null)) as { error?: string } | null;
         throw new Error(payload?.error ?? "Erro ao enviar foto");
       }
+      toast({ description: "Foto enviada", variant: "success" });
       setError(null);
       load();
     } catch (err) {
@@ -71,6 +74,7 @@ export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps
   const remove = async (photo: ConditionPhotoDto) => {
     try {
       await apiFetch(`/api/photos/${photo.id}`, { method: "DELETE" });
+      toast({ description: "Foto excluída", variant: "success" });
       load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao excluir foto");

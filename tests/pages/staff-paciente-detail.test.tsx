@@ -13,6 +13,7 @@ import type {
 import { formatDate, formatDateTime } from "@/lib/format";
 import PatientRecordPage from "@/app/(staff)/pacientes/[id]/page";
 import type { PackageDto } from "@/app/(staff)/pacientes/[id]/packages-section";
+import { renderWithToast } from "@/../tests/support/render-with-toast";
 
 interface FetchCall {
   url: string;
@@ -50,7 +51,7 @@ afterEach(() => {
 
 async function renderDetail(id = "pac-1") {
   await act(async () => {
-    render(<PatientRecordPage params={Promise.resolve({ id })} />);
+    renderWithToast(<PatientRecordPage params={Promise.resolve({ id })} />);
   });
 }
 
@@ -384,7 +385,7 @@ describe("Feature: PatientRecordPage", () => {
           expect.objectContaining({ method: "PUT" }),
         );
       });
-      expect(await screen.findByText(/Salvo às/)).toBeInTheDocument();
+      expect(await screen.findByText("Anamnese salva")).toBeInTheDocument();
     });
 
     it("Dado erro ao salvar anamnese, Quando a chamada falha, Então exibe alerta de erro", async () => {

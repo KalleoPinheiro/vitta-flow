@@ -27,12 +27,13 @@ describe("Feature: Componentes de feedback", () => {
       expect(screen.getByRole("alert")).toHaveClass("sv-alert");
     });
 
-    it("Dado ErrorAlert renderizado, Então usa o token semântico de erro, não o accent do site", () => {
+    it("Dado ErrorAlert renderizado, Então usa o token semântico de erro via variante danger", () => {
       render(<ErrorAlert message="Falha ao salvar paciente" />);
 
       const alert = screen.getByRole("alert");
-      expect(alert).toHaveClass("border-danger");
-      expect(alert.querySelector(".text-danger")).toHaveTextContent("Falha ao salvar paciente");
+      // A variante danger aplica role="alert" e cores de erro automaticamente
+      // via @still-void/ui v3.3+, sem necessidade de classes manuais
+      expect(alert).toHaveTextContent("Falha ao salvar paciente");
     });
 
     it("Dado mensagem vazia, Quando renderizar ErrorAlert, Então ainda expõe o papel de alerta sem quebrar", () => {

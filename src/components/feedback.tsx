@@ -5,15 +5,15 @@ interface ErrorAlertProps {
 }
 
 /**
- * O `Alert` do Still Void é neutro por definição (superfície e borda padrão) —
- * o catálogo não traz variante de erro. A cor vem do token semântico `danger`,
- * que é fixo no sistema e independente do accent do site: um erro nunca colide
- * com a cor da marca. Sempre a variante -ink, a que bate 4.5:1 no tema claro.
+ * Alerta de erro com variante semântica do catálogo @still-void/ui v3.3+.
+ * A variante `danger` automaticamente aplica role="alert", cores de erro
+ * (danger -ink pra contrast 4.5:1), e ícone padrão (se necessário).
+ * O token semântico garante que erros nunca colidem com a cor accent do site.
  */
 export function ErrorAlert({ message }: ErrorAlertProps) {
   return (
-    <Alert className="mb-4 border-danger">
-      <AlertDescription className="text-danger">{message}</AlertDescription>
+    <Alert variant="danger" className="mb-4">
+      <AlertDescription>{message}</AlertDescription>
     </Alert>
   );
 }

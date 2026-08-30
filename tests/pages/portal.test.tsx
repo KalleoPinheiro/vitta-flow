@@ -568,9 +568,8 @@ describe("Feature: Visão do paciente no portal", () => {
       render(<PatientPortalView />);
 
       expect(await screen.findByText("Termo de consentimento pendente")).toBeInTheDocument();
-      expect(
-        screen.getByText("Aceite o termo de consentimento acima para enviar fotos à equipe."),
-      ).toBeInTheDocument();
+      const warning = screen.getByRole("alert");
+      expect(warning).toHaveTextContent("Aceite o termo de consentimento acima para enviar fotos à equipe.");
       expect(document.querySelector('input[type="file"]')).toBeNull();
 
       fireEvent.click(screen.getByText("Li e aceito o termo"));
@@ -837,9 +836,8 @@ describe("Feature: Cartão de consentimento", () => {
         />,
       );
 
-      expect(
-        screen.getByText(`Termo de consentimento aceito em ${formatDateTime("2026-01-10T14:30:00.000Z")}.`),
-      ).toBeInTheDocument();
+      const alert = screen.getByRole("status");
+      expect(alert).toHaveTextContent(`Termo de consentimento aceito em ${formatDateTime("2026-01-10T14:30:00.000Z")}.`);
     });
   });
 

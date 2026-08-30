@@ -9,7 +9,7 @@ import { ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import { CalendarGrid } from "./calendar-grid";
 import { AppointmentForm, type AppointmentFormValues } from "./appointment-form";
 import { AppointmentDetail } from "./appointment-detail";
-import { Button, Icon, NativeSelect } from "@still-void/ui/react";
+import { Alert, AlertDescription, Button, Icon, NativeSelect } from "@still-void/ui/react";
 
 function ProfessionalFilter({
   professionals,
@@ -40,15 +40,15 @@ function AgendaNotices({
   seriesNotice,
 }: {
   error: string | null;
-  seriesNotice: string | null;
+  seriesNotice: { text: string; variant: "success" | "warning" } | null;
 }) {
   return (
     <>
       {error && <ErrorAlert message={error} />}
       {seriesNotice && (
-        <p className="mb-4 rounded-lg border border-accent bg-accent-soft px-4 py-3 text-sm text-accent-ink">
-          {seriesNotice}
-        </p>
+        <Alert variant={seriesNotice.variant} className="mb-4">
+          <AlertDescription>{seriesNotice.text}</AlertDescription>
+        </Alert>
       )}
     </>
   );
@@ -101,7 +101,7 @@ export default function AgendaPage() {
   const changeMonth = (delta: number) =>
     setMonthDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
 
-  const [seriesNotice, setSeriesNotice] = useState<string | null>(null);
+  const [seriesNotice, setSeriesNotice] = useState<{ text: string; variant: "success" | "warning" } | null>(null);
 
   const handleCreate = async (values: AppointmentFormValues) => {
     const startsAt = new Date(`${values.date}T${values.startTime}:00`);
@@ -124,14 +124,15 @@ export default function AgendaPage() {
         method: "POST",
         body: JSON.stringify({ ...payload, occurrences: values.occurrences }),
       });
-      setSeriesNotice(
-        result.skipped.length > 0
+      setSeriesNotice({
+        text: result.skipped.length > 0
           ? `Série criada: ${result.created.length} sessão(ões); ${result.skipped.length} pulada(s) — ` +
               result.skipped
                 .map((s) => new Date(s.startsAt).toLocaleDateString("pt-BR"))
                 .join(", ")
           : `Série criada: ${result.created.length} sessões.`,
-      );
+        variant: result.skipped.length > 0 ? "warning" : "success",
+      });
     } else {
       await apiFetch<AppointmentDto>("/api/appointments", {
         method: "POST",

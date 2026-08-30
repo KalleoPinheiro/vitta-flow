@@ -305,7 +305,8 @@ describe("Feature: Página de agenda", () => {
       fireEvent.click(screen.getByText("Agendar consulta"));
 
       await waitFor(() => {
-        expect(screen.getByText("Série criada: 2 sessões.")).toBeInTheDocument();
+        const alert = screen.getByRole("status");
+        expect(alert).toHaveTextContent("Série criada: 2 sessões.");
       });
     });
 
@@ -345,9 +346,8 @@ describe("Feature: Página de agenda", () => {
       fireEvent.click(screen.getByText("Agendar consulta"));
 
       await waitFor(() => {
-        expect(
-          screen.getByText(/Série criada: 1 sessão\(ões\); 1 pulada\(s\)/),
-        ).toBeInTheDocument();
+        const alert = screen.getByRole("alert");
+        expect(alert).toHaveTextContent(/Série criada: 1 sessão\(ões\); 1 pulada\(s\)/);
       });
     });
   });

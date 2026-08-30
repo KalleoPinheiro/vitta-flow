@@ -13,6 +13,7 @@ import type {
 import type { CarePlanDiagnosisType } from "@/domain/clinical/care-plan-diagnosis";
 import type { InterventionPriority } from "@/domain/clinical/care-plan-intervention";
 import PatientRecordPage from "@/app/(staff)/pacientes/[id]/page";
+import { renderWithToast } from "@/../tests/support/render-with-toast";
 
 interface FetchCall {
   url: string;
@@ -42,7 +43,7 @@ afterEach(() => {
 
 async function renderDetail(id = "pac-1") {
   await act(async () => {
-    render(<PatientRecordPage params={Promise.resolve({ id })} />);
+    renderWithToast(<PatientRecordPage params={Promise.resolve({ id })} />);
   });
 }
 
@@ -382,6 +383,7 @@ describe("Feature: Plano de Cuidados (SAE) na página do paciente", () => {
     fireEvent.change(screen.getByLabelText("Condição associada"), { target: { value: "cond-1" } });
     fireEvent.click(screen.getByText("Abrir plano"));
     await waitForOpenPlanModalToClose();
+    expect(await screen.findByText("Plano de cuidados aberto")).toBeInTheDocument();
     await screen.findByText("Úlcera venosa perna E");
 
     fireEvent.click(screen.getByText("Ver plano"));
@@ -401,6 +403,7 @@ describe("Feature: Plano de Cuidados (SAE) na página do paciente", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Prescrever diagnóstico" }));
 
+    expect(await screen.findByText("Diagnóstico adicionado")).toBeInTheDocument();
     expect(
       await screen.findByText(/relacionado a Umidade excessiva por exsudato, evidenciado por Ruptura da epiderme/),
     ).toBeInTheDocument();
@@ -410,6 +413,7 @@ describe("Feature: Plano de Cuidados (SAE) na página do paciente", () => {
     fireEvent.click(await screen.findByText(/Integridade tissular: pele e mucosas/));
     fireEvent.click(screen.getByText("Prescrever resultado"));
 
+    expect(await screen.findByText("Resultado prescrito")).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText("Basal 1")).toBeInTheDocument());
     expect(screen.getByText("Atual —")).toBeInTheDocument();
 
@@ -421,10 +425,12 @@ describe("Feature: Plano de Cuidados (SAE) na página do paciente", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Prescrever intervenção" }));
 
+    expect(await screen.findByText("Intervenção prescrita")).toBeInTheDocument();
     await screen.findByText(/A cada troca de placa/);
 
     // Registrar execução
     fireEvent.click(screen.getByText("Registrar execução"));
+    expect(await screen.findByText("Execução registrada")).toBeInTheDocument();
     await screen.findByText(/Última execução:/);
 
     // Avaliar resultado — atinge a meta (basal=1, meta=3 por padrão do formulário)
@@ -433,10 +439,12 @@ describe("Feature: Plano de Cuidados (SAE) na página do paciente", () => {
     fireEvent.click(await screen.findByText(anchorLabel, { exact: false }));
     fireEvent.click(screen.getByText("Registrar avaliação"));
 
+    expect(await screen.findByText("Avaliação de resultado registrada")).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText("Meta atingida")).toBeInTheDocument());
 
     // Resolver plano — some as ações de prescrição
     fireEvent.click(screen.getByText("Resolver plano"));
+    expect(await screen.findByText("Plano de cuidados encerrado")).toBeInTheDocument();
     await waitFor(() => expect(screen.getAllByText("Resolvido").length).toBeGreaterThan(0));
     expect(screen.queryByText("+ Diagnóstico")).not.toBeInTheDocument();
     expect(screen.queryByText("Resolver plano")).not.toBeInTheDocument();

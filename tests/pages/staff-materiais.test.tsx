@@ -3,6 +3,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 import type { AppointmentDto, StockMovementDto, SupplyDto } from "@/lib/dto";
 import SuppliesPage from "@/app/(staff)/materiais/page";
+import { renderWithToast } from "@/../tests/support/render-with-toast";
 
 interface FetchCall {
   url: string;
@@ -143,7 +144,7 @@ describe("Feature: Materiais e estoque", () => {
         return jsonResponse([]);
       });
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
 
       expect(screen.getByText("Carregando…")).toBeInTheDocument();
     });
@@ -151,7 +152,7 @@ describe("Feature: Materiais e estoque", () => {
     it("Dado nenhum insumo, Quando a página carrega, Então exibe mensagem de vazio", async () => {
       mockFetch(buildRouter());
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
 
       expect(await screen.findByText("Nenhum insumo cadastrado.")).toBeInTheDocument();
     });
@@ -159,7 +160,7 @@ describe("Feature: Materiais e estoque", () => {
     it("Dado erro ao carregar insumos, Quando a página carrega, Então exibe alerta de erro", async () => {
       mockFetch(buildRouter({ suppliesError: true }));
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
 
       expect(await screen.findByRole("alert")).toBeInTheDocument();
     });
@@ -167,7 +168,7 @@ describe("Feature: Materiais e estoque", () => {
     it("Dado insumos ativos e inativos, Quando a página carrega, Então lista dados e aplica opacidade ao inativo", async () => {
       mockFetch(buildRouter({ supplies: [lowStockSupply, okSupply, inactiveSupply] }));
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
 
       expect(await screen.findByText("Bolsa de colostomia")).toBeInTheDocument();
       expect(screen.getByText("Gaze estéril")).toBeInTheDocument();
@@ -181,7 +182,7 @@ describe("Feature: Materiais e estoque", () => {
     it("Dado insumo com estoque baixo, Quando a página carrega, Então exibe o banner e o rótulo na linha", async () => {
       mockFetch(buildRouter({ supplies: [lowStockSupply] }));
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
 
       expect(
         await screen.findByText("1 insumo está com estoque baixo (≤ mínimo)."),
@@ -192,7 +193,7 @@ describe("Feature: Materiais e estoque", () => {
     it("Dado nenhum insumo com estoque baixo, Quando a página carrega, Então não exibe o banner", async () => {
       mockFetch(buildRouter({ supplies: [okSupply] }));
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
 
       await screen.findByText("Gaze estéril");
       expect(screen.queryByText(/com estoque baixo/)).not.toBeInTheDocument();
@@ -206,7 +207,7 @@ describe("Feature: Materiais e estoque", () => {
       };
       mockFetch(buildRouter({ supplies: [lowStockSupply, secondLowStock] }));
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
 
       expect(
         await screen.findByText("2 insumos estão com estoque baixo (≤ mínimo)."),
@@ -243,7 +244,7 @@ describe("Feature: Materiais e estoque", () => {
         }),
       );
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
 
       const alerts = await screen.findAllByRole("alert");
       expect(alerts.length).toBe(3); // low stock (warning), expired (danger), and expiring (warning)
@@ -299,7 +300,7 @@ describe("Feature: Materiais e estoque", () => {
         }),
       );
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
 
       const alerts = await screen.findAllByRole("alert");
       expect(alerts.length).toBe(3); // low stock (warning), expired (danger), and expiring (warning)
@@ -318,7 +319,7 @@ describe("Feature: Materiais e estoque", () => {
         }),
       );
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
 
       expect(await screen.findByText("~5 dias")).toBeInTheDocument();
     });
@@ -334,7 +335,7 @@ describe("Feature: Materiais e estoque", () => {
         }),
       );
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
 
       expect(await screen.findByText("~1 dia")).toBeInTheDocument();
     });
@@ -350,7 +351,7 @@ describe("Feature: Materiais e estoque", () => {
         }),
       );
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
 
       const forecast = await screen.findByText("~45 dias");
       expect(forecast).toHaveClass("text-ink-2");
@@ -359,7 +360,7 @@ describe("Feature: Materiais e estoque", () => {
     it("Dado insumo sem previsão de ruptura, Quando a página carrega, Então exibe traço", async () => {
       mockFetch(buildRouter({ supplies: [lowStockSupply] }));
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
 
       await screen.findByText("Bolsa de colostomia");
       expect(screen.getByText("—")).toBeInTheDocument();
@@ -381,7 +382,7 @@ describe("Feature: Materiais e estoque", () => {
         }),
       );
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
       await screen.findByText("Nenhum insumo cadastrado.");
 
       fireEvent.click(screen.getByText("+ Novo insumo"));
@@ -400,7 +401,7 @@ describe("Feature: Materiais e estoque", () => {
     it("Dado edição de um insumo existente, Quando o modal abre, Então preenche os campos com os dados atuais", async () => {
       mockFetch(buildRouter({ supplies: [lowStockSupply] }));
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
       await screen.findByText("Bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Editar"));
@@ -427,7 +428,7 @@ describe("Feature: Materiais e estoque", () => {
         }),
       );
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
       await screen.findByText("Bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Editar"));
@@ -446,7 +447,7 @@ describe("Feature: Materiais e estoque", () => {
     it("Dado modal de novo insumo aberto, Quando fechar pelo botão Fechar, Então oculta o formulário", async () => {
       mockFetch(buildRouter());
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
       await screen.findByText("Nenhum insumo cadastrado.");
 
       fireEvent.click(screen.getByText("+ Novo insumo"));
@@ -469,7 +470,7 @@ describe("Feature: Materiais e estoque", () => {
         }),
       );
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
       await screen.findByText("Nenhum insumo cadastrado.");
 
       fireEvent.click(screen.getByText("+ Novo insumo"));
@@ -499,7 +500,7 @@ describe("Feature: Materiais e estoque", () => {
         }),
       );
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
       await screen.findByText("Bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Movimentar"));
@@ -541,7 +542,7 @@ describe("Feature: Materiais e estoque", () => {
         }),
       );
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
       await screen.findByText("Bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Movimentar"));
@@ -573,7 +574,7 @@ describe("Feature: Materiais e estoque", () => {
         }),
       );
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
       await screen.findByText("Bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Movimentar"));
@@ -588,7 +589,7 @@ describe("Feature: Materiais e estoque", () => {
     it("Dado modal de movimentação aberto, Quando fechar pelo botão Fechar, Então oculta o formulário", async () => {
       mockFetch(buildRouter({ supplies: [lowStockSupply] }));
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
       await screen.findByText("Bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Movimentar"));
@@ -610,7 +611,7 @@ describe("Feature: Materiais e estoque", () => {
         }),
       );
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
       await screen.findByText("Bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Movimentar"));
@@ -640,7 +641,7 @@ describe("Feature: Materiais e estoque", () => {
         buildRouter({ supplies: [lowStockSupply], appointments: [appointmentSemNome] }),
       );
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
       await screen.findByText("Bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Movimentar"));
@@ -656,7 +657,7 @@ describe("Feature: Materiais e estoque", () => {
     it("Dado histórico com registros, Quando abrir o modal, Então lista as movimentações", async () => {
       mockFetch(buildRouter({ supplies: [lowStockSupply], movements: [movementFixture] }));
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
       await screen.findByText("Bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Histórico"));
@@ -668,7 +669,7 @@ describe("Feature: Materiais e estoque", () => {
     it("Dado histórico vazio, Quando abrir o modal, Então exibe mensagem de vazio", async () => {
       mockFetch(buildRouter({ supplies: [lowStockSupply], movements: [] }));
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
       await screen.findByText("Bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Histórico"));
@@ -687,7 +688,7 @@ describe("Feature: Materiais e estoque", () => {
         }),
       );
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
       await screen.findByText("Bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Histórico"));
@@ -698,7 +699,7 @@ describe("Feature: Materiais e estoque", () => {
     it("Dado modal de histórico aberto, Quando fechar pelo botão Fechar, Então oculta a listagem", async () => {
       mockFetch(buildRouter({ supplies: [lowStockSupply], movements: [] }));
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
       await screen.findByText("Bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Histórico"));
@@ -719,7 +720,7 @@ describe("Feature: Materiais e estoque", () => {
       };
       mockFetch(buildRouter({ supplies: [lowStockSupply], movements: [saidaMovement] }));
 
-      render(<SuppliesPage />);
+      renderWithToast(<SuppliesPage />);
       await screen.findByText("Bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Histórico"));

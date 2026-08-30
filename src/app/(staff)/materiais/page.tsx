@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { apiFetch } from "@/lib/client";
+import { useToast } from "@still-void/ui/react/client";
 import type { AppointmentDto, StockMovementDto, SupplyDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
@@ -327,6 +328,7 @@ const saveSupply = async (values: SupplyFormValues, initial?: SupplyDto): Promis
 };
 
 function SupplyForm({ initial, onSaved }: { initial?: SupplyDto; onSaved: () => void }) {
+  const { toast } = useToast();
   const [values, setValues] = useState<SupplyFormValues>(() => toSupplyFormValues(initial));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -337,6 +339,10 @@ function SupplyForm({ initial, onSaved }: { initial?: SupplyDto; onSaved: () => 
     setError(null);
     try {
       await saveSupply(values, initial);
+      toast({
+        description: "Insumo salvo",
+        variant: "success",
+      });
       onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao salvar insumo");
@@ -421,6 +427,7 @@ const todayRange = () => {
 };
 
 function MovementForm({ supply, onSaved }: { supply: SupplyDto; onSaved: () => void }) {
+  const { toast } = useToast();
   const [type, setType] = useState<"in" | "out">("in");
   const [quantity, setQuantity] = useState("");
   const [reason, setReason] = useState("");
@@ -450,6 +457,10 @@ function MovementForm({ supply, onSaved }: { supply: SupplyDto; onSaved: () => v
           batchLabel: type === "in" && batchLabel ? batchLabel : null,
           expiresAt: type === "in" && expiresAt ? new Date(expiresAt).toISOString() : null,
         }),
+      });
+      toast({
+        description: type === "in" ? "Entrada registrada" : "Saída registrada",
+        variant: "success",
       });
       onSaved();
     } catch (err) {

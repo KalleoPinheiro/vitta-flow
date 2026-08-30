@@ -717,7 +717,7 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
 
       expect(await screen.findByText("Nenhum parceiro cadastrado.")).toBeInTheDocument();
     });
@@ -740,7 +740,7 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
 
       expect(await screen.findByText("Dr. João")).toBeInTheDocument();
       expect(screen.getByText("CRM-SP 123")).toBeInTheDocument();
@@ -754,7 +754,7 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
 
       expect(await screen.findByRole("alert")).toBeInTheDocument();
     });
@@ -784,7 +784,7 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
       await screen.findByText("Dr. João");
 
       fireEvent.click(screen.getByText("Desativar"));
@@ -813,7 +813,7 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
       await screen.findByText("Dr. João");
 
       fireEvent.click(screen.getByText("Desativar"));
@@ -842,7 +842,7 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
       await screen.findByText("Dr. João");
 
       fireEvent.click(screen.getByText("Desativar"));
@@ -870,7 +870,7 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
 
       expect(await screen.findByText("Dr. Carlos")).toBeInTheDocument();
       expect(screen.getByText("Inativo")).toBeInTheDocument();
@@ -890,7 +890,7 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
       await screen.findByText("Nenhum parceiro cadastrado.");
 
       fireEvent.click(screen.getByText("+ Novo parceiro"));
@@ -926,7 +926,7 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
       await screen.findByText("Dr. João");
 
       fireEvent.click(screen.getByText("Editar"));
@@ -954,7 +954,7 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
       await screen.findByText("Dra. Beatriz");
 
       fireEvent.click(screen.getByText("Editar"));
@@ -983,7 +983,7 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
       await screen.findByText("Dr. João");
 
       fireEvent.click(screen.getByText("Editar"));
@@ -1019,7 +1019,7 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
       await screen.findByText("Dr. João");
 
       fireEvent.click(screen.getByText("Editar"));
@@ -1047,7 +1047,7 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
       await screen.findByText("Nenhum parceiro cadastrado.");
 
       fireEvent.click(screen.getByText("+ Novo parceiro"));
@@ -1074,7 +1074,7 @@ describe("Feature: PartnersPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<PartnersPage />);
+      renderWithToast(<PartnersPage />);
       await screen.findByText("Nenhum parceiro cadastrado.");
 
       fireEvent.click(screen.getByText("+ Novo parceiro"));

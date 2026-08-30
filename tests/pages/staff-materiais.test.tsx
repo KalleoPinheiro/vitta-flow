@@ -252,6 +252,45 @@ describe("Feature: Materiais e estoque", () => {
       expect(screen.getByText(/lote vence em até 30/)).toBeInTheDocument();
     });
 
+    it("Dado apenas lotes a vencer (nenhum vencido), Quando a página carrega, Então exibe only expiring banner e não exibe expired", async () => {
+      mockFetch(
+        buildRouter({
+          supplies: [lowStockSupply],
+          insights: {
+            bySupply: [],
+            expiringBatches: [
+              {
+                batchId: "b1",
+                supplyId: "sup-1",
+                supplyName: "Bolsa de colostomia",
+                label: "L2026-02",
+                expiresAt: "2026-09-01T00:00:00.000Z",
+                remaining: 5,
+                isExpired: false,
+              },
+              {
+                batchId: "b2",
+                supplyId: "sup-1",
+                supplyName: "Bolsa de colostomia",
+                label: null,
+                expiresAt: "2026-09-15T00:00:00.000Z",
+                remaining: 10,
+                isExpired: false,
+              },
+            ],
+          },
+        }),
+      );
+
+      renderWithToast(<SuppliesPage />);
+
+      const alerts = await screen.findAllByRole("alert");
+      expect(alerts.length).toBe(2); // low stock (warning) and expiring (warning), NO danger alert
+      expect(screen.queryByText(/lote vencido com saldo/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/lotes vencidos com saldo/)).not.toBeInTheDocument();
+      expect(await screen.findByText(/2 lotes vencem em até 30/)).toBeInTheDocument();
+    });
+
     it("Dado múltiplos lotes vencidos e a vencer, alguns sem rótulo, Quando a página carrega, Então exibe as mensagens no plural", async () => {
       mockFetch(
         buildRouter({

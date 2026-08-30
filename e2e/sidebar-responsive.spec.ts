@@ -52,6 +52,10 @@ test.describe("sidebar responsivo", () => {
 
     // URL mudou
     expect(page.url()).toContain(href);
+
+    // O drawer fecha sozinho ao navegar (SidebarAutoClose) — sem isso, o
+    // overlay ficaria preso aberto sobre a nova página.
+    await expect(sidebarTrigger).toHaveAttribute("aria-expanded", "false");
   });
 
   test("mobile (390x844): sem amputação de conteúdo (sem scroll horizontal)", async ({

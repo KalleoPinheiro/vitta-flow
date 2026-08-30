@@ -1,8 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-@AGENTS.md
+This file documents Agent skills and how domain documentation should be consumed when working with code in this repository.
 
 ## Stack
 

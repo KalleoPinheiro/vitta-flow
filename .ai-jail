@@ -9,3 +9,4 @@ command = [
     "--yolo",
 ]
 network = true
+terminal_passthrough = true

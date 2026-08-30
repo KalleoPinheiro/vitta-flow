@@ -263,7 +263,7 @@ T10
 **What**: remover do corpo ativo as 6 seções `### \`slug\`` (`pagination`, `progress`, `separator`, `data-chart`, `icon-set-gaps`, `dialog-close-label`); adicionar seção "## Histórico — lacunas fechadas pela 3.2.0" no fim do arquivo, com cada slug como `#### slug` (nível 4 — fora do regex `^### \`slug\`` do gate), resumindo o que fechou e citando o commit/task; atualizar cabeçalho (`Status: Fechado`, `Data`, `Versão verificada: 3.2.0`).
 **Where**: `docs/still-void-gaps.md`
 **Depends on**: T2, T3, T4, T5, T7 (só arquiva depois que todo `sv-gap:` correspondente já saiu do código)
-**Reuses**: padrão de blockquote "RESOLVIDO" de `docs/BACKLOG-DESIGN-SYSTEM.md` (adaptado ao nível de cabeçalho que o gate não lê)
+**Reuses**: padrão de blockquote "RESOLVIDO" de `docs/backlog-design-system.md` (adaptado ao nível de cabeçalho que o gate não lê)
 **Requirement**: SV32-06, SV32-09
 
 **Tools**: MCP: NONE · Skill: NONE

@@ -3,7 +3,7 @@
 - **Versão:** 1.0
 - **Data:** 2026-07-18
 - **Status:** Aprovado para implementação em 4 ondas
-- **Antecessores:** [PRD.md](./PRD.md) (Fase 1), [PRD-FASE-2.md](./PRD-FASE-2.md) (Fase 2)
+- **Antecessores:** [prd-fase-1.md](./prd-fase-1.md) (Fase 1), [prd-fase-2.md](./prd-fase-2.md) (Fase 2)
 
 ---
 

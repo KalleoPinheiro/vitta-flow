@@ -4,7 +4,7 @@
 - **Versão auditada:** `@still-void/ui@3.2.0`.
 - **Relação com `docs/still-void-gaps.md`:** este documento é **novo e separado**. `still-void-gaps.md` está fechado (0 lacunas ativas, 6 arquivadas) e é gate-tracked pelo `npm run check:sv` via comentários `sv-gap: <slug>` no código — não editamos esse arquivo nem adicionamos marcações, porque isso é trabalho de implementação (Tasks), não de auditoria. Este documento é o **backlog candidato**: cada gap abaixo, se você decidir portar, vira uma entrada em `still-void-gaps.md` só quando o workaround correspondente ganhar a marcação `sv-gap: <slug>` no código do VittaFlow.
 - **Correção factual sobre o arquivo existente:** `still-void-gaps.md` afirma que a 3.2.0 "continua sem exportar um `Progress` genérico". Isso está desatualizado — `dist/react/index.d.ts:803` da 3.2.0 instalada exporta `Progress`/`ProgressProps`. Vale corrigir a entrada histórica para não induzir um workaround desnecessário no futuro.
-- **Como ler:** cada gap tem contagem de call sites (quantas páginas reimplementam o mesmo problema), os workarounds exatos (arquivo:linha) e uma sugestão de API para a lib. Ordenados por alcance (quantas superfícies do app o gap atinge), não por severidade — a severidade de cada instância está na auditoria de UX (`docs/AUDITORIA-UX-2026-08.md`).
+- **Como ler:** cada gap tem contagem de call sites (quantas páginas reimplementam o mesmo problema), os workarounds exatos (arquivo:linha) e uma sugestão de API para a lib. Ordenados por alcance (quantas superfícies do app o gap atinge), não por severidade — a severidade de cada instância está na auditoria de UX (`docs/audits/auditoria-ux-2026-08.md`).
 
 ---
 

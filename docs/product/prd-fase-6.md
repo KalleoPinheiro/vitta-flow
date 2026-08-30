@@ -3,9 +3,9 @@
 - **Versão:** 1.0
 - **Data:** 2026-08-30
 - **Status:** Especificado — pronto para execução (ver issues no GitHub)
-- **Antecessores:** [PRD-FASE-3.md](./PRD-FASE-3.md) (item O1.2, que deixou "permissões por papel
+- **Antecessores:** [prd-fase-3.md](./prd-fase-3.md) (item O1.2, que deixou "permissões por papel
   clínico" fora de escopo, e O4.4, que só entregou a ADR de multi-tenancy);
-  [PLANO-EVOLUCAO-FASEADO.md](./PLANO-EVOLUCAO-FASEADO.md) (Fase 6 — Plataforma, que listava RBAC
+  [plano-evolucao-faseado.md](../plano-evolucao-faseado.md) (Fase 6 — Plataforma, que listava RBAC
   granular, multi-tenancy Fases 1–2 e sunset da senha master como "decisão pendente")
 
 ---
@@ -88,7 +88,7 @@ como integração desacoplada, conectada por conta já autenticada). Toda conta 
 própria, definida por convite enviado por e-mail no cadastro, com reset self-service também por
 e-mail. Remove a senha mestre de emergência (`AUTH_PASSWORD`); primeiro Super Admin nasce por
 bootstrap dedicado. Realiza também o "sunset da senha master" que a Fase 1 já tinha só avisado
-(`docs/PLANO-EVOLUCAO-FASEADO.md`, Fase 6).
+(`docs/plano-evolucao-faseado.md`, Fase 6).
 
 **Critérios de aceite:**
 - Toda conta nova recebe convite por e-mail para definir a própria senha.
@@ -110,18 +110,18 @@ bootstrap dedicado. Realiza também o "sunset da senha master" que a Fase 1 já 
 - Suporte a uma pessoa com conta em mais de uma empresa (1 conta = 1 empresa).
 - RBAC configurável por empresa (o catálogo de papéis é fixo, não customizável).
 - TISS/convênios e paginação por cursor — seguem como backlog da Fase 6
-  (`docs/PLANO-EVOLUCAO-FASEADO.md`).
+  (`docs/plano-evolucao-faseado.md`).
 
 ## Decisões registradas
 
-- [ADR-001](./adr/001-multi-tenancy.md) — estratégia de multi-tenancy (atualizada: Fase 1 e parte
+- [ADR-001](../adr/001-multi-tenancy.md) — estratégia de multi-tenancy (atualizada: Fase 1 e parte
   da Fase 2 em andamento nesta fase).
-- [ADR-002](./adr/002-autorizacao-em-duas-camadas.md) — autorização em duas camadas (atualizada:
+- [ADR-002](../adr/002-autorizacao-em-duas-camadas.md) — autorização em duas camadas (atualizada:
   risco residual de escopo por paciente resolvido pela ADR-003).
-- [ADR-003](./adr/003-modelo-de-papeis-multi-empresa.md) — modelo de papéis multi-empresa (nova).
-- [ADR-004](./adr/004-remocao-google-oauth-autenticacao.md) — remoção do Google OAuth como
+- [ADR-003](../adr/003-modelo-de-papeis-multi-empresa.md) — modelo de papéis multi-empresa (nova).
+- [ADR-004](../adr/004-remocao-google-oauth-autenticacao.md) — remoção do Google OAuth como
   autenticação (nova).
-- Glossário de domínio atualizado em [CONTEXT.md](../CONTEXT.md) (Clinic, Role, Account
+- Glossário de domínio atualizado em [CONTEXT.md](../../CONTEXT.md) (Clinic, Role, Account
   provisioning).
 
 ## Rastreabilidade
@@ -130,6 +130,6 @@ bootstrap dedicado. Realiza também o "sunset da senha master" que a Fase 1 já 
 |---|---|---|
 | PRD-FASE-3, O1.2 | "Fora de escopo: permissões por papel clínico (recepção sem SOAP) — exige matriz de permissão" | P6.2 |
 | PRD-FASE-3, O4.4 | "Multi-tenant... não cabe em uma onda com responsabilidade. Entregável desta onda: ADR" | P6.1 executa a ADR |
-| PLANO-EVOLUCAO-FASEADO.md, Fase 6 | "RBAC granular de staff... decisão pendente: a matriz em si" | P6.2 |
-| PLANO-EVOLUCAO-FASEADO.md, Fase 6 | "Multi-tenancy fases 1–2 do ADR 001" | P6.1 |
-| PLANO-EVOLUCAO-FASEADO.md, Fase 6 | "Sunset da senha master" | P6.3 |
+| plano-evolucao-faseado.md, Fase 6 | "RBAC granular de staff... decisão pendente: a matriz em si" | P6.2 |
+| plano-evolucao-faseado.md, Fase 6 | "Multi-tenancy fases 1–2 do ADR 001" | P6.1 |
+| plano-evolucao-faseado.md, Fase 6 | "Sunset da senha master" | P6.3 |

@@ -190,6 +190,6 @@ Detalhes completos (por que reproduzir local, divergência de scanner hospedado,
 ## Referências
 
 - [README.md](../README.md) — funcionalidades, API, arquitetura, stack
-- [PRD.md](PRD.md), [PRD-FASE-2.md](PRD-FASE-2.md), [PRD-FASE-3.md](PRD-FASE-3.md) — requisitos por fase
-- [ANALISE-SEGURANCA-ESCALABILIDADE.md](ANALISE-SEGURANCA-ESCALABILIDADE.md) — análise de segurança/escalabilidade
+- [prd-fase-1.md](product/prd-fase-1.md), [prd-fase-2.md](product/prd-fase-2.md), [prd-fase-3.md](product/prd-fase-3.md) — requisitos por fase
+- [analise-seguranca-escalabilidade.md](audits/analise-seguranca-escalabilidade.md) — análise de segurança/escalabilidade
 - [.env.example](../.env.example) — todas as variáveis com comentários inline

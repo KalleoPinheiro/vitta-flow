@@ -100,7 +100,7 @@ em `.specs/STATE.md`. Commit `252df2e`.
 - [.specs/features/still-void-v3.2-migration/](../.specs/features/still-void-v3.2-migration/) —
   spec, design e tasks da migração `3.1` → `3.2` que fechou as 6 lacunas
   restantes (histórico acima).
-- [BACKLOG-DESIGN-SYSTEM.md](BACKLOG-DESIGN-SYSTEM.md) — backlog da adoção da 1.x;
+- [backlog-design-system.md](backlog-design-system.md) — backlog da adoção da 1.x;
   os itens 1, 2 e 3 são fechados pela migração para a `2.0.1`.
 - [.specs/features/still-void-v3-migration/](../.specs/features/still-void-v3-migration/) —
   spec, design e tasks da migração `2.0` → `3.1` que fechou 14 das 19 lacunas

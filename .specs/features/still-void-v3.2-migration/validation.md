@@ -5,7 +5,7 @@
 **Diff range**: `387d31e...HEAD` (feature commits: `d88a7cb`, `8726995`, `3a61988`, `faaa974`, `746939c`, `03e5004`, `252df2e`, `c86a39f`, `4630c8d`, `ece2c75`)
 **Verifier**: independent sub-agent (author ≠ verifier)
 
-**Note on diff range noise**: `git diff 387d31e...HEAD` also picks up two unrelated pre-existing commits that merged into the range before this feature started work (`a07190e` chore: ignora `.claude/`, `560fc42` docs: runbook). These touch `.gitignore`, `README.md`, `docs/SETUP-LOCAL.md` — none of which are declared in this feature's tasks.md scope. Confirmed via `git show --stat` on both commits that these changes belong to those commits, not to any of the 10 feature commits. Excluded from scope review below.
+**Note on diff range noise**: `git diff 387d31e...HEAD` also picks up two unrelated pre-existing commits that merged into the range before this feature started work (`a07190e` chore: ignora `.claude/`, `560fc42` docs: runbook). These touch `.gitignore`, `README.md`, `docs/setup-local.md` — none of which are declared in this feature's tasks.md scope. Confirmed via `git show --stat` on both commits that these changes belong to those commits, not to any of the 10 feature commits. Excluded from scope review below.
 
 ---
 
@@ -82,7 +82,7 @@ All 3 mutations run in scratch state (edited file → ran targeted test → conf
 | --- | --- |
 | Minimum code | ✅ — no code beyond what tasks.md specified |
 | Surgical changes | ✅ — only the 5 declared components/pages + their test files + doc/state files touched |
-| No scope creep | ✅ — `git diff --name-only 387d31e...HEAD` shows 3 extra files (`.gitignore`, `README.md`, `docs/SETUP-LOCAL.md`); traced via `git show --stat` to two unrelated pre-existing commits (`a07190e`, `560fc42`) that happened to land in the same range, not to any of the 10 feature commits |
+| No scope creep | ✅ — `git diff --name-only 387d31e...HEAD` shows 3 extra files (`.gitignore`, `README.md`, `docs/setup-local.md`); traced via `git show --stat` to two unrelated pre-existing commits (`a07190e`, `560fc42`) that happened to land in the same range, not to any of the 10 feature commits |
 | Matches existing patterns | ✅ — decorative-icon pattern, `SPEC_DEVIATION` comment convention, AD supersession convention (AD-008 precedent) all followed |
 | Spec-anchored outcome check | ✅ — see table above, all 10/10 matched precise spec outcomes |
 | Per-layer Coverage Expectation met | ✅ — presentation components 1:1 with ACs; page-level tests cover text/structure impact without regression elsewhere |

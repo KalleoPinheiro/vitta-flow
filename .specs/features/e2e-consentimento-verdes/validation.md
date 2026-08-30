@@ -70,7 +70,7 @@ Todo teste adicionado/alterado no diff mapeia para um AC:
 | `e2e/triagem.spec.ts:19-23` | AC1 |
 | `e2e/faturamento.spec.ts:115-136` | AC5 |
 
-**Zero testes não reivindicados.** Alterações em `docs/BACKLOG-DESIGN-SYSTEM.md`, `.specs/STATE.md`,
+**Zero testes não reivindicados.** Alterações em `docs/backlog-design-system.md`, `.specs/STATE.md`,
 `.specs/LESSONS.md` e `.specs/lessons.json` são bookkeeping do próprio fluxo — não são scope creep.
 
 ---

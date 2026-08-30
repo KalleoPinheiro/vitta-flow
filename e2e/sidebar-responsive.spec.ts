@@ -94,4 +94,39 @@ test.describe("sidebar responsivo", () => {
     const count = await navLinks.count();
     expect(count).toBeGreaterThan(0);
   });
+
+  test("mobile a desktop: cruzar breakpoint com drawer aberto libera scroll-lock (P1-5)", async ({
+    page,
+  }) => {
+    // Viewport mobile
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+
+    // Abre o drawer
+    const sidebarTrigger = page.locator("button[aria-expanded]").first();
+    await sidebarTrigger.click();
+    await expect(sidebarTrigger).toHaveAttribute("aria-expanded", "true");
+
+    // Confirma que body tem data-scroll-locked
+    const hasScrollLockBefore = await page.evaluate(() =>
+      document.body.hasAttribute("data-scroll-locked"),
+    );
+    expect(hasScrollLockBefore).toBe(true);
+
+    // Redimensiona para desktop SEM navegar de novo
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    // Aguarda um pouco para o sistema processar o resize
+    await page.waitForTimeout(100);
+
+    // O drawer deve estar fechado automaticamente após cruzar o breakpoint
+    // (drawer só fica aberto em mobile)
+    await expect(sidebarTrigger).not.toBeVisible();
+
+    // Confirma que data-scroll-locked foi removido
+    const hasScrollLockAfter = await page.evaluate(() =>
+      document.body.hasAttribute("data-scroll-locked"),
+    );
+    expect(hasScrollLockAfter).toBe(false);
+  });
 });

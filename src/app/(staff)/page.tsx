@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Button, Card, Hero, Icon } from "@still-void/ui/react";
+import { useToast } from "@still-void/ui/react/client";
 import type { AppointmentDto, FollowUpDto, SupplyDto } from "@/lib/dto";
 import type { BillingSummary } from "@/application/billing/get-billing-summary";
 import { apiFetch } from "@/lib/client";
@@ -23,6 +24,7 @@ interface SummaryData {
 }
 
 export default function DashboardPage() {
+  const { toast } = useToast();
   const { data: summary, error } = useApiQuery<SummaryData>("/api/summary");
   const { data: followUps, refresh: refreshFollowUps } = useApiQuery<FollowUpDto[]>(
     "/api/follow-ups?status=pending",
@@ -32,11 +34,22 @@ export default function DashboardPage() {
   const lowStock = (supplies ?? []).filter((s) => s.active && s.isLowStock);
 
   const resolveFollowUp = async (id: string, status: "done" | "cancelled") => {
-    await apiFetch<FollowUpDto>(`/api/follow-ups/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify({ status }),
-    });
-    refreshFollowUps();
+    try {
+      await apiFetch<FollowUpDto>(`/api/follow-ups/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+      toast({
+        description: status === "done" ? "Retorno concluído" : "Retorno cancelado",
+        variant: "success",
+      });
+      refreshFollowUps();
+    } catch (err) {
+      toast({
+        description: err instanceof Error ? err.message : "Erro ao atualizar retorno",
+        variant: "danger",
+      });
+    }
   };
 
   if (error) return <ErrorAlert message={error} />;

@@ -277,9 +277,9 @@ describe("Feature: PatientRecordPage", () => {
       await renderDetail();
 
       expect(await screen.findByText("Maria Souza")).toBeInTheDocument();
-      const allergyLabel = screen.getByText(/Alergias:/);
-      expect(allergyLabel).toBeInTheDocument();
-      expect(allergyLabel.parentElement).toHaveTextContent("Látex");
+      const allergyAlert = screen.getByRole("alert");
+      expect(allergyAlert).toHaveTextContent("Alergias:");
+      expect(allergyAlert).toHaveTextContent("Látex");
     });
 
     it("Dado condições e evoluções cadastradas, Quando renderizar, Então mostra contagem nas abas e alterna entre elas", async () => {

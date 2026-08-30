@@ -2,6 +2,10 @@
 
 This file documents Agent skills and how domain documentation should be consumed when working with code in this repository.
 
+## Context
+
+Read @CONTEXT.md.
+
 ## Stack
 
 Next.js 16 (App Router), React 19, TypeScript 5, Drizzle ORM + Postgres 16, Tailwind v4. npm, no workspaces.

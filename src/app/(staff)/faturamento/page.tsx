@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { apiFetch } from "@/lib/client";
+import { useToast } from "@still-void/ui/react/client";
 import type { InvoiceDto, PatientDto, ProcedureDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import { usePagedQuery } from "@/lib/use-paged-query";
@@ -111,6 +112,7 @@ function InvoicesTable({ invoices, onPay, onCancel }: InvoicesTableProps) {
 }
 
 export default function BillingPage() {
+  const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -132,17 +134,28 @@ export default function BillingPage() {
   const error = actionError ?? loadError;
 
   const handleCreate = async (values: InvoiceFormValues) => {
-    await apiFetch<InvoiceDto>("/api/invoices", {
-      method: "POST",
-      body: JSON.stringify({
-        patientId: values.patientId,
-        description: values.description,
-        amountCents: Math.round(Number(values.amount) * 100),
-        dueDate: values.dueDate ? new Date(values.dueDate).toISOString() : null,
-      }),
-    });
-    setCreating(false);
-    refresh();
+    try {
+      await apiFetch<InvoiceDto>("/api/invoices", {
+        method: "POST",
+        body: JSON.stringify({
+          patientId: values.patientId,
+          description: values.description,
+          amountCents: Math.round(Number(values.amount) * 100),
+          dueDate: values.dueDate ? new Date(values.dueDate).toISOString() : null,
+        }),
+      });
+      toast({
+        description: "Fatura criada",
+        variant: "success",
+      });
+      setCreating(false);
+      refresh();
+    } catch (err) {
+      toast({
+        description: err instanceof Error ? err.message : "Erro ao criar fatura",
+        variant: "danger",
+      });
+    }
   };
 
   const handlePay = async (invoice: InvoiceDto, method: string) => {
@@ -150,6 +163,10 @@ export default function BillingPage() {
       await apiFetch<InvoiceDto>(`/api/invoices/${invoice.id}`, {
         method: "PATCH",
         body: JSON.stringify({ action: "pay", method }),
+      });
+      toast({
+        description: "Pagamento registrado",
+        variant: "success",
       });
       setPaying(null);
       setActionError(null);
@@ -164,6 +181,10 @@ export default function BillingPage() {
       await apiFetch<InvoiceDto>(`/api/invoices/${invoice.id}`, {
         method: "PATCH",
         body: JSON.stringify({ action: "cancel" }),
+      });
+      toast({
+        description: "Fatura cancelada",
+        variant: "success",
       });
       setActionError(null);
       refresh();
@@ -318,6 +339,7 @@ function PackageForm({
   patients: PatientDto[];
   onSaved: () => void;
 }) {
+  const { toast } = useToast();
   const { data: procedures } = useApiQuery<ProcedureDto[]>("/api/procedures");
   const [patientId, setPatientId] = useState("");
   const [procedureId, setProcedureId] = useState("");
@@ -344,6 +366,10 @@ function PackageForm({
           // forçar UTC encurtaria o último dia em fusos a oeste (UTC-3: 20:59).
           expiresAt: expiresAt ? new Date(`${expiresAt}T23:59:59`).toISOString() : null,
         }),
+      });
+      toast({
+        description: "Pacote vendido",
+        variant: "success",
       });
       onSaved();
     } catch (err) {

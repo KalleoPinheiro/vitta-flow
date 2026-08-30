@@ -475,6 +475,7 @@ describe("Feature: PatientRecordPage", () => {
           }),
         );
       });
+      expect(await screen.findByText("Condição registrada")).toBeInTheDocument();
     });
 
     it("Dado clique em nova condição do tipo estomia (padrão), Quando submetido, Então envia POST com tipo de estomia", async () => {
@@ -572,6 +573,7 @@ describe("Feature: PatientRecordPage", () => {
       ) as [string, RequestInit];
       const payload = JSON.parse(String(requestInit.body)) as { painScale: number };
       expect(payload.painScale).toBe(4);
+      expect(await screen.findByText("Avaliação registrada")).toBeInTheDocument();
     });
 
     it("Dado condição de estomia, Quando abrir avaliação DET e marcar complicação, Então envia complicationCodes preenchido", async () => {
@@ -679,6 +681,7 @@ describe("Feature: PatientRecordPage", () => {
           }),
         );
       });
+      expect(await screen.findByText("Condição resolvida")).toBeInTheDocument();
     });
 
     it("Dado erro ao resolver condição, Quando a chamada falha, Então exibe alerta de erro", async () => {

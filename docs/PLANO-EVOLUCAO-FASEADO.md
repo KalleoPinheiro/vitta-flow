@@ -30,7 +30,7 @@
 | 3 | Compliance e UX clínico | ✅ **Entregue** (PASS na iteração 1) | `.specs/features/fase-3-compliance-ux-clinico/` |
 | 4 | Portal: auto-agendamento e recall | ✅ **Entregue** (Verifier PASS) | `.specs/features/fase-4-portal-auto-agendamento/` |
 | 5 | Monetização e canal | Backlog (depende de decisão de negócio) | seção 5 abaixo |
-| 6 | Plataforma (RBAC fino, multi-tenancy, TISS) | Backlog (depende de decisão de negócio) | seção 6 abaixo |
+| 6 | Plataforma (RBAC fino, multi-tenancy, TISS) | RBAC + multi-tenancy Fases 1–2 + sunset senha master: **especificados**, ver `PRD-FASE-6.md`. TISS e paginação por cursor seguem backlog | `PRD-FASE-6.md`, seção 6 abaixo |
 
 ### Registro de entrega
 
@@ -111,17 +111,26 @@ Exige escolhas do negócio antes de executar:
 - **Lista de espera (waitlist):** cancelamento oferece o slot via WhatsApp por ordem de chegada.
   **Decisão pendente:** regras de expiração da oferta.
 
-## Fase 6 — Plataforma (planejada — backlog)
+## Fase 6 — Plataforma (parcialmente especificada)
 
-- **RBAC granular de staff:** papéis internos (clínico/recepção/financeiro) com matriz de
-  permissões por rota/ação. **Decisão pendente:** a matriz em si (o que a recepção pode ver do
-  prontuário?). Pré-requisito do multi-tenant.
-- **Multi-tenancy fases 1–2 do ADR 001:** `clinic_id` + RLS. Executar antes que o schema cresça.
+- **RBAC granular de staff:** ~~decisão pendente~~ **especificado** em
+  [`PRD-FASE-6.md`](./PRD-FASE-6.md) (P6.2) e [ADR-003](./adr/003-modelo-de-papeis-multi-empresa.md)
+  — catálogo fechado de 6 papéis (Super Admin, Admin de Empresa, Atendente, Profissional, Patient,
+  Partner), com hierarquia de cadastro e escopo por papel. Execução: issue
+  [#20](https://github.com/KalleoPinheiro/vitta-flow/issues/20) e tickets #28–#31.
+- **Multi-tenancy fases 1–2 do ADR 001:** ~~executar antes que o schema cresça~~ **especificado**
+  em [`PRD-FASE-6.md`](./PRD-FASE-6.md) (P6.1) — Fase 1 (`clinics` + `clinic_id`) e a parte de
+  aplicação da Fase 2 (sessão + filtro por tenant); RLS completo segue como épico dedicado à parte.
+  Execução: issue [#19](https://github.com/KalleoPinheiro/vitta-flow/issues/19) e tickets #22–#27.
+- **Sunset da senha master:** ~~flag `AUTH_MASTER_DISABLED` + comunicação~~ **especificado** em
+  [`PRD-FASE-6.md`](./PRD-FASE-6.md) (P6.3) e [ADR-004](./adr/004-remocao-google-oauth-autenticacao.md)
+  — remoção completa (não flag), junto da remoção do login via Google e da introdução de
+  convite/reset de senha por e-mail. Execução: issue
+  [#21](https://github.com/KalleoPinheiro/vitta-flow/issues/21) e tickets #32–#35.
 - **TISS/convênios:** operadora no paciente, guia por atendimento, relatório por operadora com
-  série de scores como evidência.
-- **Paginação por cursor** nas listagens (necessária só em escala de plataforma).
-- **Sunset da senha master:** flag `AUTH_MASTER_DISABLED` + comunicação (a Fase 1 já adiciona o
-  aviso de uso).
+  série de scores como evidência. Ainda backlog, sem spec.
+- **Paginação por cursor** nas listagens (necessária só em escala de plataforma). Ainda backlog,
+  sem spec.
 
 ---
 

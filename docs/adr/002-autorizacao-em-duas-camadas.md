@@ -78,6 +78,14 @@ não tem sessão) e `api/reminders/run` (autentica por `x-cron-secret`). Ambas e
 - A política vive em dois pontos de consumo. Mitigado por serem o mesmo módulo.
 
 **Risco residual (fora do escopo, declarado na issue)**
-- Autorização por **escopo de paciente** dentro do papel `admin`: hoje qualquer conta
-  de equipe lê qualquer paciente. Exige mudança no modelo de papéis.
+- ~~Autorização por **escopo de paciente** dentro do papel `admin`: hoje qualquer conta
+  de equipe lê qualquer paciente. Exige mudança no modelo de papéis.~~ Endereçado por
+  [ADR-003](./003-modelo-de-papeis-multi-empresa.md): o papel `admin` monolítico é
+  substituído por um catálogo de seis papéis, com Atendente restrito a dados
+  operacionais e Profissional escopado dinamicamente por vínculo de agendamento/evolução.
 - Rate limit é por instância (memória) — múltiplas réplicas pedem Redis.
+
+## Relacionado
+
+- [ADR-003: Modelo de papéis multi-empresa](./003-modelo-de-papeis-multi-empresa.md) — resolve o risco residual de escopo por paciente citado acima.
+- [ADR-004: Remoção do Google OAuth como autenticação](./004-remocao-google-oauth-autenticacao.md) — muda como a sessão que este documento autoriza é estabelecida.

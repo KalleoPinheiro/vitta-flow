@@ -6,10 +6,11 @@
 
 ### Entities
 
-**Clinic** (planned: tenant)
+**Clinic** (empresa, tenant)
 
-- Single deployment = one clinic currently (Phase 0 of [ADR-001](./docs/adr/001-multi-tenancy.md)).
-- Future: multi-tenant with data isolation via `clinic_id` column + Postgres Row-Level Security.
+- The tenant boundary: every account except Super Admin belongs to exactly one Clinic, and only sees that Clinic's data.
+- Becoming a real entity now (Phase 1 of [ADR-001](./docs/adr/001-multi-tenancy.md): `clinics` table + `clinic_id` on existing tables). Isolation is enforced in the application layer (session carries `clinic_id`, repositories filter by it); Postgres Row-Level Security is deferred to a later phase.
+- Created only by Super Admin (no self-service onboarding yet — that's Phase 3 of ADR-001).
 
 **Patient** (paciente)
 
@@ -22,11 +23,13 @@
 - Staff member providing care (estomaterapeuta, nurse, therapist).
 - May be assigned to appointments and evolution notes.
 - Attributes: name, registry (license), commission %.
+- A clinical record, distinct from its login account — may optionally have one with the Profissional role (see Access Control § Role).
 
 **Partner** (parceiro)
 
 - Referral source or affiliate (e.g., another clinic, physician).
 - Tracked for patient referrals and business relationships.
+- May optionally have a login account with the Partner role (see Access Control § Role).
 
 **Appointment** (consulta, agendamento)
 
@@ -111,13 +114,24 @@
 
 **Session** (sessão)
 
-- User authenticated via password (scrypt hash) or Google OAuth.
-- Session claims: user email, role, assigned professional (if staff).
+- User authenticated with their own password (scrypt hash), set via an emailed invite or self-service reset. Google OAuth is not an authentication method — it is unrelated to login.
+- Session claims: user email, role, clinic (Super Admin has no clinic — it is cross-clinic by definition), assigned professional (if Profissional).
 
 **Role** (papel)
 
-- **Admin** (equipe): staff account, can read/write all clinic data.
-- **Patient** (paciente): patient account, can read own records and submit photos.
+Fixed catalog of six; a Clinic's Admin de Empresa cannot invent new roles or permissions.
+
+- **Super Admin** (sistema): the one system-wide operator. Full access to every Clinic, including clinical data; every cross-clinic access is audited. Creates Admin de Empresa (and, if needed, any other role) in any Clinic. No one creates a Super Admin except itself.
+- **Admin de Empresa** (equipe, admin da clínica): full access within its own Clinic only — operational data, clinical data, clinic settings, account management. A Clinic may have more than one. Creates Profissional, Atendente, Patient, Partner, and other Admin de Empresa accounts, all within its own Clinic.
+- **Atendente** (equipe, recepção): operational access only — scheduling and patient/partner registration. No access to clinical data (evolution notes, condition assessments, photos). Creates Patient and Partner accounts.
+- **Profissional** (equipe): clinical access, but scoped dynamically — sees only patients it has at least one appointment or evolution note with. Not a fixed "ownership": a patient can accumulate access for several professionals over time (coverage, transfer, return). Creates Patient and Partner accounts.
+- **Patient** (paciente): own portal, can read own records and submit photos. Never self-registers — always created by staff.
+- **Partner** (parceiro): own portal, referral tracking. Never self-registers, and creates no one.
+
+**Account provisioning** (cadastro de contas)
+
+- No self-registration for any role: every account is created by someone else in the hierarchy above (see Role).
+- First Clinic and its first Admin de Empresa are created manually by Super Admin — no self-service onboarding yet.
 
 **Authorization** (autorização)
 
@@ -125,7 +139,8 @@
   1. **Proxy layer** (`src/proxy.ts`): edge-level checks, rate limiting, early rejects.
   2. **Handler layer** (`src/lib/auth/require-session.ts`): per-route authorization, fail-closed.
 - Policy source: `src/lib/auth/access-policy.ts`.
-- Audit: all changes record the authenticated actor (no anonymous actions).
+- Scoped by Clinic (`clinic_id`) for every role except Super Admin, and additionally by professional assignment for Profissional.
+- Audit: all changes record the authenticated actor (no anonymous actions); Super Admin access to another Clinic's data is always audited.
 
 ### Business Rules
 
@@ -155,20 +170,21 @@
 
 **Multi-tenancy roadmap** (see [ADR-001](./docs/adr/001-multi-tenancy.md))
 
-- **Phase 0 (now)**: conventions set; no code changes yet.
-- **Phase 1**: add `clinic_id` column + default to legacy tenant; backfill.
-- **Phase 2**: session claims include clinic_id; RLS via `SET LOCAL`.
+- **Phase 0**: conventions set; no code changes yet.
+- **Phase 1 (in progress)**: `clinics` table; `clinic_id` column + default to legacy tenant; backfill.
+- **Phase 2 (partial, in progress)**: session claims include `clinic_id`; repositories filter by it in the application layer. Postgres RLS via `SET LOCAL` is deferred to a dedicated later effort, per ADR-001's own recommendation.
 - **Phase 3**: self-service onboarding, billing, custom domains.
 - **Phase 4**: anonymized benchmarking across clinics.
 
-Until Phase 1, the product is single-tenant (one deploy per clinic). After Phase 1, the same database serves multiple clinics with cryptographic isolation.
+One account belongs to exactly one Clinic (email is unique per Clinic, not globally) — a person working across two Clinics needs two separate accounts for now.
 
 ### Critical constraints
 
 **Auth fail-closed**
 
-- Without `AUTH_PASSWORD`/`AUTH_SECRET` or Google OAuth configured, all routes return 503.
+- Without `AUTH_SECRET` configured, all routes return 503.
 - `VITTA_ALLOW_OPEN_MODE=true` bypasses in dev; has no effect in production.
+- There is no master/break-glass password: every account, including Super Admin, is a real record with its own credential.
 
 **Photo storage**
 
@@ -181,7 +197,7 @@ Until Phase 1, the product is single-tenant (one deploy per clinic). After Phase
 
 **Calendar sync**
 
-- Google Calendar integration requires OAuth tokens (encrypted in `google_accounts`).
+- Google Calendar integration requires OAuth tokens (encrypted in `google_accounts`), connected separately after login — unrelated to authentication.
 - Bidirectional: appointments ↔ Google events.
 
 **Consent enforcement**
@@ -209,3 +225,5 @@ See `src/` structure:
 
 - [ADR-001: Multi-tenancy strategy](./docs/adr/001-multi-tenancy.md) — `clinic_id` + RLS, incremental phases.
 - [ADR-002: Two-layer authorization](./docs/adr/002-autorizacao-em-duas-camadas.md) — proxy + handler guards, fail-closed.
+- [ADR-003: Modelo de papéis multi-empresa](./docs/adr/003-modelo-de-papeis-multi-empresa.md) — catálogo fechado de seis papéis, escopo por empresa e vínculo dinâmico do Profissional.
+- [ADR-004: Remoção do Google OAuth como autenticação](./docs/adr/004-remocao-google-oauth-autenticacao.md) — login 100% nativo, Calendar sync desacoplado.

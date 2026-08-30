@@ -106,8 +106,8 @@ A auditoria UX completa (`docs/AUDITORIA-UX-2026-08.md`, 18 superfícies) e a au
 | # | Arquivo | Função | Toast sucesso | Precisa criar try/catch? |
 |---|---|---|---|---|
 | 3 | `(staff)/page.tsx` | `resolveFollowUp` | "Retorno concluído" / "Retorno cancelado" (conforme `status`) | sim |
-| 4 | `agenda/page.tsx` | `handleCreate` (consulta única, ramo `else`) | "Consulta criada" | sim |
-| 5 | `faturamento/page.tsx` | `handleCreate` | "Fatura criada" | sim |
+| 4 | `agenda/page.tsx` | `handleCreate` (consulta única, ramo `else`) | "Consulta criada" | não — `AppointmentForm` já embrulha `onSubmit` no próprio `try/catch` (`ErrorAlert` inline + modal aberto); `handleCreate` NÃO cria catch próprio, deixa o erro propagar pro form (ver AC 34/35 abaixo — achado pós-PASS, ver `validation.md`) |
+| 5 | `faturamento/page.tsx` | `handleCreate` | "Fatura criada" | não — mesmo padrão de #4, com `InvoiceForm` |
 | 6 | `faturamento/page.tsx` | `handlePay` | "Pagamento registrado" | não (já tem) |
 | 7 | `faturamento/page.tsx` | `handleCancel` | "Fatura cancelada" | não (já tem) |
 | 8 | `faturamento/page.tsx` | `PackageForm.handleSubmit` | "Pacote vendido" | verificar no Design |
@@ -135,12 +135,13 @@ A auditoria UX completa (`docs/AUDITORIA-UX-2026-08.md`, 18 superfícies) e a au
 | 30 | `pacientes/[id]/condition-photos.tsx` | `upload` | "Foto enviada" | verificar no Design |
 | 31 | `pacientes/[id]/condition-photos.tsx` | `remove` | "Foto excluída" | verificar no Design |
 | 32 | `portal/schedule-return.tsx` | `schedule` | "Retorno agendado" | não (já tem) |
+| 32b | `(staff)/page.tsx` | `TriageQueue.triage` | "Foto revisada" (decisão `reviewed`) / "Foto escalada" (decisão `escalated`) | não (já tem) — **achado por review de PR (CodeRabbit) depois do PASS do Verifier**, ausente do levantamento original; mesmo padrão dos demais, `catch` já existe com `setError`, só falta o toast de sucesso |
 
 **Acceptance Criteria — comportamento genérico**:
 
 33. WHEN qualquer função da tabela acima completa com sucesso THEN o sistema SHALL disparar `toast({ description: "<texto>", variant: "success" })`
-34. WHEN qualquer função da tabela acima lança erro (rede, validação de servidor) THEN o sistema SHALL disparar `toast({ description: <mensagem de erro>, variant: "danger" })` — reaproveitando a mensagem já extraída (`err instanceof Error ? err.message : "<fallback existente>"`) onde já existe `catch`; criando o mesmo padrão onde não existe
-35. WHEN uma função já tem um `Alert`/`setActionError` inline pro erro (ex.: `faturamento/handlePay`) THEN o sistema SHALL manter esse `Alert` inline INTACTO e apenas adicionar o toast de sucesso — não duplicar erro em toast + alert
+34. WHEN uma função da tabela acima lança erro E não tem nenhum tratamento de erro visível hoje (coluna "Precisa criar try/catch?" = "sim") THEN o sistema SHALL criar `try/catch` novo e disparar `toast({ description: <mensagem de erro>, variant: "danger" })` como ÚNICO feedback de erro — reaproveitando a mensagem já extraída (`err instanceof Error ? err.message : "<fallback existente>"`) — **esta AC não se aplica** às funções cobertas pela AC 35 abaixo (coluna = "não"), que já tinham feedback de erro antes desta feature
+35. WHEN uma função já tem um `Alert`/`setActionError` inline pro erro OU o erro é consumido por um form filho que já embrulha `onSubmit` no próprio `try/catch` (ex.: `faturamento/handlePay`, `agenda handleCreate` → `AppointmentForm`, `faturamento handleCreate` → `InvoiceForm`) THEN o sistema SHALL manter esse tratamento INTACTO, sem criar `try/catch` novo em volta, e apenas adicionar o toast de sucesso — não duplicar/interceptar o erro com um toast (interceptar aqui impediria o form dono de mostrar o próprio erro; achado real pós-PASS, ver `validation.md`)
 
 **Independent Test**: disparar cada ação (ex.: concluir um retorno pendente) e observar o toast aparecer com o texto esperado e sumir sozinho após a duração default; simular falha de rede (endpoint offline/mock 500) e observar toast `danger`.
 

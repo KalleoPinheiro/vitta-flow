@@ -119,11 +119,20 @@ Mais barato, mas não resolve o requisito real — sem drawer, o usuário mobile
 
 **Trigger mobile**: `SidebarPanel` (rail acima do breakpoint) não tem header próprio — precisa de uma barra visível só abaixo do breakpoint com o `SidebarTrigger`, porque sem ela o usuário mobile não tem como abrir o drawer. Baseado no Storybook `AppSidebar.stories.tsx` (WithHeaderTrigger, corrigido no round-5) que usa o mesmo padrão: trigger dentro do `SidebarInset`, antes do conteúdo, escondido acima do breakpoint via `lg:hidden` (1024px, coincide com o breakpoint default do provider — Risco R1).
 
-```tsx
-"use client";
-// layout.tsx precisa virar client? NÃO — só os filhos client-only. StaffLayout
-// continua Server Component (sem "use client" no topo do arquivo).
+**Nota (pós-Execute):** o template original desta seção mostrava tudo em `layout.tsx`, com um `"use client"` colado no topo do bloco de código só pra ilustrar "isto seria client se ficasse num arquivo só" — texto confuso, um review de PR (CodeRabbit) apontou corretamente que colado ali parecia uma instrução real. Na execução real, o corpo virou `src/app/(staff)/staff-layout-client.tsx` (com seu próprio `"use client"`), e `layout.tsx` ficou um Server Component puro re-exportando esse componente:
 
+```tsx
+// src/app/(staff)/layout.tsx — Server Component, sem "use client"
+import { StaffLayoutClient } from "./staff-layout-client";
+
+export default function StaffLayout({ children }: { children: React.ReactNode }) {
+  return <StaffLayoutClient>{children}</StaffLayoutClient>;
+}
+```
+
+```tsx
+// src/app/(staff)/staff-layout-client.tsx — Client Component
+"use client";
 import { SidebarProvider, SidebarPanel, SidebarTrigger, SidebarInset } from "@still-void/ui/react/client";
 import { SidebarSection } from "@still-void/ui/react";
 import { BrandLogo } from "@/components/brand-logo";
@@ -131,9 +140,14 @@ import { LogoutButton } from "@/components/logout-button";
 import { StaffNav } from "./staff-nav";
 import { SidebarAutoClose } from "./sidebar-auto-close";
 
-export default function StaffLayout({ children }: { children: React.ReactNode }) {
+export function StaffLayoutClient({ children }: { children: React.ReactNode }) {
   return (
-    <SidebarProvider>
+    // defaultOpen=false: o default da lib é `true` (pensado pro rail de
+    // desktop, que ignora `open`) — sem essa prop, o drawer mobile (que É
+    // gated por `open`) nasce aberto assim que a hidratação detecta
+    // viewport mobile, sem clique do usuário. Achado só depois do Execute,
+    // via flake em e2e repetido — ver validation.md, addendum pós-PASS.
+    <SidebarProvider defaultOpen={false}>
       <SidebarAutoClose />
       <div className="flex min-h-screen">
         <SidebarPanel className="w-56 shrink-0 justify-between border-r border-border p-5" title="Navegação">
@@ -178,13 +192,27 @@ Nenhuma interface nova — cada ponto troca `className` manual por `variant`. Ve
 // dentro do componente, já "use client"
 const { toast } = useToast();
 
-// no catch existente ou novo:
+// CASO A — a função não tinha nenhum tratamento de erro visível antes
+// (ex.: resolveFollowUp, botão avulso sem form dono do erro): cria
+// try/catch novo, toast danger é o ÚNICO feedback de erro.
 } catch (err) {
   toast({ description: err instanceof Error ? err.message : "<fallback existente>", variant: "danger" });
-  // ... setError/setActionError existente PERMANECE (AC P3-35)
 }
 
-// após sucesso:
+// CASO B — a função já tinha Alert/setActionError inline (a maioria dos
+// call sites, ex.: faturamento/handlePay) OU o erro é consumido por um
+// form filho que já embrulha o onSubmit no próprio catch (ex.: agenda
+// handleCreate → AppointmentForm, faturamento handleCreate → InvoiceForm):
+// NÃO adiciona toast danger — o catch/Alert existente já é o feedback de
+// erro, duplicar viraria toast + alert dizendo a mesma coisa (AC P3-35).
+// Interceptar o erro num catch novo aqui, mesmo só pra disparar o toast,
+// ENGOLE o erro antes dele chegar no form dono — bug real encontrado
+// pós-PASS, ver validation.md (addendum).
+} catch (err) {
+  setActionError(err instanceof Error ? err.message : "<fallback existente>"); // já existia
+}
+
+// após sucesso (ambos os casos):
 toast({ description: "<texto da tabela da spec>", variant: "success" });
 ```
 

@@ -17,7 +17,13 @@ interface StaffLayoutClientProps {
 
 export function StaffLayoutClient({ children }: StaffLayoutClientProps) {
   return (
-    <SidebarProvider>
+    // defaultOpen=false: o default da lib é `true` (pensado pro rail de
+    // desktop, que fica visível independente de `open`) — sem essa prop,
+    // `open` nasce true e o drawer mobile (que É gated por `open`) abre
+    // sozinho assim que a hidratação detecta viewport mobile, sem clique
+    // nenhum do usuário. Não afeta o desktop: o rail em modo "offcanvas"
+    // renderiza incondicionalmente, sem olhar pra `open`.
+    <SidebarProvider defaultOpen={false}>
       <SidebarAutoClose />
       <div className="flex min-h-screen">
         {/* O <main> não usa o <Layout> do pacote de propósito: `.sv-layout` limita

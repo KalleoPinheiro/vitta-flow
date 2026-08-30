@@ -132,26 +132,27 @@
 
 ## Handoff
 
-- **Feature**: still-void-v3.2-migration — **concluída e verificada**. 10 tasks (T1-T10, execução delegada a 4 sub-agentes de fase + 1 Verifier) fechadas. PASS de primeira (sem ciclo fix→re-verify — nenhum gap sobreviveu).
+- **Feature**: still-void-v3.3-adoption — **concluída e verificada**. 26 tasks (T1-T22 + 3 fixes de teste da iteração de fix→re-verify), execução delegada a 5 sub-agentes de fase (Sidebar, Alert, Toast-infra, Toast-A, Toast-B) + 1 fix-round + 3 rodadas de Verifier. PASS na iteração 3 (das 3 permitidas) — iteração 1 achou 4 gaps, iteração 2 fechou 3 e achou 2 residuais do mesmo padrão, iteração 3 fechou os 2 últimos.
 - **Phase / Task**: Execute + Validate completos. Nada em aberto.
-- **Completed**: T1 bump `@still-void/ui` 3.1.0→3.2.0 · T2-T5 (Fase 2, paralelas) fecham `pagination` (`Pagination`/`PaginationNext` em `LoadMoreButton`), `separator` (`Separator` no divisor "ou" do login), `icon-set-gaps` (`camera`/`blocked`/`pending`), `data-chart` (`ChartContainer`/`ChartAxis`/`ChartLine` no `HealingChart`) · T6+T7 (Fase 3) fecham `dialog-close-label` (`closeLabel="Fechar"` nativo no `Modal`) + ripple de 17 queries `getByLabelText`→`getByRole` em 6 arquivos de teste · T8 (Fase 4) arquiva as 6 seções em `docs/still-void-gaps.md` (nível `####`, fora do regex do gate) · T9 registra AD-016 (supersede AD-015) · T10 fecha traceability (12/12 `SV32-NN` `Implemented`) e dispara o Verifier — **PASS, 10/10 ACs**. Relatório completo em `.specs/features/still-void-v3.2-migration/validation.md`.
-- **Achado durante a execução (decisão do usuário, não bug)**: fechar `dialog-close-label` inverte a ordem de foco do `Modal` — a `3.2.0` anexa o botão nativo de fechar DEPOIS de `{children}` (`dist/react/client/index.js:506-527`), enquanto o botão manual removido ficava ANTES. Usuário confirmou adotar a ordem nova da lib em vez de manter o workaround; as 3 asserções de ordem de foco em `tests/components/modal.test.tsx` foram reescritas com `SPEC_DEVIATION` documentado (commit `252df2e`). Ver AD-016.
-- **Gate final** (branch `claude/pos-merge-ajustes-5a46b5`):
+- **Completed**: adota `@still-void/ui@3.3.0` (bump de `^3.2.0`) — os 3 gaps de maior alcance da auditoria de design system (`docs/AUDITORIA-DESIGN-SYSTEM-2026-08.md`): (1) `sidebar-app-shell` — `(staff)/layout.tsx` troca o `<Sidebar>` estático por `SidebarProvider`/`SidebarPanel`/`SidebarTrigger`/`SidebarInset` + `SidebarAutoClose` (componente novo, fecha drawer em navegação); (2) `alert-semantic-variants` — 8 dos 9 pontos manuais (`ErrorAlert`, banner de alergia, estoque baixo/validade em materiais — este splitado em até 2 `Alert`, grade salva, série de consultas, 2 dos 3 banners de consentimento no portal) migram pra `Alert variant=...`; o 9º (título do `Card` de consentimento pendente) fica manual por decisão documentada (`Card` não tem variante na 3.3.0, ver AC P2-8 em `spec.md`); (3) `feedback-toast` — `ToastProvider` montado 1x no root (`src/app/providers.tsx`) cobrindo staff+portal, 32 call sites de escrita ganham `toast()` de sucesso/erro em 13 arquivos, incluindo 3 que precisaram de `try/catch` novo (antes engoliam erro silenciosamente: `resolveFollowUp`, `agenda handleCreate` consulta única, `faturamento handleCreate`).
+- **Achado durante a execução (bug real de teste, não de produto)**: um worker de fase inicial commitou os 2 primeiros commits (T1+T2) direto na `main` do checkout principal (`~/projects/vitta-flow`), não no worktree/branch da feature — causa: o prompt de dispatch não fixava o diretório de trabalho absoluto. Corrigido via cherry-pick pro branch certo + `git reset --hard origin/main` no checkout principal (local-only, não pushado, sem perda). Todos os dispatches seguintes passaram a exigir `cd <path-absoluto> && <comando>` e confirmação de `pwd`/branch antes de cada commit — sem recorrência.
+- **Lição registrada**: `L-023` (candidate) — cobertura de toast em toggle binário (ativar/desativar) tende a esquecer o branch "reativar" quando só existe teste prévio pro branch "desativar" pra estender; aconteceu 2x no mesmo commit (profissionais + parceiros).
+- **Gate final** (branch `claude/clinic-app-design-audit-9f51ec`):
 
   | Comando | Resultado |
   |---|---|
   | `npm run typecheck` | 0 erros |
-  | `npm run build` | 0 erros |
-  | `npm test` | 1817/1817 passaram |
-  | `npm run test:e2e` | 64/64 (1 flaky não relacionado — `export-lgpd.spec.ts`, passou no retry) |
+  | `npx vitest run` | 1832/1832 passaram (baseline pré-feature: 1820, +12) |
+  | `npm run test:e2e -- e2e/sidebar-responsive.spec.ts` | 4/4 passaram |
   | `npm run check:sv` | 0 achados nas 13 checagens |
-  | Sensor de discriminação (Verifier) | 3/3 mutações mortas, 0 sobreviventes |
-  | `docs/still-void-gaps.md` | 0 lacunas ativas (6 arquivadas em histórico) |
+  | Sensor de discriminação (Verifier, 3 mutações) | 3/3 mortas na iteração final (1 sobreviveu na iteração 1, corrigida) |
+
+  Gate completo (`npm run build`, suíte e2e inteira) não foi rodado nesta sessão — só o escopo da feature; rodar antes de abrir PR.
 
 - **In-progress** (file:line): —
-- **Next step**: nenhum. Feature pronta para revisão/merge — nenhum push feito ainda.
+- **Next step**: revisar o diff, rodar `npm run build` + `npm run test:e2e` completo, abrir PR pra `main`. Nenhum push feito ainda.
 - **Blockers**: none
-- **Branch**: `claude/pos-merge-ajustes-5a46b5` (worktree `tlc-spec-driven-audit-5a46b5`)
+- **Branch**: `claude/clinic-app-design-audit-9f51ec` (worktree `clinic-app-design-audit-9f51ec`)
 
 ### Baseline de segurança medido em `fcd6110`
 

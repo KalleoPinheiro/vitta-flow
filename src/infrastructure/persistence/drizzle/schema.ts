@@ -11,6 +11,13 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
+export const clinics = pgTable("clinics", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+  createdBy: text("created_by").notNull(),
+});
+
 export const partners = pgTable("partners", {
   id: text("id").primaryKey(),
   fullName: text("full_name").notNull(),

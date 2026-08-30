@@ -130,6 +130,14 @@
 - **Date**: 2026-08-26
 - **Status**: active
 
+### AD-017
+- **Decision**: Todo filtro por `clinic_id` em repositório Drizzle passa por um helper centralizado `withTenant(table, clinicId, extra?)` (`src/infrastructure/persistence/drizzle/tenant-scope.ts`) em vez de `and(eq(table.clinicId, clinicId), extra)` repetido em cada método. `clinicId: null` (papel de sistema) faz o helper retornar `extra` sozinho, sem filtro.
+- **Reason**: com ~15 repositórios e ~45 rotas tocados pela fundação de multi-tenancy (issue #19), um filtro repetido manualmente em cada método é o ponto onde "esquecer o filtro numa rota nova" (risco que a própria issue #19 pede um teste para cobrir) mais provavelmente acontece; centralizar dá ao sensor de discriminação do Verifier um único ponto por repositório para mutar e confirmar que os testes de isolamento pegam.
+- **Trade-off**: todo repositório precisa importar o helper em vez de compor `and()`/`eq()` livremente; qualquer exceção (query que genuinamente precisa ignorar tenant fora do papel de sistema) precisa ser óbvia no código-review por não usar o helper.
+- **Scope**: src/infrastructure/persistence/drizzle/**, todo repositório novo criado a partir de agora
+- **Date**: 2026-08-30
+- **Status**: active
+
 ## Handoff
 
 - **Feature**: still-void-v3.3-adoption — **concluída e verificada**. 26 tasks (T1-T22 + 3 fixes de teste da iteração de fix→re-verify), execução delegada a 5 sub-agentes de fase (Sidebar, Alert, Toast-infra, Toast-A, Toast-B) + 1 fix-round + 3 rodadas de Verifier. PASS na iteração 3 (das 3 permitidas) — iteração 1 achou 4 gaps, iteração 2 fechou 3 e achou 2 residuais do mesmo padrão, iteração 3 fechou os 2 últimos.

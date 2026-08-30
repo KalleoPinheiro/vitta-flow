@@ -1,4 +1,5 @@
 import { getDb } from "./persistence/drizzle/db";
+import { DrizzleClinicRepository } from "./persistence/drizzle/drizzle-clinic-repository";
 import { DrizzlePatientRepository } from "./persistence/drizzle/drizzle-patient-repository";
 import { DrizzleAppointmentRepository } from "./persistence/drizzle/drizzle-appointment-repository";
 import { DrizzleInvoiceRepository } from "./persistence/drizzle/drizzle-invoice-repository";
@@ -72,6 +73,7 @@ import { googleOAuthConfigFromEnv } from "@/lib/auth/google-oauth";
 import { getAuthConfig } from "@/lib/auth/session";
 import { decryptSecret } from "@/lib/auth/crypto";
 import type { AppDb } from "./persistence/drizzle/db";
+import type { ClinicRepository } from "@/domain/clinic/clinic-repository";
 import type { PatientRepository } from "@/domain/patient/patient-repository";
 import type { AppointmentRepository } from "@/domain/scheduling/appointment-repository";
 import type { InvoiceRepository } from "@/domain/billing/invoice-repository";
@@ -106,6 +108,7 @@ import {
 } from "@/application/ports/calendar-gateway";
 
 export interface Services {
+  clinics: ClinicRepository;
   patients: PatientRepository;
   partners: PartnerRepository;
   professionals: ProfessionalRepository;
@@ -206,6 +209,7 @@ export async function getRepositories(): Promise<Services> {
   const db = await getDb();
   const calendar = await buildCalendarGateway(db);
   return {
+    clinics: new DrizzleClinicRepository(db),
     patients: new DrizzlePatientRepository(db),
     partners: new DrizzlePartnerRepository(db),
     professionals: new DrizzleProfessionalRepository(db),

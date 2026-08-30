@@ -58,8 +58,8 @@ A auditoria UX completa (`docs/AUDITORIA-UX-2026-08.md`, 18 superfícies) e a au
 
 1. WHEN a viewport tem largura ≥ 1024px THEN o sistema SHALL renderizar a sidebar como rail fixo em fluxo (não portal/dialog), idêntico visualmente ao `<Sidebar>` estático atual (mesma largura `w-56`, mesmo conteúdo: `BrandLogo`, `SidebarSection` com `StaffNav`, `LogoutButton`)
 2. WHEN a viewport tem largura < 1024px THEN o sistema SHALL renderizar a sidebar como drawer em portal (overlay + `role="dialog"` + `aria-modal`), fechado por padrão
-3. WHEN o usuário abaixo do breakpoint aciona o `SidebarTrigger` THEN o sistema SHALL abrir o drawer com foco movido pro primeiro elemento focável dentro dele
-4. WHEN o drawer está aberto e o usuário fecha (botão fechar, overlay, Esc, ou navega pra outra rota) THEN o sistema SHALL fechar o drawer e devolver o foco ao `SidebarTrigger`
+3. WHEN o usuário abaixo do breakpoint aciona o `SidebarTrigger` THEN o sistema SHALL abrir o drawer com foco movido pro primeiro elemento focável dentro dele — comportamento de foco-trap-ao-abrir é garantia do próprio `Dialog.Root`/`SidebarPanel` da lib (unit-testado no round-5 do `@still-void/ui`); esta feature não re-testa mecanismo de foco no nível do app, só confirma que o drawer abre e fica navegável
+4. WHEN o drawer está aberto e o usuário fecha (botão fechar, overlay, Esc, ou navega pra outra rota) THEN o sistema SHALL fechar o drawer e devolver o foco ao `SidebarTrigger` — devolução de foco é o `onCloseAutoFocus` já implementado e testado na lib (round-5); esta feature testa que o drawer FECHA (inclusive via `SidebarAutoClose` em navegação), não reafirma o destino exato do foco
 5. WHEN a viewport cruza o breakpoint com o drawer aberto (rotação de tela, resize de janela) THEN o sistema SHALL liberar o scroll-lock do `<body>` sem deixá-lo travado
 6. WHEN qualquer uma das 13 telas do staff é acessada em 390px de largura THEN o sistema SHALL deixar 100% do conteúdo da tela alcançável (sem amputar — troca o `overflow-x-hidden` do `<main>` atual, avaliar se ainda é necessário com o novo layout)
 
@@ -82,7 +82,7 @@ A auditoria UX completa (`docs/AUDITORIA-UX-2026-08.md`, 18 superfícies) e a au
 5. WHEN a grade de horários é salva em `configuracoes/page.tsx` THEN o sistema SHALL mostrar `Alert variant="success"` com o texto atual ("Grade salva — vale imediatamente para novos agendamentos."), permanecendo visível até a próxima interação (comportamento atual preservado)
 6. WHEN `handleCreate` de série de consultas (`agenda/page.tsx`) completa THEN o sistema SHALL mostrar `Alert variant="success"` se `skipped.length === 0`, `variant="warning"` caso contrário, mantendo o texto atual de `seriesNotice`
 7. WHEN o termo de consentimento do portal está aceito (`consent-card.tsx`) THEN o sistema SHALL usar `Alert variant="success"` com o texto atual
-8. WHEN o termo de consentimento do portal está pendente (`consent-card.tsx`) THEN o sistema SHALL usar `Alert variant="warning"` no título/card, mantendo a estrutura de `Card` + texto do termo (o card em si não é um `Alert` — só o padrão de cor/ícone reflete `warning`)
+8. WHEN o termo de consentimento do portal está pendente (`consent-card.tsx`) THEN o sistema SHALL manter o `Card` com as classes manuais `border-warning`/`bg-warning-soft` no título — este ponto NÃO vira `Alert` (é um `Card` de seção, não um alerta pontual; `Card` não tem variante semântica na 3.3.0, fora de escopo desta rodada) — documentado inline no código com um comentário curto explicando por que continua manual
 9. WHEN `PatientPhotoUpload` bloqueia envio por consentimento pendente (`consent-card.tsx`) THEN o sistema SHALL usar `Alert variant="warning"` com o texto atual
 10. WHEN qualquer `Alert` acima renderiza THEN o sistema SHALL confiar no `role` derivado automaticamente pela lib (não passar `role` manual) — `alert` para `danger`/`warning`, `status` para `success`/`info`
 
@@ -177,4 +177,4 @@ A auditoria UX completa (`docs/AUDITORIA-UX-2026-08.md`, 18 superfícies) e a au
 - [ ] `npm run typecheck` e suíte de testes existente continuam verdes
 - [ ] Nenhuma das 13 telas do staff amputa conteúdo em 390px (verificação manual/Playwright)
 - [ ] Zero `catch` silencioso remanescente nos 32 call sites da tabela P3
-- [ ] Zero `className="border-danger"`/`bg-warning-soft`/`bg-success-soft` manual remanescente nos 9 pontos da P2 (grep confirma)
+- [ ] Zero `className="border-danger"`/`bg-warning-soft`/`bg-success-soft` manual remanescente nos 8 pontos da P2 que viram `Alert` (grep confirma) — exceto o ponto 8 (título do `Card` de consentimento pendente), que fica manual por decisão explícita (ver AC P2-8 acima)

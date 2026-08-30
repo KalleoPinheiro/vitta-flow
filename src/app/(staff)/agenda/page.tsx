@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { apiFetch } from "@/lib/client";
 import type { AppointmentDto, PatientDto, ProfessionalDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
+import { useToast } from "@still-void/ui/react/client";
 import { Modal } from "@/components/modal";
 import { ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import { CalendarGrid } from "./calendar-grid";
@@ -74,6 +75,7 @@ function readRecallParams() {
 }
 
 export default function AgendaPage() {
+  const { toast } = useToast();
   const [monthDate, setMonthDate] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -133,15 +135,28 @@ export default function AgendaPage() {
           : `Série criada: ${result.created.length} sessões.`,
         variant: result.skipped.length > 0 ? "warning" : "success",
       });
+      setCreatingFor(null);
+      refresh();
     } else {
-      await apiFetch<AppointmentDto>("/api/appointments", {
-        method: "POST",
-        body: JSON.stringify({ ...payload, followUpId: recall?.followUpId ?? null }),
-      });
-      setSeriesNotice(null);
+      try {
+        await apiFetch<AppointmentDto>("/api/appointments", {
+          method: "POST",
+          body: JSON.stringify({ ...payload, followUpId: recall?.followUpId ?? null }),
+        });
+        toast({
+          description: "Consulta criada",
+          variant: "success",
+        });
+        setSeriesNotice(null);
+        setCreatingFor(null);
+        refresh();
+      } catch (err) {
+        toast({
+          description: err instanceof Error ? err.message : "Erro ao criar consulta",
+          variant: "danger",
+        });
+      }
     }
-    setCreatingFor(null);
-    refresh();
   };
 
   const handleAction = async (

@@ -6,6 +6,7 @@ import AgendaPage from "@/app/(staff)/agenda/page";
 import { AppointmentDetail } from "@/app/(staff)/agenda/appointment-detail";
 import { AppointmentForm } from "@/app/(staff)/agenda/appointment-form";
 import { CalendarGrid, dayKey } from "@/app/(staff)/agenda/calendar-grid";
+import { renderWithToast } from "@/../tests/support/render-with-toast";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
@@ -119,7 +120,7 @@ describe("Feature: Página de agenda", () => {
   describe("Cenário: carregamento inicial", () => {
     it("Dado que as consultas ainda não chegaram, Quando renderizar, Então exibe indicador de carregamento", () => {
       mockAgendaFetch();
-      render(<AgendaPage />);
+      renderWithToast(<AgendaPage />);
 
       expect(screen.getByText("Carregando…")).toBeInTheDocument();
     });
@@ -137,7 +138,7 @@ describe("Feature: Página de agenda", () => {
           return jsonResponse(true, []);
         }),
       );
-      render(<AgendaPage />);
+      renderWithToast(<AgendaPage />);
 
       await waitFor(() => {
         expect(screen.getByText("Erro ao buscar consultas")).toBeInTheDocument();
@@ -148,7 +149,7 @@ describe("Feature: Página de agenda", () => {
   describe("Cenário: grade renderizada com consultas", () => {
     it("Dado consultas do mês, Quando renderizar, Então exibe a grade do calendário", async () => {
       mockAgendaFetch({ appointments: [appointmentFixture] });
-      render(<AgendaPage />);
+      renderWithToast(<AgendaPage />);
 
       await waitFor(() => {
         expect(screen.queryByText("Carregando…")).not.toBeInTheDocument();
@@ -158,7 +159,7 @@ describe("Feature: Página de agenda", () => {
 
     it("Dado profissionais cadastrados, Quando renderizar, Então exibe o filtro de profissionais", async () => {
       mockAgendaFetch({ professionals: [professionalFixture] });
-      render(<AgendaPage />);
+      renderWithToast(<AgendaPage />);
 
       await waitFor(() => {
         expect(screen.getByText("Todos os profissionais")).toBeInTheDocument();
@@ -170,7 +171,7 @@ describe("Feature: Página de agenda", () => {
   describe("Cenário: criar nova consulta", () => {
     it("Dado clique em 'Nova consulta', Quando o formulário é submetido, Então chama a API de criação", async () => {
       mockAgendaFetch();
-      render(<AgendaPage />);
+      renderWithToast(<AgendaPage />);
 
       await waitFor(() => {
         expect(screen.queryByText("Carregando…")).not.toBeInTheDocument();
@@ -196,12 +197,81 @@ describe("Feature: Página de agenda", () => {
         );
       });
     });
+
+    it("Dado sucesso ao criar consulta única, Quando submetido, Então exibe toast de sucesso 'Consulta criada'", async () => {
+      mockAgendaFetch();
+      renderWithToast(<AgendaPage />);
+
+      await waitFor(() => {
+        expect(screen.queryByText("Carregando…")).not.toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByText("+ Nova consulta"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Nova consulta")).toBeInTheDocument();
+      });
+
+      fireEvent.change(screen.getByLabelText(/Paciente/), { target: { value: "pat-1" } });
+      fireEvent.change(screen.getByLabelText(/Procedimento \*/), {
+        target: { value: "Curativo" },
+      });
+      fireEvent.change(screen.getByLabelText(/Valor/), { target: { value: "100" } });
+
+      fireEvent.click(screen.getByText("Agendar consulta"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Consulta criada")).toBeInTheDocument();
+      });
+    });
+
+    it("Dado falha ao criar consulta única, Quando acionado, Então exibe toast de erro e modal continua aberto", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+          const url = typeof input === "string" ? input : input.toString();
+          const method = init?.method ?? "GET";
+
+          if (url.startsWith("/api/appointments") && method === "POST") {
+            throw new Error("Erro ao criar consulta");
+          }
+          if (url.startsWith("/api/appointments")) return jsonResponse(true, []);
+          if (url.startsWith("/api/patients")) return jsonResponse(true, [patientFixture]);
+          if (url.startsWith("/api/professionals")) return jsonResponse(true, []);
+          if (url.startsWith("/api/procedures")) return jsonResponse(true, []);
+          throw new Error(`URL não mapeada no mock: ${method} ${url}`);
+        }),
+      );
+      renderWithToast(<AgendaPage />);
+
+      await waitFor(() => {
+        expect(screen.queryByText("Carregando…")).not.toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByText("+ Nova consulta"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Nova consulta")).toBeInTheDocument();
+      });
+
+      fireEvent.change(screen.getByLabelText(/Paciente/), { target: { value: "pat-1" } });
+      fireEvent.change(screen.getByLabelText(/Procedimento \*/), {
+        target: { value: "Curativo" },
+      });
+      fireEvent.change(screen.getByLabelText(/Valor/), { target: { value: "100" } });
+
+      fireEvent.click(screen.getByText("Agendar consulta"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Erro ao criar consulta")).toBeInTheDocument();
+      });
+      // Modal continua aberto após erro
+      expect(screen.getByText("Nova consulta")).toBeInTheDocument();
+    });
   });
 
   describe("Cenário: abrir detalhes de uma consulta pelo calendário", () => {
     it("Dado clique em uma consulta na grade, Quando acionado, Então abre o modal de detalhes", async () => {
       mockAgendaFetch({ appointments: [appointmentFixture] });
-      render(<AgendaPage />);
+      renderWithToast(<AgendaPage />);
 
       await waitFor(() => {
         expect(screen.getByText(/Maria Souza/)).toBeInTheDocument();
@@ -227,7 +297,7 @@ describe("Feature: Página de agenda", () => {
         throw new Error(`URL não mapeada no mock: ${method} ${url}`);
       });
       vi.stubGlobal("fetch", fetchMock);
-      render(<AgendaPage />);
+      renderWithToast(<AgendaPage />);
 
       await waitFor(() => {
         expect(screen.getByText("Dra. Ana")).toBeInTheDocument();
@@ -251,7 +321,7 @@ describe("Feature: Página de agenda", () => {
   describe("Cenário: navegação por mês", () => {
     it("Dado clique nas setas de navegação, Quando acionadas, Então o mês exibido muda", async () => {
       mockAgendaFetch();
-      const { container } = render(<AgendaPage />);
+      const { container } = renderWithToast(<AgendaPage />);
 
       await waitFor(() => {
         expect(screen.queryByText("Carregando…")).not.toBeInTheDocument();
@@ -288,7 +358,7 @@ describe("Feature: Página de agenda", () => {
           throw new Error(`URL não mapeada no mock: ${method} ${url}`);
         }),
       );
-      render(<AgendaPage />);
+      renderWithToast(<AgendaPage />);
 
       await waitFor(() => {
         expect(screen.queryByText("Carregando…")).not.toBeInTheDocument();
@@ -329,7 +399,7 @@ describe("Feature: Página de agenda", () => {
           throw new Error(`URL não mapeada no mock: ${method} ${url}`);
         }),
       );
-      render(<AgendaPage />);
+      renderWithToast(<AgendaPage />);
 
       await waitFor(() => {
         expect(screen.queryByText("Carregando…")).not.toBeInTheDocument();
@@ -367,7 +437,7 @@ describe("Feature: Página de agenda", () => {
         throw new Error(`URL não mapeada no mock: ${method} ${url}`);
       });
       vi.stubGlobal("fetch", fetchMock);
-      render(<AgendaPage />);
+      renderWithToast(<AgendaPage />);
 
       await waitFor(() => expect(screen.getByText(/Maria Souza/)).toBeInTheDocument());
       fireEvent.click(screen.getByText(/Maria Souza/));
@@ -400,7 +470,7 @@ describe("Feature: Página de agenda", () => {
         throw new Error(`URL não mapeada no mock: ${method} ${url}`);
       });
       vi.stubGlobal("fetch", fetchMock);
-      render(<AgendaPage />);
+      renderWithToast(<AgendaPage />);
 
       await waitFor(() => expect(screen.getByText(/Maria Souza/)).toBeInTheDocument());
       fireEvent.click(screen.getByText(/Maria Souza/));
@@ -433,7 +503,7 @@ describe("Feature: Página de agenda", () => {
         throw new Error(`URL não mapeada no mock: ${method} ${url}`);
       });
       vi.stubGlobal("fetch", fetchMock);
-      render(<AgendaPage />);
+      renderWithToast(<AgendaPage />);
 
       await waitFor(() => expect(screen.getByText(/Maria Souza/)).toBeInTheDocument());
       fireEvent.click(screen.getByText(/Maria Souza/));
@@ -459,7 +529,7 @@ describe("Feature: Página de agenda", () => {
   describe("Cenário: fechar modais sem executar ação", () => {
     it("Dado modal de nova consulta aberto, Quando fechado sem submeter, Então o modal desaparece", async () => {
       mockAgendaFetch({ professionals: [professionalFixture] });
-      render(<AgendaPage />);
+      renderWithToast(<AgendaPage />);
 
       await waitFor(() => expect(screen.queryByText("Carregando…")).not.toBeInTheDocument());
       fireEvent.click(screen.getByText("+ Nova consulta"));
@@ -474,7 +544,7 @@ describe("Feature: Página de agenda", () => {
 
     it("Dado clique em um dia vazio da grade, Quando acionado, Então abre o modal de nova consulta para aquele dia", async () => {
       mockAgendaFetch();
-      const { container } = render(<AgendaPage />);
+      const { container } = renderWithToast(<AgendaPage />);
 
       await waitFor(() => expect(screen.queryByText("Carregando…")).not.toBeInTheDocument());
       const dayCells = container.querySelectorAll(".cursor-pointer");
@@ -487,7 +557,7 @@ describe("Feature: Página de agenda", () => {
 
     it("Dado modal de detalhes aberto, Quando fechado sem executar ação, Então o modal desaparece", async () => {
       mockAgendaFetch({ appointments: [appointmentFixture] });
-      render(<AgendaPage />);
+      renderWithToast(<AgendaPage />);
 
       await waitFor(() => expect(screen.getByText(/Maria Souza/)).toBeInTheDocument());
       fireEvent.click(screen.getByText(/Maria Souza/));
@@ -513,7 +583,7 @@ describe("Feature: Página de agenda", () => {
         "/agenda?followUpId=fu-1&patientId=pat-1&procedure=Troca+de+curativo",
       );
       mockAgendaFetch();
-      render(<AgendaPage />);
+      renderWithToast(<AgendaPage />);
 
       await waitFor(() => {
         expect(screen.getByText("Nova consulta")).toBeInTheDocument();
@@ -525,7 +595,7 @@ describe("Feature: Página de agenda", () => {
     it("Dado apenas o followUpId presente na URL, Quando a página carrega, Então abre o formulário sem paciente ou procedimento pré-selecionados", async () => {
       window.history.pushState({}, "", "/agenda?followUpId=fu-1");
       mockAgendaFetch();
-      render(<AgendaPage />);
+      renderWithToast(<AgendaPage />);
 
       await waitFor(() => {
         expect(screen.getByText("Nova consulta")).toBeInTheDocument();

@@ -372,7 +372,7 @@ T8 → T18 → T19
 
 ---
 
-### T14: Ajustar mensagens de erro específicas para Atendente (se necessário)
+### T14: Ajustar mensagens de erro específicas para Atendente (se necessário) ✅ Complete
 
 **What**: Se T13 revelar mensagem genérica insuficiente (`STAFF_ONLY_MESSAGE` não distingue "sem permissão clínica" de "não autenticado"), adicionar mensagem específica de família negada.
 **Where**: `src/lib/auth/require-session.ts` (ou `access-policy.ts`, conforme onde a mensagem é montada)

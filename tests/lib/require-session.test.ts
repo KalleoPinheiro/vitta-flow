@@ -87,6 +87,20 @@ describe("Feature: Guarda de sessão nas rotas (camada 2 de autorização)", () 
       },
     );
 
+    it("Dada sessão de atendente numa rota administrative, Então 403 com mensagem distinta de STAFF_ONLY_MESSAGE (RBAC-16)", async () => {
+      const administrativeRequest = new NextRequest("http://localhost/api/reports", {
+        headers: cookieHeaderFor("atendente", "atendente@clinica.com"),
+      });
+      const guard = requireStaffSession(administrativeRequest);
+
+      expect(guard.ok).toBe(false);
+      if (guard.ok) return;
+      expect(guard.response.status).toBe(403);
+      const message = await errorOf(guard.response);
+      expect(message).toBe("Seu papel não tem acesso a este recurso");
+      expect(message).not.toBe("Acesso restrito à equipe da clínica");
+    });
+
     it("Dado cookie assinado por outro segredo, Então responde 401", () => {
       const token = createSessionToken("outro-segredo", Date.now() + 3_600_000, "x@y.com", "company_admin");
       const forjado = { cookie: `vitta_session=${token}` };

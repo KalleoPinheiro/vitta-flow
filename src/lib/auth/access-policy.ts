@@ -37,6 +37,8 @@ export const SHARED_PATH_PREFIXES = ["/portal", "/api/portal", "/api/auth/logout
 
 export const UNAUTHENTICATED_MESSAGE = "Não autenticado";
 export const STAFF_ONLY_MESSAGE = "Acesso restrito à equipe da clínica";
+/** Distinto de STAFF_ONLY_MESSAGE: a sessão É da equipe, mas o papel não acessa esta família de rota (RBAC-16). */
+export const ROLE_FAMILY_DENIED_MESSAGE = "Seu papel não tem acesso a este recurso";
 export const AUTH_NOT_CONFIGURED_MESSAGE =
   "Autenticação não configurada: defina AUTH_SECRET e AUTH_PASSWORD (ou login Google via GOOGLE_CLIENT_ID/SECRET + APP_URL + GOOGLE_ALLOWED_EMAILS)";
 

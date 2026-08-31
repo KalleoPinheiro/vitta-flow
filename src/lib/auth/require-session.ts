@@ -4,6 +4,7 @@ import { fail } from "@/lib/api-response";
 import {
   AUTH_NOT_CONFIGURED_MESSAGE,
   isAllowedForRole,
+  ROLE_FAMILY_DENIED_MESSAGE,
   STAFF_ONLY_MESSAGE,
   UNAUTHENTICATED_MESSAGE,
   resolveAuthMode,
@@ -78,8 +79,11 @@ export function requireStaffSession(request: NextRequest): Guard<Session | null>
   if (!session) {
     return denied(UNAUTHENTICATED_MESSAGE, 401);
   }
-  if (!isStaffRole(session.role) || !isAllowedForRole(request.nextUrl.pathname, session.role)) {
+  if (!isStaffRole(session.role)) {
     return denied(STAFF_ONLY_MESSAGE, 403);
+  }
+  if (!isAllowedForRole(request.nextUrl.pathname, session.role)) {
+    return denied(ROLE_FAMILY_DENIED_MESSAGE, 403);
   }
   return { ok: true, session };
 }

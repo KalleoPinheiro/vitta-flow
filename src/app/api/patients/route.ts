@@ -6,6 +6,7 @@ import { ListPatients } from "@/application/patients/list-patients";
 import { handleRequest } from "@/lib/api-response";
 import { toPatientDto } from "@/lib/dto";
 import { requireStaffSession } from "@/lib/auth/require-session";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 const paginationSchema = z.object({
   limit: z.coerce.number().int().min(1).max(500).default(100),
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
       limit: params.get("limit") ?? undefined,
       offset: params.get("offset") ?? undefined,
     });
-    const { patients } = await getRepositories({ clinicId: null });
+    const { patients } = await getRepositories({ clinicId: guard.session?.clinicId ?? null });
     const result = await new ListPatients(patients).execute({ search, limit, offset });
     return result.map((p) => toPatientDto(p));
   });
@@ -44,7 +45,9 @@ export async function POST(request: NextRequest) {
 
   return handleRequest(async () => {
     const body = createPatientSchema.parse(await request.json());
-    const { patients, partners } = await getRepositories({ clinicId: null });
+    const { patients, partners } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+    });
     const patient = await new CreatePatient(patients, partners).execute({
       fullName: body.fullName,
       email: body.email,

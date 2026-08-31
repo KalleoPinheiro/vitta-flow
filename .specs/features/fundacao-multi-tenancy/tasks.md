@@ -226,11 +226,11 @@ T18 → T19 → T20 → T21 → T22 → T23 → T24
 **Tools**: MCP: NONE. Skill: NONE.
 
 **Done when**:
-- [ ] `src/app/api/patients/route.ts` e `src/app/api/patients/[id]/route.ts` passam `clinicId` da sessão ao container
-- [ ] Teste de rota (`tests/api/*.test.ts`, novo helper `tests/support/clinics.ts` com 2 clínicas) prova: sessão A não lista/lê paciente de B (404 no caso por-id, lista vazia no caso de listagem)
-- [ ] Teste de rota prova: sessão de papel de sistema (`clinicId: null`) lê paciente de qualquer empresa E gera `AuditEvent` com `clinicId` = empresa acessada
-- [ ] `AuditEvent.clinicId` obrigatório no tipo de domínio
-- [ ] `npm run typecheck && npx vitest run tests/api tests/infrastructure` limpo
+- [x] `src/app/api/patients/route.ts` e `src/app/api/patients/[id]/route.ts` passam `clinicId` da sessão ao container
+- [x] Teste de rota (`tests/api/*.test.ts`, novo helper `tests/support/clinics.ts` com 2 clínicas) prova: sessão A não lista/lê paciente de B (404 no caso por-id, lista vazia no caso de listagem)
+- [x] Teste de rota prova: sessão de papel de sistema (`clinicId: null`) lê paciente de qualquer empresa E gera `AuditEvent` com `clinicId` = empresa acessada
+- [x] `AuditEvent.clinicId` obrigatório no tipo de domínio
+- [x] `npm run typecheck && npx vitest run tests/api tests/infrastructure` limpo
 
 **Tests**: integration
 **Gate**: full — **fechar issue #23 (M2) após este gate passar e o commit existir**

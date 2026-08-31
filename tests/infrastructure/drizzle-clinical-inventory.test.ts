@@ -70,7 +70,7 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
       email: "maria@example.com",
       phone: "11999990000",
     });
-    await new DrizzlePatientRepository(appDb, null).save(patient);
+    await new DrizzlePatientRepository(appDb, "legacy-clinic").save(patient);
   });
 
   it("Dado anamnese salva, Quando upsert e buscar, Então dados preservados e atualizados", async () => {
@@ -171,7 +171,7 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
 
   it("Dado parceiro salvo e paciente indicado, Quando buscar, Então roundtrip e escopo por indicação", async () => {
     const partnerRepo = new DrizzlePartnerRepository(appDb);
-    const patientRepo = new PatientRepo(appDb, null);
+    const patientRepo = new PatientRepo(appDb, "legacy-clinic");
     const partner = Partner.create({
       fullName: "Dr. Carlos Andrade",
       email: "carlos@x.com",

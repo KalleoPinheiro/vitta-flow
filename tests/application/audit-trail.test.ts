@@ -12,6 +12,7 @@ describe("Feature: Trilha de auditoria de prontuário (LGPD art. 11)", () => {
 
   const record = (overrides: Partial<Parameters<typeof AuditEvent.create>[0]> = {}) =>
     AuditEvent.create({
+      clinicId: "clinic-1",
       actorRole: "admin",
       actorId: "staff",
       action: "read",

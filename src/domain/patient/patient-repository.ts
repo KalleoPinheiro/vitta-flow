@@ -12,4 +12,6 @@ export interface PatientRepository {
   findByIds(ids: string[]): Promise<Patient[]>;
   findByReferrer(partnerId: string): Promise<Patient[]>;
   findAll(search?: string, page?: PatientPage): Promise<Patient[]>;
+  /** Empresa dona do registro — usado pelo acesso cross-empresa do papel de sistema para auditar. */
+  findClinicIdById(id: string): Promise<string | null>;
 }

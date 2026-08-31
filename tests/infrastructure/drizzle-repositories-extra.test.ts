@@ -58,7 +58,7 @@ describe("Feature: Persistência PostgreSQL — auditoria, pacotes, equipe e int
       email: "maria@example.com",
       phone: "11999990000",
     });
-    await new DrizzlePatientRepository(appDb, null).save(patient);
+    await new DrizzlePatientRepository(appDb, "legacy-clinic").save(patient);
 
     procedure = Procedure.create({
       name: "Consulta de enfermagem",
@@ -72,7 +72,8 @@ describe("Feature: Persistência PostgreSQL — auditoria, pacotes, equipe e int
     it("Dado evento salvo, Quando buscar, Então campos preservados", async () => {
       const repo = auditRepo();
       const event = AuditEvent.create({
-        actorRole: "admin",
+        clinicId: "legacy-clinic",
+          actorRole: "admin",
         actorId: "staff",
         action: "read",
         resourceType: "anamnesis",
@@ -96,6 +97,7 @@ describe("Feature: Persistência PostgreSQL — auditoria, pacotes, equipe e int
       const repo = auditRepo();
       await repo.save(
         AuditEvent.create({
+          clinicId: "legacy-clinic",
           actorRole: "admin",
           actorId: "staff",
           action: "read",
@@ -106,6 +108,7 @@ describe("Feature: Persistência PostgreSQL — auditoria, pacotes, equipe e int
       );
       await repo.save(
         AuditEvent.create({
+          clinicId: "legacy-clinic",
           actorRole: "admin",
           actorId: "staff",
           action: "create",
@@ -124,6 +127,7 @@ describe("Feature: Persistência PostgreSQL — auditoria, pacotes, equipe e int
       const repo = auditRepo();
       await repo.save(
         AuditEvent.create({
+          clinicId: "legacy-clinic",
           actorRole: "admin",
           actorId: "staff",
           action: "update",
@@ -146,7 +150,8 @@ describe("Feature: Persistência PostgreSQL — auditoria, pacotes, equipe e int
       for (let i = 0; i < 3; i += 1) {
         await repo.save(
           AuditEvent.create({
-            actorRole: "admin",
+            clinicId: "legacy-clinic",
+          actorRole: "admin",
             actorId: "staff",
             action: "read",
             resourceType: "anamnesis",

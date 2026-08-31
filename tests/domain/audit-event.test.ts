@@ -3,6 +3,7 @@ import { AuditEvent, AUDIT_ACTIONS } from "@/domain/audit/audit-event";
 import { ValidationError } from "@/domain/shared/errors";
 
 const validProps = {
+  clinicId: "clinic-1",
   actorRole: "admin",
   actorId: "staff",
   action: "read" as const,
@@ -48,6 +49,10 @@ describe("Feature: Evento de auditoria de prontuário", () => {
   });
 
   describe("Cenário: rejeitar dados inválidos", () => {
+    it("Dado clinicId vazio, Quando criar, Então lança ValidationError", () => {
+      expect(() => AuditEvent.create({ ...validProps, clinicId: " " })).toThrow(ValidationError);
+    });
+
     it("Dado actorRole vazio, Quando criar, Então lança ValidationError", () => {
       expect(() => AuditEvent.create({ ...validProps, actorRole: " " })).toThrow(ValidationError);
     });
@@ -74,6 +79,7 @@ describe("Feature: Evento de auditoria de prontuário", () => {
       const occurredAt = new Date("2026-02-01T08:00:00Z");
       const event = AuditEvent.restore({
         id: "event-1",
+        clinicId: "clinic-1",
         actorRole: "partner",
         actorId: "partner-1",
         action: "update",

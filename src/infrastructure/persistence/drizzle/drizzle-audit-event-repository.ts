@@ -6,7 +6,6 @@ import type {
   AuditEventRepository,
 } from "@/domain/audit/audit-event-repository";
 import { MAX_ROWS, type AppDb } from "./db";
-import { LEGACY_CLINIC_ID } from "./legacy-clinic";
 import { auditEvents } from "./schema";
 
 export class DrizzleAuditEventRepository implements AuditEventRepository {
@@ -15,7 +14,7 @@ export class DrizzleAuditEventRepository implements AuditEventRepository {
   async save(event: AuditEvent): Promise<void> {
     await this.db.insert(auditEvents).values({
       id: event.id,
-      clinicId: LEGACY_CLINIC_ID,
+      clinicId: event.clinicId,
       actorRole: event.actorRole,
       actorId: event.actorId,
       action: event.action,

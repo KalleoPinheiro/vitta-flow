@@ -568,6 +568,7 @@ describe("Feature: Doubles em memória de infraestrutura", () => {
     const makeEvent = (patientId: string, occurredAt: Date) =>
       AuditEvent.restore({
         id: `audit-${(auditSeq += 1)}`,
+        clinicId: "clinic-1",
         actorRole: "admin",
         actorId: "staff",
         action: "read",

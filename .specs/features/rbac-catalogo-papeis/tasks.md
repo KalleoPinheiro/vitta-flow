@@ -114,7 +114,7 @@ T8 → T18 → T19
 
 ---
 
-### T2: Migração — coluna `role` em `user_accounts` + `clinic_id` nullable
+### T2: Migração — coluna `role` em `user_accounts` + `clinic_id` nullable ✅ Complete
 
 **What**: Migração Drizzle: adiciona `role text`, backfill `'company_admin'` para linhas existentes, `NOT NULL`; altera `clinic_id` para nullable. Promove explicitamente a conta de bootstrap (se existir alguma usada como super-usuário em seed/fixture) a `super_admin` na mesma migração.
 **Where**: `drizzle/<novo>_add_role_to_user_accounts.sql` (ou equivalente gerado por `drizzle-kit`), `src/infrastructure/persistence/drizzle/schema.ts`

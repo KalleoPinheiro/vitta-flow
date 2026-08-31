@@ -91,12 +91,13 @@ export const userAccounts = pgTable(
   "user_accounts",
   {
     id: text("id").primaryKey(),
-    clinicId: text("clinic_id")
-      .notNull()
-      .references(() => clinics.id),
+    // Nulo somente para o papel de sistema (super_admin — cross-empresa, RBAC-01/ADR-003).
+    clinicId: text("clinic_id").references(() => clinics.id),
     email: text("email").notNull(),
     // Formato scrypt$custo$salt$hash — nunca a senha em claro.
     passwordHash: text("password_hash").notNull(),
+    // Um dos 6 valores de UserRole (RBAC-01).
+    role: text("role").notNull(),
     professionalId: text("professional_id").references(() => professionals.id),
     active: boolean("active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),

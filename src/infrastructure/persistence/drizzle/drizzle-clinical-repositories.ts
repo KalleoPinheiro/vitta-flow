@@ -29,7 +29,6 @@ import {
   type ConsentRecordRepository,
 } from "@/domain/consent/consent-record";
 import type { AppDb } from "./db";
-import { LEGACY_CLINIC_ID } from "./legacy-clinic";
 import {
   anamneses,
   clinicalConditions,
@@ -371,12 +370,20 @@ export class DrizzleConditionPhotoRepository implements ConditionPhotoRepository
 }
 
 export class DrizzleConsentRecordRepository implements ConsentRecordRepository {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   async save(record: ConsentRecord): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error(
+        "Papel de sistema não pode salvar consentimento (somente leitura cross-empresa)",
+      );
+    }
     await this.db.insert(consentRecords).values({
       id: record.id,
-      clinicId: LEGACY_CLINIC_ID,
+      clinicId: this.clinicId,
       patientId: record.patientId,
       textHash: record.textHash,
       ipAddress: record.ipAddress,
@@ -388,7 +395,7 @@ export class DrizzleConsentRecordRepository implements ConsentRecordRepository {
     const rows = await this.db
       .select()
       .from(consentRecords)
-      .where(eq(consentRecords.patientId, patientId))
+      .where(withTenant(consentRecords, this.clinicId, eq(consentRecords.patientId, patientId)))
       .orderBy(desc(consentRecords.acceptedAt));
     return rows.map((row) => ConsentRecord.restore(row));
   }

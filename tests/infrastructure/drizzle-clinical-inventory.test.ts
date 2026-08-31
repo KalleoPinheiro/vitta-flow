@@ -308,7 +308,7 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
   });
 
   it("Dado aceites de termo, Quando salvar e listar, Então retorna em ordem cronológica reversa", async () => {
-    const repo = new DrizzleConsentRecordRepository(appDb);
+    const repo = new DrizzleConsentRecordRepository(appDb, "legacy-clinic");
     const first = ConsentRecord.create({
       patientId: patient.id,
       consentText: "Termo v1",

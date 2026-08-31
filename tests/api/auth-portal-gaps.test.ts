@@ -408,7 +408,7 @@ describe("Feature: Fechamento de branches — auth Google, login e rotas do port
       // Aceite de uma versão anterior do termo: hash não cobre o CONSENT_TEXT vigente.
       const { getRepositories } = await import("@/infrastructure/container");
       const { ConsentRecord } = await import("@/domain/consent/consent-record");
-      const repos = await getRepositories({ clinicId: null });
+      const repos = await getRepositories({ clinicId: "legacy-clinic" });
       await repos.consentRecords.save(
         ConsentRecord.create({
           patientId: consentPatientId,

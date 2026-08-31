@@ -7,6 +7,7 @@ import { clientIp } from "@/lib/auth/client-ip";
 import { handleRequest } from "@/lib/api-response";
 import { recordAudit } from "@/lib/audit";
 import { NotFoundError } from "@/domain/shared/errors";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 /** Texto vigente + status do aceite do paciente logado. */
 export async function GET(request: NextRequest) {
@@ -14,7 +15,9 @@ export async function GET(request: NextRequest) {
   if (!auth.ok) return auth.response;
 
   return handleRequest(async () => {
-    const { patients, consentRecords } = await getRepositories({ clinicId: null });
+    const { patients, consentRecords } = await getRepositories({
+      clinicId: auth.session.clinicId ?? null,
+    });
     const patient = await patients.findByEmail(auth.session.subject);
     if (!patient) {
       throw new NotFoundError("Paciente", auth.session.subject);
@@ -35,7 +38,9 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response;
 
   return handleRequest(async () => {
-    const { patients, consentRecords, auditEvents } = await getRepositories({ clinicId: null });
+    const { patients, consentRecords, auditEvents } = await getRepositories({
+      clinicId: auth.session.clinicId ?? LEGACY_CLINIC_ID,
+    });
     const patient = await patients.findByEmail(auth.session.subject);
     if (!patient || !patient.isActive) {
       throw new NotFoundError("Paciente", auth.session.subject);

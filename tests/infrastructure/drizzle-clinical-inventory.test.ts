@@ -170,7 +170,7 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
   });
 
   it("Dado parceiro salvo e paciente indicado, Quando buscar, Então roundtrip e escopo por indicação", async () => {
-    const partnerRepo = new DrizzlePartnerRepository(appDb);
+    const partnerRepo = new DrizzlePartnerRepository(appDb, "legacy-clinic");
     const patientRepo = new PatientRepo(appDb, "legacy-clinic");
     const partner = Partner.create({
       fullName: "Dr. Carlos Andrade",

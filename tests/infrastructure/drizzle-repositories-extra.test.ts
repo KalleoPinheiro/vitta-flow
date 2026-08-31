@@ -33,7 +33,7 @@ describe("Feature: Persistência PostgreSQL — auditoria, pacotes, equipe e int
   const professionalRepo = () => new DrizzleProfessionalRepository(appDb, "legacy-clinic");
   const reminderLogRepo = () => new DrizzleReminderLogRepository(appDb);
   const googleAccountRepo = () => new DrizzleGoogleAccountRepository(appDb);
-  const partnerRepo = () => new DrizzlePartnerRepository(appDb);
+  const partnerRepo = () => new DrizzlePartnerRepository(appDb, "legacy-clinic");
 
   beforeAll(async () => {
     const client = new PGlite({ extensions: { pg_trgm, btree_gist } });

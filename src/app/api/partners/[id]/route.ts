@@ -5,6 +5,7 @@ import { UpdatePartner } from "@/application/partners/update-partner";
 import { handleRequest } from "@/lib/api-response";
 import { toPartnerDto } from "@/lib/dto";
 import { requireStaffSession } from "@/lib/auth/require-session";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 const updateSchema = z.object({
   fullName: z.string().min(1).max(200).optional(),
@@ -24,7 +25,9 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = updateSchema.parse(await request.json());
-    const { partners } = await getRepositories({ clinicId: null });
+    const { partners } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+    });
     const partner = await new UpdatePartner(partners).execute({
       id,
       fullName: body.fullName,

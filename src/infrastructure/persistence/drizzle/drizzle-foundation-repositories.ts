@@ -12,6 +12,7 @@ import {
   type ProcedureKitItem,
   type ProcedureKitRepository,
 } from "@/domain/catalog/procedure-kit";
+import { newId } from "@/domain/shared/id";
 import { MAX_ROWS, type AppDb } from "./db";
 import { LEGACY_CLINIC_ID } from "./legacy-clinic";
 import { procedureSupplies, procedures, scheduleSettings, userAccounts } from "./schema";
@@ -117,16 +118,20 @@ export class DrizzleUserAccountRepository implements UserAccountRepository {
   }
 }
 
-const SETTINGS_ROW_ID = "default";
-
 export class DrizzleScheduleConfigRepository implements ScheduleConfigRepository {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   async get(): Promise<ScheduleConfig | null> {
+    if (this.clinicId === null) {
+      return null;
+    }
     const rows = await this.db
       .select()
       .from(scheduleSettings)
-      .where(eq(scheduleSettings.id, SETTINGS_ROW_ID))
+      .where(eq(scheduleSettings.clinicId, this.clinicId))
       .limit(1);
     if (!rows[0]) {
       return null;
@@ -145,10 +150,15 @@ export class DrizzleScheduleConfigRepository implements ScheduleConfigRepository
   }
 
   async save(config: ScheduleConfig): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error(
+        "Papel de sistema não pode salvar configuração de horário (somente leitura cross-empresa)",
+      );
+    }
     const validated = validateScheduleConfig(config);
     const values = {
-      id: SETTINGS_ROW_ID,
-      clinicId: LEGACY_CLINIC_ID,
+      id: newId(),
+      clinicId: this.clinicId,
       weekdays: JSON.stringify(validated.weekdays),
       startHour: validated.startHour,
       endHour: validated.endHour,
@@ -158,7 +168,16 @@ export class DrizzleScheduleConfigRepository implements ScheduleConfigRepository
     await this.db
       .insert(scheduleSettings)
       .values(values)
-      .onConflictDoUpdate({ target: scheduleSettings.id, set: values });
+      .onConflictDoUpdate({
+        target: scheduleSettings.clinicId,
+        set: {
+          weekdays: values.weekdays,
+          startHour: values.startHour,
+          endHour: values.endHour,
+          minGapMinutes: values.minGapMinutes,
+          updatedAt: values.updatedAt,
+        },
+      });
   }
 }
 

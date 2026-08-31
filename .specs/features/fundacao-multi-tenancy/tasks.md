@@ -290,10 +290,10 @@ T18 → T19 → T20 → T21 → T22 → T23 → T24
 **Tools**: MCP: NONE. Skill: NONE.
 
 **Done when**:
-- [ ] Repositório busca configuração por `clinic_id`
-- [ ] Rota de configuração de horário escopada por `clinic_id`
-- [ ] Teste de rota com 2 clínicas prova que cada uma tem sua própria configuração
-- [ ] `npm run typecheck && npx vitest run tests/api tests/infrastructure` limpo
+- [x] Repositório busca configuração por `clinic_id`
+- [x] Rota de configuração de horário escopada por `clinic_id`
+- [x] Teste de rota com 2 clínicas prova que cada uma tem sua própria configuração
+- [x] `npm run typecheck && npx vitest run tests/api tests/infrastructure` limpo
 
 **Tests**: integration
 **Gate**: full — **fechar issue #24 (M3) após este gate passar e o commit existir**

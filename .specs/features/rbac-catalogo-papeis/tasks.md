@@ -267,7 +267,7 @@ T8 → T18 → T19
 
 ---
 
-### T9: `RoleHierarchy` — regra pura de provisionamento
+### T9: `RoleHierarchy` — regra pura de provisionamento ✅ Complete
 
 **What**: `PROVISIONING_MATRIX` + `canProvision(actorRole, targetRole)` implementando a matriz da spec (RBAC-07..RBAC-09).
 **Where**: `src/domain/auth/role-hierarchy.ts` (novo)

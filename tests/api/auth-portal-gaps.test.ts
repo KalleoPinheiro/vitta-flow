@@ -244,7 +244,7 @@ describe("Feature: Fechamento de branches — auth Google, login e rotas do port
       const { getRepositories } = await import("@/infrastructure/container");
       const { hashPassword } = await import("@/lib/auth/password");
       const { UserAccount } = await import("@/domain/auth/user-account");
-      const { userAccounts } = await getRepositories({ clinicId: null });
+      const { userAccounts } = await getRepositories({ clinicId: "legacy-clinic" });
       const account = UserAccount.create({
         email: "inativo.gaps@clinica.com",
         passwordHash: await hashPassword("senha-individual"),

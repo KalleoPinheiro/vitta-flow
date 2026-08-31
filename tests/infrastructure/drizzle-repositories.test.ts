@@ -53,7 +53,7 @@ describe("Feature: Persistência PostgreSQL (Drizzle)", () => {
     invoiceRepo = new DrizzleInvoiceRepository(appDb);
     professionalRepo = new DrizzleProfessionalRepository(appDb, "legacy-clinic");
     procedureRepo = new DrizzleProcedureRepository(appDb, "legacy-clinic");
-    userAccountRepo = new DrizzleUserAccountRepository(appDb);
+    userAccountRepo = new DrizzleUserAccountRepository(appDb, "legacy-clinic");
     scheduleConfigRepo = new DrizzleScheduleConfigRepository(appDb, "legacy-clinic");
     procedureKitRepo = new DrizzleProcedureKitRepository(appDb);
   });

@@ -458,9 +458,9 @@ T18 → T19 → T20 → T21 → T22 → T23 → T24
 **Tools**: MCP: NONE. Skill: NONE.
 
 **Done when**:
-- [ ] Repositório e rotas de conta de usuário escopados por `clinic_id`
-- [ ] Teste prova que o mesmo e-mail em duas empresas não colide
-- [ ] `npm run typecheck && npx vitest run tests/api tests/infrastructure` limpo
+- [x] Repositório e rotas de conta de usuário escopados por `clinic_id`
+- [x] Teste prova que o mesmo e-mail em duas empresas não colide
+- [x] `npm run typecheck && npx vitest run tests/api tests/infrastructure` limpo
 
 **Tests**: integration
 **Gate**: quick

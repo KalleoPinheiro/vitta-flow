@@ -81,12 +81,20 @@ export class DrizzleProcedureRepository implements ProcedureRepository {
 }
 
 export class DrizzleUserAccountRepository implements UserAccountRepository {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   async save(account: UserAccount): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error(
+        "Papel de sistema não pode salvar conta de usuário (somente leitura cross-empresa)",
+      );
+    }
     const values = {
       id: account.id,
-      clinicId: LEGACY_CLINIC_ID,
+      clinicId: this.clinicId,
       email: account.email,
       passwordHash: account.passwordHash,
       professionalId: account.professionalId,
@@ -103,7 +111,9 @@ export class DrizzleUserAccountRepository implements UserAccountRepository {
     const rows = await this.db
       .select()
       .from(userAccounts)
-      .where(eq(userAccounts.email, email.trim().toLowerCase()))
+      .where(
+        withTenant(userAccounts, this.clinicId, eq(userAccounts.email, email.trim().toLowerCase())),
+      )
       .limit(1);
     return rows[0] ? UserAccount.restore(rows[0]) : null;
   }
@@ -112,6 +122,7 @@ export class DrizzleUserAccountRepository implements UserAccountRepository {
     const rows = await this.db
       .select()
       .from(userAccounts)
+      .where(withTenant(userAccounts, this.clinicId))
       .orderBy(asc(userAccounts.email))
       .limit(MAX_ROWS);
     return rows.map((row) => UserAccount.restore(row));

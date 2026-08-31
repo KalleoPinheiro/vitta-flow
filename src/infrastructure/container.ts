@@ -225,7 +225,7 @@ export async function getRepositories(tenant: TenantContext): Promise<Services> 
     googleAccounts: new DrizzleGoogleAccountRepository(db),
     appointments: new DrizzleAppointmentRepository(db, tenant.clinicId),
     invoices: new DrizzleInvoiceRepository(db),
-    anamneses: new DrizzleAnamnesisRepository(db),
+    anamneses: new DrizzleAnamnesisRepository(db, tenant.clinicId),
     evolutions: new DrizzleEvolutionNoteRepository(db, tenant.clinicId),
     conditions: new DrizzleClinicalConditionRepository(db, tenant.clinicId),
     assessments: new DrizzleConditionAssessmentRepository(db, tenant.clinicId),

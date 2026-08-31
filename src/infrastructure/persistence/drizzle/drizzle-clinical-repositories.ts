@@ -41,11 +41,19 @@ import {
 import { withTenant } from "./tenant-scope";
 
 export class DrizzleAnamnesisRepository implements AnamnesisRepository {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   async save(anamnesis: Anamnesis): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error(
+        "Papel de sistema não pode salvar anamnese (somente leitura cross-empresa)",
+      );
+    }
     const values = {
-      clinicId: LEGACY_CLINIC_ID,
+      clinicId: this.clinicId,
       patientId: anamnesis.patientId,
       comorbidities: anamnesis.comorbidities,
       allergies: anamnesis.allergies,
@@ -64,7 +72,7 @@ export class DrizzleAnamnesisRepository implements AnamnesisRepository {
     const rows = await this.db
       .select()
       .from(anamneses)
-      .where(eq(anamneses.patientId, patientId))
+      .where(withTenant(anamneses, this.clinicId, eq(anamneses.patientId, patientId)))
       .limit(1);
     return rows[0] ? Anamnesis.restore(rows[0]) : null;
   }

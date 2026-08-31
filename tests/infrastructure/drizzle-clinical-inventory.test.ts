@@ -74,7 +74,7 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
   });
 
   it("Dado anamnese salva, Quando upsert e buscar, Então dados preservados e atualizados", async () => {
-    const repo = new DrizzleAnamnesisRepository(appDb);
+    const repo = new DrizzleAnamnesisRepository(appDb, "legacy-clinic");
     await repo.save(Anamnesis.create({ patientId: patient.id, comorbidities: "DM2" }));
 
     const stored = await repo.findByPatientId(patient.id);

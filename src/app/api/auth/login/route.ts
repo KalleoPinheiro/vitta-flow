@@ -59,14 +59,21 @@ export async function POST(request: NextRequest) {
   const response = NextResponse.json({ success: true, data: { ok: true }, error: null });
   response.cookies.set(
     SESSION_COOKIE,
-    createSessionToken(auth.secret, expiresAtMs, subject, identity.role, identity.clinicId),
+    createSessionToken(
+      auth.secret,
+      expiresAtMs,
+      subject,
+      identity.role,
+      identity.clinicId,
+      identity.professionalId,
+    ),
     sessionCookieOptions(),
   );
   return response;
 }
 
 type AuthResult =
-  | { subject: string; role: UserRole; clinicId: string | null }
+  | { subject: string; role: UserRole; clinicId: string | null; professionalId: string | null }
   | { error: string; status: number };
 
 async function authenticateAccount(email: string, password: string): Promise<AuthResult> {
@@ -79,7 +86,12 @@ async function authenticateAccount(email: string, password: string): Promise<Aut
   }
   // O papel e a empresa vêm sempre da própria conta — nunca um valor fixo por
   // padrão (fix do bug "senha sempre vira admin", RBAC-02/RBAC-04).
-  return { subject: account.email, role: account.role, clinicId: account.clinicId };
+  return {
+    subject: account.email,
+    role: account.role,
+    clinicId: account.clinicId,
+    professionalId: account.professionalId,
+  };
 }
 
 function authenticateMaster(masterPassword: string | null, password: string): AuthResult {
@@ -91,5 +103,5 @@ function authenticateMaster(masterPassword: string | null, password: string): Au
   }
   // Senha mestre de emergência: acesso cross-empresa, mapeada para super_admin
   // até a remoção da senha mestre na issue #21.
-  return { subject: "local", role: "super_admin", clinicId: null };
+  return { subject: "local", role: "super_admin", clinicId: null, professionalId: null };
 }

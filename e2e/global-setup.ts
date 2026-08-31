@@ -12,7 +12,7 @@ import {
  * Roda uma vez antes de toda a suíte (depois que o(s) `webServer` já respondem —
  * Playwright só chama `globalSetup` após a checagem de `url` do webServer passar).
  *
- * 1. Loga como admin (senha mestre) no servidor principal e salva o cookie de
+ * 1. Loga como super_admin (senha mestre) no servidor principal e salva o cookie de
  *    sessão como `storageState` — reaproveitado por padrão em todos os specs
  *    (ver `use.storageState` em `playwright.config.ts`).
  * 2. Semeia dados base via REST (profissional, procedimentos com kit, insumos

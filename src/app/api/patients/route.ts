@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
   return handleRequest(async () => {
     const body = createPatientSchema.parse(await request.json());
-    const { patients, partners } = await getRepositories({
+    const { patients, partners, professionalPatientLinks } = await getRepositories({
       clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
     });
     const patient = await new CreatePatient(patients, partners).execute({
@@ -56,6 +56,11 @@ export async function POST(request: NextRequest) {
       notes: body.notes ?? null,
       referredByPartnerId: body.referredByPartnerId ?? null,
     });
+    // Profissional que cadastra um paciente ganha acesso imediato a ele,
+    // mesmo antes de qualquer agendamento (RBAC-17/18).
+    if (guard.session?.role === "profissional" && guard.session.professionalId) {
+      await professionalPatientLinks.ensureLink(guard.session.professionalId, patient.id);
+    }
     return toPatientDto(patient);
   });
 }

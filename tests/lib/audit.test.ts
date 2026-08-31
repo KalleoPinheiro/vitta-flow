@@ -31,7 +31,7 @@ describe("Feature: Registro de auditoria best-effort (após a resposta)", () => 
 
   it("Dado sessão autenticada, Quando recordAudit, Então agenda gravação com ator da sessão", async () => {
     const auditEvents = createRepositoryStub();
-    const session: Session = { expiresAtMs: Date.now() + 60_000, subject: "maria@clinica.com", role: "company_admin", clinicId: "legacy-clinic" };
+    const session: Session = { expiresAtMs: Date.now() + 60_000, subject: "maria@clinica.com", role: "company_admin", clinicId: "legacy-clinic", professionalId: null };
 
     recordAudit(auditEvents, session, {
       action: "read",
@@ -63,6 +63,7 @@ describe("Feature: Registro de auditoria best-effort (após a resposta)", () => 
       subject: "maria@clinica.com",
       role: "company_admin",
       clinicId: "clinic-b",
+      professionalId: null,
     };
 
     recordAudit(auditEvents, session, {
@@ -117,7 +118,7 @@ describe("Feature: Registro de auditoria best-effort (após a resposta)", () => 
 describe("Feature: Auditoria write-ahead em ações críticas (SEC1-20..21)", () => {
   it("Dado sessão autenticada, Quando recordAuditNow, Então persiste antes de resolver com ator da sessão", async () => {
     const auditEvents = createRepositoryStub();
-    const session: Session = { expiresAtMs: Date.now() + 60_000, subject: "maria@clinica.com", role: "company_admin", clinicId: "legacy-clinic" };
+    const session: Session = { expiresAtMs: Date.now() + 60_000, subject: "maria@clinica.com", role: "company_admin", clinicId: "legacy-clinic", professionalId: null };
 
     await recordAuditNow(auditEvents, session, {
       action: "read",
@@ -136,7 +137,7 @@ describe("Feature: Auditoria write-ahead em ações críticas (SEC1-20..21)", ()
   it("Dado falha ao persistir, Quando recordAuditNow, Então rejeita (requisição falha)", async () => {
     const auditEvents = createRepositoryStub();
     auditEvents.save.mockRejectedValue(new Error("banco indisponível"));
-    const session: Session = { expiresAtMs: Date.now() + 60_000, subject: "maria@clinica.com", role: "company_admin", clinicId: "legacy-clinic" };
+    const session: Session = { expiresAtMs: Date.now() + 60_000, subject: "maria@clinica.com", role: "company_admin", clinicId: "legacy-clinic", professionalId: null };
 
     await expect(
       recordAuditNow(auditEvents, session, {

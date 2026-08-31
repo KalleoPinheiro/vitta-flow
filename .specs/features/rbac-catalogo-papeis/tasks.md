@@ -415,7 +415,7 @@ T8 → T18 → T19
 
 ---
 
-### T16: `ensureLink` chamado no cadastro de paciente por Profissional
+### T16: `ensureLink` chamado no cadastro de paciente por Profissional ✅ Complete
 
 **What**: `POST /api/patients` chama `ensureLink` quando `session.role === "profissional"`, após criar o paciente.
 **Where**: `src/app/api/patients/route.ts`

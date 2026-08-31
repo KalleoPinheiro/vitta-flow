@@ -84,7 +84,7 @@ describe("Feature: Persistência PostgreSQL — taxonomias de enfermagem e plano
     await new DrizzlePatientRepository(appDb, "legacy-clinic").save(patient);
 
     professional = Professional.create({ fullName: "Enf. Joana Reis", registry: "COREN-SP 123456" });
-    await new DrizzleProfessionalRepository(appDb).save(professional);
+    await new DrizzleProfessionalRepository(appDb, "legacy-clinic").save(professional);
 
     condition = ClinicalCondition.create({
       patientId: patient.id,

@@ -2,16 +2,24 @@ import { asc, eq, inArray } from "drizzle-orm";
 import { Professional } from "@/domain/professional/professional";
 import type { ProfessionalRepository } from "@/domain/professional/professional-repository";
 import { MAX_ROWS, type AppDb } from "./db";
-import { LEGACY_CLINIC_ID } from "./legacy-clinic";
 import { professionals } from "./schema";
+import { withTenant } from "./tenant-scope";
 
 export class DrizzleProfessionalRepository implements ProfessionalRepository {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   async save(professional: Professional): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error(
+        "Papel de sistema não pode salvar profissional (somente leitura cross-empresa)",
+      );
+    }
     const values = {
       id: professional.id,
-      clinicId: LEGACY_CLINIC_ID,
+      clinicId: this.clinicId,
       fullName: professional.fullName,
       registry: professional.registry,
       commissionPct: professional.commissionPct,
@@ -28,7 +36,7 @@ export class DrizzleProfessionalRepository implements ProfessionalRepository {
     const rows = await this.db
       .select()
       .from(professionals)
-      .where(eq(professionals.id, id))
+      .where(withTenant(professionals, this.clinicId, eq(professionals.id, id)))
       .limit(1);
     return rows[0] ? Professional.restore(rows[0]) : null;
   }
@@ -41,7 +49,7 @@ export class DrizzleProfessionalRepository implements ProfessionalRepository {
     const rows = await this.db
       .select()
       .from(professionals)
-      .where(inArray(professionals.id, unique));
+      .where(withTenant(professionals, this.clinicId, inArray(professionals.id, unique)));
     return rows.map((row) => Professional.restore(row));
   }
 
@@ -49,6 +57,7 @@ export class DrizzleProfessionalRepository implements ProfessionalRepository {
     const rows = await this.db
       .select()
       .from(professionals)
+      .where(withTenant(professionals, this.clinicId))
       .orderBy(asc(professionals.fullName))
       .limit(MAX_ROWS);
     return rows.map((row) => Professional.restore(row));

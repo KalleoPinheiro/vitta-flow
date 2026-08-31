@@ -5,6 +5,7 @@ import { NotFoundError } from "@/domain/shared/errors";
 import { handleRequest } from "@/lib/api-response";
 import { toProfessionalDto } from "@/lib/dto";
 import { requireStaffSession } from "@/lib/auth/require-session";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 const updateSchema = z.object({
   fullName: z.string().min(1).max(200).optional(),
@@ -22,7 +23,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = updateSchema.parse(await request.json());
-    const { professionals } = await getRepositories({ clinicId: null });
+    const { professionals } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+    });
 
     const existing = await professionals.findById(id);
     if (!existing) {

@@ -216,7 +216,7 @@ export async function getRepositories(tenant: TenantContext): Promise<Services> 
     clinics: new DrizzleClinicRepository(db),
     patients: new DrizzlePatientRepository(db, tenant.clinicId),
     partners: new DrizzlePartnerRepository(db),
-    professionals: new DrizzleProfessionalRepository(db),
+    professionals: new DrizzleProfessionalRepository(db, tenant.clinicId),
     procedures: new DrizzleProcedureRepository(db, tenant.clinicId),
     procedureKits: new DrizzleProcedureKitRepository(db),
     sessionPackages: new DrizzleSessionPackageRepository(db),

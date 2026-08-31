@@ -14,12 +14,15 @@ import { DrizzleSessionPackageRepository } from "./drizzle-package-repository";
  * desfaz tudo (rollback) — CONS2-01.
  */
 export class DrizzleTransactionManager implements TransactionManager {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   run<T>(fn: (repos: TransactionScope) => Promise<T>): Promise<T> {
     return this.db.transaction(async (tx) =>
       fn({
-        appointments: new DrizzleAppointmentRepository(tx),
+        appointments: new DrizzleAppointmentRepository(tx, this.clinicId),
         invoices: new DrizzleInvoiceRepository(tx),
         followUps: new DrizzleFollowUpRepository(tx),
         sessionPackages: new DrizzleSessionPackageRepository(tx),

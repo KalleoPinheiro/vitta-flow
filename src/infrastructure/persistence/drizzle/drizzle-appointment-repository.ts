@@ -13,8 +13,8 @@ import { SchedulingConflictError } from "@/domain/shared/errors";
 import { Money } from "@/domain/shared/money";
 import { TimeSlot } from "@/domain/shared/time-slot";
 import type { AppDb } from "./db";
-import { LEGACY_CLINIC_ID } from "./legacy-clinic";
 import { appointments } from "./schema";
+import { withTenant } from "./tenant-scope";
 
 const PG_EXCLUSION_VIOLATION = "23P01";
 
@@ -49,12 +49,20 @@ const toAppointment = (row: AppointmentRow): Appointment =>
   });
 
 export class DrizzleAppointmentRepository implements AppointmentRepository {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   async save(appointment: Appointment): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error(
+        "Papel de sistema não pode salvar consulta (somente leitura cross-empresa)",
+      );
+    }
     const values = {
       id: appointment.id,
-      clinicId: LEGACY_CLINIC_ID,
+      clinicId: this.clinicId,
       patientId: appointment.patientId,
       startsAt: appointment.slot.start,
       endsAt: appointment.slot.end,
@@ -86,7 +94,7 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
     const rows = await this.db
       .select()
       .from(appointments)
-      .where(eq(appointments.id, id))
+      .where(withTenant(appointments, this.clinicId, eq(appointments.id, id)))
       .limit(1);
     return rows[0] ? toAppointment(rows[0]) : null;
   }
@@ -99,12 +107,16 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
     const rows = await this.db
       .select()
       .from(appointments)
-      .where(inArray(appointments.id, unique));
+      .where(withTenant(appointments, this.clinicId, inArray(appointments.id, unique)));
     return rows.map(toAppointment);
   }
 
   private patientConditions(base: SQL, options?: FindByPatientOptions): SQL | undefined {
-    return options?.endsAfter ? and(base, gte(appointments.endsAt, options.endsAfter)) : base;
+    return withTenant(
+      appointments,
+      this.clinicId,
+      options?.endsAfter ? and(base, gte(appointments.endsAt, options.endsAfter)) : base,
+    );
   }
 
   async findByPatientId(
@@ -145,16 +157,24 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
       .select()
       .from(appointments)
       .where(
-        options?.professionalId
-          ? and(base, eq(appointments.professionalId, options.professionalId))
-          : base,
+        withTenant(
+          appointments,
+          this.clinicId,
+          options?.professionalId
+            ? and(base, eq(appointments.professionalId, options.professionalId))
+            : base,
+        ),
       )
       .orderBy(asc(appointments.startsAt));
     return rows.map(toAppointment);
   }
 
   async getStatsInRange(start: Date, end: Date): Promise<AppointmentRangeStats> {
-    const inRange = and(lt(appointments.startsAt, end), gt(appointments.endsAt, start));
+    const inRange = withTenant(
+      appointments,
+      this.clinicId,
+      and(lt(appointments.startsAt, end), gt(appointments.endsAt, start)),
+    );
 
     const statusRows = await this.db
       .select({
@@ -207,10 +227,14 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
       })
       .from(appointments)
       .where(
-        and(
-          lt(appointments.startsAt, end),
-          gt(appointments.endsAt, start),
-          eq(appointments.status, "completed"),
+        withTenant(
+          appointments,
+          this.clinicId,
+          and(
+            lt(appointments.startsAt, end),
+            gt(appointments.endsAt, start),
+            eq(appointments.status, "completed"),
+          ),
         ),
       )
       .groupBy(appointments.professionalId);
@@ -248,7 +272,7 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
     const rows = await this.db
       .select()
       .from(appointments)
-      .where(and(...conditions));
+      .where(withTenant(appointments, this.clinicId, and(...conditions)));
     return rows.map(toAppointment);
   }
 }

@@ -223,7 +223,7 @@ export async function getRepositories(tenant: TenantContext): Promise<Services> 
     userAccounts: new DrizzleUserAccountRepository(db),
     scheduleConfig: new DrizzleScheduleConfigRepository(db),
     googleAccounts: new DrizzleGoogleAccountRepository(db),
-    appointments: new DrizzleAppointmentRepository(db),
+    appointments: new DrizzleAppointmentRepository(db, tenant.clinicId),
     invoices: new DrizzleInvoiceRepository(db),
     anamneses: new DrizzleAnamnesisRepository(db),
     evolutions: new DrizzleEvolutionNoteRepository(db),
@@ -250,6 +250,6 @@ export async function getRepositories(tenant: TenantContext): Promise<Services> 
     reminderLog: new DrizzleReminderLogRepository(db),
     calendar,
     messaging: buildMessagingGateway(),
-    transactions: new DrizzleTransactionManager(db),
+    transactions: new DrizzleTransactionManager(db, tenant.clinicId),
   };
 }

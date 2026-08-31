@@ -351,7 +351,7 @@ T8 → T18 → T19
 
 ---
 
-### T13: Restringir Atendente a rotas operacionais
+### T13: Restringir Atendente a rotas operacionais ✅ Complete
 
 **What**: Confirmar/ajustar que `atendente` está marcado como permitido só na família `operational` (e `shared`) na matriz de T7/T8 — se T7/T8 já cobrirem isso corretamente, esta task vira apenas o teste de rota dedicado às ACs de negócio de R3 (não só conformidade genérica).
 **Where**: `tests/api/atendente-operational-scope.test.ts` (novo, foco de negócio, distinto do sweep genérico de conformidade)

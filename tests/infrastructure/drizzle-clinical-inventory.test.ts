@@ -133,8 +133,8 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
   });
 
   it("Dado insumo com movimentações, Quando salvar e buscar, Então estoque e histórico corretos", async () => {
-    const supplyRepo = new DrizzleSupplyRepository(appDb);
-    const movementRepo = new DrizzleStockMovementRepository(appDb);
+    const supplyRepo = new DrizzleSupplyRepository(appDb, "legacy-clinic");
+    const movementRepo = new DrizzleStockMovementRepository(appDb, "legacy-clinic");
 
     const supply = Supply.create({ name: "Bolsa 60mm", unit: "un", minQty: 10, priceCents: 3500 });
     const stocked = supply.registerEntry(50);
@@ -151,7 +151,7 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
   });
 
   it("Dado ajuste condicional de estoque, Quando o saldo permite, Então aplica; senão retorna null (CONS2-05..08)", async () => {
-    const supplyRepo = new DrizzleSupplyRepository(appDb);
+    const supplyRepo = new DrizzleSupplyRepository(appDb, "legacy-clinic");
     const supply = Supply.create({ name: "Gaze atômica", unit: "un", minQty: 1, priceCents: 100 });
     await supplyRepo.save(supply.registerEntry(10));
 
@@ -329,8 +329,8 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
   });
 
   it("Dado lotes de insumo, Quando salvar e consultar, Então filtra ativos e a vencer", async () => {
-    const supplyRepo = new DrizzleSupplyRepository(appDb);
-    const batchRepo = new DrizzleSupplyBatchRepository(appDb);
+    const supplyRepo = new DrizzleSupplyRepository(appDb, "legacy-clinic");
+    const batchRepo = new DrizzleSupplyBatchRepository(appDb, "legacy-clinic");
     const supply = Supply.create({ name: "Bolsa 45mm", unit: "un", minQty: 5, priceCents: 2500 });
     await supplyRepo.save(supply);
 
@@ -360,8 +360,8 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
   });
 
   it("Dado movimentações de estoque, Quando consultar por consulta e agregados no período, Então retorna esperado", async () => {
-    const supplyRepo = new DrizzleSupplyRepository(appDb);
-    const movementRepo = new DrizzleStockMovementRepository(appDb);
+    const supplyRepo = new DrizzleSupplyRepository(appDb, "legacy-clinic");
+    const movementRepo = new DrizzleStockMovementRepository(appDb, "legacy-clinic");
     const supply = Supply.create({ name: "Gaze estéril", unit: "un", minQty: 5, priceCents: 500 });
     await supplyRepo.save(supply.registerEntry(100));
 

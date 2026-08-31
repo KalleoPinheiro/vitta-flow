@@ -17,14 +17,21 @@ import type {
 import { MAX_ROWS, type AppDb } from "./db";
 import { LEGACY_CLINIC_ID } from "./legacy-clinic";
 import { followUps, stockMovements, supplies, supplyBatches } from "./schema";
+import { withTenant } from "./tenant-scope";
 
 export class DrizzleSupplyRepository implements SupplyRepository {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   async save(supply: Supply): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error("Papel de sistema não pode salvar insumo (somente leitura cross-empresa)");
+    }
     const values = {
       id: supply.id,
-      clinicId: LEGACY_CLINIC_ID,
+      clinicId: this.clinicId,
       name: supply.name,
       unit: supply.unit,
       minQty: supply.minQty,
@@ -40,15 +47,28 @@ export class DrizzleSupplyRepository implements SupplyRepository {
   }
 
   async findById(id: string): Promise<Supply | null> {
-    const rows = await this.db.select().from(supplies).where(eq(supplies.id, id)).limit(1);
+    const rows = await this.db
+      .select()
+      .from(supplies)
+      .where(withTenant(supplies, this.clinicId, eq(supplies.id, id)))
+      .limit(1);
     return rows[0] ? Supply.restore(rows[0]) : null;
   }
 
   async adjustStock(id: string, delta: number): Promise<Supply | null> {
+    if (this.clinicId === null) {
+      throw new Error("Papel de sistema não pode ajustar insumo (somente leitura cross-empresa)");
+    }
     const rows = await this.db
       .update(supplies)
       .set({ stockQty: sql`${supplies.stockQty} + ${delta}` })
-      .where(and(eq(supplies.id, id), sql`${supplies.stockQty} + ${delta} >= 0`))
+      .where(
+        withTenant(
+          supplies,
+          this.clinicId,
+          and(eq(supplies.id, id), sql`${supplies.stockQty} + ${delta} >= 0`),
+        ),
+      )
       .returning();
     return rows[0] ? Supply.restore(rows[0]) : null;
   }
@@ -57,6 +77,7 @@ export class DrizzleSupplyRepository implements SupplyRepository {
     const rows = await this.db
       .select()
       .from(supplies)
+      .where(withTenant(supplies, this.clinicId))
       .orderBy(asc(supplies.name))
       .limit(MAX_ROWS);
     return rows.map((row) => Supply.restore(row));
@@ -64,12 +85,20 @@ export class DrizzleSupplyRepository implements SupplyRepository {
 }
 
 export class DrizzleStockMovementRepository implements StockMovementRepository {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   async save(movement: StockMovement): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error(
+        "Papel de sistema não pode salvar movimento de estoque (somente leitura cross-empresa)",
+      );
+    }
     await this.db.insert(stockMovements).values({
       id: movement.id,
-      clinicId: LEGACY_CLINIC_ID,
+      clinicId: this.clinicId,
       supplyId: movement.supplyId,
       type: movement.type,
       quantity: movement.quantity,
@@ -84,7 +113,7 @@ export class DrizzleStockMovementRepository implements StockMovementRepository {
     const rows = await this.db
       .select()
       .from(stockMovements)
-      .where(eq(stockMovements.supplyId, supplyId))
+      .where(withTenant(stockMovements, this.clinicId, eq(stockMovements.supplyId, supplyId)))
       .orderBy(desc(stockMovements.createdAt), desc(stockMovements.id));
     return rows.map((row) => StockMovement.restore({ ...row, type: row.type as MovementType }));
   }
@@ -93,7 +122,9 @@ export class DrizzleStockMovementRepository implements StockMovementRepository {
     const rows = await this.db
       .select()
       .from(stockMovements)
-      .where(eq(stockMovements.appointmentId, appointmentId))
+      .where(
+        withTenant(stockMovements, this.clinicId, eq(stockMovements.appointmentId, appointmentId)),
+      )
       .orderBy(desc(stockMovements.createdAt));
     return rows.map((row) => StockMovement.restore({ ...row, type: row.type as MovementType }));
   }
@@ -106,10 +137,14 @@ export class DrizzleStockMovementRepository implements StockMovementRepository {
       })
       .from(stockMovements)
       .where(
-        and(
-          eq(stockMovements.type, "out"),
-          gte(stockMovements.createdAt, from),
-          lt(stockMovements.createdAt, to),
+        withTenant(
+          stockMovements,
+          this.clinicId,
+          and(
+            eq(stockMovements.type, "out"),
+            gte(stockMovements.createdAt, from),
+            lt(stockMovements.createdAt, to),
+          ),
         ),
       )
       .groupBy(stockMovements.appointmentId);
@@ -127,10 +162,14 @@ export class DrizzleStockMovementRepository implements StockMovementRepository {
       })
       .from(stockMovements)
       .where(
-        and(
-          eq(stockMovements.type, "out"),
-          gte(stockMovements.createdAt, from),
-          lt(stockMovements.createdAt, to),
+        withTenant(
+          stockMovements,
+          this.clinicId,
+          and(
+            eq(stockMovements.type, "out"),
+            gte(stockMovements.createdAt, from),
+            lt(stockMovements.createdAt, to),
+          ),
         ),
       )
       .groupBy(stockMovements.supplyId);
@@ -139,12 +178,20 @@ export class DrizzleStockMovementRepository implements StockMovementRepository {
 }
 
 export class DrizzleSupplyBatchRepository implements SupplyBatchRepository {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   async save(batch: SupplyBatch): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error(
+        "Papel de sistema não pode salvar lote de insumo (somente leitura cross-empresa)",
+      );
+    }
     const values = {
       id: batch.id,
-      clinicId: LEGACY_CLINIC_ID,
+      clinicId: this.clinicId,
       supplyId: batch.supplyId,
       label: batch.label,
       expiresAt: batch.expiresAt,
@@ -162,7 +209,13 @@ export class DrizzleSupplyBatchRepository implements SupplyBatchRepository {
     const rows = await this.db
       .select()
       .from(supplyBatches)
-      .where(and(eq(supplyBatches.supplyId, supplyId), gt(supplyBatches.remaining, 0)))
+      .where(
+        withTenant(
+          supplyBatches,
+          this.clinicId,
+          and(eq(supplyBatches.supplyId, supplyId), gt(supplyBatches.remaining, 0)),
+        ),
+      )
       .orderBy(sql`${supplyBatches.expiresAt} ASC NULLS LAST`, asc(supplyBatches.createdAt));
     return rows.map((row) => SupplyBatch.restore(row));
   }
@@ -171,7 +224,13 @@ export class DrizzleSupplyBatchRepository implements SupplyBatchRepository {
     const rows = await this.db
       .select()
       .from(supplyBatches)
-      .where(and(gt(supplyBatches.remaining, 0), lte(supplyBatches.expiresAt, limit)))
+      .where(
+        withTenant(
+          supplyBatches,
+          this.clinicId,
+          and(gt(supplyBatches.remaining, 0), lte(supplyBatches.expiresAt, limit)),
+        ),
+      )
       .orderBy(asc(supplyBatches.expiresAt))
       .limit(MAX_ROWS);
     return rows.map((row) => SupplyBatch.restore(row));

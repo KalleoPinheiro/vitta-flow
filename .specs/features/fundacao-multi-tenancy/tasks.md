@@ -413,10 +413,10 @@ T18 → T19 → T20 → T21 → T22 → T23 → T24
 **Tools**: MCP: NONE. Skill: NONE.
 
 **Done when**:
-- [ ] Caminho gerado inclui `clinicId`
-- [ ] Rotas de foto de condição escopadas por `clinic_id`
-- [ ] Teste de storage prova que uma sessão de empresa B não lê foto criada por empresa A (404)
-- [ ] `npm run typecheck && npx vitest run tests/api tests/infrastructure` limpo
+- [x] Caminho gerado inclui `clinicId`
+- [x] Rotas de foto de condição escopadas por `clinic_id`
+- [x] Teste de storage prova que uma sessão de empresa B não lê foto criada por empresa A (404)
+- [x] `npm run typecheck && npx vitest run tests/api tests/infrastructure` limpo
 
 **Tests**: unit + integration (storage unitário; rota via PGlite)
 **Gate**: full — **fechar issue #25 (M4) após este gate passar e o commit existir**

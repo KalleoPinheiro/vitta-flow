@@ -7,6 +7,7 @@ import { NotFoundError } from "@/domain/shared/errors";
 import { handleRequest, fail } from "@/lib/api-response";
 import { requireStaffSession } from "@/lib/auth/require-session";
 import { recordAudit, recordAuditNow } from "@/lib/audit";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -16,7 +17,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
   if (!guard.ok) return guard.response;
 
   const { id } = await context.params;
-  const { conditionPhotos, photoStorage } = await getRepositories({ clinicId: null });
+  const { conditionPhotos, photoStorage } = await getRepositories({
+    clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+  });
 
   const photo = await conditionPhotos.findById(id);
   const data = photo ? await photoStorage.read(photo.id) : null;
@@ -40,7 +43,9 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { conditionPhotos, photoStorage, conditions, auditEvents } = await getRepositories({ clinicId: null });
+    const { conditionPhotos, photoStorage, conditions, auditEvents } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+    });
 
     const photo = await conditionPhotos.findById(id);
     const condition = photo ? await conditions.findById(photo.conditionId) : null;
@@ -73,7 +78,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = triageSchema.parse(await request.json());
-    const { conditionPhotos, conditions, followUps, auditEvents } = await getRepositories({ clinicId: null });
+    const { conditionPhotos, conditions, followUps, auditEvents } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+    });
 
     const photo = await conditionPhotos.findById(id);
     if (!photo) {

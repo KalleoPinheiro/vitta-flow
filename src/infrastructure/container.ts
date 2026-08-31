@@ -40,6 +40,7 @@ import { DrizzleGoogleAccountRepository } from "./persistence/drizzle/drizzle-go
 import { DrizzlePartnerRepository } from "./persistence/drizzle/drizzle-partner-repository";
 import { DrizzleAuditEventRepository } from "./persistence/drizzle/drizzle-audit-event-repository";
 import { LocalPhotoStorage } from "./storage/local-photo-storage";
+import { LEGACY_CLINIC_ID } from "./persistence/drizzle/legacy-clinic";
 import { DrizzleReminderLogRepository } from "./persistence/drizzle/drizzle-reminder-log-repository";
 import {
   MetaWhatsAppGateway,
@@ -229,7 +230,7 @@ export async function getRepositories(tenant: TenantContext): Promise<Services> 
     evolutions: new DrizzleEvolutionNoteRepository(db, tenant.clinicId),
     conditions: new DrizzleClinicalConditionRepository(db, tenant.clinicId),
     assessments: new DrizzleConditionAssessmentRepository(db, tenant.clinicId),
-    conditionPhotos: new DrizzleConditionPhotoRepository(db),
+    conditionPhotos: new DrizzleConditionPhotoRepository(db, tenant.clinicId),
     consentRecords: new DrizzleConsentRecordRepository(db),
     nursingDiagnoses: new DrizzleNursingDiagnosisRepository(db),
     nursingOutcomes: new DrizzleNursingOutcomeRepository(db),
@@ -241,7 +242,7 @@ export async function getRepositories(tenant: TenantContext): Promise<Services> 
     carePlanInterventions: new DrizzleCarePlanInterventionRepository(db, tenant.clinicId),
     outcomeEvaluations: new DrizzleOutcomeEvaluationRepository(db, tenant.clinicId),
     interventionRecords: new DrizzleInterventionRecordRepository(db, tenant.clinicId),
-    photoStorage: new LocalPhotoStorage(),
+    photoStorage: new LocalPhotoStorage(undefined, tenant.clinicId ?? LEGACY_CLINIC_ID),
     supplies: new DrizzleSupplyRepository(db),
     stockMovements: new DrizzleStockMovementRepository(db),
     supplyBatches: new DrizzleSupplyBatchRepository(db),

@@ -262,7 +262,7 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
 
   it("Dado fotos de condição, Quando salvar, triar e buscar, Então fluxo completo preservado", async () => {
     const conditionRepo = new DrizzleClinicalConditionRepository(appDb, "legacy-clinic");
-    const photoRepo = new DrizzleConditionPhotoRepository(appDb);
+    const photoRepo = new DrizzleConditionPhotoRepository(appDb, "legacy-clinic");
     const condition = ClinicalCondition.create({
       patientId: patient.id,
       kind: "wound",

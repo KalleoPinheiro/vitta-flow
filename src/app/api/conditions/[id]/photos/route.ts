@@ -6,6 +6,7 @@ import { handleRequest, fail } from "@/lib/api-response";
 import { requireStaffSession } from "@/lib/auth/require-session";
 import { recordAudit } from "@/lib/audit";
 import { toConditionPhotoDto } from "@/lib/dto";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -15,7 +16,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { conditionPhotos, conditions, auditEvents } = await getRepositories({ clinicId: null });
+    const { conditionPhotos, conditions, auditEvents } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? null,
+    });
     const [photos, condition] = await Promise.all([
       conditionPhotos.findByConditionId(id),
       conditions.findById(id),
@@ -47,7 +50,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
   const assessmentId = form?.get("assessmentId");
 
   return handleRequest(async () => {
-    const { conditionPhotos, conditions, photoStorage, auditEvents } = await getRepositories({ clinicId: null });
+    const { conditionPhotos, conditions, photoStorage, auditEvents } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+    });
     const photo = await new AddConditionPhoto(conditionPhotos, conditions, photoStorage).execute({
       conditionId: id,
       data: new Uint8Array(await file.arrayBuffer()),

@@ -284,7 +284,10 @@ export class DrizzleConditionAssessmentRepository implements ConditionAssessment
 }
 
 export class DrizzleConditionPhotoRepository implements ConditionPhotoRepository {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   private toEntity(row: typeof conditionPhotos.$inferSelect): ConditionPhoto {
     return ConditionPhoto.restore({
@@ -296,9 +299,14 @@ export class DrizzleConditionPhotoRepository implements ConditionPhotoRepository
   }
 
   async save(photo: ConditionPhoto): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error(
+        "Papel de sistema não pode salvar foto de condição (somente leitura cross-empresa)",
+      );
+    }
     const values = {
       id: photo.id,
-      clinicId: LEGACY_CLINIC_ID,
+      clinicId: this.clinicId,
       conditionId: photo.conditionId,
       assessmentId: photo.assessmentId,
       contentType: photo.contentType,
@@ -319,7 +327,7 @@ export class DrizzleConditionPhotoRepository implements ConditionPhotoRepository
     const rows = await this.db
       .select()
       .from(conditionPhotos)
-      .where(eq(conditionPhotos.triageStatus, "pending"))
+      .where(withTenant(conditionPhotos, this.clinicId, eq(conditionPhotos.triageStatus, "pending")))
       .orderBy(desc(conditionPhotos.createdAt));
     return rows.map((row) => this.toEntity(row));
   }
@@ -328,7 +336,7 @@ export class DrizzleConditionPhotoRepository implements ConditionPhotoRepository
     const rows = await this.db
       .select()
       .from(conditionPhotos)
-      .where(eq(conditionPhotos.id, id))
+      .where(withTenant(conditionPhotos, this.clinicId, eq(conditionPhotos.id, id)))
       .limit(1);
     return rows[0] ? this.toEntity(rows[0]) : null;
   }
@@ -337,7 +345,7 @@ export class DrizzleConditionPhotoRepository implements ConditionPhotoRepository
     const rows = await this.db
       .select()
       .from(conditionPhotos)
-      .where(eq(conditionPhotos.conditionId, conditionId))
+      .where(withTenant(conditionPhotos, this.clinicId, eq(conditionPhotos.conditionId, conditionId)))
       .orderBy(desc(conditionPhotos.createdAt), desc(conditionPhotos.id));
     return rows.map((row) => this.toEntity(row));
   }
@@ -350,13 +358,15 @@ export class DrizzleConditionPhotoRepository implements ConditionPhotoRepository
     const rows = await this.db
       .select()
       .from(conditionPhotos)
-      .where(inArray(conditionPhotos.conditionId, unique))
+      .where(withTenant(conditionPhotos, this.clinicId, inArray(conditionPhotos.conditionId, unique)))
       .orderBy(desc(conditionPhotos.createdAt), desc(conditionPhotos.id));
     return rows.map((row) => this.toEntity(row));
   }
 
   async delete(id: string): Promise<void> {
-    await this.db.delete(conditionPhotos).where(eq(conditionPhotos.id, id));
+    await this.db
+      .delete(conditionPhotos)
+      .where(withTenant(conditionPhotos, this.clinicId, eq(conditionPhotos.id, id)));
   }
 }
 

@@ -43,12 +43,13 @@ export async function GET(request: NextRequest, context: RouteContext) {
 export async function POST(request: NextRequest, context: RouteContext) {
   const guard = requireStaffSession(request);
   if (!guard.ok) return guard.response;
+  const clinicId = guard.session?.clinicId ?? LEGACY_CLINIC_ID;
 
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = evolutionSchema.parse(await request.json());
     const { evolutions, patients, auditEvents, userAccounts } = await getRepositories({
-      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+      clinicId,
     });
     const { session } = guard;
     // Autoria automática: conta individual logada define o profissional autor.

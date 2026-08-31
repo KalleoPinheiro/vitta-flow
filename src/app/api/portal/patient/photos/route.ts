@@ -11,6 +11,7 @@ import {
   ValidationError,
 } from "@/domain/shared/errors";
 import { CONSENT_TEXT } from "@/lib/consent-text";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 /**
  * Monitoramento remoto (O4.2): paciente envia foto da própria condição ativa.
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
 
   return handleRequest(async () => {
     const { patients, conditions, conditionPhotos, consentRecords, photoStorage, auditEvents } =
-      await getRepositories({ clinicId: null });
+      await getRepositories({ clinicId: session.clinicId ?? LEGACY_CLINIC_ID });
 
     const patient = await patients.findByEmail(session.subject);
     const condition = await conditions.findById(conditionId);

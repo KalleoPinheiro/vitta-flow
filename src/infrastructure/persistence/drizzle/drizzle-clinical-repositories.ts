@@ -38,6 +38,7 @@ import {
   consentRecords,
   evolutionNotes,
 } from "./schema";
+import { withTenant } from "./tenant-scope";
 
 export class DrizzleAnamnesisRepository implements AnamnesisRepository {
   constructor(private readonly db: AppDb) {}
@@ -98,7 +99,10 @@ export class DrizzleEvolutionNoteRepository implements EvolutionNoteRepository {
 }
 
 export class DrizzleClinicalConditionRepository implements ClinicalConditionRepository {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   private toEntity(row: typeof clinicalConditions.$inferSelect): ClinicalCondition {
     return ClinicalCondition.restore({
@@ -110,9 +114,14 @@ export class DrizzleClinicalConditionRepository implements ClinicalConditionRepo
   }
 
   async save(condition: ClinicalCondition): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error(
+        "Papel de sistema não pode salvar condição clínica (somente leitura cross-empresa)",
+      );
+    }
     const values = {
       id: condition.id,
-      clinicId: LEGACY_CLINIC_ID,
+      clinicId: this.clinicId,
       patientId: condition.patientId,
       kind: condition.kind,
       title: condition.title,
@@ -132,7 +141,7 @@ export class DrizzleClinicalConditionRepository implements ClinicalConditionRepo
     const rows = await this.db
       .select()
       .from(clinicalConditions)
-      .where(eq(clinicalConditions.id, id))
+      .where(withTenant(clinicalConditions, this.clinicId, eq(clinicalConditions.id, id)))
       .limit(1);
     return rows[0] ? this.toEntity(rows[0]) : null;
   }
@@ -141,7 +150,9 @@ export class DrizzleClinicalConditionRepository implements ClinicalConditionRepo
     const rows = await this.db
       .select()
       .from(clinicalConditions)
-      .where(eq(clinicalConditions.patientId, patientId))
+      .where(
+        withTenant(clinicalConditions, this.clinicId, eq(clinicalConditions.patientId, patientId)),
+      )
       .orderBy(desc(clinicalConditions.createdAt));
     return rows.map((row) => this.toEntity(row));
   }
@@ -154,7 +165,7 @@ export class DrizzleClinicalConditionRepository implements ClinicalConditionRepo
     const rows = await this.db
       .select()
       .from(clinicalConditions)
-      .where(inArray(clinicalConditions.id, unique));
+      .where(withTenant(clinicalConditions, this.clinicId, inArray(clinicalConditions.id, unique)));
     return rows.map((row) => this.toEntity(row));
   }
 
@@ -166,19 +177,33 @@ export class DrizzleClinicalConditionRepository implements ClinicalConditionRepo
     const rows = await this.db
       .select()
       .from(clinicalConditions)
-      .where(inArray(clinicalConditions.patientId, unique))
+      .where(
+        withTenant(
+          clinicalConditions,
+          this.clinicId,
+          inArray(clinicalConditions.patientId, unique),
+        ),
+      )
       .orderBy(desc(clinicalConditions.createdAt));
     return rows.map((row) => this.toEntity(row));
   }
 }
 
 export class DrizzleConditionAssessmentRepository implements ConditionAssessmentRepository {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   async save(assessment: ConditionAssessment): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error(
+        "Papel de sistema não pode salvar avaliação de condição (somente leitura cross-empresa)",
+      );
+    }
     await this.db.insert(conditionAssessments).values({
       id: assessment.id,
-      clinicId: LEGACY_CLINIC_ID,
+      clinicId: this.clinicId,
       conditionId: assessment.conditionId,
       lengthMm: assessment.lengthMm,
       widthMm: assessment.widthMm,
@@ -207,7 +232,13 @@ export class DrizzleConditionAssessmentRepository implements ConditionAssessment
     const rows = await this.db
       .select()
       .from(conditionAssessments)
-      .where(eq(conditionAssessments.conditionId, conditionId))
+      .where(
+        withTenant(
+          conditionAssessments,
+          this.clinicId,
+          eq(conditionAssessments.conditionId, conditionId),
+        ),
+      )
       .orderBy(desc(conditionAssessments.createdAt), desc(conditionAssessments.id));
     return rows.map((row) =>
       ConditionAssessment.restore({ ...row, exudate: row.exudate as ExudateLevel | null }),
@@ -222,7 +253,13 @@ export class DrizzleConditionAssessmentRepository implements ConditionAssessment
     const rows = await this.db
       .select()
       .from(conditionAssessments)
-      .where(inArray(conditionAssessments.conditionId, unique))
+      .where(
+        withTenant(
+          conditionAssessments,
+          this.clinicId,
+          inArray(conditionAssessments.conditionId, unique),
+        ),
+      )
       .orderBy(desc(conditionAssessments.createdAt), desc(conditionAssessments.id));
     return rows.map((row) =>
       ConditionAssessment.restore({ ...row, exudate: row.exudate as ExudateLevel | null }),

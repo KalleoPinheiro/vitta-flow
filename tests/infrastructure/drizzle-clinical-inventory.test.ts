@@ -100,8 +100,8 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
   });
 
   it("Dado condição com avaliações, Quando salvar e buscar, Então roundtrip completo", async () => {
-    const conditionRepo = new DrizzleClinicalConditionRepository(appDb);
-    const assessmentRepo = new DrizzleConditionAssessmentRepository(appDb);
+    const conditionRepo = new DrizzleClinicalConditionRepository(appDb, "legacy-clinic");
+    const assessmentRepo = new DrizzleConditionAssessmentRepository(appDb, "legacy-clinic");
 
     const condition = ClinicalCondition.create({
       patientId: patient.id,
@@ -239,7 +239,7 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
   });
 
   it("Dado condições de vários pacientes, Quando buscar em lote, Então filtra e trata lista vazia", async () => {
-    const conditionRepo = new DrizzleClinicalConditionRepository(appDb);
+    const conditionRepo = new DrizzleClinicalConditionRepository(appDb, "legacy-clinic");
     const condition = ClinicalCondition.create({
       patientId: patient.id,
       kind: "wound",
@@ -261,7 +261,7 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
   });
 
   it("Dado fotos de condição, Quando salvar, triar e buscar, Então fluxo completo preservado", async () => {
-    const conditionRepo = new DrizzleClinicalConditionRepository(appDb);
+    const conditionRepo = new DrizzleClinicalConditionRepository(appDb, "legacy-clinic");
     const photoRepo = new DrizzleConditionPhotoRepository(appDb);
     const condition = ClinicalCondition.create({
       patientId: patient.id,

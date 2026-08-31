@@ -91,7 +91,7 @@ describe("Feature: Persistência PostgreSQL — taxonomias de enfermagem e plano
       kind: "wound",
       title: "Lesão sacral",
     });
-    await new DrizzleClinicalConditionRepository(appDb).save(condition);
+    await new DrizzleClinicalConditionRepository(appDb, "legacy-clinic").save(condition);
   });
 
   it("Dado diagnóstico NANDA-I salvo, Quando buscar por código/lote/termo, Então roundtrip correto", async () => {

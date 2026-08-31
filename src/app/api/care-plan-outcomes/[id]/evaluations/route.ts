@@ -6,6 +6,7 @@ import { handleRequest } from "@/lib/api-response";
 import { requireStaffSession } from "@/lib/auth/require-session";
 import { recordAudit } from "@/lib/audit";
 import { toOutcomeEvaluationDto } from "@/lib/dto";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 const evaluationSchema = z.object({
   score: z.number().int().min(1).max(5),
@@ -22,7 +23,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = evaluationSchema.parse(await request.json());
-    const { outcomeEvaluations, carePlanOutcomes, carePlans, auditEvents } = await getRepositories({ clinicId: null });
+    const { outcomeEvaluations, carePlanOutcomes, carePlans, auditEvents } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+    });
     const evaluation = await new EvaluateOutcome(
       outcomeEvaluations,
       carePlanOutcomes,

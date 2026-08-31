@@ -7,6 +7,7 @@ import { handleRequest } from "@/lib/api-response";
 import { requireStaffSession } from "@/lib/auth/require-session";
 import { recordAudit } from "@/lib/audit";
 import { toCarePlanDiagnosisDto } from "@/lib/dto";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 const diagnosisBodySchema = z.object({
   diagnosisCode: z.string().min(1).max(20),
@@ -92,7 +93,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = diagnosisSchema.parse(await request.json());
-    const { carePlanDiagnoses, carePlans, nursingDiagnoses, auditEvents } = await getRepositories({ clinicId: null });
+    const { carePlanDiagnoses, carePlans, nursingDiagnoses, auditEvents } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+    });
     const diagnosis = await new AddCarePlanDiagnosis(
       carePlanDiagnoses,
       carePlans,

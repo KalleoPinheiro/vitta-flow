@@ -163,12 +163,12 @@ describe("Feature: Persistência PostgreSQL — taxonomias de enfermagem e plano
   });
 
   it("Dado plano de cuidados completo, Quando salvar e consultar, Então roundtrip de diagnóstico/resultado/intervenção", async () => {
-    const carePlanRepo = new DrizzleCarePlanRepository(appDb);
-    const diagnosisRepo = new DrizzleCarePlanDiagnosisRepository(appDb);
-    const outcomeRepo = new DrizzleCarePlanOutcomeRepository(appDb);
-    const interventionRepo = new DrizzleCarePlanInterventionRepository(appDb);
-    const evaluationRepo = new DrizzleOutcomeEvaluationRepository(appDb);
-    const recordRepo = new DrizzleInterventionRecordRepository(appDb);
+    const carePlanRepo = new DrizzleCarePlanRepository(appDb, "legacy-clinic");
+    const diagnosisRepo = new DrizzleCarePlanDiagnosisRepository(appDb, "legacy-clinic");
+    const outcomeRepo = new DrizzleCarePlanOutcomeRepository(appDb, "legacy-clinic");
+    const interventionRepo = new DrizzleCarePlanInterventionRepository(appDb, "legacy-clinic");
+    const evaluationRepo = new DrizzleOutcomeEvaluationRepository(appDb, "legacy-clinic");
+    const recordRepo = new DrizzleInterventionRecordRepository(appDb, "legacy-clinic");
 
     const plan = CarePlan.create({
       patientId: patient.id,
@@ -249,11 +249,11 @@ describe("Feature: Persistência PostgreSQL — taxonomias de enfermagem e plano
   });
 
   it("Dado ids vazios, Quando buscar em lote, Então retorna lista vazia sem consultar o banco", async () => {
-    expect(await new DrizzleCarePlanDiagnosisRepository(appDb).findByCarePlanIds([])).toEqual([]);
-    expect(await new DrizzleCarePlanOutcomeRepository(appDb).findByCarePlanIds([])).toEqual([]);
-    expect(await new DrizzleCarePlanInterventionRepository(appDb).findByCarePlanIds([])).toEqual([]);
-    expect(await new DrizzleOutcomeEvaluationRepository(appDb).findByOutcomeIds([])).toEqual([]);
-    expect(await new DrizzleInterventionRecordRepository(appDb).findByInterventionIds([])).toEqual([]);
+    expect(await new DrizzleCarePlanDiagnosisRepository(appDb, "legacy-clinic").findByCarePlanIds([])).toEqual([]);
+    expect(await new DrizzleCarePlanOutcomeRepository(appDb, "legacy-clinic").findByCarePlanIds([])).toEqual([]);
+    expect(await new DrizzleCarePlanInterventionRepository(appDb, "legacy-clinic").findByCarePlanIds([])).toEqual([]);
+    expect(await new DrizzleOutcomeEvaluationRepository(appDb, "legacy-clinic").findByOutcomeIds([])).toEqual([]);
+    expect(await new DrizzleInterventionRecordRepository(appDb, "legacy-clinic").findByInterventionIds([])).toEqual([]);
     expect(await new DrizzleNursingDiagnosisRepository(appDb).findByCodes([])).toEqual([]);
     expect(await new DrizzleNursingOutcomeRepository(appDb).findByCodes([])).toEqual([]);
     expect(await new DrizzleNursingInterventionRepository(appDb).findByCodes([])).toEqual([]);

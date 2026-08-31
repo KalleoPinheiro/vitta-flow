@@ -7,6 +7,7 @@ import { handleRequest } from "@/lib/api-response";
 import { requireStaffSession } from "@/lib/auth/require-session";
 import { recordAudit } from "@/lib/audit";
 import { toCarePlanInterventionDto } from "@/lib/dto";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 const interventionSchema = z.object({
   interventionCode: z.string().min(1).max(20),
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const { id } = await context.params;
     const body = interventionSchema.parse(await request.json());
     const { carePlanInterventions, carePlans, nursingInterventions, auditEvents } =
-      await getRepositories({ clinicId: null });
+      await getRepositories({ clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID });
     const intervention = await new PrescribeIntervention(
       carePlanInterventions,
       carePlans,

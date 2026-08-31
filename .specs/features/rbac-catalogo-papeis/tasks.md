@@ -245,7 +245,7 @@ T8 → T18 → T19
 
 ---
 
-### T8: `access-policy.ts` + `require-session.ts` consomem `route-family`; estender conformidade
+### T8: `access-policy.ts` + `require-session.ts` consomem `route-family`; estender conformidade ✅ Complete
 
 **What**: `isAllowedForRole` passa a delegar para `isFamilyAllowedForRole(classifyRoute(pathname), role)` em vez do binário atual; `requireStaffSession` vira wrapper de uma nova `requireRole(request, STAFF_ROLES)`; `tests/api/route-guard-conformance.test.ts` ganha os 6 papéis parametrizados por família (tabela `role → { allowedFamilies, sampleRoutes }`, conforme design).
 **Where**: `src/lib/auth/access-policy.ts`, `src/lib/auth/require-session.ts`, `tests/api/route-guard-conformance.test.ts`

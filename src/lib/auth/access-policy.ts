@@ -1,6 +1,7 @@
 import type { UserRole } from "@/domain/auth/user-role";
 import { getAuthConfig } from "./session";
 import { googleOAuthConfigFromEnv } from "./google-oauth";
+import { classifyRoute, isFamilyAllowedForRole } from "./route-family";
 
 /**
  * Política de acesso do VittaFlow — fonte única consumida pelas DUAS camadas de
@@ -58,17 +59,13 @@ export function isSharedPath(pathname: string): boolean {
 }
 
 /**
- * Equipe (super_admin, company_admin, atendente, profissional) acessa tudo;
- * paciente e parceiro só os caminhos compartilhados.
- *
- * SPEC_DEVIATION: regra grosseira de paridade com o antigo binário admin/resto
- * até a T8 aplicar a família de rota por papel (RBAC-05/RBAC-06).
+ * Regra grosseira de família de rota por papel (RBAC-05): cada papel acessa
+ * só as famílias permitidas pela matriz de `route-family.ts`. A checagem fina
+ * (ex.: vínculo do Profissional com um paciente específico, R4) acontece no
+ * próprio handler, que tem acesso ao `:id` da rota — esta função não.
  */
 export function isAllowedForRole(pathname: string, role: UserRole): boolean {
-  if (role === "patient" || role === "partner") {
-    return isSharedPath(pathname);
-  }
-  return true;
+  return isFamilyAllowedForRole(classifyRoute(pathname), role);
 }
 
 /**

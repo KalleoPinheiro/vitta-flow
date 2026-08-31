@@ -3,6 +3,7 @@ import type { UserRole } from "@/domain/auth/user-role";
 import { fail } from "@/lib/api-response";
 import {
   AUTH_NOT_CONFIGURED_MESSAGE,
+  isAllowedForRole,
   STAFF_ONLY_MESSAGE,
   UNAUTHENTICATED_MESSAGE,
   resolveAuthMode,
@@ -47,7 +48,11 @@ const roleMessage = (roles: readonly UserRole[]): string => {
 };
 
 /**
- * Rotas da equipe (papel `admin`).
+ * Rotas da equipe — qualquer um dos 4 papéis de equipe, restrito pela família
+ * de rota (RBAC-05/RBAC-06): Atendente e Profissional não acessam família
+ * `administrative`, e Atendente não acessa família `clinical` (R3, RBAC-15/16).
+ * A checagem fina de vínculo do Profissional com um paciente específico (R4)
+ * não vive aqui — acontece no próprio handler, que conhece o `:id` da rota.
  *
  * LIMITAÇÃO CONHECIDA — revogação de conta desativada roda só na camada 1
  * (`src/proxy.ts`, via `isStaffSessionRevoked`). Esta guarda é síncrona e a
@@ -73,10 +78,7 @@ export function requireStaffSession(request: NextRequest): Guard<Session | null>
   if (!session) {
     return denied(UNAUTHENTICATED_MESSAGE, 401);
   }
-  // SPEC_DEVIATION: qualquer um dos 4 papéis de equipe passa aqui (paridade
-  // com o antigo binário "admin = tudo") até a T8 aplicar a família de rota
-  // por papel (RBAC-05/RBAC-06) e a T13 restringir o Atendente (RBAC-15/16).
-  if (!isStaffRole(session.role)) {
+  if (!isStaffRole(session.role) || !isAllowedForRole(request.nextUrl.pathname, session.role)) {
     return denied(STAFF_ONLY_MESSAGE, 403);
   }
   return { ok: true, session };

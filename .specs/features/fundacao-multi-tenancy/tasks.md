@@ -518,9 +518,9 @@ T18 → T19 → T20 → T21 → T22 → T23 → T24
 **Tools**: MCP: NONE. Skill: NONE.
 
 **Done when**:
-- [ ] Repositórios e rotas de retorno e lembrete escopados por `clinic_id`
-- [ ] Teste de rota com 2 clínicas prova isolamento das duas entidades
-- [ ] `npm run typecheck && npx vitest run tests/api tests/infrastructure` limpo
+- [x] Repositórios e rotas de retorno e lembrete escopados por `clinic_id`
+- [x] Teste de rota com 2 clínicas prova isolamento das duas entidades
+- [x] `npm run typecheck && npx vitest run tests/api tests/infrastructure` limpo
 
 **Tests**: integration
 **Gate**: quick

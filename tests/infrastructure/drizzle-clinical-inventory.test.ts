@@ -219,7 +219,7 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
   });
 
   it("Dado retornos, Quando filtrar por status e vencimento, Então subconjuntos corretos", async () => {
-    const repo = new DrizzleFollowUpRepository(appDb);
+    const repo = new DrizzleFollowUpRepository(appDb, "legacy-clinic");
     const pending = FollowUp.create({
       patientId: patient.id,
       dueDate: new Date("2026-07-01T12:00:00Z"),

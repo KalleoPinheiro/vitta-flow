@@ -15,7 +15,6 @@ import type {
   FollowUpRepository,
 } from "@/domain/followup/follow-up-repository";
 import { MAX_ROWS, type AppDb } from "./db";
-import { LEGACY_CLINIC_ID } from "./legacy-clinic";
 import { followUps, stockMovements, supplies, supplyBatches } from "./schema";
 import { withTenant } from "./tenant-scope";
 
@@ -238,16 +237,22 @@ export class DrizzleSupplyBatchRepository implements SupplyBatchRepository {
 }
 
 export class DrizzleFollowUpRepository implements FollowUpRepository {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   private toEntity(row: typeof followUps.$inferSelect): FollowUp {
     return FollowUp.restore({ ...row, status: row.status as FollowUpStatus });
   }
 
   async save(followUp: FollowUp): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error("Papel de sistema não pode salvar retorno (somente leitura cross-empresa)");
+    }
     const values = {
       id: followUp.id,
-      clinicId: LEGACY_CLINIC_ID,
+      clinicId: this.clinicId,
       patientId: followUp.patientId,
       appointmentId: followUp.appointmentId,
       dueDate: followUp.dueDate,
@@ -262,7 +267,11 @@ export class DrizzleFollowUpRepository implements FollowUpRepository {
   }
 
   async findById(id: string): Promise<FollowUp | null> {
-    const rows = await this.db.select().from(followUps).where(eq(followUps.id, id)).limit(1);
+    const rows = await this.db
+      .select()
+      .from(followUps)
+      .where(withTenant(followUps, this.clinicId, eq(followUps.id, id)))
+      .limit(1);
     return rows[0] ? this.toEntity(rows[0]) : null;
   }
 
@@ -275,7 +284,9 @@ export class DrizzleFollowUpRepository implements FollowUpRepository {
     const rows = await this.db
       .select()
       .from(followUps)
-      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .where(
+        withTenant(followUps, this.clinicId, conditions.length > 0 ? and(...conditions) : undefined),
+      )
       .orderBy(asc(followUps.dueDate))
       .limit(MAX_ROWS);
     return rows.map((row) => this.toEntity(row));

@@ -24,7 +24,7 @@ export class DrizzleTransactionManager implements TransactionManager {
       fn({
         appointments: new DrizzleAppointmentRepository(tx, this.clinicId),
         invoices: new DrizzleInvoiceRepository(tx),
-        followUps: new DrizzleFollowUpRepository(tx),
+        followUps: new DrizzleFollowUpRepository(tx, this.clinicId),
         sessionPackages: new DrizzleSessionPackageRepository(tx),
       }),
     );

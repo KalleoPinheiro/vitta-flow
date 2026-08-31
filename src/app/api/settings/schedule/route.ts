@@ -7,6 +7,7 @@ import {
 } from "@/domain/scheduling/schedule-config";
 import { handleRequest } from "@/lib/api-response";
 import { requireStaffSession } from "@/lib/auth/require-session";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 const configSchema = z.object({
   weekdays: z.array(z.number().int().min(0).max(6)).min(1).max(7),
@@ -20,7 +21,9 @@ export async function GET(request: NextRequest) {
   if (!guard.ok) return guard.response;
 
   return handleRequest(async () => {
-    const { scheduleConfig } = await getRepositories();
+    const { scheduleConfig } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+    });
     const config = await scheduleConfig.get();
     return { config: config ?? DEFAULT_SCHEDULE_CONFIG, isDefault: config === null };
   });
@@ -32,7 +35,9 @@ export async function PUT(request: NextRequest) {
 
   return handleRequest(async () => {
     const body = configSchema.parse(await request.json());
-    const { scheduleConfig } = await getRepositories();
+    const { scheduleConfig } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+    });
     const validated = validateScheduleConfig(body);
     await scheduleConfig.save(validated);
     return { config: validated, isDefault: false };

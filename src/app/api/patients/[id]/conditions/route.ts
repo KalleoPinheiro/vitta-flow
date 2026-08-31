@@ -8,6 +8,7 @@ import { handleRequest } from "@/lib/api-response";
 import { requireStaffSession } from "@/lib/auth/require-session";
 import { recordAudit } from "@/lib/audit";
 import { toConditionDto } from "@/lib/dto";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 const conditionSchema = z.object({
   kind: z.enum(CONDITION_KINDS),
@@ -25,7 +26,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { conditions, auditEvents } = await getRepositories();
+    const { conditions, auditEvents } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? null,
+    });
     const result = await new ListConditions(conditions).execute({ patientId: id });
     recordAudit(auditEvents, guard.session, {
       action: "read",
@@ -44,7 +47,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = conditionSchema.parse(await request.json());
-    const { conditions, patients, auditEvents } = await getRepositories();
+    const { conditions, patients, auditEvents } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+    });
     const condition = await new CreateCondition(conditions, patients).execute({
       patientId: id,
       kind: body.kind,

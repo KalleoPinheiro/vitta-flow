@@ -37,12 +37,22 @@ import {
   consentRecords,
   evolutionNotes,
 } from "./schema";
+import { withTenant } from "./tenant-scope";
 
 export class DrizzleAnamnesisRepository implements AnamnesisRepository {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   async save(anamnesis: Anamnesis): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error(
+        "Papel de sistema não pode salvar anamnese (somente leitura cross-empresa)",
+      );
+    }
     const values = {
+      clinicId: this.clinicId,
       patientId: anamnesis.patientId,
       comorbidities: anamnesis.comorbidities,
       allergies: anamnesis.allergies,
@@ -61,18 +71,27 @@ export class DrizzleAnamnesisRepository implements AnamnesisRepository {
     const rows = await this.db
       .select()
       .from(anamneses)
-      .where(eq(anamneses.patientId, patientId))
+      .where(withTenant(anamneses, this.clinicId, eq(anamneses.patientId, patientId)))
       .limit(1);
     return rows[0] ? Anamnesis.restore(rows[0]) : null;
   }
 }
 
 export class DrizzleEvolutionNoteRepository implements EvolutionNoteRepository {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   async save(note: EvolutionNote): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error(
+        "Papel de sistema não pode salvar nota de evolução (somente leitura cross-empresa)",
+      );
+    }
     await this.db.insert(evolutionNotes).values({
       id: note.id,
+      clinicId: this.clinicId,
       patientId: note.patientId,
       appointmentId: note.appointmentId,
       professionalId: note.professionalId,
@@ -88,14 +107,17 @@ export class DrizzleEvolutionNoteRepository implements EvolutionNoteRepository {
     const rows = await this.db
       .select()
       .from(evolutionNotes)
-      .where(eq(evolutionNotes.patientId, patientId))
+      .where(withTenant(evolutionNotes, this.clinicId, eq(evolutionNotes.patientId, patientId)))
       .orderBy(desc(evolutionNotes.createdAt), desc(evolutionNotes.id));
     return rows.map((row) => EvolutionNote.restore(row));
   }
 }
 
 export class DrizzleClinicalConditionRepository implements ClinicalConditionRepository {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   private toEntity(row: typeof clinicalConditions.$inferSelect): ClinicalCondition {
     return ClinicalCondition.restore({
@@ -107,8 +129,14 @@ export class DrizzleClinicalConditionRepository implements ClinicalConditionRepo
   }
 
   async save(condition: ClinicalCondition): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error(
+        "Papel de sistema não pode salvar condição clínica (somente leitura cross-empresa)",
+      );
+    }
     const values = {
       id: condition.id,
+      clinicId: this.clinicId,
       patientId: condition.patientId,
       kind: condition.kind,
       title: condition.title,
@@ -128,7 +156,7 @@ export class DrizzleClinicalConditionRepository implements ClinicalConditionRepo
     const rows = await this.db
       .select()
       .from(clinicalConditions)
-      .where(eq(clinicalConditions.id, id))
+      .where(withTenant(clinicalConditions, this.clinicId, eq(clinicalConditions.id, id)))
       .limit(1);
     return rows[0] ? this.toEntity(rows[0]) : null;
   }
@@ -137,7 +165,9 @@ export class DrizzleClinicalConditionRepository implements ClinicalConditionRepo
     const rows = await this.db
       .select()
       .from(clinicalConditions)
-      .where(eq(clinicalConditions.patientId, patientId))
+      .where(
+        withTenant(clinicalConditions, this.clinicId, eq(clinicalConditions.patientId, patientId)),
+      )
       .orderBy(desc(clinicalConditions.createdAt));
     return rows.map((row) => this.toEntity(row));
   }
@@ -150,7 +180,7 @@ export class DrizzleClinicalConditionRepository implements ClinicalConditionRepo
     const rows = await this.db
       .select()
       .from(clinicalConditions)
-      .where(inArray(clinicalConditions.id, unique));
+      .where(withTenant(clinicalConditions, this.clinicId, inArray(clinicalConditions.id, unique)));
     return rows.map((row) => this.toEntity(row));
   }
 
@@ -162,18 +192,33 @@ export class DrizzleClinicalConditionRepository implements ClinicalConditionRepo
     const rows = await this.db
       .select()
       .from(clinicalConditions)
-      .where(inArray(clinicalConditions.patientId, unique))
+      .where(
+        withTenant(
+          clinicalConditions,
+          this.clinicId,
+          inArray(clinicalConditions.patientId, unique),
+        ),
+      )
       .orderBy(desc(clinicalConditions.createdAt));
     return rows.map((row) => this.toEntity(row));
   }
 }
 
 export class DrizzleConditionAssessmentRepository implements ConditionAssessmentRepository {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   async save(assessment: ConditionAssessment): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error(
+        "Papel de sistema não pode salvar avaliação de condição (somente leitura cross-empresa)",
+      );
+    }
     await this.db.insert(conditionAssessments).values({
       id: assessment.id,
+      clinicId: this.clinicId,
       conditionId: assessment.conditionId,
       lengthMm: assessment.lengthMm,
       widthMm: assessment.widthMm,
@@ -202,7 +247,13 @@ export class DrizzleConditionAssessmentRepository implements ConditionAssessment
     const rows = await this.db
       .select()
       .from(conditionAssessments)
-      .where(eq(conditionAssessments.conditionId, conditionId))
+      .where(
+        withTenant(
+          conditionAssessments,
+          this.clinicId,
+          eq(conditionAssessments.conditionId, conditionId),
+        ),
+      )
       .orderBy(desc(conditionAssessments.createdAt), desc(conditionAssessments.id));
     return rows.map((row) =>
       ConditionAssessment.restore({ ...row, exudate: row.exudate as ExudateLevel | null }),
@@ -217,7 +268,13 @@ export class DrizzleConditionAssessmentRepository implements ConditionAssessment
     const rows = await this.db
       .select()
       .from(conditionAssessments)
-      .where(inArray(conditionAssessments.conditionId, unique))
+      .where(
+        withTenant(
+          conditionAssessments,
+          this.clinicId,
+          inArray(conditionAssessments.conditionId, unique),
+        ),
+      )
       .orderBy(desc(conditionAssessments.createdAt), desc(conditionAssessments.id));
     return rows.map((row) =>
       ConditionAssessment.restore({ ...row, exudate: row.exudate as ExudateLevel | null }),
@@ -226,7 +283,10 @@ export class DrizzleConditionAssessmentRepository implements ConditionAssessment
 }
 
 export class DrizzleConditionPhotoRepository implements ConditionPhotoRepository {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   private toEntity(row: typeof conditionPhotos.$inferSelect): ConditionPhoto {
     return ConditionPhoto.restore({
@@ -238,8 +298,14 @@ export class DrizzleConditionPhotoRepository implements ConditionPhotoRepository
   }
 
   async save(photo: ConditionPhoto): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error(
+        "Papel de sistema não pode salvar foto de condição (somente leitura cross-empresa)",
+      );
+    }
     const values = {
       id: photo.id,
+      clinicId: this.clinicId,
       conditionId: photo.conditionId,
       assessmentId: photo.assessmentId,
       contentType: photo.contentType,
@@ -260,7 +326,7 @@ export class DrizzleConditionPhotoRepository implements ConditionPhotoRepository
     const rows = await this.db
       .select()
       .from(conditionPhotos)
-      .where(eq(conditionPhotos.triageStatus, "pending"))
+      .where(withTenant(conditionPhotos, this.clinicId, eq(conditionPhotos.triageStatus, "pending")))
       .orderBy(desc(conditionPhotos.createdAt));
     return rows.map((row) => this.toEntity(row));
   }
@@ -269,7 +335,7 @@ export class DrizzleConditionPhotoRepository implements ConditionPhotoRepository
     const rows = await this.db
       .select()
       .from(conditionPhotos)
-      .where(eq(conditionPhotos.id, id))
+      .where(withTenant(conditionPhotos, this.clinicId, eq(conditionPhotos.id, id)))
       .limit(1);
     return rows[0] ? this.toEntity(rows[0]) : null;
   }
@@ -278,7 +344,7 @@ export class DrizzleConditionPhotoRepository implements ConditionPhotoRepository
     const rows = await this.db
       .select()
       .from(conditionPhotos)
-      .where(eq(conditionPhotos.conditionId, conditionId))
+      .where(withTenant(conditionPhotos, this.clinicId, eq(conditionPhotos.conditionId, conditionId)))
       .orderBy(desc(conditionPhotos.createdAt), desc(conditionPhotos.id));
     return rows.map((row) => this.toEntity(row));
   }
@@ -291,22 +357,33 @@ export class DrizzleConditionPhotoRepository implements ConditionPhotoRepository
     const rows = await this.db
       .select()
       .from(conditionPhotos)
-      .where(inArray(conditionPhotos.conditionId, unique))
+      .where(withTenant(conditionPhotos, this.clinicId, inArray(conditionPhotos.conditionId, unique)))
       .orderBy(desc(conditionPhotos.createdAt), desc(conditionPhotos.id));
     return rows.map((row) => this.toEntity(row));
   }
 
   async delete(id: string): Promise<void> {
-    await this.db.delete(conditionPhotos).where(eq(conditionPhotos.id, id));
+    await this.db
+      .delete(conditionPhotos)
+      .where(withTenant(conditionPhotos, this.clinicId, eq(conditionPhotos.id, id)));
   }
 }
 
 export class DrizzleConsentRecordRepository implements ConsentRecordRepository {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   async save(record: ConsentRecord): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error(
+        "Papel de sistema não pode salvar consentimento (somente leitura cross-empresa)",
+      );
+    }
     await this.db.insert(consentRecords).values({
       id: record.id,
+      clinicId: this.clinicId,
       patientId: record.patientId,
       textHash: record.textHash,
       ipAddress: record.ipAddress,
@@ -318,7 +395,7 @@ export class DrizzleConsentRecordRepository implements ConsentRecordRepository {
     const rows = await this.db
       .select()
       .from(consentRecords)
-      .where(eq(consentRecords.patientId, patientId))
+      .where(withTenant(consentRecords, this.clinicId, eq(consentRecords.patientId, patientId)))
       .orderBy(desc(consentRecords.acceptedAt));
     return rows.map((row) => ConsentRecord.restore(row));
   }

@@ -5,6 +5,7 @@ import { NotFoundError, ValidationError } from "@/domain/shared/errors";
 import { handleRequest } from "@/lib/api-response";
 import { toProcedureDto } from "@/lib/dto";
 import { requireStaffSession } from "@/lib/auth/require-session";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 const updateSchema = z.object({
   name: z.string().min(1).max(200).optional(),
@@ -22,7 +23,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = updateSchema.parse(await request.json());
-    const { procedures } = await getRepositories();
+    const { procedures } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+    });
 
     const existing = await procedures.findById(id);
     if (!existing) {

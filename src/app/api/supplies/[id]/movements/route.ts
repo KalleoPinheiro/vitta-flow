@@ -6,6 +6,7 @@ import { MOVEMENT_TYPES } from "@/domain/inventory/stock-movement";
 import { handleRequest } from "@/lib/api-response";
 import { toStockMovementDto, toSupplyDto } from "@/lib/dto";
 import { requireStaffSession } from "@/lib/auth/require-session";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 const movementSchema = z.object({
   type: z.enum(MOVEMENT_TYPES),
@@ -24,7 +25,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { stockMovements } = await getRepositories();
+    const { stockMovements } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? null,
+    });
     const movements = await stockMovements.findBySupplyId(id);
     return movements.map(toStockMovementDto);
   });
@@ -37,7 +40,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = movementSchema.parse(await request.json());
-    const { supplies, stockMovements, appointments, supplyBatches } = await getRepositories();
+    const { supplies, stockMovements, appointments, supplyBatches } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+    });
     const supply = await new RegisterStockMovement(
       supplies,
       stockMovements,

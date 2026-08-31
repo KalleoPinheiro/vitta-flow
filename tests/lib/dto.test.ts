@@ -493,6 +493,7 @@ describe("Feature: DTO de retorno (follow-up)", () => {
 describe("Feature: DTO de evento de auditoria", () => {
   it("Dado evento de auditoria, Quando toAuditEventDto, Então mapeia todos os campos", () => {
     const event = AuditEvent.create({
+      clinicId: "clinic-1",
       actorRole: "admin",
       actorId: "maria@clinica.com",
       action: "read",

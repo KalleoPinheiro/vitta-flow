@@ -7,6 +7,7 @@ import { handleRequest } from "@/lib/api-response";
 import { requireStaffSession } from "@/lib/auth/require-session";
 import { recordAudit } from "@/lib/audit";
 import { toCarePlanDetailDto, toCarePlanDto } from "@/lib/dto";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 const actionSchema = z.object({ action: z.literal("resolve") });
 
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       nursingOutcomes,
       nursingInterventions,
       auditEvents,
-    } = await getRepositories();
+    } = await getRepositories({ clinicId: guard.session?.clinicId ?? null });
     const detail = await new GetCarePlan(
       carePlans,
       carePlanDiagnoses,
@@ -68,7 +69,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     actionSchema.parse(await request.json());
-    const { carePlans, auditEvents } = await getRepositories();
+    const { carePlans, auditEvents } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+    });
     const plan = await new ResolveCarePlan(carePlans).execute({ id });
     recordAudit(auditEvents, guard.session, {
       action: "update",

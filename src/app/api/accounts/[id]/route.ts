@@ -6,6 +6,7 @@ import { hashPassword } from "@/lib/auth/password";
 import { handleRequest } from "@/lib/api-response";
 import { toUserAccountDto } from "@/lib/dto";
 import { requireStaffSession } from "@/lib/auth/require-session";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 const updateSchema = z.object({
   active: z.boolean().optional(),
@@ -21,7 +22,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = updateSchema.parse(await request.json());
-    const { userAccounts } = await getRepositories();
+    const { userAccounts } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+    });
 
     const all = await userAccounts.findAll();
     const existing = all.find((account) => account.id === id);

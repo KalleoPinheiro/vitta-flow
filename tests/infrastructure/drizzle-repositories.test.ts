@@ -48,13 +48,13 @@ describe("Feature: Persistência PostgreSQL (Drizzle)", () => {
     db = drizzle(client, { schema });
     await migrate(db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
     appDb = db as unknown as AppDb;
-    patientRepo = new DrizzlePatientRepository(appDb);
-    appointmentRepo = new DrizzleAppointmentRepository(appDb);
-    invoiceRepo = new DrizzleInvoiceRepository(appDb);
-    professionalRepo = new DrizzleProfessionalRepository(appDb);
-    procedureRepo = new DrizzleProcedureRepository(appDb);
-    userAccountRepo = new DrizzleUserAccountRepository(appDb);
-    scheduleConfigRepo = new DrizzleScheduleConfigRepository(appDb);
+    patientRepo = new DrizzlePatientRepository(appDb, "legacy-clinic");
+    appointmentRepo = new DrizzleAppointmentRepository(appDb, "legacy-clinic");
+    invoiceRepo = new DrizzleInvoiceRepository(appDb, "legacy-clinic");
+    professionalRepo = new DrizzleProfessionalRepository(appDb, "legacy-clinic");
+    procedureRepo = new DrizzleProcedureRepository(appDb, "legacy-clinic");
+    userAccountRepo = new DrizzleUserAccountRepository(appDb, "legacy-clinic");
+    scheduleConfigRepo = new DrizzleScheduleConfigRepository(appDb, "legacy-clinic");
     procedureKitRepo = new DrizzleProcedureKitRepository(appDb);
   });
 
@@ -253,7 +253,7 @@ describe("Feature: Persistência PostgreSQL (Drizzle)", () => {
       const { DrizzleTransactionManager } = await import(
         "@/infrastructure/persistence/drizzle/drizzle-transaction-manager"
       );
-      const manager = new DrizzleTransactionManager(appDb);
+      const manager = new DrizzleTransactionManager(appDb, "legacy-clinic");
       const patient = await savedPatient();
       const failing = Appointment.create({
         patientId: patient.id,
@@ -298,8 +298,8 @@ describe("Feature: Persistência PostgreSQL (Drizzle)", () => {
         "@/infrastructure/persistence/drizzle/drizzle-package-repository"
       );
       const { SessionPackage } = await import("@/domain/billing/package");
-      const manager = new DrizzleTransactionManager(appDb);
-      const packageRepo = new DrizzleSessionPackageRepository(appDb);
+      const manager = new DrizzleTransactionManager(appDb, "legacy-clinic");
+      const packageRepo = new DrizzleSessionPackageRepository(appDb, "legacy-clinic");
       const patient = await savedPatient();
       const procedure = Procedure.create({
         name: "Curativo pacote tx",
@@ -625,6 +625,7 @@ describe("Feature: Persistência PostgreSQL (Drizzle)", () => {
     it("Dado configuração corrompida no banco, Quando buscar, Então cai no default (retorna null)", async () => {
       await db.insert(schema.scheduleSettings).values({
         id: "default",
+        clinicId: "legacy-clinic",
         weekdays: "não-é-json",
         startHour: 8,
         endHour: 18,

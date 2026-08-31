@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   }
 
   return handleRequest(async () => {
-    const { patients, appointments, procedures, scheduleConfig } = await getRepositories();
+    const { patients, appointments, procedures, scheduleConfig } = await getRepositories({ clinicId: null });
     const slots = await new ListAvailableSlots(
       patients,
       appointments,

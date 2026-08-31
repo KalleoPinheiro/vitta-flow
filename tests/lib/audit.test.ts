@@ -31,7 +31,7 @@ describe("Feature: Registro de auditoria best-effort (após a resposta)", () => 
 
   it("Dado sessão autenticada, Quando recordAudit, Então agenda gravação com ator da sessão", async () => {
     const auditEvents = createRepositoryStub();
-    const session: Session = { expiresAtMs: Date.now() + 60_000, subject: "maria@clinica.com", role: "admin" };
+    const session: Session = { expiresAtMs: Date.now() + 60_000, subject: "maria@clinica.com", role: "admin", clinicId: "legacy-clinic" };
 
     recordAudit(auditEvents, session, {
       action: "read",
@@ -53,6 +53,28 @@ describe("Feature: Registro de auditoria best-effort (após a resposta)", () => 
     expect(saved.resourceId).toBe("patient-1");
     expect(saved.patientId).toBe("patient-1");
     expect(saved.detail).toBe("visualizou anamnese");
+    expect(saved.clinicId).toBe("legacy-clinic");
+  });
+
+  it("Dado sessão autenticada de outra clínica, Quando recordAudit sem clinicId explícito, Então grava com a clínica da sessão (MT-29)", async () => {
+    const auditEvents = createRepositoryStub();
+    const session: Session = {
+      expiresAtMs: Date.now() + 60_000,
+      subject: "maria@clinica.com",
+      role: "admin",
+      clinicId: "clinic-b",
+    };
+
+    recordAudit(auditEvents, session, {
+      action: "update",
+      resourceType: "care_plan",
+      resourceId: "plan-1",
+    });
+
+    await afterTasks[0]!();
+
+    const saved = auditEvents.save.mock.calls[0][0];
+    expect(saved.clinicId).toBe("clinic-b");
   });
 
   it("Dado sessão nula, Quando recordAudit, Então registra ator 'anonymous'", async () => {
@@ -95,7 +117,7 @@ describe("Feature: Registro de auditoria best-effort (após a resposta)", () => 
 describe("Feature: Auditoria write-ahead em ações críticas (SEC1-20..21)", () => {
   it("Dado sessão autenticada, Quando recordAuditNow, Então persiste antes de resolver com ator da sessão", async () => {
     const auditEvents = createRepositoryStub();
-    const session: Session = { expiresAtMs: Date.now() + 60_000, subject: "maria@clinica.com", role: "admin" };
+    const session: Session = { expiresAtMs: Date.now() + 60_000, subject: "maria@clinica.com", role: "admin", clinicId: "legacy-clinic" };
 
     await recordAuditNow(auditEvents, session, {
       action: "read",
@@ -114,7 +136,7 @@ describe("Feature: Auditoria write-ahead em ações críticas (SEC1-20..21)", ()
   it("Dado falha ao persistir, Quando recordAuditNow, Então rejeita (requisição falha)", async () => {
     const auditEvents = createRepositoryStub();
     auditEvents.save.mockRejectedValue(new Error("banco indisponível"));
-    const session: Session = { expiresAtMs: Date.now() + 60_000, subject: "maria@clinica.com", role: "admin" };
+    const session: Session = { expiresAtMs: Date.now() + 60_000, subject: "maria@clinica.com", role: "admin", clinicId: "legacy-clinic" };
 
     await expect(
       recordAuditNow(auditEvents, session, {

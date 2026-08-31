@@ -6,6 +6,7 @@ import { ListPartners } from "@/application/partners/list-partners";
 import { handleRequest } from "@/lib/api-response";
 import { toPartnerDto } from "@/lib/dto";
 import { requireStaffSession } from "@/lib/auth/require-session";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 const partnerSchema = z.object({
   fullName: z.string().min(1).max(200),
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
   if (!guard.ok) return guard.response;
 
   return handleRequest(async () => {
-    const { partners } = await getRepositories();
+    const { partners } = await getRepositories({ clinicId: guard.session?.clinicId ?? null });
     const result = await new ListPartners(partners).execute();
     return result.map(toPartnerDto);
   });
@@ -32,7 +33,9 @@ export async function POST(request: NextRequest) {
 
   return handleRequest(async () => {
     const body = partnerSchema.parse(await request.json());
-    const { partners } = await getRepositories();
+    const { partners } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+    });
     const partner = await new CreatePartner(partners).execute({
       fullName: body.fullName,
       email: body.email,

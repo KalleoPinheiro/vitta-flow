@@ -17,6 +17,16 @@ export class InMemoryPatientRepository implements PatientRepository {
     return [...this.patients.values()].find((p) => p.email === normalized) ?? null;
   }
 
+  /** Repositório in-memory não é tenant-aware — usado só em testes de camada de aplicação. */
+  async findClinicIdById(): Promise<string | null> {
+    return null;
+  }
+
+  async countByEmail(email: string): Promise<number> {
+    const normalized = email.trim().toLowerCase();
+    return [...this.patients.values()].filter((p) => p.email === normalized).length;
+  }
+
   async findByReferrer(partnerId: string): Promise<Patient[]> {
     return [...this.patients.values()].filter((p) => p.referredByPartnerId === partnerId);
   }

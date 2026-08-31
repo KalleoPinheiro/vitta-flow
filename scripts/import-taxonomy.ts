@@ -35,7 +35,7 @@ async function loadCatalog(filePath: string | undefined): Promise<TaxonomyCatalo
 async function main(): Promise<void> {
   const filePath = process.argv[2];
   const catalog = await loadCatalog(filePath);
-  const repos = await getRepositories();
+  const repos = await getRepositories({ clinicId: null });
   const result = await importTaxonomyCatalog(
     {
       diagnoses: repos.nursingDiagnoses,

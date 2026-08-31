@@ -6,6 +6,7 @@ import { handleRequest } from "@/lib/api-response";
 import { requireStaffSession } from "@/lib/auth/require-session";
 import { recordAudit } from "@/lib/audit";
 import { toCarePlanOutcomeDto } from "@/lib/dto";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 const outcomeSchema = z
   .object({
@@ -28,7 +29,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = outcomeSchema.parse(await request.json());
-    const { carePlanOutcomes, carePlans, nursingOutcomes, auditEvents } = await getRepositories();
+    const { carePlanOutcomes, carePlans, nursingOutcomes, auditEvents } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+    });
     const outcome = await new PrescribeOutcome(carePlanOutcomes, carePlans, nursingOutcomes).execute({
       carePlanId: id,
       outcomeCode: body.outcomeCode,

@@ -1,8 +1,9 @@
-import { asc, eq, ilike, inArray, or } from "drizzle-orm";
+import { asc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { Patient } from "@/domain/patient/patient";
 import type { PatientPage, PatientRepository } from "@/domain/patient/patient-repository";
 import { MAX_ROWS, type AppDb } from "./db";
 import { patients } from "./schema";
+import { withTenant } from "./tenant-scope";
 
 type PatientRow = typeof patients.$inferSelect;
 
@@ -20,11 +21,18 @@ const toPatient = (row: PatientRow): Patient =>
   });
 
 export class DrizzlePatientRepository implements PatientRepository {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   async save(patient: Patient): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error("Papel de sistema não pode salvar paciente (somente leitura cross-empresa)");
+    }
     const values = {
       id: patient.id,
+      clinicId: this.clinicId,
       fullName: patient.fullName,
       email: patient.email,
       phone: patient.phone,
@@ -41,7 +49,11 @@ export class DrizzlePatientRepository implements PatientRepository {
   }
 
   async findById(id: string): Promise<Patient | null> {
-    const rows = await this.db.select().from(patients).where(eq(patients.id, id)).limit(1);
+    const rows = await this.db
+      .select()
+      .from(patients)
+      .where(withTenant(patients, this.clinicId, eq(patients.id, id)))
+      .limit(1);
     return rows[0] ? toPatient(rows[0]) : null;
   }
 
@@ -49,7 +61,7 @@ export class DrizzlePatientRepository implements PatientRepository {
     const rows = await this.db
       .select()
       .from(patients)
-      .where(eq(patients.email, email.trim().toLowerCase()))
+      .where(withTenant(patients, this.clinicId, eq(patients.email, email.trim().toLowerCase())))
       .limit(1);
     return rows[0] ? toPatient(rows[0]) : null;
   }
@@ -59,22 +71,42 @@ export class DrizzlePatientRepository implements PatientRepository {
     if (unique.length === 0) {
       return [];
     }
-    const rows = await this.db.select().from(patients).where(inArray(patients.id, unique));
+    const rows = await this.db
+      .select()
+      .from(patients)
+      .where(withTenant(patients, this.clinicId, inArray(patients.id, unique)));
     return rows.map(toPatient);
+  }
+
+  async findClinicIdById(id: string): Promise<string | null> {
+    const rows = await this.db
+      .select({ clinicId: patients.clinicId })
+      .from(patients)
+      .where(eq(patients.id, id))
+      .limit(1);
+    return rows[0]?.clinicId ?? null;
+  }
+
+  async countByEmail(email: string): Promise<number> {
+    const rows = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(patients)
+      .where(eq(patients.email, email.trim().toLowerCase()));
+    return rows[0]?.count ?? 0;
   }
 
   async findByReferrer(partnerId: string): Promise<Patient[]> {
     const rows = await this.db
       .select()
       .from(patients)
-      .where(eq(patients.referredByPartnerId, partnerId))
+      .where(withTenant(patients, this.clinicId, eq(patients.referredByPartnerId, partnerId)))
       .limit(MAX_ROWS);
     return rows.map(toPatient);
   }
 
   async findAll(search?: string, page: PatientPage = {}): Promise<Patient[]> {
     const limit = Math.min(page.limit ?? MAX_ROWS, MAX_ROWS);
-    const where = search
+    const searchFilter = search
       ? or(
           ilike(patients.fullName, `%${search}%`),
           ilike(patients.email, `%${search}%`),
@@ -84,7 +116,7 @@ export class DrizzlePatientRepository implements PatientRepository {
     const rows = await this.db
       .select()
       .from(patients)
-      .where(where)
+      .where(withTenant(patients, this.clinicId, searchFilter))
       .orderBy(asc(patients.fullName), asc(patients.id))
       .limit(limit)
       .offset(page.offset ?? 0);

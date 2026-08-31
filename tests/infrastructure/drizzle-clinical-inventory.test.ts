@@ -70,11 +70,11 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
       email: "maria@example.com",
       phone: "11999990000",
     });
-    await new DrizzlePatientRepository(appDb).save(patient);
+    await new DrizzlePatientRepository(appDb, "legacy-clinic").save(patient);
   });
 
   it("Dado anamnese salva, Quando upsert e buscar, Então dados preservados e atualizados", async () => {
-    const repo = new DrizzleAnamnesisRepository(appDb);
+    const repo = new DrizzleAnamnesisRepository(appDb, "legacy-clinic");
     await repo.save(Anamnesis.create({ patientId: patient.id, comorbidities: "DM2" }));
 
     const stored = await repo.findByPatientId(patient.id);
@@ -86,7 +86,7 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
   });
 
   it("Dado evoluções salvas, Quando listar por paciente, Então ordem cronológica reversa", async () => {
-    const repo = new DrizzleEvolutionNoteRepository(appDb);
+    const repo = new DrizzleEvolutionNoteRepository(appDb, "legacy-clinic");
     await repo.save(
       EvolutionNote.create({ patientId: patient.id, subjective: "Primeira", objective: "", assessment: "", plan: "" }),
     );
@@ -100,8 +100,8 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
   });
 
   it("Dado condição com avaliações, Quando salvar e buscar, Então roundtrip completo", async () => {
-    const conditionRepo = new DrizzleClinicalConditionRepository(appDb);
-    const assessmentRepo = new DrizzleConditionAssessmentRepository(appDb);
+    const conditionRepo = new DrizzleClinicalConditionRepository(appDb, "legacy-clinic");
+    const assessmentRepo = new DrizzleConditionAssessmentRepository(appDb, "legacy-clinic");
 
     const condition = ClinicalCondition.create({
       patientId: patient.id,
@@ -133,8 +133,8 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
   });
 
   it("Dado insumo com movimentações, Quando salvar e buscar, Então estoque e histórico corretos", async () => {
-    const supplyRepo = new DrizzleSupplyRepository(appDb);
-    const movementRepo = new DrizzleStockMovementRepository(appDb);
+    const supplyRepo = new DrizzleSupplyRepository(appDb, "legacy-clinic");
+    const movementRepo = new DrizzleStockMovementRepository(appDb, "legacy-clinic");
 
     const supply = Supply.create({ name: "Bolsa 60mm", unit: "un", minQty: 10, priceCents: 3500 });
     const stocked = supply.registerEntry(50);
@@ -151,7 +151,7 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
   });
 
   it("Dado ajuste condicional de estoque, Quando o saldo permite, Então aplica; senão retorna null (CONS2-05..08)", async () => {
-    const supplyRepo = new DrizzleSupplyRepository(appDb);
+    const supplyRepo = new DrizzleSupplyRepository(appDb, "legacy-clinic");
     const supply = Supply.create({ name: "Gaze atômica", unit: "un", minQty: 1, priceCents: 100 });
     await supplyRepo.save(supply.registerEntry(10));
 
@@ -170,8 +170,8 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
   });
 
   it("Dado parceiro salvo e paciente indicado, Quando buscar, Então roundtrip e escopo por indicação", async () => {
-    const partnerRepo = new DrizzlePartnerRepository(appDb);
-    const patientRepo = new PatientRepo(appDb);
+    const partnerRepo = new DrizzlePartnerRepository(appDb, "legacy-clinic");
+    const patientRepo = new PatientRepo(appDb, "legacy-clinic");
     const partner = Partner.create({
       fullName: "Dr. Carlos Andrade",
       email: "carlos@x.com",
@@ -219,7 +219,7 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
   });
 
   it("Dado retornos, Quando filtrar por status e vencimento, Então subconjuntos corretos", async () => {
-    const repo = new DrizzleFollowUpRepository(appDb);
+    const repo = new DrizzleFollowUpRepository(appDb, "legacy-clinic");
     const pending = FollowUp.create({
       patientId: patient.id,
       dueDate: new Date("2026-07-01T12:00:00Z"),
@@ -239,7 +239,7 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
   });
 
   it("Dado condições de vários pacientes, Quando buscar em lote, Então filtra e trata lista vazia", async () => {
-    const conditionRepo = new DrizzleClinicalConditionRepository(appDb);
+    const conditionRepo = new DrizzleClinicalConditionRepository(appDb, "legacy-clinic");
     const condition = ClinicalCondition.create({
       patientId: patient.id,
       kind: "wound",
@@ -261,8 +261,8 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
   });
 
   it("Dado fotos de condição, Quando salvar, triar e buscar, Então fluxo completo preservado", async () => {
-    const conditionRepo = new DrizzleClinicalConditionRepository(appDb);
-    const photoRepo = new DrizzleConditionPhotoRepository(appDb);
+    const conditionRepo = new DrizzleClinicalConditionRepository(appDb, "legacy-clinic");
+    const photoRepo = new DrizzleConditionPhotoRepository(appDb, "legacy-clinic");
     const condition = ClinicalCondition.create({
       patientId: patient.id,
       kind: "wound",
@@ -308,7 +308,7 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
   });
 
   it("Dado aceites de termo, Quando salvar e listar, Então retorna em ordem cronológica reversa", async () => {
-    const repo = new DrizzleConsentRecordRepository(appDb);
+    const repo = new DrizzleConsentRecordRepository(appDb, "legacy-clinic");
     const first = ConsentRecord.create({
       patientId: patient.id,
       consentText: "Termo v1",
@@ -329,8 +329,8 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
   });
 
   it("Dado lotes de insumo, Quando salvar e consultar, Então filtra ativos e a vencer", async () => {
-    const supplyRepo = new DrizzleSupplyRepository(appDb);
-    const batchRepo = new DrizzleSupplyBatchRepository(appDb);
+    const supplyRepo = new DrizzleSupplyRepository(appDb, "legacy-clinic");
+    const batchRepo = new DrizzleSupplyBatchRepository(appDb, "legacy-clinic");
     const supply = Supply.create({ name: "Bolsa 45mm", unit: "un", minQty: 5, priceCents: 2500 });
     await supplyRepo.save(supply);
 
@@ -360,8 +360,8 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
   });
 
   it("Dado movimentações de estoque, Quando consultar por consulta e agregados no período, Então retorna esperado", async () => {
-    const supplyRepo = new DrizzleSupplyRepository(appDb);
-    const movementRepo = new DrizzleStockMovementRepository(appDb);
+    const supplyRepo = new DrizzleSupplyRepository(appDb, "legacy-clinic");
+    const movementRepo = new DrizzleStockMovementRepository(appDb, "legacy-clinic");
     const supply = Supply.create({ name: "Gaze estéril", unit: "un", minQty: 5, priceCents: 500 });
     await supplyRepo.save(supply.registerEntry(100));
 

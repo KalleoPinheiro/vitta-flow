@@ -12,15 +12,26 @@ import {
   type ProcedureKitItem,
   type ProcedureKitRepository,
 } from "@/domain/catalog/procedure-kit";
+import { newId } from "@/domain/shared/id";
 import { MAX_ROWS, type AppDb } from "./db";
 import { procedureSupplies, procedures, scheduleSettings, userAccounts } from "./schema";
+import { withTenant } from "./tenant-scope";
 
 export class DrizzleProcedureRepository implements ProcedureRepository {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   async save(procedure: Procedure): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error(
+        "Papel de sistema não pode salvar procedimento (somente leitura cross-empresa)",
+      );
+    }
     const values = {
       id: procedure.id,
+      clinicId: this.clinicId,
       name: procedure.name,
       priceCents: procedure.priceCents,
       durationMinutes: procedure.durationMinutes,
@@ -34,7 +45,11 @@ export class DrizzleProcedureRepository implements ProcedureRepository {
   }
 
   async findById(id: string): Promise<Procedure | null> {
-    const rows = await this.db.select().from(procedures).where(eq(procedures.id, id)).limit(1);
+    const rows = await this.db
+      .select()
+      .from(procedures)
+      .where(withTenant(procedures, this.clinicId, eq(procedures.id, id)))
+      .limit(1);
     return rows[0] ? Procedure.restore(rows[0]) : null;
   }
 
@@ -42,7 +57,13 @@ export class DrizzleProcedureRepository implements ProcedureRepository {
     const rows = await this.db
       .select()
       .from(procedures)
-      .where(sql`lower(${procedures.name}) = lower(${name.trim()})`)
+      .where(
+        withTenant(
+          procedures,
+          this.clinicId,
+          sql`lower(${procedures.name}) = lower(${name.trim()})`,
+        ),
+      )
       .limit(1);
     return rows[0] ? Procedure.restore(rows[0]) : null;
   }
@@ -51,6 +72,7 @@ export class DrizzleProcedureRepository implements ProcedureRepository {
     const rows = await this.db
       .select()
       .from(procedures)
+      .where(withTenant(procedures, this.clinicId))
       .orderBy(asc(procedures.name))
       .limit(MAX_ROWS);
     return rows.map((row) => Procedure.restore(row));
@@ -58,11 +80,20 @@ export class DrizzleProcedureRepository implements ProcedureRepository {
 }
 
 export class DrizzleUserAccountRepository implements UserAccountRepository {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   async save(account: UserAccount): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error(
+        "Papel de sistema não pode salvar conta de usuário (somente leitura cross-empresa)",
+      );
+    }
     const values = {
       id: account.id,
+      clinicId: this.clinicId,
       email: account.email,
       passwordHash: account.passwordHash,
       professionalId: account.professionalId,
@@ -79,7 +110,9 @@ export class DrizzleUserAccountRepository implements UserAccountRepository {
     const rows = await this.db
       .select()
       .from(userAccounts)
-      .where(eq(userAccounts.email, email.trim().toLowerCase()))
+      .where(
+        withTenant(userAccounts, this.clinicId, eq(userAccounts.email, email.trim().toLowerCase())),
+      )
       .limit(1);
     return rows[0] ? UserAccount.restore(rows[0]) : null;
   }
@@ -88,22 +121,27 @@ export class DrizzleUserAccountRepository implements UserAccountRepository {
     const rows = await this.db
       .select()
       .from(userAccounts)
+      .where(withTenant(userAccounts, this.clinicId))
       .orderBy(asc(userAccounts.email))
       .limit(MAX_ROWS);
     return rows.map((row) => UserAccount.restore(row));
   }
 }
 
-const SETTINGS_ROW_ID = "default";
-
 export class DrizzleScheduleConfigRepository implements ScheduleConfigRepository {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   async get(): Promise<ScheduleConfig | null> {
+    if (this.clinicId === null) {
+      return null;
+    }
     const rows = await this.db
       .select()
       .from(scheduleSettings)
-      .where(eq(scheduleSettings.id, SETTINGS_ROW_ID))
+      .where(eq(scheduleSettings.clinicId, this.clinicId))
       .limit(1);
     if (!rows[0]) {
       return null;
@@ -122,9 +160,15 @@ export class DrizzleScheduleConfigRepository implements ScheduleConfigRepository
   }
 
   async save(config: ScheduleConfig): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error(
+        "Papel de sistema não pode salvar configuração de horário (somente leitura cross-empresa)",
+      );
+    }
     const validated = validateScheduleConfig(config);
     const values = {
-      id: SETTINGS_ROW_ID,
+      id: newId(),
+      clinicId: this.clinicId,
       weekdays: JSON.stringify(validated.weekdays),
       startHour: validated.startHour,
       endHour: validated.endHour,
@@ -134,7 +178,16 @@ export class DrizzleScheduleConfigRepository implements ScheduleConfigRepository
     await this.db
       .insert(scheduleSettings)
       .values(values)
-      .onConflictDoUpdate({ target: scheduleSettings.id, set: values });
+      .onConflictDoUpdate({
+        target: scheduleSettings.clinicId,
+        set: {
+          weekdays: values.weekdays,
+          startHour: values.startHour,
+          endHour: values.endHour,
+          minGapMinutes: values.minGapMinutes,
+          updatedAt: values.updatedAt,
+        },
+      });
   }
 }
 

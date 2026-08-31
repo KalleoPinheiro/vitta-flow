@@ -24,7 +24,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { procedureKits } = await getRepositories();
+    const { procedureKits } = await getRepositories({ clinicId: null });
     return { items: await procedureKits.getKit(id) };
   });
 }
@@ -36,7 +36,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = kitSchema.parse(await request.json());
-    const { procedureKits, procedures } = await getRepositories();
+    const { procedureKits, procedures } = await getRepositories({ clinicId: null });
 
     const procedure = await procedures.findById(id);
     if (!procedure) {

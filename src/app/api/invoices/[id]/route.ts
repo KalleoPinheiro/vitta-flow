@@ -7,6 +7,7 @@ import { PAYMENT_METHODS } from "@/domain/billing/invoice";
 import { handleRequest } from "@/lib/api-response";
 import { toInvoiceDto } from "@/lib/dto";
 import { requireStaffSession } from "@/lib/auth/require-session";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 const actionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("pay"), method: z.enum(PAYMENT_METHODS) }),
@@ -22,7 +23,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = actionSchema.parse(await request.json());
-    const { invoices } = await getRepositories();
+    const { invoices } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+    });
 
     if (body.action === "pay") {
       return toInvoiceDto(await new PayInvoice(invoices).execute({ id, method: body.method }));

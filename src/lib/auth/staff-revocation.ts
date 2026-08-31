@@ -16,14 +16,22 @@ interface CacheEntry {
 
 const cache = new Map<string, CacheEntry>();
 
-export type AccountStatusLookup = (email: string) => Promise<{ isActive: boolean } | null>;
+export type AccountStatusLookup = (
+  email: string,
+  clinicId: string | null,
+) => Promise<{ isActive: boolean } | null>;
 
-async function lookupAccountStatus(email: string): Promise<{ isActive: boolean } | null> {
+async function lookupAccountStatus(
+  email: string,
+  clinicId: string | null,
+): Promise<{ isActive: boolean } | null> {
   const [{ getDb }, { DrizzleUserAccountRepository }] = await Promise.all([
     import("@/infrastructure/persistence/drizzle/db"),
     import("@/infrastructure/persistence/drizzle/drizzle-foundation-repositories"),
   ]);
-  const account = await new DrizzleUserAccountRepository(await getDb()).findByEmail(email);
+  const account = await new DrizzleUserAccountRepository(await getDb(), clinicId).findByEmail(
+    email,
+  );
   return account ? { isActive: account.isActive } : null;
 }
 
@@ -42,7 +50,7 @@ export async function isStaffSessionRevoked(
   }
 
   try {
-    const account = await lookup(session.subject);
+    const account = await lookup(session.subject, session.clinicId);
     const revoked = account !== null && !account.isActive;
     cache.set(session.subject, { revoked, expiresAtMs: nowMs + REVOCATION_CACHE_TTL_MS });
     return revoked;

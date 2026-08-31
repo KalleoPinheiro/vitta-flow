@@ -1,4 +1,5 @@
 import { getDb } from "./persistence/drizzle/db";
+import { DrizzleClinicRepository } from "./persistence/drizzle/drizzle-clinic-repository";
 import { DrizzlePatientRepository } from "./persistence/drizzle/drizzle-patient-repository";
 import { DrizzleAppointmentRepository } from "./persistence/drizzle/drizzle-appointment-repository";
 import { DrizzleInvoiceRepository } from "./persistence/drizzle/drizzle-invoice-repository";
@@ -39,6 +40,7 @@ import { DrizzleGoogleAccountRepository } from "./persistence/drizzle/drizzle-go
 import { DrizzlePartnerRepository } from "./persistence/drizzle/drizzle-partner-repository";
 import { DrizzleAuditEventRepository } from "./persistence/drizzle/drizzle-audit-event-repository";
 import { LocalPhotoStorage } from "./storage/local-photo-storage";
+import { LEGACY_CLINIC_ID } from "./persistence/drizzle/legacy-clinic";
 import { DrizzleReminderLogRepository } from "./persistence/drizzle/drizzle-reminder-log-repository";
 import {
   MetaWhatsAppGateway,
@@ -72,6 +74,7 @@ import { googleOAuthConfigFromEnv } from "@/lib/auth/google-oauth";
 import { getAuthConfig } from "@/lib/auth/session";
 import { decryptSecret } from "@/lib/auth/crypto";
 import type { AppDb } from "./persistence/drizzle/db";
+import type { ClinicRepository } from "@/domain/clinic/clinic-repository";
 import type { PatientRepository } from "@/domain/patient/patient-repository";
 import type { AppointmentRepository } from "@/domain/scheduling/appointment-repository";
 import type { InvoiceRepository } from "@/domain/billing/invoice-repository";
@@ -106,6 +109,7 @@ import {
 } from "@/application/ports/calendar-gateway";
 
 export interface Services {
+  clinics: ClinicRepository;
   patients: PatientRepository;
   partners: PartnerRepository;
   professionals: ProfessionalRepository;
@@ -202,46 +206,51 @@ function buildMessagingGateway(): MessagingGateway {
   return config ? new MetaWhatsAppGateway(config) : new NullMessagingGateway();
 }
 
-export async function getRepositories(): Promise<Services> {
+export interface TenantContext {
+  clinicId: string | null;
+}
+
+export async function getRepositories(tenant: TenantContext): Promise<Services> {
   const db = await getDb();
   const calendar = await buildCalendarGateway(db);
   return {
-    patients: new DrizzlePatientRepository(db),
-    partners: new DrizzlePartnerRepository(db),
-    professionals: new DrizzleProfessionalRepository(db),
-    procedures: new DrizzleProcedureRepository(db),
+    clinics: new DrizzleClinicRepository(db),
+    patients: new DrizzlePatientRepository(db, tenant.clinicId),
+    partners: new DrizzlePartnerRepository(db, tenant.clinicId),
+    professionals: new DrizzleProfessionalRepository(db, tenant.clinicId),
+    procedures: new DrizzleProcedureRepository(db, tenant.clinicId),
     procedureKits: new DrizzleProcedureKitRepository(db),
-    sessionPackages: new DrizzleSessionPackageRepository(db),
-    userAccounts: new DrizzleUserAccountRepository(db),
-    scheduleConfig: new DrizzleScheduleConfigRepository(db),
+    sessionPackages: new DrizzleSessionPackageRepository(db, tenant.clinicId),
+    userAccounts: new DrizzleUserAccountRepository(db, tenant.clinicId),
+    scheduleConfig: new DrizzleScheduleConfigRepository(db, tenant.clinicId),
     googleAccounts: new DrizzleGoogleAccountRepository(db),
-    appointments: new DrizzleAppointmentRepository(db),
-    invoices: new DrizzleInvoiceRepository(db),
-    anamneses: new DrizzleAnamnesisRepository(db),
-    evolutions: new DrizzleEvolutionNoteRepository(db),
-    conditions: new DrizzleClinicalConditionRepository(db),
-    assessments: new DrizzleConditionAssessmentRepository(db),
-    conditionPhotos: new DrizzleConditionPhotoRepository(db),
-    consentRecords: new DrizzleConsentRecordRepository(db),
+    appointments: new DrizzleAppointmentRepository(db, tenant.clinicId),
+    invoices: new DrizzleInvoiceRepository(db, tenant.clinicId),
+    anamneses: new DrizzleAnamnesisRepository(db, tenant.clinicId),
+    evolutions: new DrizzleEvolutionNoteRepository(db, tenant.clinicId),
+    conditions: new DrizzleClinicalConditionRepository(db, tenant.clinicId),
+    assessments: new DrizzleConditionAssessmentRepository(db, tenant.clinicId),
+    conditionPhotos: new DrizzleConditionPhotoRepository(db, tenant.clinicId),
+    consentRecords: new DrizzleConsentRecordRepository(db, tenant.clinicId),
     nursingDiagnoses: new DrizzleNursingDiagnosisRepository(db),
     nursingOutcomes: new DrizzleNursingOutcomeRepository(db),
     nursingInterventions: new DrizzleNursingInterventionRepository(db),
     taxonomyLinkages: new DrizzleTaxonomyLinkageRepository(db),
-    carePlans: new DrizzleCarePlanRepository(db),
-    carePlanDiagnoses: new DrizzleCarePlanDiagnosisRepository(db),
-    carePlanOutcomes: new DrizzleCarePlanOutcomeRepository(db),
-    carePlanInterventions: new DrizzleCarePlanInterventionRepository(db),
-    outcomeEvaluations: new DrizzleOutcomeEvaluationRepository(db),
-    interventionRecords: new DrizzleInterventionRecordRepository(db),
-    photoStorage: new LocalPhotoStorage(),
-    supplies: new DrizzleSupplyRepository(db),
-    stockMovements: new DrizzleStockMovementRepository(db),
-    supplyBatches: new DrizzleSupplyBatchRepository(db),
-    followUps: new DrizzleFollowUpRepository(db),
+    carePlans: new DrizzleCarePlanRepository(db, tenant.clinicId),
+    carePlanDiagnoses: new DrizzleCarePlanDiagnosisRepository(db, tenant.clinicId),
+    carePlanOutcomes: new DrizzleCarePlanOutcomeRepository(db, tenant.clinicId),
+    carePlanInterventions: new DrizzleCarePlanInterventionRepository(db, tenant.clinicId),
+    outcomeEvaluations: new DrizzleOutcomeEvaluationRepository(db, tenant.clinicId),
+    interventionRecords: new DrizzleInterventionRecordRepository(db, tenant.clinicId),
+    photoStorage: new LocalPhotoStorage(undefined, tenant.clinicId ?? LEGACY_CLINIC_ID),
+    supplies: new DrizzleSupplyRepository(db, tenant.clinicId),
+    stockMovements: new DrizzleStockMovementRepository(db, tenant.clinicId),
+    supplyBatches: new DrizzleSupplyBatchRepository(db, tenant.clinicId),
+    followUps: new DrizzleFollowUpRepository(db, tenant.clinicId),
     auditEvents: new DrizzleAuditEventRepository(db),
-    reminderLog: new DrizzleReminderLogRepository(db),
+    reminderLog: new DrizzleReminderLogRepository(db, tenant.clinicId),
     calendar,
     messaging: buildMessagingGateway(),
-    transactions: new DrizzleTransactionManager(db),
+    transactions: new DrizzleTransactionManager(db, tenant.clinicId),
   };
 }

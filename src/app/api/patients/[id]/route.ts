@@ -7,6 +7,8 @@ import { SetPatientActive } from "@/application/patients/set-patient-active";
 import { handleRequest } from "@/lib/api-response";
 import { toPatientDto } from "@/lib/dto";
 import { requireStaffSession } from "@/lib/auth/require-session";
+import { recordAudit } from "@/lib/audit";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 const updatePatientSchema = z.object({
   fullName: z.string().min(1).max(200).optional(),
@@ -29,8 +31,19 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { patients } = await getRepositories();
-    return toPatientDto(await new GetPatient(patients).execute({ id }));
+    const { patients, auditEvents } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? null,
+    });
+    const patient = await new GetPatient(patients).execute({ id });
+    const clinicId = await patients.findClinicIdById(patient.id);
+    recordAudit(auditEvents, guard.session, {
+      action: "read",
+      resourceType: "patient",
+      resourceId: patient.id,
+      patientId: patient.id,
+      clinicId,
+    });
+    return toPatientDto(patient);
   });
 }
 
@@ -41,7 +54,9 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = updatePatientSchema.parse(await request.json());
-    const { patients, partners } = await getRepositories();
+    const { patients, partners } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+    });
     const patient = await new UpdatePatient(patients, partners).execute({
       id,
       fullName: body.fullName,
@@ -63,7 +78,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = setActiveSchema.parse(await request.json());
-    const { patients } = await getRepositories();
+    const { patients } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+    });
     const patient = await new SetPatientActive(patients).execute({ id, active: body.active });
     return toPatientDto(patient);
   });

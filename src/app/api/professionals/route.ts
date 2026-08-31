@@ -5,6 +5,7 @@ import { Professional } from "@/domain/professional/professional";
 import { handleRequest } from "@/lib/api-response";
 import { toProfessionalDto } from "@/lib/dto";
 import { requireStaffSession } from "@/lib/auth/require-session";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 const professionalSchema = z.object({
   fullName: z.string().min(1).max(200),
@@ -16,7 +17,9 @@ export async function GET(request: NextRequest) {
   if (!guard.ok) return guard.response;
 
   return handleRequest(async () => {
-    const { professionals } = await getRepositories();
+    const { professionals } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? null,
+    });
     const result = await professionals.findAll();
     return result.map(toProfessionalDto);
   });
@@ -28,7 +31,9 @@ export async function POST(request: NextRequest) {
 
   return handleRequest(async () => {
     const body = professionalSchema.parse(await request.json());
-    const { professionals } = await getRepositories();
+    const { professionals } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+    });
     const professional = Professional.create({
       fullName: body.fullName,
       registry: body.registry ?? null,

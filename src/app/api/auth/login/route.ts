@@ -12,6 +12,7 @@ import { RateLimiter } from "@/lib/auth/rate-limit";
 import { clientIp } from "@/lib/auth/client-ip";
 import { verifyPassword } from "@/lib/auth/password";
 import { getRepositories } from "@/infrastructure/container";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 import { fail } from "@/lib/api-response";
 
 const LOGIN_RATE_LIMIT = new RateLimiter(5, 60_000);
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
   const response = NextResponse.json({ success: true, data: { ok: true }, error: null });
   response.cookies.set(
     SESSION_COOKIE,
-    createSessionToken(auth.secret, expiresAtMs, subject),
+    createSessionToken(auth.secret, expiresAtMs, subject, "admin", LEGACY_CLINIC_ID),
     sessionCookieOptions(),
   );
   return response;
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
 type AuthResult = { subject: string } | { error: string; status: number };
 
 async function authenticateAccount(email: string, password: string): Promise<AuthResult> {
-  const { userAccounts } = await getRepositories();
+  const { userAccounts } = await getRepositories({ clinicId: null });
   const account = await userAccounts.findByEmail(email);
   const isValid =
     account?.isActive === true && (await verifyPassword(password, account.passwordHash));

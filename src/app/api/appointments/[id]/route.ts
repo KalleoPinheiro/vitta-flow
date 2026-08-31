@@ -13,6 +13,7 @@ import { handleRequest } from "@/lib/api-response";
 import { scheduleCalendarSync } from "@/lib/calendar-sync";
 import { toAppointmentDto } from "@/lib/dto";
 import { requireStaffSession } from "@/lib/auth/require-session";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 const actionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.enum(["confirm", "cancel", "no_show"]) }),
@@ -35,7 +36,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { appointments, patients } = await getRepositories();
+    const { appointments, patients } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? null,
+    });
     const appointment = await appointments.findById(id);
     if (!appointment) {
       return null;
@@ -52,7 +55,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = actionSchema.parse(await request.json());
-    const services = await getRepositories();
+    const services = await getRepositories({
+      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+    });
     const { appointments } = services;
 
     if (body.action === "complete") {

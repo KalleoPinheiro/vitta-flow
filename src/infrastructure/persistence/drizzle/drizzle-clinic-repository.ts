@@ -1,0 +1,33 @@
+import { eq } from "drizzle-orm";
+import { Clinic } from "@/domain/clinic/clinic";
+import type { ClinicRepository } from "@/domain/clinic/clinic-repository";
+import type { AppDb } from "./db";
+import { clinics } from "./schema";
+
+type ClinicRow = typeof clinics.$inferSelect;
+
+const toClinic = (row: ClinicRow): Clinic =>
+  Clinic.restore({
+    id: row.id,
+    name: row.name,
+    createdBy: row.createdBy,
+    createdAt: row.createdAt,
+  });
+
+export class DrizzleClinicRepository implements ClinicRepository {
+  constructor(private readonly db: AppDb) {}
+
+  async create(clinic: Clinic): Promise<void> {
+    await this.db.insert(clinics).values({
+      id: clinic.id,
+      name: clinic.name,
+      createdBy: clinic.createdBy,
+      createdAt: clinic.createdAt,
+    });
+  }
+
+  async findById(id: string): Promise<Clinic | null> {
+    const rows = await this.db.select().from(clinics).where(eq(clinics.id, id)).limit(1);
+    return rows[0] ? toClinic(rows[0]) : null;
+  }
+}

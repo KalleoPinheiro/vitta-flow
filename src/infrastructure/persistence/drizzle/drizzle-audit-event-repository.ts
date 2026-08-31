@@ -14,6 +14,7 @@ export class DrizzleAuditEventRepository implements AuditEventRepository {
   async save(event: AuditEvent): Promise<void> {
     await this.db.insert(auditEvents).values({
       id: event.id,
+      clinicId: event.clinicId,
       actorRole: event.actorRole,
       actorId: event.actorId,
       action: event.action,

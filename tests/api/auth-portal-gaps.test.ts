@@ -244,7 +244,7 @@ describe("Feature: Fechamento de branches — auth Google, login e rotas do port
       const { getRepositories } = await import("@/infrastructure/container");
       const { hashPassword } = await import("@/lib/auth/password");
       const { UserAccount } = await import("@/domain/auth/user-account");
-      const { userAccounts } = await getRepositories();
+      const { userAccounts } = await getRepositories({ clinicId: "legacy-clinic" });
       const account = UserAccount.create({
         email: "inativo.gaps@clinica.com",
         passwordHash: await hashPassword("senha-individual"),
@@ -408,7 +408,7 @@ describe("Feature: Fechamento de branches — auth Google, login e rotas do port
       // Aceite de uma versão anterior do termo: hash não cobre o CONSENT_TEXT vigente.
       const { getRepositories } = await import("@/infrastructure/container");
       const { ConsentRecord } = await import("@/domain/consent/consent-record");
-      const repos = await getRepositories();
+      const repos = await getRepositories({ clinicId: "legacy-clinic" });
       await repos.consentRecords.save(
         ConsentRecord.create({
           patientId: consentPatientId,

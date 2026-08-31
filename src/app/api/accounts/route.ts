@@ -7,6 +7,7 @@ import { hashPassword } from "@/lib/auth/password";
 import { handleRequest } from "@/lib/api-response";
 import { toUserAccountDto } from "@/lib/dto";
 import { requireStaffSession } from "@/lib/auth/require-session";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -21,7 +22,9 @@ export async function GET(request: NextRequest) {
   if (!guard.ok) return guard.response;
 
   return handleRequest(async () => {
-    const { userAccounts } = await getRepositories();
+    const { userAccounts } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? null,
+    });
     const accounts = await userAccounts.findAll();
     return accounts.map(toUserAccountDto);
   });
@@ -33,7 +36,9 @@ export async function POST(request: NextRequest) {
 
   return handleRequest(async () => {
     const body = createSchema.parse(await request.json());
-    const { userAccounts, professionals } = await getRepositories();
+    const { userAccounts, professionals } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+    });
 
     const existing = await userAccounts.findByEmail(body.email);
     if (existing) {

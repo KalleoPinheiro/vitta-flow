@@ -69,5 +69,32 @@ describe("Feature: Storage local de fotos (disco)", () => {
     it("Dado id válido (letras, números, underscore e hífen), Quando write, Então não lança", async () => {
       await expect(storage.write("Abc_123-XYZ", new Uint8Array([1]))).resolves.toBeUndefined();
     });
+
+    it("Dado clinicId com caracteres fora do padrão, Quando construir, Então lança erro", () => {
+      expect(() => new LocalPhotoStorage(tmpDir, "../escape")).toThrow(
+        "Identificador de clínica inválido",
+      );
+    });
+  });
+
+  describe("Cenário: namespace por empresa (MT-21)", () => {
+    it("Dado o mesmo id gravado na empresa A, Quando a empresa B lê o mesmo id, Então retorna null (caminhos em disco distintos)", async () => {
+      const storageA = new LocalPhotoStorage(tmpDir, "clinic-a");
+      const storageB = new LocalPhotoStorage(tmpDir, "clinic-b");
+
+      await storageA.write("foto-compartilhada", new Uint8Array([1, 2, 3]));
+
+      expect(await storageB.read("foto-compartilhada")).toBeNull();
+      expect(await storageA.read("foto-compartilhada")).not.toBeNull();
+    });
+
+    it("Dado clinicId omitido, Quando construir, Então usa a clínica legada como default", async () => {
+      const legacyStorage = new LocalPhotoStorage(tmpDir);
+      const explicitStorage = new LocalPhotoStorage(tmpDir, "legacy-clinic");
+
+      await legacyStorage.write("foto-legado", new Uint8Array([9]));
+
+      expect(await explicitStorage.read("foto-legado")).not.toBeNull();
+    });
   });
 });

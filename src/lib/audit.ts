@@ -2,6 +2,7 @@ import { after } from "next/server";
 import { AuditEvent, type AuditAction } from "@/domain/audit/audit-event";
 import type { AuditEventRepository } from "@/domain/audit/audit-event-repository";
 import type { Session } from "@/lib/auth/session";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 export interface AuditInput {
   action: AuditAction;
@@ -9,6 +10,12 @@ export interface AuditInput {
   resourceId: string;
   patientId?: string | null;
   detail?: string | null;
+  /**
+   * Empresa do evento. Só precisa ser passado explicitamente em acesso
+   * cross-empresa do papel de sistema (`session.clinicId === null`) — nos
+   * demais casos resolve sozinho a partir de `session.clinicId`.
+   */
+  clinicId?: string | null;
 }
 
 /**
@@ -50,6 +57,7 @@ async function persistAuditEvent(
 ): Promise<void> {
   await auditEvents.save(
     AuditEvent.create({
+      clinicId: input.clinicId ?? session?.clinicId ?? LEGACY_CLINIC_ID,
       actorRole: session?.role ?? "anonymous",
       actorId: session?.subject ?? "anonymous",
       action: input.action,

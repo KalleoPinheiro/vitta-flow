@@ -5,13 +5,23 @@ import {
 } from "@/domain/billing/package";
 import type { AppDb } from "./db";
 import { packageConsumptions, sessionPackages } from "./schema";
+import { withTenant } from "./tenant-scope";
 
 export class DrizzleSessionPackageRepository implements SessionPackageRepository {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   async save(pkg: SessionPackage): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error(
+        "Papel de sistema não pode salvar pacote de sessões (somente leitura cross-empresa)",
+      );
+    }
     const values = {
       id: pkg.id,
+      clinicId: this.clinicId,
       patientId: pkg.patientId,
       procedureId: pkg.procedureId,
       totalSessions: pkg.totalSessions,
@@ -31,7 +41,7 @@ export class DrizzleSessionPackageRepository implements SessionPackageRepository
     const rows = await this.db
       .select()
       .from(sessionPackages)
-      .where(eq(sessionPackages.id, id))
+      .where(withTenant(sessionPackages, this.clinicId, eq(sessionPackages.id, id)))
       .limit(1);
     return rows[0] ? SessionPackage.restore(rows[0]) : null;
   }
@@ -40,7 +50,7 @@ export class DrizzleSessionPackageRepository implements SessionPackageRepository
     const rows = await this.db
       .select()
       .from(sessionPackages)
-      .where(eq(sessionPackages.patientId, patientId))
+      .where(withTenant(sessionPackages, this.clinicId, eq(sessionPackages.patientId, patientId)))
       .orderBy(desc(sessionPackages.createdAt));
     return rows.map((row) => SessionPackage.restore(row));
   }
@@ -54,16 +64,20 @@ export class DrizzleSessionPackageRepository implements SessionPackageRepository
       .select()
       .from(sessionPackages)
       .where(
-        and(
-          eq(sessionPackages.patientId, patientId),
-          eq(sessionPackages.procedureId, procedureId),
-          eq(sessionPackages.active, true),
-          gt(
-            sql`${sessionPackages.totalSessions} - ${sessionPackages.usedSessions}`,
-            0,
+        withTenant(
+          sessionPackages,
+          this.clinicId,
+          and(
+            eq(sessionPackages.patientId, patientId),
+            eq(sessionPackages.procedureId, procedureId),
+            eq(sessionPackages.active, true),
+            gt(
+              sql`${sessionPackages.totalSessions} - ${sessionPackages.usedSessions}`,
+              0,
+            ),
+            // Validade (COMP3-08): expirado não consome; null = sem validade.
+            or(isNull(sessionPackages.expiresAt), gt(sessionPackages.expiresAt, now)),
           ),
-          // Validade (COMP3-08): expirado não consome; null = sem validade.
-          or(isNull(sessionPackages.expiresAt), gt(sessionPackages.expiresAt, now)),
         ),
       )
       .orderBy(asc(sessionPackages.createdAt))
@@ -72,9 +86,14 @@ export class DrizzleSessionPackageRepository implements SessionPackageRepository
   }
 
   async recordConsumption(packageId: string, appointmentId: string): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error(
+        "Papel de sistema não pode registrar consumo de pacote (somente leitura cross-empresa)",
+      );
+    }
     await this.db
       .insert(packageConsumptions)
-      .values({ packageId, appointmentId, createdAt: new Date() })
+      .values({ packageId, appointmentId, clinicId: this.clinicId, createdAt: new Date() })
       .onConflictDoNothing();
   }
 
@@ -82,7 +101,9 @@ export class DrizzleSessionPackageRepository implements SessionPackageRepository
     const rows = await this.db
       .select({ packageId: packageConsumptions.packageId })
       .from(packageConsumptions)
-      .where(eq(packageConsumptions.appointmentId, appointmentId))
+      .where(
+        withTenant(packageConsumptions, this.clinicId, eq(packageConsumptions.appointmentId, appointmentId)),
+      )
       .limit(1);
     return rows.length > 0;
   }

@@ -9,6 +9,7 @@ import type {
 import { Money } from "@/domain/shared/money";
 import { MAX_ROWS, type AppDb } from "./db";
 import { invoices } from "./schema";
+import { withTenant } from "./tenant-scope";
 
 type InvoiceRow = typeof invoices.$inferSelect;
 
@@ -27,11 +28,18 @@ const toInvoice = (row: InvoiceRow): Invoice =>
   });
 
 export class DrizzleInvoiceRepository implements InvoiceRepository {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   async save(invoice: Invoice): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error("Papel de sistema não pode salvar fatura (somente leitura cross-empresa)");
+    }
     const values = {
       id: invoice.id,
+      clinicId: this.clinicId,
       patientId: invoice.patientId,
       appointmentId: invoice.appointmentId,
       description: invoice.description,
@@ -49,7 +57,11 @@ export class DrizzleInvoiceRepository implements InvoiceRepository {
   }
 
   async findById(id: string): Promise<Invoice | null> {
-    const rows = await this.db.select().from(invoices).where(eq(invoices.id, id)).limit(1);
+    const rows = await this.db
+      .select()
+      .from(invoices)
+      .where(withTenant(invoices, this.clinicId, eq(invoices.id, id)))
+      .limit(1);
     return rows[0] ? toInvoice(rows[0]) : null;
   }
 
@@ -57,7 +69,7 @@ export class DrizzleInvoiceRepository implements InvoiceRepository {
     const rows = await this.db
       .select()
       .from(invoices)
-      .where(eq(invoices.appointmentId, appointmentId))
+      .where(withTenant(invoices, this.clinicId, eq(invoices.appointmentId, appointmentId)))
       .limit(1);
     return rows[0] ? toInvoice(rows[0]) : null;
   }
@@ -68,7 +80,7 @@ export class DrizzleInvoiceRepository implements InvoiceRepository {
     if (filter.patientId) conditions.push(eq(invoices.patientId, filter.patientId));
     if (filter.from) conditions.push(gte(invoices.issuedAt, filter.from));
     if (filter.to) conditions.push(lt(invoices.issuedAt, filter.to));
-    return conditions.length > 0 ? and(...conditions) : undefined;
+    return withTenant(invoices, this.clinicId, conditions.length > 0 ? and(...conditions) : undefined);
   }
 
   async findAll(filter: InvoiceFilter = {}, page: InvoicePage = {}): Promise<Invoice[]> {

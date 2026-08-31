@@ -29,11 +29,11 @@ describe("Feature: Persistência PostgreSQL — auditoria, pacotes, equipe e int
   let procedure: Procedure;
 
   const auditRepo = () => new DrizzleAuditEventRepository(appDb);
-  const packageRepo = () => new DrizzleSessionPackageRepository(appDb);
-  const professionalRepo = () => new DrizzleProfessionalRepository(appDb);
-  const reminderLogRepo = () => new DrizzleReminderLogRepository(appDb);
+  const packageRepo = () => new DrizzleSessionPackageRepository(appDb, "legacy-clinic");
+  const professionalRepo = () => new DrizzleProfessionalRepository(appDb, "legacy-clinic");
+  const reminderLogRepo = () => new DrizzleReminderLogRepository(appDb, "legacy-clinic");
   const googleAccountRepo = () => new DrizzleGoogleAccountRepository(appDb);
-  const partnerRepo = () => new DrizzlePartnerRepository(appDb);
+  const partnerRepo = () => new DrizzlePartnerRepository(appDb, "legacy-clinic");
 
   beforeAll(async () => {
     const client = new PGlite({ extensions: { pg_trgm, btree_gist } });
@@ -58,21 +58,22 @@ describe("Feature: Persistência PostgreSQL — auditoria, pacotes, equipe e int
       email: "maria@example.com",
       phone: "11999990000",
     });
-    await new DrizzlePatientRepository(appDb).save(patient);
+    await new DrizzlePatientRepository(appDb, "legacy-clinic").save(patient);
 
     procedure = Procedure.create({
       name: "Consulta de enfermagem",
       priceCents: 15000,
       durationMinutes: 40,
     });
-    await new DrizzleProcedureRepository(appDb).save(procedure);
+    await new DrizzleProcedureRepository(appDb, "legacy-clinic").save(procedure);
   });
 
   describe("Cenário: eventos de auditoria (append-only)", () => {
     it("Dado evento salvo, Quando buscar, Então campos preservados", async () => {
       const repo = auditRepo();
       const event = AuditEvent.create({
-        actorRole: "admin",
+        clinicId: "legacy-clinic",
+          actorRole: "admin",
         actorId: "staff",
         action: "read",
         resourceType: "anamnesis",
@@ -96,6 +97,7 @@ describe("Feature: Persistência PostgreSQL — auditoria, pacotes, equipe e int
       const repo = auditRepo();
       await repo.save(
         AuditEvent.create({
+          clinicId: "legacy-clinic",
           actorRole: "admin",
           actorId: "staff",
           action: "read",
@@ -106,6 +108,7 @@ describe("Feature: Persistência PostgreSQL — auditoria, pacotes, equipe e int
       );
       await repo.save(
         AuditEvent.create({
+          clinicId: "legacy-clinic",
           actorRole: "admin",
           actorId: "staff",
           action: "create",
@@ -124,6 +127,7 @@ describe("Feature: Persistência PostgreSQL — auditoria, pacotes, equipe e int
       const repo = auditRepo();
       await repo.save(
         AuditEvent.create({
+          clinicId: "legacy-clinic",
           actorRole: "admin",
           actorId: "staff",
           action: "update",
@@ -146,7 +150,8 @@ describe("Feature: Persistência PostgreSQL — auditoria, pacotes, equipe e int
       for (let i = 0; i < 3; i += 1) {
         await repo.save(
           AuditEvent.create({
-            actorRole: "admin",
+            clinicId: "legacy-clinic",
+          actorRole: "admin",
             actorId: "staff",
             action: "read",
             resourceType: "anamnesis",

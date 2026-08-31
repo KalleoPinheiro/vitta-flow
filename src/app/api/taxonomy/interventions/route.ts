@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
   return handleRequest(async () => {
     const term = request.nextUrl.searchParams.get("q") ?? "";
-    const { nursingInterventions } = await getRepositories();
+    const { nursingInterventions } = await getRepositories({ clinicId: null });
     const result = await new SearchInterventions(nursingInterventions).execute({ term });
     return result.map(toNursingInterventionDto);
   });

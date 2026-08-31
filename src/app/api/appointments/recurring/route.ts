@@ -7,6 +7,7 @@ import { handleRequest } from "@/lib/api-response";
 import { scheduleCalendarSync } from "@/lib/calendar-sync";
 import { toAppointmentDto } from "@/lib/dto";
 import { requireStaffSession } from "@/lib/auth/require-session";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 const recurringSchema = z.object({
   patientId: z.string().min(1),
@@ -27,7 +28,9 @@ export async function POST(request: NextRequest) {
 
   return handleRequest(async () => {
     const body = recurringSchema.parse(await request.json());
-    const services = await getRepositories();
+    const services = await getRepositories({
+      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+    });
 
     const result = await new ScheduleRecurringAppointments(
       new ScheduleAppointment(services.appointments, services.patients, services.scheduleConfig),

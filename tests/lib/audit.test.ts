@@ -53,6 +53,28 @@ describe("Feature: Registro de auditoria best-effort (após a resposta)", () => 
     expect(saved.resourceId).toBe("patient-1");
     expect(saved.patientId).toBe("patient-1");
     expect(saved.detail).toBe("visualizou anamnese");
+    expect(saved.clinicId).toBe("legacy-clinic");
+  });
+
+  it("Dado sessão autenticada de outra clínica, Quando recordAudit sem clinicId explícito, Então grava com a clínica da sessão (MT-29)", async () => {
+    const auditEvents = createRepositoryStub();
+    const session: Session = {
+      expiresAtMs: Date.now() + 60_000,
+      subject: "maria@clinica.com",
+      role: "admin",
+      clinicId: "clinic-b",
+    };
+
+    recordAudit(auditEvents, session, {
+      action: "update",
+      resourceType: "care_plan",
+      resourceId: "plan-1",
+    });
+
+    await afterTasks[0]!();
+
+    const saved = auditEvents.save.mock.calls[0][0];
+    expect(saved.clinicId).toBe("clinic-b");
   });
 
   it("Dado sessão nula, Quando recordAudit, Então registra ator 'anonymous'", async () => {

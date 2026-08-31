@@ -558,9 +558,9 @@ T18 → T19 → T20 → T21 → T22 → T23 → T24
 **Tools**: MCP: NONE. Skill: NONE.
 
 **Done when**:
-- [ ] Varredura documentada: nenhum call site de M3–M6 precisa de override explícito de `clinicId` (todos resolvem via `session.clinicId`)
-- [ ] Teste cobre pelo menos um evento de auditoria "normal" (não cross-empresa, ação dentro da própria empresa) e confirma `clinicId` = `session.clinicId` de quem gerou o evento
-- [ ] `npm run typecheck && npx vitest run tests/domain tests/lib tests/api` limpo
+- [x] Varredura documentada: nenhum call site de M3–M6 precisa de override explícito de `clinicId` (todos resolvem via `session.clinicId`) — 21 dos 22 arquivos que chamam `recordAudit`/`recordAuditNow` não passam `clinicId`; só `patients/[id]/route.ts` (T7, papel de sistema) passa explicitamente
+- [x] Teste cobre pelo menos um evento de auditoria "normal" (não cross-empresa, ação dentro da própria empresa) e confirma `clinicId` = `session.clinicId` de quem gerou o evento
+- [x] `npm run typecheck && npx vitest run tests/domain tests/lib tests/api` limpo
 
 **Tests**: unit + integration
 **Gate**: quick

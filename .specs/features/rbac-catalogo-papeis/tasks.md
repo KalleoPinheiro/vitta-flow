@@ -224,7 +224,7 @@ T8 → T18 → T19
 
 ---
 
-### T7: `route-family.ts` — classificação de rota + matriz papel×família
+### T7: `route-family.ts` — classificação de rota + matriz papel×família ✅ Complete
 
 **What**: Novo módulo `classifyRoute(pathname)` e `isFamilyAllowedForRole(family, role)`, implementando a tabela de famílias do design (`clinical`/`operational`/`administrative`/`shared`).
 **Where**: `src/lib/auth/route-family.ts` (novo)

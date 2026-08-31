@@ -140,27 +140,15 @@
 
 ## Handoff
 
-- **Feature**: still-void-v3.3-adoption — **concluída e verificada**. 26 tasks (T1-T22 + 3 fixes de teste da iteração de fix→re-verify), execução delegada a 5 sub-agentes de fase (Sidebar, Alert, Toast-infra, Toast-A, Toast-B) + 1 fix-round + 3 rodadas de Verifier. PASS na iteração 3 (das 3 permitidas) — iteração 1 achou 4 gaps, iteração 2 fechou 3 e achou 2 residuais do mesmo padrão, iteração 3 fechou os 2 últimos.
-- **Phase / Task**: Execute + Validate completos. Nada em aberto.
-- **Completed**: adota `@still-void/ui@3.3.0` (bump de `^3.2.0`) — os 3 gaps de maior alcance da auditoria de design system (`docs/audits/auditoria-design-system-2026-08.md`): (1) `sidebar-app-shell` — `(staff)/layout.tsx` troca o `<Sidebar>` estático por `SidebarProvider`/`SidebarPanel`/`SidebarTrigger`/`SidebarInset` + `SidebarAutoClose` (componente novo, fecha drawer em navegação); (2) `alert-semantic-variants` — 8 dos 9 pontos manuais (`ErrorAlert`, banner de alergia, estoque baixo/validade em materiais — este splitado em até 2 `Alert`, grade salva, série de consultas, 2 dos 3 banners de consentimento no portal) migram pra `Alert variant=...`; o 9º (título do `Card` de consentimento pendente) fica manual por decisão documentada (`Card` não tem variante na 3.3.0, ver AC P2-8 em `spec.md`); (3) `feedback-toast` — `ToastProvider` montado 1x no root (`src/app/providers.tsx`) cobrindo staff+portal, 32 call sites de escrita ganham `toast()` de sucesso/erro em 13 arquivos, incluindo 3 que precisaram de `try/catch` novo (antes engoliam erro silenciosamente: `resolveFollowUp`, `agenda handleCreate` consulta única, `faturamento handleCreate`).
-- **Achado durante a execução (bug real de teste, não de produto)**: um worker de fase inicial commitou os 2 primeiros commits (T1+T2) direto na `main` do checkout principal (`~/projects/vitta-flow`), não no worktree/branch da feature — causa: o prompt de dispatch não fixava o diretório de trabalho absoluto. Corrigido via cherry-pick pro branch certo + `git reset --hard origin/main` no checkout principal (local-only, não pushado, sem perda). Todos os dispatches seguintes passaram a exigir `cd <path-absoluto> && <comando>` e confirmação de `pwd`/branch antes de cada commit — sem recorrência.
-- **Achado pós-PASS (2 regressões reais, só apareceram rodando a suíte e2e COMPLETA)**: o loop de Verify (3 iterações) só rodou `e2e/sidebar-responsive.spec.ts` isolado — passar nisso não bastou. Rodando `npm run build` + `npm run test:e2e` inteiro antes do push, achei: (1) T11/T12 (Toast em `agenda`/`faturamento handleCreate`) tinham adicionado um `try/catch` que interceptava o erro ANTES dele chegar no `try/catch` que `AppointmentForm`/`InvoiceForm` já tinham (que mostra `ErrorAlert` inline e mantém o modal aberto) — quebrou 2 e2e pré-existentes (`e2e/agenda.spec.ts`: "bloqueia conflito de horário", "grade configurável"). Corrigido removendo o catch redundante, deixando o erro propagar pro form como sempre foi. (2) `SidebarProvider` sem `defaultOpen` usa o default da lib (`true`, pensado pro rail de desktop) — no drawer mobile isso fazia ele abrir sozinho pós-hidratação, sem clique nenhum, violando "fechado por padrão"; só aparecia como flake ~1-em-3 em `--repeat-each`, nunca num único run. Corrigido com `defaultOpen={false}` explícito. Ambos rodados 20×/6× depois do fix, 100% estáveis. Addendum completo em `.specs/features/still-void-v3.3-adoption/validation.md`.
-- **Lições registradas**: `L-023` (toggle binário esquece branch "reativar" ao adicionar toast), `L-024` (não envolver `onSubmit` de form filho em catch novo sem checar se o form já trata o erro), `L-025` (`SidebarProvider.defaultOpen` da lib é `true` por padrão, viés-desktop — sempre passar `defaultOpen={false}` explícito em modo drawer/offcanvas mobile; rodar e2e novo com `--repeat-each>=3` antes de considerar não-flaky) — todas `candidate`.
-- **Gate final** (branch `claude/clinic-app-design-audit-9f51ec`):
-
-  | Comando | Resultado |
-  |---|---|
-  | `npm run typecheck` | 0 erros |
-  | `npm run build` | 0 erros |
-  | `npx vitest run` | 1832/1832 passaram (baseline pré-feature: 1820, +12) |
-  | `npm run test:e2e` (suíte inteira) | verde após os 2 fixes pós-PASS (`agenda.spec.ts` 6/6, `sidebar-responsive.spec.ts` 20/20 em `--repeat-each=5`×2, resto sem regressão) |
-  | `npm run check:sv` | 0 achados nas 13 checagens |
-  | Sensor de discriminação (Verifier, 3 mutações) | 3/3 mortas na iteração final (1 sobreviveu na iteração 1, corrigida) |
-
-- **In-progress** (file:line): —
-- **Next step**: push da branch, abrir PR pra `main` com descrição completa.
-- **Blockers**: none
-- **Branch**: `claude/clinic-app-design-audit-9f51ec` (worktree `clinic-app-design-audit-9f51ec`)
+- **Feature atual**: `fundacao-multi-tenancy` (issue #19 + sub-issues #22-#27, épico de RBAC multi-empresa). Spec/design/tasks em `.specs/features/fundacao-multi-tenancy/`. **Sem worktree/branch dedicado** — execução direto no checkout principal (`~/projects/vitta-flow`), branch `main`.
+- **Phase / Task**: **Batch A completa (T1-T7, Phases 1+2)** — issues #22 e #23 fechadas. Commits: `f9ca946` (T1), `6bdc636` (T2), `7888815` (T3), `2049aff` (T4), `dcc7c72` (T5), `a48707b` (T6), `d9fb56e` (T7). WSL confirmado estável rodando a suíte inteira (`--no-file-parallelism`, ~5.8GB RAM) — sem OOM em nenhuma das ~8 rodadas desta sessão.
+- **Gate completo de Batch A rodado e verde**: `npm run typecheck` (0 erros), `npm run lint` (0 erros nos arquivos tocados — 11 erros pré-existentes em `.claude/skills/mermaid-studio/**` e `tests/pages/staff-*.test.tsx` não relacionados, fora do diff), `npm run test:coverage --no-file-parallelism` (1876/1876 testes, 97.3% statements / 93.3% branches / 96.86% functions / 97.39% lines — acima do piso de 90%), `npm run check:sv` (OK).
+- **Batch B (T8-T16, Phases 3+4, 9 tasks) e Batch C (T17-T24, Phases 5+6, 8 tasks) não iniciados.** Pela regra de delegação da skill (`~/.claude/skills/tlc-spec-driven/references/sub-agents.md`), cada batch >8 tasks exige oferecer sub-agentes ao usuário antes de despachar — ainda não oferecido para B nem C.
+- **Nenhum Verifier de feature rodou ainda** — só roda automaticamente após a ÚLTIMA task do épico (T24) ou de um grupo de prioridade entregue isoladamente; Batch A não é esse ponto, é checkpoint intermediário.
+- **Decisão registrada nesta sessão, ainda não como AD formal**: `findClinicIdById` foi adicionado à interface `PatientRepository` (não estava no design original) — método auxiliar mínimo para o acesso cross-empresa do papel de sistema conseguir auditar com o `clinicId` real do recurso acessado, sem poluir o domínio `Patient` com `clinicId`. `DrizzlePatientRepository.save()` agora lança erro se `clinicId` do construtor for `null` (papel de sistema é somente leitura). Rotas de escrita de Paciente (POST/PUT/PATCH) caem em `LEGACY_CLINIC_ID` quando a sessão ainda não carrega `clinicId` real (modo aberto de dev) — mantém `MT-05` (zero mudança de comportamento de API) para esse caminho.
+- **Next step**: decidir com o usuário se prossegue direto para Batch B (T8-T16) inline ou oferece sub-agentes por batch, conforme a skill manda.
+- **Blockers**: nenhum.
+- **Branch**: `main` (checkout principal, sem worktree).
 
 ### Baseline de segurança medido em `fcd6110`
 

@@ -331,7 +331,7 @@ T8 → T18 → T19
 
 ---
 
-### T12: Auditoria/varredura de auto-cadastro
+### T12: Auditoria/varredura de auto-cadastro ✅ Complete
 
 **What**: Confirmar (com teste, não só leitura manual) que nenhuma rota de criação de conta é acessível sem sessão — inclui checar rotas de patient/partner-portal que hoje podem criar registros relacionados.
 **Where**: `tests/api/route-guard-conformance.test.ts` (extensão), ou novo `tests/api/no-self-registration.test.ts`

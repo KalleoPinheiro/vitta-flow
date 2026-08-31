@@ -203,7 +203,7 @@ T8 → T18 → T19
 
 ---
 
-### T6: Atualizar `tests/support/session.ts` e fixtures para os 6 papéis
+### T6: Atualizar `tests/support/session.ts` e fixtures para os 6 papéis ✅ Complete
 
 **What**: Helpers de teste (`sessionToken`, `cookieHeaderFor`) continuam genéricos por `UserRole`; garantir que nenhum teste existente ainda referencia `"admin"` como papel — migrar para `"super_admin"` ou `"company_admin"` conforme o cenário original pretendia (equipe com acesso total → `company_admin` na maioria dos casos de negócio; cross-clinic → `super_admin`).
 **Where**: `tests/support/session.ts`, todo teste existente que usa `role: "admin"` (grep-wide)

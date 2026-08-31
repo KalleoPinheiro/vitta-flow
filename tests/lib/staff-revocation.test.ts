@@ -9,7 +9,7 @@ import type { Session } from "@/lib/auth/session";
 const adminSession = (subject: string): Session => ({
   expiresAtMs: Date.now() + 60_000,
   subject,
-  role: "admin",
+  role: "company_admin",
   clinicId: "legacy-clinic",
 });
 

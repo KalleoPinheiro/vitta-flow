@@ -9,6 +9,7 @@ import {
 } from "./access-policy";
 import { getRequestSession } from "./request-session";
 import type { Session } from "./session";
+import { isStaffRole } from "./staff-roles";
 
 /**
  * Camada 2 de autorização: guarda executada DENTRO de cada route handler.
@@ -75,7 +76,7 @@ export function requireStaffSession(request: NextRequest): Guard<Session | null>
   // SPEC_DEVIATION: qualquer um dos 4 papéis de equipe passa aqui (paridade
   // com o antigo binário "admin = tudo") até a T8 aplicar a família de rota
   // por papel (RBAC-05/RBAC-06) e a T13 restringir o Atendente (RBAC-15/16).
-  if (session.role === "patient" || session.role === "partner") {
+  if (!isStaffRole(session.role)) {
     return denied(STAFF_ONLY_MESSAGE, 403);
   }
   return { ok: true, session };

@@ -9,7 +9,7 @@ import { PartnerPortalView } from "./partner-view";
 
 interface Me {
   subject: string;
-  role: "admin" | "partner" | "patient";
+  role: "super_admin" | "company_admin" | "atendente" | "profissional" | "partner" | "patient";
 }
 
 export default function PortalPage() {

@@ -60,8 +60,8 @@ describe("Feature: Política de acesso compartilhada entre proxy e rotas", () =>
 
   describe("Cenário: papéis e caminhos compartilhados", () => {
     it("Dado o papel admin, Então acessa qualquer caminho", () => {
-      expect(isAllowedForRole("/api/patients", "admin")).toBe(true);
-      expect(isAllowedForRole("/api/portal/patient", "admin")).toBe(true);
+      expect(isAllowedForRole("/api/patients", "company_admin")).toBe(true);
+      expect(isAllowedForRole("/api/portal/patient", "company_admin")).toBe(true);
     });
 
     it.each(["patient", "partner"] as const)(

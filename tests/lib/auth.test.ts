@@ -47,7 +47,7 @@ describe("Feature: Sessão assinada (HMAC)", () => {
 
     const session = verifySessionToken(SECRET, token);
     expect(session?.subject).toBe("local");
-    expect(session?.role).toBe("admin");
+    expect(session?.role).toBe("company_admin");
   });
 
   it("Dado token com papel patient/partner, Quando verificar, Então papel preservado", () => {
@@ -71,7 +71,7 @@ describe("Feature: Sessão assinada (HMAC)", () => {
       SECRET,
       Date.now() + 60_000,
       "maria@clinica.com",
-      "admin",
+      "company_admin",
       "clinic-a",
     );
 

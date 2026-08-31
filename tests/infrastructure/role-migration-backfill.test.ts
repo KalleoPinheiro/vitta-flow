@@ -23,9 +23,12 @@ describe("Feature: Migração de backfill de role em user_accounts (RBAC-01)", (
     const priorMeta = path.join(priorMigrationsDir, "meta");
     fs.mkdirSync(priorMeta);
     const journal = JSON.parse(fs.readFileSync(path.join(MIGRATIONS_DIR, "meta", "_journal.json"), "utf8"));
-    journal.entries = journal.entries.filter(
-      (e: { tag: string }) => e.tag !== "0020_add-role-to-user-accounts",
-    );
+    const targetIdx = journal.entries.find(
+      (e: { tag: string }) => e.tag === "0020_add-role-to-user-accounts",
+    ).idx;
+    // Só as migrações estritamente anteriores a 0020 (mesma cautela do teste
+    // de backfill de clinic_id: migrações futuras não podem rodar antes dela).
+    journal.entries = journal.entries.filter((e: { idx: number }) => e.idx < targetIdx);
     fs.writeFileSync(path.join(priorMeta, "_journal.json"), JSON.stringify(journal));
     for (const entry of journal.entries) {
       fs.copyFileSync(

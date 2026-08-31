@@ -135,7 +135,7 @@ const emptyPatientBundle = {
 describe("Feature: Página do portal", () => {
   describe("Cenário: carregando sessão", () => {
     it("Dado que a sessão ainda não chegou, Quando renderizar, Então exibe indicador de carregamento", () => {
-      mockFetch([{ path: "/api/portal/me", respond: () => jsonResponse(true, { subject: "x", role: "admin" }) }]);
+      mockFetch([{ path: "/api/portal/me", respond: () => jsonResponse(true, { subject: "x", role: "company_admin" }) }]);
 
       render(<PortalPage />);
 
@@ -158,7 +158,7 @@ describe("Feature: Página do portal", () => {
       mockFetch([
         {
           path: "/api/portal/me",
-          respond: () => jsonResponse(true, { subject: "ana@clinica.com", role: "admin" }),
+          respond: () => jsonResponse(true, { subject: "ana@clinica.com", role: "company_admin" }),
         },
       ]);
 
@@ -175,7 +175,7 @@ describe("Feature: Página do portal", () => {
       mockFetch([
         {
           path: "/api/portal/me",
-          respond: () => jsonResponse(true, { subject: "ana@clinica.com", role: "admin" }),
+          respond: () => jsonResponse(true, { subject: "ana@clinica.com", role: "company_admin" }),
         },
       ]);
 

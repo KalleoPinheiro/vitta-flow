@@ -69,7 +69,7 @@ describe("Feature: Proxy barra sessão staff revogada (SEC1-01)", () => {
 
     expect(response.status).toBe(200);
     expect(revokedMock).toHaveBeenCalledWith(
-      expect.objectContaining({ subject: "ana@clinica.com", role: "admin" }),
+      expect.objectContaining({ subject: "ana@clinica.com", role: "company_admin" }),
     );
   });
 });

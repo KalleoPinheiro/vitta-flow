@@ -288,7 +288,7 @@ T8 → T18 → T19
 
 ---
 
-### T10: Use-case `CreateAccount` com validação de hierarquia + empresa
+### T10: Use-case `CreateAccount` com validação de hierarquia + empresa ✅ Complete
 
 **What**: Novo use-case que valida `canProvision` e `input.clinicId === actor.clinicId` (exceto `super_admin`) antes de criar a conta; lança erro tipado em caso de negação.
 **Where**: `src/application/auth/create-account.ts` (novo)

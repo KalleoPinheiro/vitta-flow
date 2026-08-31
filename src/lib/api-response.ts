@@ -5,6 +5,7 @@ import {
   DomainError,
   InvalidStatusTransitionError,
   NotFoundError,
+  ProvisioningDeniedError,
   SchedulingConflictError,
 } from "@/domain/shared/errors";
 
@@ -25,6 +26,7 @@ export function fail(message: string, status: number): NextResponse<ApiEnvelope<
 function statusForDomainError(error: DomainError): number {
   if (error instanceof NotFoundError) return 404;
   if (error instanceof ConsentRequiredError) return 403;
+  if (error instanceof ProvisioningDeniedError) return 403;
   if (error instanceof SchedulingConflictError) return 409;
   if (error instanceof InvalidStatusTransitionError) return 409;
   return 400;

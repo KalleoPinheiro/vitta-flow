@@ -43,3 +43,8 @@ export class ConsentRequiredError extends DomainError {
 export class InsufficientStockError extends DomainError {
   readonly code = "INSUFFICIENT_STOCK";
 }
+
+/** Ator tentou cadastrar um papel/empresa fora do que a hierarquia permite (RBAC-11..14). */
+export class ProvisioningDeniedError extends DomainError {
+  readonly code = "PROVISIONING_DENIED";
+}

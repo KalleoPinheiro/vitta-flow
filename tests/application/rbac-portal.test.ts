@@ -128,7 +128,7 @@ describe("Feature: RBAC — parceria, indicação e portais", () => {
   });
 
   describe("Cenário: resolução de papel no login", () => {
-    it("Dado email na allowlist da equipe, Quando resolver, Então admin (mesmo sendo parceiro)", async () => {
+    it("Dado email na allowlist da equipe, Quando resolver, Então super_admin (mesmo sendo parceiro)", async () => {
       await createPartner("ana@clinica.com");
 
       const role = await new ResolveUserRole(patientRepo, partnerRepo).execute({
@@ -136,7 +136,7 @@ describe("Feature: RBAC — parceria, indicação e portais", () => {
         adminEmails: ["ana@clinica.com"],
       });
 
-      expect(role).toBe("admin");
+      expect(role).toBe("super_admin");
     });
 
     it("Dado email de parceiro ativo, Quando resolver, Então partner", async () => {

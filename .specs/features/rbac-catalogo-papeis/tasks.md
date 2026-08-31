@@ -181,7 +181,7 @@ T8 → T18 → T19
 
 ---
 
-### T5: Google OAuth mapeia `admin` → `super_admin` (mapeamento transitório)
+### T5: Google OAuth mapeia `admin` → `super_admin` (mapeamento transitório) ✅ Complete
 
 **What**: `ResolveUserRole` passa a retornar `"super_admin"` no ramo antes retornava `"admin"`, sem alterar prioridade nem os ramos `partner`/`patient`.
 **Where**: `src/application/auth/resolve-user-role.ts`, `src/app/api/auth/google/callback/route.ts`

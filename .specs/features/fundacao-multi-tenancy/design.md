@@ -141,11 +141,26 @@ interface Session {
 ```typescript
 interface AuditEvent {
   // campos existentes inalterados: actorRole, actorId, action, resourceType, resourceId, patientId?, detail?, occurredAt
-  clinicId: string | null // empresa a que o evento pertence, ou empresa acessada em acesso cross-empresa; null só é transitório (ver nota)
+  clinicId: string // empresa a que o evento pertence, ou empresa acessada em acesso cross-empresa — sempre concreto, nunca null
 }
 ```
 
-**Relationships**: `clinicId` aponta para uma `clinics.id` real assim que o call site que grava o evento já tiver a informação disponível. **Correção pós-tentativa da Batch A**: o único ponto de construção de `AuditEvent` hoje é `src/lib/audit.ts` (`recordAudit`/`recordAuditNow`), chamado a partir de ~21 arquivos de rota. Tornar `clinicId` obrigatório (`string`) já em T7 forçaria editar as 21 chamadas fora do escopo do piloto de Paciente da M2. Por isso o campo nasce `string | null` em T7 (só a rota de Paciente populando de verdade) e a T23 (M6) é quem varre os ~21 call sites e verifica se cada um já tem `clinicId` disponível de sua própria milestone — idealmente resolvendo-o automaticamente dentro de `recordAudit`/`recordAuditNow` a partir do parâmetro de sessão/ator que a função já recebe, em vez de mudar a assinatura de cada um dos 21 call sites. Se `recordAudit` não tiver acesso à sessão hoje, essa é uma decisão a resolver durante a T7, documentando o SPEC_DEVIATION correspondente. O tipo só volta a ser `string` não-opcional quando T23 confirmar 100% dos call sites populando.
+**Relationships**: `clinicId` sempre aponta para uma `clinics.id` real. **Correção pós-tentativa da Batch A, revisada**: o único ponto de construção de `AuditEvent` é `src/lib/audit.ts` — `recordAudit`/`recordAuditNow` já recebem `session: Session | null` em todos os ~21 call sites hoje (confirmado lendo o arquivo). Isso permite resolver `clinicId` sem tocar nenhum dos 21 call sites: `AuditInput` ganha um campo `clinicId?: string | null` **opcional**, e `persistAuditEvent` resolve `input.clinicId ?? session?.clinicId ?? LEGACY_CLINIC_ID` internamente.
+- Ação normal dentro da própria empresa: `session.clinicId` já é a empresa certa — nenhum call site precisa passar nada nesse campo.
+- Acesso cross-empresa do papel de sistema (`session.clinicId === null`): o único call site que precisa disso (a rota de Paciente na T7, e replicações pontuais se M3–M6 vierem a expor outro caminho de acesso do papel de sistema) passa explicitamente `clinicId: <empresa do recurso acessado>` em `AuditInput`.
+- Sem sessão nenhuma (modo aberto de dev, ator "anonymous"): cai no fallback `LEGACY_CLINIC_ID` — seguro porque modo aberto só existe em dev, e neste momento da entrega só existe a clínica legada mesmo (não há rota de criação de clínica, ver Out of Scope do spec).
+
+`LEGACY_CLINIC_ID` é uma constante exportada (novo componente, ver abaixo), não uma consulta ao banco — evita I/O extra em todo evento de auditoria e não é "estado global por clínica" no sentido que a ADR-001 proíbe (é um identificador fixo, não uma configuração de negócio ou cache por tenant).
+
+Isso torna a T23 muito mais leve do que a versão anterior deste documento previa: não é mais "editar 21 call sites", é "confirmar que nenhum caminho de acesso cross-empresa além do da Patient precisa do override explícito, e testar o fallback".
+
+### `LEGACY_CLINIC_ID` (constante)
+
+- **Purpose**: identificador fixo e conhecido da clínica legada criada pelo backfill da M1, reusado pela migração (T3), pelo fallback de auditoria (T7) e por qualquer outro ponto que precise de um `clinic_id` default antes de existir uma segunda clínica real.
+- **Location**: `src/domain/clinic/clinic.ts` (exportado ao lado do tipo `Clinic`).
+- **Interfaces**: `export const LEGACY_CLINIC_ID = "legacy-clinic"` (valor literal fixo, não gerado por `newId()` — precisa ser o mesmo valor no código-fonte e na migração SQL).
+- **Dependencies**: nenhuma.
+- **Reuses**: nenhum equivalente hoje.
 
 ---
 

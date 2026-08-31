@@ -142,9 +142,9 @@ T18 → T19 → T20 → T21 → T22 → T23 → T24
 **Tools**: MCP: `context7` (confirmar semântica transacional do `drizzle-kit migrate()` antes de assumir). Skill: NONE.
 
 **Done when**:
-- [ ] `tests/infrastructure/clinic-migration-backfill.test.ts` (novo): aplica as migrações anteriores a esta, insere fixtures em TODAS as tabelas tocadas (patients, professionals, partners, user_accounts, appointments, procedures, clinical_conditions, condition_assessments, condition_photos, evolution_notes, supplies, supply_batches, stock_movements, follow_ups, reminder_logs, consent_records, schedule_settings, anamneses, care_plans+filhas, outcome_evaluations, intervention_records, session_packages, package_consumptions, invoices, audit_events), roda a migração nova, e assere 100% das linhas com `clinic_id` = id da clínica legada e zero linha órfã
-- [ ] Suíte completa existente (`npx vitest run`) continua verde sem nenhum arquivo de rota tocado — confirma MT-05 (zero mudança de comportamento de API)
-- [ ] `npm run typecheck` limpo
+- [x] `tests/infrastructure/clinic-migration-backfill.test.ts` (novo): aplica as migrações anteriores a esta, insere fixtures em TODAS as tabelas tocadas (patients, professionals, partners, user_accounts, appointments, procedures, clinical_conditions, condition_assessments, condition_photos, evolution_notes, supplies, supply_batches, stock_movements, follow_ups, reminder_logs, consent_records, schedule_settings, anamneses, care_plans+filhas, outcome_evaluations, intervention_records, session_packages, package_consumptions, invoices, audit_events), roda a migração nova, e assere 100% das linhas com `clinic_id` = id da clínica legada e zero linha órfã
+- [x] Suíte completa existente (`npx vitest run`) continua verde sem nenhum arquivo de rota tocado — confirma MT-05 (zero mudança de comportamento de API)
+- [x] `npm run typecheck` limpo
 
 **Tests**: integration
 **Gate**: full — **fechar issue #22 (M1) após este gate passar e o commit existir**

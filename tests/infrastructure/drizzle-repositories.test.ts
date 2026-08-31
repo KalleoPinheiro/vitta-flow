@@ -625,6 +625,7 @@ describe("Feature: Persistência PostgreSQL (Drizzle)", () => {
     it("Dado configuração corrompida no banco, Quando buscar, Então cai no default (retorna null)", async () => {
       await db.insert(schema.scheduleSettings).values({
         id: "default",
+        clinicId: "legacy-clinic",
         weekdays: "não-é-json",
         startHour: 8,
         endHour: 18,

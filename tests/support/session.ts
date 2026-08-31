@@ -1,4 +1,5 @@
 import { SESSION_COOKIE, createSessionToken, type UserRole } from "@/lib/auth/session";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 /**
  * Helpers de sessão para os testes de rota. As rotas exigem sessão válida
@@ -18,12 +19,17 @@ export const sessionToken = (
   role: UserRole = "admin",
   subject = "equipe@clinica.com",
   expiresAtMs = Date.now() + 3_600_000,
-): string => createSessionToken(secret(), expiresAtMs, subject, role);
+  clinicId: string | null = LEGACY_CLINIC_ID,
+): string => createSessionToken(secret(), expiresAtMs, subject, role, clinicId);
 
 export const cookieHeaderFor = (
   role: UserRole = "admin",
   subject?: string,
-): Record<string, string> => ({ cookie: `${SESSION_COOKIE}=${sessionToken(role, subject)}` });
+  clinicId?: string | null,
+): Record<string, string> => ({
+  cookie: `${SESSION_COOKIE}=${sessionToken(role, subject, undefined, clinicId)}`,
+});
 
 /** Cabeçalho de sessão da equipe — o papel usado pela maior parte da API. */
-export const adminCookieHeader = (): Record<string, string> => cookieHeaderFor("admin");
+export const adminCookieHeader = (clinicId?: string | null): Record<string, string> =>
+  cookieHeaderFor("admin", undefined, clinicId);

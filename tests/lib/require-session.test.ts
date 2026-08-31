@@ -45,6 +45,27 @@ describe("Feature: Guarda de sessão nas rotas (camada 2 de autorização)", () 
       expect(guard.session?.role).toBe("admin");
     });
 
+    it("Dada sessão admin com clinicId, Então guard expõe o clinicId da sessão", () => {
+      const guard = requireStaffSession(
+        request(cookieHeaderFor("admin", "maria@clinica.com", "clinic-a")),
+      );
+
+      expect(guard.ok).toBe(true);
+      if (!guard.ok) return;
+      expect(guard.session?.clinicId).toBe("clinic-a");
+    });
+
+    it("Dada sessão admin de papel de sistema (clinicId claim null), Então guard expõe clinicId null", () => {
+      const guard = requireStaffSession(
+        request(cookieHeaderFor("admin", "sistema@clinica.com", null)),
+      );
+
+      expect(guard.ok).toBe(true);
+      if (!guard.ok) return;
+      expect(guard.session).not.toBeNull();
+      expect(guard.session?.clinicId).toBeNull();
+    });
+
     it("Dada requisição sem cookie, Então responde 401", async () => {
       const guard = requireStaffSession(request());
 
@@ -123,6 +144,17 @@ describe("Feature: Guarda de sessão nas rotas (camada 2 de autorização)", () 
       expect(guard.ok).toBe(true);
       if (!guard.ok) return;
       expect(guard.session.subject).toBe("ana@paciente.com");
+    });
+
+    it("Dada sessão do portal com clinicId, Então guard expõe o clinicId da sessão", () => {
+      const guard = requirePortalSession(
+        request(cookieHeaderFor("patient", "ana@paciente.com", "clinic-a")),
+        "patient",
+      );
+
+      expect(guard.ok).toBe(true);
+      if (!guard.ok) return;
+      expect(guard.session.clinicId).toBe("clinic-a");
     });
 
     it("Dada sessão de outro papel, Então responde 403 com mensagem do portal", async () => {

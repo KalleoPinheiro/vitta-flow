@@ -58,6 +58,28 @@ describe("Feature: Sessão assinada (HMAC)", () => {
     expect(verifySessionToken(SECRET, partnerToken)?.role).toBe("partner");
   });
 
+  it("Dado token emitido sem clinicId explícito, Quando verificar, Então claim clinicId é null (papel de sistema)", () => {
+    const token = createSessionToken(SECRET, Date.now() + 60_000, "maria@clinica.com");
+
+    const session = verifySessionToken(SECRET, token);
+
+    expect(session?.clinicId).toBeNull();
+  });
+
+  it("Dado token emitido com clinicId, Quando verificar, Então claim clinicId preservado", () => {
+    const token = createSessionToken(
+      SECRET,
+      Date.now() + 60_000,
+      "maria@clinica.com",
+      "admin",
+      "clinic-a",
+    );
+
+    const session = verifySessionToken(SECRET, token);
+
+    expect(session?.clinicId).toBe("clinic-a");
+  });
+
   it("Dado token expirado, Quando verificar, Então inválido", () => {
     const token = createSessionToken(SECRET, Date.now() - 1);
 

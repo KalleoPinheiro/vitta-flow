@@ -183,7 +183,7 @@ Isso torna a T23 muito mais leve do que a versão anterior deste documento previ
 | `google_accounts` (PK=email) perde a garantia de unicidade global de `user_accounts.email` | `schema.ts:139` | Login Google pode resolver para a conta errada se duas clínicas tiverem o mesmo e-mail | 409 fail-closed quando o lookup encontra mais de uma conta (spec MT-26); risco só se materializa quando existir rota de criação de clínica, hoje fora de escopo |
 | ~45 arquivos de rota recebem a mesma edição mecânica (M3–M6) | `src/app/api/**/route.ts` | Uma rota esquecida vaza dado entre empresas | Tasks enumera todo arquivo tocado por milestone; sensor de discriminação do Verifier injeta "filtro esquecido" e confirma que os testes de isolamento matam a mutação |
 | Nenhum teste hoje usa 2 clínicas na mesma fixture | `tests/infrastructure/*.test.ts`, `tests/api/*.test.ts` | Testes de isolamento poderiam duplicar setup de fixture 6 vezes | Um helper único de fixture (`tests/support/clinics.ts`, novo) cria as 2 clínicas de teste e é reusado por M2–M6 |
-| `proxy.ts` (edge) não foi lido em profundidade pelo recon | `src/proxy.ts` | Pode precisar decodificar `clinicId` para alguma decisão de borda que hoje não existe | Verificado no início da implementação da M2, antes de qualquer commit — se não precisar, nenhuma mudança lá; documentado aqui para não ser esquecido |
+| `proxy.ts` (edge) não foi lido em profundidade pelo recon | `src/proxy.ts` | Pode precisar decodificar `clinicId` para alguma decisão de borda que hoje não existe | **Resolvido na T6**: revisado — `proxy.ts` só lê `session.role` (via `isAllowedForRole`) e `isStaffSessionRevoked`; nenhuma decisão de borda depende de `clinicId`. Nenhuma mudança feita no arquivo. |
 
 ---
 

@@ -28,6 +28,8 @@ export interface Session {
   subject: string;
   /** Papel de acesso: admin (equipe), partner (médico parceiro) ou patient (paciente). */
   role: UserRole;
+  /** Empresa da sessão; `null` só no papel de sistema (acesso cross-empresa). */
+  clinicId: string | null;
 }
 
 export function createSessionToken(
@@ -35,9 +37,10 @@ export function createSessionToken(
   expiresAtMs: number,
   subject = "local",
   role: UserRole = "admin",
+  clinicId: string | null = null,
 ): string {
   const payload = Buffer.from(
-    JSON.stringify({ exp: expiresAtMs, sub: subject, role }),
+    JSON.stringify({ exp: expiresAtMs, sub: subject, role, clinicId }),
   ).toString("base64url");
   return `${payload}.${sign(secret, payload)}`;
 }
@@ -57,6 +60,7 @@ function parsePayload(payload: string): Session | null {
       exp?: unknown;
       sub?: unknown;
       role?: unknown;
+      clinicId?: unknown;
     };
     if (typeof parsed.exp !== "number" || typeof parsed.sub !== "string") {
       return null;
@@ -64,7 +68,15 @@ function parsePayload(payload: string): Session | null {
     if (!USER_ROLES.includes(parsed.role as UserRole)) {
       return null;
     }
-    return { expiresAtMs: parsed.exp, subject: parsed.sub, role: parsed.role as UserRole };
+    if (parsed.clinicId !== null && typeof parsed.clinicId !== "string") {
+      return null;
+    }
+    return {
+      expiresAtMs: parsed.exp,
+      subject: parsed.sub,
+      role: parsed.role as UserRole,
+      clinicId: parsed.clinicId ?? null,
+    };
   } catch {
     return null;
   }

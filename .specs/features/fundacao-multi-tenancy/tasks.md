@@ -203,12 +203,12 @@ T18 → T19 → T20 → T21 → T22 → T23 → T24
 **Tools**: MCP: NONE. Skill: NONE.
 
 **Done when**:
-- [ ] `Session.clinicId` presente e assinado/verificado
-- [ ] `requireStaffSession`/`requirePortalSession` expõem `clinicId`
-- [ ] `tests/support/session.ts` aceita `clinicId` opcional (default: uma clínica de teste fixa)
-- [ ] `tests/lib/auth.test.ts` e `tests/lib/require-session.test.ts` cobrem claim presente/nula
-- [ ] `src/proxy.ts` revisado; nota registrada em `design.md` (Risk) sobre se precisou de mudança
-- [ ] `npm run typecheck` limpo
+- [x] `Session.clinicId` presente e assinado/verificado
+- [x] `requireStaffSession`/`requirePortalSession` expõem `clinicId`
+- [x] `tests/support/session.ts` aceita `clinicId` opcional (default: uma clínica de teste fixa)
+- [x] `tests/lib/auth.test.ts` e `tests/lib/require-session.test.ts` cobrem claim presente/nula
+- [x] `src/proxy.ts` revisado; nota registrada em `design.md` (Risk) sobre se precisou de mudança
+- [x] `npm run typecheck` limpo
 
 **Tests**: unit
 **Gate**: quick

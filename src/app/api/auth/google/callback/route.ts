@@ -16,6 +16,7 @@ import {
 } from "@/lib/auth/session";
 import { encryptSecret } from "@/lib/auth/crypto";
 import { getRepositories } from "@/infrastructure/container";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 /** Base pública p/ redirects: APP_URL (a URL interna do container não é acessível ao navegador). */
 const publicBaseUrl = (request: NextRequest): string => process.env.APP_URL ?? request.url;
@@ -112,7 +113,13 @@ export async function GET(request: NextRequest) {
     response.cookies.set(OAUTH_STATE_COOKIE, "", { httpOnly: true, path: "/", maxAge: 0 });
     response.cookies.set(
       SESSION_COOKIE,
-      createSessionToken(auth.secret, Date.now() + SESSION_TTL_MS, identity.email, role),
+      createSessionToken(
+        auth.secret,
+        Date.now() + SESSION_TTL_MS,
+        identity.email,
+        role,
+        LEGACY_CLINIC_ID,
+      ),
       sessionCookieOptions(),
     );
     return response;

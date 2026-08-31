@@ -65,7 +65,7 @@ describe("Feature: Persistência PostgreSQL — auditoria, pacotes, equipe e int
       priceCents: 15000,
       durationMinutes: 40,
     });
-    await new DrizzleProcedureRepository(appDb).save(procedure);
+    await new DrizzleProcedureRepository(appDb, "legacy-clinic").save(procedure);
   });
 
   describe("Cenário: eventos de auditoria (append-only)", () => {

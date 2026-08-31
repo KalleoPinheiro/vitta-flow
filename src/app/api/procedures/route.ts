@@ -6,6 +6,7 @@ import { ValidationError } from "@/domain/shared/errors";
 import { handleRequest } from "@/lib/api-response";
 import { toProcedureDto } from "@/lib/dto";
 import { requireStaffSession } from "@/lib/auth/require-session";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 const procedureSchema = z.object({
   name: z.string().min(1).max(200),
@@ -18,7 +19,9 @@ export async function GET(request: NextRequest) {
   if (!guard.ok) return guard.response;
 
   return handleRequest(async () => {
-    const { procedures } = await getRepositories({ clinicId: null });
+    const { procedures } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? null,
+    });
     const result = await procedures.findAll();
     return result.map(toProcedureDto);
   });
@@ -30,7 +33,9 @@ export async function POST(request: NextRequest) {
 
   return handleRequest(async () => {
     const body = procedureSchema.parse(await request.json());
-    const { procedures } = await getRepositories({ clinicId: null });
+    const { procedures } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+    });
 
     const existing = await procedures.findByName(body.name);
     if (existing) {

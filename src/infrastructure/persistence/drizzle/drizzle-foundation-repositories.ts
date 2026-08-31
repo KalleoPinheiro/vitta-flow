@@ -15,14 +15,23 @@ import {
 import { MAX_ROWS, type AppDb } from "./db";
 import { LEGACY_CLINIC_ID } from "./legacy-clinic";
 import { procedureSupplies, procedures, scheduleSettings, userAccounts } from "./schema";
+import { withTenant } from "./tenant-scope";
 
 export class DrizzleProcedureRepository implements ProcedureRepository {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   async save(procedure: Procedure): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error(
+        "Papel de sistema não pode salvar procedimento (somente leitura cross-empresa)",
+      );
+    }
     const values = {
       id: procedure.id,
-      clinicId: LEGACY_CLINIC_ID,
+      clinicId: this.clinicId,
       name: procedure.name,
       priceCents: procedure.priceCents,
       durationMinutes: procedure.durationMinutes,
@@ -36,7 +45,11 @@ export class DrizzleProcedureRepository implements ProcedureRepository {
   }
 
   async findById(id: string): Promise<Procedure | null> {
-    const rows = await this.db.select().from(procedures).where(eq(procedures.id, id)).limit(1);
+    const rows = await this.db
+      .select()
+      .from(procedures)
+      .where(withTenant(procedures, this.clinicId, eq(procedures.id, id)))
+      .limit(1);
     return rows[0] ? Procedure.restore(rows[0]) : null;
   }
 
@@ -44,7 +57,13 @@ export class DrizzleProcedureRepository implements ProcedureRepository {
     const rows = await this.db
       .select()
       .from(procedures)
-      .where(sql`lower(${procedures.name}) = lower(${name.trim()})`)
+      .where(
+        withTenant(
+          procedures,
+          this.clinicId,
+          sql`lower(${procedures.name}) = lower(${name.trim()})`,
+        ),
+      )
       .limit(1);
     return rows[0] ? Procedure.restore(rows[0]) : null;
   }
@@ -53,6 +72,7 @@ export class DrizzleProcedureRepository implements ProcedureRepository {
     const rows = await this.db
       .select()
       .from(procedures)
+      .where(withTenant(procedures, this.clinicId))
       .orderBy(asc(procedures.name))
       .limit(MAX_ROWS);
     return rows.map((row) => Procedure.restore(row));

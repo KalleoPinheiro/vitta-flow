@@ -86,7 +86,7 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
   });
 
   it("Dado evoluções salvas, Quando listar por paciente, Então ordem cronológica reversa", async () => {
-    const repo = new DrizzleEvolutionNoteRepository(appDb);
+    const repo = new DrizzleEvolutionNoteRepository(appDb, "legacy-clinic");
     await repo.save(
       EvolutionNote.create({ patientId: patient.id, subjective: "Primeira", objective: "", assessment: "", plan: "" }),
     );

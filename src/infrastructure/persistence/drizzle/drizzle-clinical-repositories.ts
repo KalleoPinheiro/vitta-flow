@@ -71,12 +71,20 @@ export class DrizzleAnamnesisRepository implements AnamnesisRepository {
 }
 
 export class DrizzleEvolutionNoteRepository implements EvolutionNoteRepository {
-  constructor(private readonly db: AppDb) {}
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   async save(note: EvolutionNote): Promise<void> {
+    if (this.clinicId === null) {
+      throw new Error(
+        "Papel de sistema não pode salvar nota de evolução (somente leitura cross-empresa)",
+      );
+    }
     await this.db.insert(evolutionNotes).values({
       id: note.id,
-      clinicId: LEGACY_CLINIC_ID,
+      clinicId: this.clinicId,
       patientId: note.patientId,
       appointmentId: note.appointmentId,
       professionalId: note.professionalId,
@@ -92,7 +100,7 @@ export class DrizzleEvolutionNoteRepository implements EvolutionNoteRepository {
     const rows = await this.db
       .select()
       .from(evolutionNotes)
-      .where(eq(evolutionNotes.patientId, patientId))
+      .where(withTenant(evolutionNotes, this.clinicId, eq(evolutionNotes.patientId, patientId)))
       .orderBy(desc(evolutionNotes.createdAt), desc(evolutionNotes.id));
     return rows.map((row) => EvolutionNote.restore(row));
   }

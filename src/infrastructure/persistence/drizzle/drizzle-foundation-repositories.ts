@@ -14,7 +14,6 @@ import {
 } from "@/domain/catalog/procedure-kit";
 import { newId } from "@/domain/shared/id";
 import { MAX_ROWS, type AppDb } from "./db";
-import { LEGACY_CLINIC_ID } from "./legacy-clinic";
 import { procedureSupplies, procedures, scheduleSettings, userAccounts } from "./schema";
 import { withTenant } from "./tenant-scope";
 

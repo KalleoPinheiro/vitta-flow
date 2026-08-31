@@ -22,6 +22,11 @@ export class InMemoryPatientRepository implements PatientRepository {
     return null;
   }
 
+  async countByEmail(email: string): Promise<number> {
+    const normalized = email.trim().toLowerCase();
+    return [...this.patients.values()].filter((p) => p.email === normalized).length;
+  }
+
   async findByReferrer(partnerId: string): Promise<Patient[]> {
     return [...this.patients.values()].filter((p) => p.referredByPartnerId === partnerId);
   }

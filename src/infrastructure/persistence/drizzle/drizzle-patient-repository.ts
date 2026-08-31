@@ -1,4 +1,4 @@
-import { asc, eq, ilike, inArray, or } from "drizzle-orm";
+import { asc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { Patient } from "@/domain/patient/patient";
 import type { PatientPage, PatientRepository } from "@/domain/patient/patient-repository";
 import { MAX_ROWS, type AppDb } from "./db";
@@ -85,6 +85,14 @@ export class DrizzlePatientRepository implements PatientRepository {
       .where(eq(patients.id, id))
       .limit(1);
     return rows[0]?.clinicId ?? null;
+  }
+
+  async countByEmail(email: string): Promise<number> {
+    const rows = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(patients)
+      .where(eq(patients.email, email.trim().toLowerCase()));
+    return rows[0]?.count ?? 0;
   }
 
   async findByReferrer(partnerId: string): Promise<Patient[]> {

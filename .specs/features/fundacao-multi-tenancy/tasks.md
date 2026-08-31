@@ -478,9 +478,9 @@ T18 → T19 → T20 → T21 → T22 → T23 → T24
 **Tools**: MCP: NONE. Skill: NONE.
 
 **Done when**:
-- [ ] Lookup por e-mail resolve corretamente quando há só uma conta correspondente (caso comum, única clínica em produção nesta entrega)
-- [ ] Teste prova que, com 2 contas de mesmo e-mail em 2 clínicas (fixture direta no banco de teste), a rota responde 409 e não escolhe nenhuma arbitrariamente
-- [ ] `npm run typecheck && npx vitest run tests/api` limpo
+- [x] Lookup por e-mail resolve corretamente quando há só uma conta correspondente (caso comum, única clínica em produção nesta entrega)
+- [x] Teste prova que, com 2 contas de mesmo e-mail em 2 clínicas (fixture direta no banco de teste), a rota responde 409 e não escolhe nenhuma arbitrariamente
+- [x] `npm run typecheck && npx vitest run tests/api` limpo
 
 **Tests**: integration
 **Gate**: quick

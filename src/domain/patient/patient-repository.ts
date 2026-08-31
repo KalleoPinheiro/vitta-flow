@@ -14,4 +14,9 @@ export interface PatientRepository {
   findAll(search?: string, page?: PatientPage): Promise<Patient[]>;
   /** Empresa dona do registro — usado pelo acesso cross-empresa do papel de sistema para auditar. */
   findClinicIdById(id: string): Promise<string | null>;
+  /**
+   * Conta pacientes com este e-mail em QUALQUER empresa — usado só para detectar
+   * ambiguidade cross-empresa no login Google (MT-26), nunca para servir dados.
+   */
+  countByEmail(email: string): Promise<number>;
 }

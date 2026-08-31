@@ -17,6 +17,7 @@ import {
 import { encryptSecret } from "@/lib/auth/crypto";
 import { getRepositories } from "@/infrastructure/container";
 import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import { fail } from "@/lib/api-response";
 
 /** Base pública p/ redirects: APP_URL (a URL interna do container não é acessível ao navegador). */
 const publicBaseUrl = (request: NextRequest): string => process.env.APP_URL ?? request.url;
@@ -64,6 +65,28 @@ async function persistRefreshToken(
   });
 }
 
+/**
+ * Ambiguidade cross-empresa (MT-25/26): patients.email é único só por clínica
+ * desde T2/T3, então o mesmo e-mail pode existir em 2 clínicas distintas. O
+ * lookup de papel (sem filtro de clínica) pega a primeira ocorrência
+ * arbitrariamente — falha fechado em vez de logar na conta errada.
+ */
+async function ambiguousPatientConflict(
+  patients: Awaited<ReturnType<typeof getRepositories>>["patients"],
+  role: string,
+  email: string,
+): Promise<NextResponse | null> {
+  if (role !== "patient") {
+    return null;
+  }
+  const matches = await patients.countByEmail(email);
+  if (matches <= 1) {
+    return null;
+  }
+  console.error(`Login Google: e-mail ${email} ambíguo entre empresas (${matches} contas de paciente)`);
+  return fail("Conflito de conta entre empresas — contate o suporte", 409);
+}
+
 /** Valida code + state anti-CSRF do callback; retorna o code ou null. */
 function extractValidatedCode(request: NextRequest): string | null {
   const params = request.nextUrl.searchParams;
@@ -101,6 +124,11 @@ export async function GET(request: NextRequest) {
     });
     if (!role) {
       return loginErrorRedirect(request, `Conta ${identity.email} não autorizada nesta clínica`);
+    }
+
+    const conflict = await ambiguousPatientConflict(patients, role, identity.email);
+    if (conflict) {
+      return conflict;
     }
 
     // Credencial do Calendar pertence à clínica: só persiste quando quem loga é da equipe.

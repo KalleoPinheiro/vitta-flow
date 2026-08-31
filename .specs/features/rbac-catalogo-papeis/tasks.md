@@ -309,7 +309,7 @@ T8 → T18 → T19
 
 ---
 
-### T11: `POST /api/accounts` usa `CreateAccount`; payload exige `role`
+### T11: `POST /api/accounts` usa `CreateAccount`; payload exige `role` ✅ Complete
 
 **What**: Route handler troca a criação direta por chamada ao use-case; schema de validação (`createSchema`) exige `role`; mapeia erro de hierarquia para 403 com mensagem clara.
 **Where**: `src/app/api/accounts/route.ts`

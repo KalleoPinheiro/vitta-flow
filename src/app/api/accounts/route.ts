@@ -1,8 +1,9 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { getRepositories } from "@/infrastructure/container";
-import { UserAccount } from "@/domain/auth/user-account";
 import { ValidationError } from "@/domain/shared/errors";
+import { USER_ROLES } from "@/domain/auth/user-role";
+import { CreateAccount } from "@/application/auth/create-account";
 import { hashPassword } from "@/lib/auth/password";
 import { handleRequest } from "@/lib/api-response";
 import { toUserAccountDto } from "@/lib/dto";
@@ -14,6 +15,9 @@ const MIN_PASSWORD_LENGTH = 8;
 const createSchema = z.object({
   email: z.string().min(3).max(200),
   password: z.string().min(MIN_PASSWORD_LENGTH).max(200),
+  role: z.enum(USER_ROLES),
+  // Só super_admin (clinicId de sessão nulo) pode/precisa escolher a empresa-alvo.
+  clinicId: z.string().max(100).nullish(),
   professionalId: z.string().max(100).nullish(),
 });
 
@@ -36,14 +40,19 @@ export async function POST(request: NextRequest) {
 
   return handleRequest(async () => {
     const body = createSchema.parse(await request.json());
-    const { userAccounts, professionals } = await getRepositories({
-      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
-    });
+    // "Modo aberto" (sem autenticação configurada) equivale ao acesso total de
+    // antes — trata a chamada como super_admin, exigindo clinicId explícito.
+    const actor = guard.session
+      ? { role: guard.session.role, clinicId: guard.session.clinicId }
+      : { role: "super_admin" as const, clinicId: null };
 
-    const existing = await userAccounts.findByEmail(body.email);
-    if (existing) {
-      throw new ValidationError("Já existe conta com este email");
-    }
+    const targetClinicId =
+      actor.role === "super_admin"
+        ? (body.clinicId ?? LEGACY_CLINIC_ID)
+        : (actor.clinicId ?? LEGACY_CLINIC_ID);
+
+    const { userAccounts, professionals } = await getRepositories({ clinicId: targetClinicId });
+
     if (body.professionalId) {
       const professional = await professionals.findById(body.professionalId);
       if (!professional) {
@@ -51,17 +60,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const account = UserAccount.create({
+    const account = await new CreateAccount(userAccounts).execute(actor, {
       email: body.email,
       passwordHash: await hashPassword(body.password),
-      // SPEC_DEVIATION: role/clinicId fixos até a T11 aplicar a hierarquia de
-      // provisionamento (RBAC-11..RBAC-14); esta rota ainda não valida quem
-      // pode criar quem.
-      role: "company_admin",
-      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+      role: body.role,
+      clinicId: targetClinicId,
       professionalId: body.professionalId ?? null,
     });
-    await userAccounts.save(account);
     return toUserAccountDto(account);
   });
 }

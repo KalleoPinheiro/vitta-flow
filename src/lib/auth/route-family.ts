@@ -23,8 +23,13 @@ const CLINICAL_PREFIXES = [
 
 const CLINICAL_PATIENT_SUBROUTES = ["/evolutions", "/conditions", "/anamnesis", "/care-plans"];
 
+/**
+ * `/api/accounts` fica de fora desta lista de propósito: a hierarquia de
+ * provisionamento (RBAC-07..10) permite Atendente e Profissional cadastrarem
+ * contas Patient/Partner ali — a checagem fina de "quem pode criar quem" é
+ * feita pelo use-case `CreateAccount`, não pela família de rota.
+ */
 const ADMINISTRATIVE_PREFIXES = [
-  "/api/accounts",
   "/api/professionals",
   "/api/supplies",
   "/api/procedures",

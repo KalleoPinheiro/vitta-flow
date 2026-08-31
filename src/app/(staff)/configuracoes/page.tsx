@@ -285,7 +285,15 @@ function AccountForm({
     try {
       await apiFetch("/api/accounts", {
         method: "POST",
-        body: JSON.stringify({ email, password, professionalId: professionalId || null }),
+        // SPEC_DEVIATION: seletor de papel na UI fica para um follow-up de
+        // frontend — o backend já exige role (RBAC-11..14); esta tela cria
+        // sempre como company_admin (paridade com o comportamento anterior).
+        body: JSON.stringify({
+          email,
+          password,
+          role: "company_admin",
+          professionalId: professionalId || null,
+        }),
       });
       onSaved();
     } catch (err) {

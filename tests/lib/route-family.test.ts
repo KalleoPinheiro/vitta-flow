@@ -22,7 +22,7 @@ describe("Feature: Classificação de rota por família (RBAC-05)", () => {
       ["/api/partners", "operational"],
       ["/api/follow-ups", "operational"],
       ["/api/settings/schedule", "operational"],
-      ["/api/accounts", "administrative"],
+      ["/api/accounts", "operational"],
       ["/api/professionals", "administrative"],
       ["/api/supplies", "administrative"],
       ["/api/reports", "administrative"],

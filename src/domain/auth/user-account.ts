@@ -1,10 +1,13 @@
 import { ValidationError } from "../shared/errors";
 import { newId } from "../shared/id";
+import type { UserRole } from "./user-role";
 
 export interface UserAccountProps {
   email: string;
   /** Hash de senha no formato `scrypt$N$salt$hash` (nunca a senha em claro). */
   passwordHash: string;
+  /** Papel de acesso — um dos 6 valores do catálogo (RBAC-01). */
+  role: UserRole;
   /** Profissional vinculado — autoria automática de evoluções. */
   professionalId?: string | null;
 }
@@ -32,6 +35,7 @@ export class UserAccount {
     return new UserAccount({
       email,
       passwordHash: props.passwordHash,
+      role: props.role,
       professionalId: props.professionalId ?? null,
       id: newId(),
       active: true,
@@ -72,6 +76,10 @@ export class UserAccount {
 
   get professionalId(): string | null {
     return this.state.professionalId ?? null;
+  }
+
+  get role(): UserRole {
+    return this.state.role;
   }
 
   get isActive(): boolean {

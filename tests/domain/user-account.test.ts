@@ -1,11 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { UserAccount } from "@/domain/auth/user-account";
-import { USER_ROLES } from "@/domain/auth/user-role";
 import { ValidationError } from "@/domain/shared/errors";
 
 const validProps = {
   email: "equipe@vittaflow.com",
   passwordHash: "scrypt$16384$abc123$def456",
+  role: "company_admin" as const,
 };
 
 describe("Feature: Conta de acesso da equipe (UserAccount)", () => {
@@ -18,6 +18,7 @@ describe("Feature: Conta de acesso da equipe (UserAccount)", () => {
       expect(account.isActive).toBe(true);
       expect(account.createdAt).toBeInstanceOf(Date);
       expect(account.professionalId).toBeNull();
+      expect(account.role).toBe("company_admin");
     });
 
     it("Dado email com espaços e maiúsculas, Quando criar, Então email normalizado", () => {
@@ -95,6 +96,7 @@ describe("Feature: Conta de acesso da equipe (UserAccount)", () => {
         id: "user-1",
         email: "user@x.com",
         passwordHash: "scrypt$16384$s$h",
+        role: "profissional",
         professionalId: "prof-9",
         active: false,
         createdAt,
@@ -102,14 +104,9 @@ describe("Feature: Conta de acesso da equipe (UserAccount)", () => {
 
       expect(account.id).toBe("user-1");
       expect(account.professionalId).toBe("prof-9");
+      expect(account.role).toBe("profissional");
       expect(account.isActive).toBe(false);
       expect(account.createdAt).toEqual(createdAt);
     });
-  });
-});
-
-describe("Feature: Papéis de acesso (UserRole)", () => {
-  it("Dado a lista de papéis, Quando inspecionar, Então contém admin, partner e patient", () => {
-    expect(USER_ROLES).toEqual(["admin", "partner", "patient"]);
   });
 });

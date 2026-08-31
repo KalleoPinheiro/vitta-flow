@@ -96,6 +96,7 @@ export class DrizzleUserAccountRepository implements UserAccountRepository {
       clinicId: this.clinicId,
       email: account.email,
       passwordHash: account.passwordHash,
+      role: account.role,
       professionalId: account.professionalId,
       active: account.isActive,
       createdAt: account.createdAt,

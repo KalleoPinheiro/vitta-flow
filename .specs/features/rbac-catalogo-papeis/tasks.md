@@ -137,7 +137,7 @@ T8 → T18 → T19
 
 ---
 
-### T3: `UserAccount` (domínio) ganha `role`
+### T3: `UserAccount` (domínio) ganha `role` ✅ Complete
 
 **What**: Entidade `UserAccount` passa a carregar `role: UserRole`; `UserAccountRepository` round-tripa a coluna nova.
 **Where**: `src/domain/auth/user-account.ts`, `src/infrastructure/persistence/drizzle/user-account-repository.ts` (ou nome equivalente)

@@ -2,6 +2,7 @@ import { asc, eq, ilike, inArray, or } from "drizzle-orm";
 import { Patient } from "@/domain/patient/patient";
 import type { PatientPage, PatientRepository } from "@/domain/patient/patient-repository";
 import { MAX_ROWS, type AppDb } from "./db";
+import { LEGACY_CLINIC_ID } from "./legacy-clinic";
 import { patients } from "./schema";
 
 type PatientRow = typeof patients.$inferSelect;
@@ -25,6 +26,7 @@ export class DrizzlePatientRepository implements PatientRepository {
   async save(patient: Patient): Promise<void> {
     const values = {
       id: patient.id,
+      clinicId: LEGACY_CLINIC_ID,
       fullName: patient.fullName,
       email: patient.email,
       phone: patient.phone,

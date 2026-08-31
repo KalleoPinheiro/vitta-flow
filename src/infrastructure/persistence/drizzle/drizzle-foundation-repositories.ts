@@ -13,6 +13,7 @@ import {
   type ProcedureKitRepository,
 } from "@/domain/catalog/procedure-kit";
 import { MAX_ROWS, type AppDb } from "./db";
+import { LEGACY_CLINIC_ID } from "./legacy-clinic";
 import { procedureSupplies, procedures, scheduleSettings, userAccounts } from "./schema";
 
 export class DrizzleProcedureRepository implements ProcedureRepository {
@@ -21,6 +22,7 @@ export class DrizzleProcedureRepository implements ProcedureRepository {
   async save(procedure: Procedure): Promise<void> {
     const values = {
       id: procedure.id,
+      clinicId: LEGACY_CLINIC_ID,
       name: procedure.name,
       priceCents: procedure.priceCents,
       durationMinutes: procedure.durationMinutes,
@@ -63,6 +65,7 @@ export class DrizzleUserAccountRepository implements UserAccountRepository {
   async save(account: UserAccount): Promise<void> {
     const values = {
       id: account.id,
+      clinicId: LEGACY_CLINIC_ID,
       email: account.email,
       passwordHash: account.passwordHash,
       professionalId: account.professionalId,
@@ -125,6 +128,7 @@ export class DrizzleScheduleConfigRepository implements ScheduleConfigRepository
     const validated = validateScheduleConfig(config);
     const values = {
       id: SETTINGS_ROW_ID,
+      clinicId: LEGACY_CLINIC_ID,
       weekdays: JSON.stringify(validated.weekdays),
       startHour: validated.startHour,
       endHour: validated.endHour,

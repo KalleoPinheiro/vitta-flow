@@ -20,6 +20,7 @@ import type {
   OutcomeEvaluationRepository,
 } from "@/domain/clinical/clinical-repositories";
 import type { AppDb } from "./db";
+import { LEGACY_CLINIC_ID } from "./legacy-clinic";
 import {
   carePlanDiagnoses,
   carePlanInterventions,
@@ -39,6 +40,7 @@ export class DrizzleCarePlanRepository implements CarePlanRepository {
   async save(carePlan: CarePlan): Promise<void> {
     const values = {
       id: carePlan.id,
+      clinicId: LEGACY_CLINIC_ID,
       patientId: carePlan.patientId,
       conditionId: carePlan.conditionId,
       professionalId: carePlan.professionalId,
@@ -85,6 +87,7 @@ export class DrizzleCarePlanDiagnosisRepository implements CarePlanDiagnosisRepo
   async save(diagnosis: CarePlanDiagnosis): Promise<void> {
     await this.db.insert(carePlanDiagnoses).values({
       id: diagnosis.id,
+      clinicId: LEGACY_CLINIC_ID,
       carePlanId: diagnosis.carePlanId,
       diagnosisCode: diagnosis.diagnosisCode,
       type: diagnosis.type,
@@ -127,6 +130,7 @@ export class DrizzleCarePlanOutcomeRepository implements CarePlanOutcomeReposito
   async save(outcome: CarePlanOutcome): Promise<void> {
     await this.db.insert(carePlanOutcomes).values({
       id: outcome.id,
+      clinicId: LEGACY_CLINIC_ID,
       carePlanId: outcome.carePlanId,
       outcomeCode: outcome.outcomeCode,
       baselineScore: outcome.baselineScore,
@@ -178,6 +182,7 @@ export class DrizzleCarePlanInterventionRepository implements CarePlanInterventi
   async save(intervention: CarePlanIntervention): Promise<void> {
     await this.db.insert(carePlanInterventions).values({
       id: intervention.id,
+      clinicId: LEGACY_CLINIC_ID,
       carePlanId: intervention.carePlanId,
       interventionCode: intervention.interventionCode,
       frequency: intervention.frequency,
@@ -228,6 +233,7 @@ export class DrizzleOutcomeEvaluationRepository implements OutcomeEvaluationRepo
   async save(evaluation: OutcomeEvaluation): Promise<void> {
     await this.db.insert(outcomeEvaluations).values({
       id: evaluation.id,
+      clinicId: LEGACY_CLINIC_ID,
       outcomeId: evaluation.outcomeId,
       score: evaluation.score,
       professionalId: evaluation.professionalId,
@@ -269,6 +275,7 @@ export class DrizzleInterventionRecordRepository implements InterventionRecordRe
   async save(record: InterventionRecord): Promise<void> {
     await this.db.insert(interventionRecords).values({
       id: record.id,
+      clinicId: LEGACY_CLINIC_ID,
       interventionId: record.interventionId,
       professionalId: record.professionalId,
       notes: record.notes,

@@ -13,6 +13,7 @@ import { SchedulingConflictError } from "@/domain/shared/errors";
 import { Money } from "@/domain/shared/money";
 import { TimeSlot } from "@/domain/shared/time-slot";
 import type { AppDb } from "./db";
+import { LEGACY_CLINIC_ID } from "./legacy-clinic";
 import { appointments } from "./schema";
 
 const PG_EXCLUSION_VIOLATION = "23P01";
@@ -53,6 +54,7 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
   async save(appointment: Appointment): Promise<void> {
     const values = {
       id: appointment.id,
+      clinicId: LEGACY_CLINIC_ID,
       patientId: appointment.patientId,
       startsAt: appointment.slot.start,
       endsAt: appointment.slot.end,

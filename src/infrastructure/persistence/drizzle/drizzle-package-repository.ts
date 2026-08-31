@@ -4,6 +4,7 @@ import {
   type SessionPackageRepository,
 } from "@/domain/billing/package";
 import type { AppDb } from "./db";
+import { LEGACY_CLINIC_ID } from "./legacy-clinic";
 import { packageConsumptions, sessionPackages } from "./schema";
 
 export class DrizzleSessionPackageRepository implements SessionPackageRepository {
@@ -12,6 +13,7 @@ export class DrizzleSessionPackageRepository implements SessionPackageRepository
   async save(pkg: SessionPackage): Promise<void> {
     const values = {
       id: pkg.id,
+      clinicId: LEGACY_CLINIC_ID,
       patientId: pkg.patientId,
       procedureId: pkg.procedureId,
       totalSessions: pkg.totalSessions,
@@ -74,7 +76,7 @@ export class DrizzleSessionPackageRepository implements SessionPackageRepository
   async recordConsumption(packageId: string, appointmentId: string): Promise<void> {
     await this.db
       .insert(packageConsumptions)
-      .values({ packageId, appointmentId, createdAt: new Date() })
+      .values({ packageId, appointmentId, clinicId: LEGACY_CLINIC_ID, createdAt: new Date() })
       .onConflictDoNothing();
   }
 

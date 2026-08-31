@@ -18,31 +18,48 @@ export const clinics = pgTable("clinics", {
   createdBy: text("created_by").notNull(),
 });
 
-export const partners = pgTable("partners", {
-  id: text("id").primaryKey(),
-  fullName: text("full_name").notNull(),
-  email: text("email").notNull().unique(),
-  phone: text("phone").notNull(),
-  crm: text("crm"),
-  specialty: text("specialty"),
-  active: boolean("active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
-});
+export const partners = pgTable(
+  "partners",
+  {
+    id: text("id").primaryKey(),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
+    fullName: text("full_name").notNull(),
+    email: text("email").notNull().unique(),
+    phone: text("phone").notNull(),
+    crm: text("crm"),
+    specialty: text("specialty"),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [index("idx_partners_clinic").on(table.clinicId)],
+);
 
-export const professionals = pgTable("professionals", {
-  id: text("id").primaryKey(),
-  fullName: text("full_name").notNull(),
-  registry: text("registry"),
-  // Repasse (O3.4): % da receita das consultas concluídas do profissional.
-  commissionPct: integer("commission_pct"),
-  active: boolean("active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
-});
+export const professionals = pgTable(
+  "professionals",
+  {
+    id: text("id").primaryKey(),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
+    fullName: text("full_name").notNull(),
+    registry: text("registry"),
+    // Repasse (O3.4): % da receita das consultas concluídas do profissional.
+    commissionPct: integer("commission_pct"),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [index("idx_professionals_clinic").on(table.clinicId)],
+);
 
 export const procedures = pgTable(
   "procedures",
   {
     id: text("id").primaryKey(),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
     name: text("name").notNull(),
     priceCents: integer("price_cents").notNull(),
     durationMinutes: integer("duration_minutes").notNull(),
@@ -50,8 +67,9 @@ export const procedures = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
   },
   (table) => [
-    // Unicidade case-insensitive do catálogo.
-    uniqueIndex("uq_procedures_name").on(sql`lower(${table.name})`),
+    // Unicidade case-insensitive do catálogo, composta por empresa (MT-06).
+    uniqueIndex("uq_procedures_name").on(table.clinicId, sql`lower(${table.name})`),
+    index("idx_procedures_clinic").on(table.clinicId),
   ],
 );
 
@@ -69,32 +87,53 @@ export const procedureSupplies = pgTable(
   ],
 );
 
-export const userAccounts = pgTable("user_accounts", {
-  id: text("id").primaryKey(),
-  email: text("email").notNull().unique(),
-  // Formato scrypt$custo$salt$hash — nunca a senha em claro.
-  passwordHash: text("password_hash").notNull(),
-  professionalId: text("professional_id").references(() => professionals.id),
-  active: boolean("active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
-});
+export const userAccounts = pgTable(
+  "user_accounts",
+  {
+    id: text("id").primaryKey(),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
+    email: text("email").notNull(),
+    // Formato scrypt$custo$salt$hash — nunca a senha em claro.
+    passwordHash: text("password_hash").notNull(),
+    professionalId: text("professional_id").references(() => professionals.id),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [
+    // E-mail de login único por empresa, não globalmente (MT-06, ADR-003).
+    uniqueIndex("uq_user_accounts_clinic_email").on(table.clinicId, table.email),
+    index("idx_user_accounts_clinic").on(table.clinicId),
+  ],
+);
 
-export const scheduleSettings = pgTable("schedule_settings", {
-  // Linha única ("default") — grade da clínica.
-  id: text("id").primaryKey(),
-  weekdays: text("weekdays").notNull(),
-  startHour: integer("start_hour").notNull(),
-  endHour: integer("end_hour").notNull(),
-  minGapMinutes: integer("min_gap_minutes").notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull(),
-});
+export const scheduleSettings = pgTable(
+  "schedule_settings",
+  {
+    // Uma linha por clínica (era linha única "default" antes da M3 — MT-17).
+    id: text("id").primaryKey(),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
+    weekdays: text("weekdays").notNull(),
+    startHour: integer("start_hour").notNull(),
+    endHour: integer("end_hour").notNull(),
+    minGapMinutes: integer("min_gap_minutes").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [uniqueIndex("uq_schedule_settings_clinic").on(table.clinicId)],
+);
 
 export const patients = pgTable(
   "patients",
   {
     id: text("id").primaryKey(),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
     fullName: text("full_name").notNull(),
-    email: text("email").notNull().unique(),
+    email: text("email").notNull(),
     phone: text("phone").notNull(),
     birthDate: timestamp("birth_date", { withTimezone: true, mode: "date" }),
     notes: text("notes"),
@@ -110,6 +149,9 @@ export const patients = pgTable(
     index("idx_patients_full_name_trgm").using("gin", table.fullName.op("gin_trgm_ops")),
     index("idx_patients_email_trgm").using("gin", table.email.op("gin_trgm_ops")),
     index("idx_patients_phone_trgm").using("gin", table.phone.op("gin_trgm_ops")),
+    index("idx_patients_clinic").on(table.clinicId),
+    // E-mail único por empresa, não globalmente (MT-06).
+    uniqueIndex("uq_patients_clinic_email").on(table.clinicId, table.email),
   ],
 );
 
@@ -117,6 +159,9 @@ export const appointments = pgTable(
   "appointments",
   {
     id: text("id").primaryKey(),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
     patientId: text("patient_id")
       .notNull()
       .references(() => patients.id),
@@ -140,6 +185,7 @@ export const appointments = pgTable(
     index("idx_appointments_professional").on(table.professionalId),
     // Composto cobre findByPatientId com ORDER BY starts_at.
     index("idx_appointments_patient").on(table.patientId, table.startsAt),
+    index("idx_appointments_clinic").on(table.clinicId),
   ],
 );
 
@@ -150,22 +196,32 @@ export const googleAccounts = pgTable("google_accounts", {
   connectedAt: timestamp("connected_at", { withTimezone: true, mode: "date" }).notNull(),
 });
 
-export const anamneses = pgTable("anamneses", {
-  patientId: text("patient_id")
-    .primaryKey()
-    .references(() => patients.id),
-  comorbidities: text("comorbidities").notNull().default(""),
-  allergies: text("allergies").notNull().default(""),
-  medications: text("medications").notNull().default(""),
-  surgicalHistory: text("surgical_history").notNull().default(""),
-  notes: text("notes").notNull().default(""),
-  updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull(),
-});
+export const anamneses = pgTable(
+  "anamneses",
+  {
+    patientId: text("patient_id")
+      .primaryKey()
+      .references(() => patients.id),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
+    comorbidities: text("comorbidities").notNull().default(""),
+    allergies: text("allergies").notNull().default(""),
+    medications: text("medications").notNull().default(""),
+    surgicalHistory: text("surgical_history").notNull().default(""),
+    notes: text("notes").notNull().default(""),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [index("idx_anamneses_clinic").on(table.clinicId)],
+);
 
 export const evolutionNotes = pgTable(
   "evolution_notes",
   {
     id: text("id").primaryKey(),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
     patientId: text("patient_id")
       .notNull()
       .references(() => patients.id),
@@ -178,13 +234,19 @@ export const evolutionNotes = pgTable(
     plan: text("plan").notNull().default(""),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
   },
-  (table) => [index("idx_evolution_notes_patient").on(table.patientId)],
+  (table) => [
+    index("idx_evolution_notes_patient").on(table.patientId),
+    index("idx_evolution_notes_clinic").on(table.clinicId),
+  ],
 );
 
 export const clinicalConditions = pgTable(
   "clinical_conditions",
   {
     id: text("id").primaryKey(),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
     patientId: text("patient_id")
       .notNull()
       .references(() => patients.id),
@@ -196,13 +258,19 @@ export const clinicalConditions = pgTable(
     status: text("status").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
   },
-  (table) => [index("idx_clinical_conditions_patient").on(table.patientId)],
+  (table) => [
+    index("idx_clinical_conditions_patient").on(table.patientId),
+    index("idx_clinical_conditions_clinic").on(table.clinicId),
+  ],
 );
 
 export const conditionAssessments = pgTable(
   "condition_assessments",
   {
     id: text("id").primaryKey(),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
     conditionId: text("condition_id")
       .notNull()
       .references(() => clinicalConditions.id),
@@ -226,13 +294,19 @@ export const conditionAssessments = pgTable(
     notes: text("notes"),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
   },
-  (table) => [index("idx_condition_assessments_condition").on(table.conditionId)],
+  (table) => [
+    index("idx_condition_assessments_condition").on(table.conditionId),
+    index("idx_condition_assessments_clinic").on(table.clinicId),
+  ],
 );
 
 export const conditionPhotos = pgTable(
   "condition_photos",
   {
     id: text("id").primaryKey(),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
     conditionId: text("condition_id")
       .notNull()
       .references(() => clinicalConditions.id),
@@ -248,6 +322,7 @@ export const conditionPhotos = pgTable(
   (table) => [
     index("idx_condition_photos_condition").on(table.conditionId),
     index("idx_condition_photos_triage").on(table.triageStatus),
+    index("idx_condition_photos_clinic").on(table.clinicId),
   ],
 );
 
@@ -255,6 +330,9 @@ export const consentRecords = pgTable(
   "consent_records",
   {
     id: text("id").primaryKey(),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
     patientId: text("patient_id")
       .notNull()
       .references(() => patients.id),
@@ -262,24 +340,37 @@ export const consentRecords = pgTable(
     ipAddress: text("ip_address"),
     acceptedAt: timestamp("accepted_at", { withTimezone: true, mode: "date" }).notNull(),
   },
-  (table) => [index("idx_consent_records_patient").on(table.patientId)],
+  (table) => [
+    index("idx_consent_records_patient").on(table.patientId),
+    index("idx_consent_records_clinic").on(table.clinicId),
+  ],
 );
 
-export const supplies = pgTable("supplies", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  unit: text("unit").notNull(),
-  minQty: integer("min_qty").notNull(),
-  priceCents: integer("price_cents").notNull(),
-  stockQty: integer("stock_qty").notNull().default(0),
-  active: boolean("active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
-});
+export const supplies = pgTable(
+  "supplies",
+  {
+    id: text("id").primaryKey(),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
+    name: text("name").notNull(),
+    unit: text("unit").notNull(),
+    minQty: integer("min_qty").notNull(),
+    priceCents: integer("price_cents").notNull(),
+    stockQty: integer("stock_qty").notNull().default(0),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [index("idx_supplies_clinic").on(table.clinicId)],
+);
 
 export const supplyBatches = pgTable(
   "supply_batches",
   {
     id: text("id").primaryKey(),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
     supplyId: text("supply_id")
       .notNull()
       .references(() => supplies.id),
@@ -292,6 +383,7 @@ export const supplyBatches = pgTable(
   (table) => [
     index("idx_supply_batches_supply").on(table.supplyId),
     index("idx_supply_batches_expires_at").on(table.expiresAt),
+    index("idx_supply_batches_clinic").on(table.clinicId),
   ],
 );
 
@@ -299,6 +391,9 @@ export const stockMovements = pgTable(
   "stock_movements",
   {
     id: text("id").primaryKey(),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
     supplyId: text("supply_id")
       .notNull()
       .references(() => supplies.id),
@@ -315,6 +410,7 @@ export const stockMovements = pgTable(
     index("idx_stock_movements_supply").on(table.supplyId),
     index("idx_stock_movements_appointment").on(table.appointmentId),
     index("idx_stock_movements_created_at").on(table.createdAt),
+    index("idx_stock_movements_clinic").on(table.clinicId),
   ],
 );
 
@@ -322,6 +418,9 @@ export const followUps = pgTable(
   "follow_ups",
   {
     id: text("id").primaryKey(),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
     patientId: text("patient_id")
       .notNull()
       .references(() => patients.id),
@@ -334,6 +433,7 @@ export const followUps = pgTable(
   (table) => [
     index("idx_follow_ups_status").on(table.status),
     index("idx_follow_ups_due_date").on(table.dueDate),
+    index("idx_follow_ups_clinic").on(table.clinicId),
   ],
 );
 
@@ -341,14 +441,19 @@ export const reminderLogs = pgTable(
   "reminder_logs",
   {
     id: text("id").primaryKey(),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
     kind: text("kind").notNull(),
     referenceId: text("reference_id").notNull(),
     sentOn: text("sent_on").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
   },
   (table) => [
-    // Idempotência diária: um lembrete por (tipo, referência, dia).
+    // Idempotência diária: um lembrete por (tipo, referência, dia). referenceId já é
+    // um id de linha (uuid) globalmente único, então não precisa de clinic_id na chave.
     uniqueIndex("uq_reminder_logs_daily").on(table.kind, table.referenceId, table.sentOn),
+    index("idx_reminder_logs_clinic").on(table.clinicId),
   ],
 );
 
@@ -356,6 +461,11 @@ export const auditEvents = pgTable(
   "audit_events",
   {
     id: text("id").primaryKey(),
+    // Empresa a que o evento pertence, ou empresa acessada em acesso cross-empresa
+    // do papel de sistema — sempre concreto, resolvido em src/lib/audit.ts (MT-13, MT-29).
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
     actorRole: text("actor_role").notNull(),
     actorId: text("actor_id").notNull(),
     action: text("action").notNull(),
@@ -368,6 +478,7 @@ export const auditEvents = pgTable(
   (table) => [
     index("idx_audit_events_patient").on(table.patientId),
     index("idx_audit_events_occurred_at").on(table.occurredAt),
+    index("idx_audit_events_clinic").on(table.clinicId),
   ],
 );
 
@@ -375,6 +486,9 @@ export const sessionPackages = pgTable(
   "session_packages",
   {
     id: text("id").primaryKey(),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
     patientId: text("patient_id")
       .notNull()
       .references(() => patients.id),
@@ -389,7 +503,10 @@ export const sessionPackages = pgTable(
     active: boolean("active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
   },
-  (table) => [index("idx_session_packages_patient").on(table.patientId)],
+  (table) => [
+    index("idx_session_packages_patient").on(table.patientId),
+    index("idx_session_packages_clinic").on(table.clinicId),
+  ],
 );
 
 export const packageConsumptions = pgTable(
@@ -398,12 +515,16 @@ export const packageConsumptions = pgTable(
     packageId: text("package_id")
       .notNull()
       .references(() => sessionPackages.id),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
     appointmentId: text("appointment_id").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
   },
   (table) => [
     // Uma consulta consome no máximo uma sessão (idempotência da conclusão reparadora).
     uniqueIndex("uq_package_consumption_appointment").on(table.appointmentId),
+    index("idx_package_consumptions_clinic").on(table.clinicId),
   ],
 );
 
@@ -411,6 +532,9 @@ export const invoices = pgTable(
   "invoices",
   {
     id: text("id").primaryKey(),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
     patientId: text("patient_id")
       .notNull()
       .references(() => patients.id),
@@ -428,6 +552,7 @@ export const invoices = pgTable(
     index("idx_invoices_issued_at").on(table.issuedAt),
     // Portal do paciente e filtros por paciente.
     index("idx_invoices_patient").on(table.patientId),
+    index("idx_invoices_clinic").on(table.clinicId),
   ],
 );
 
@@ -513,6 +638,9 @@ export const carePlans = pgTable(
   "care_plans",
   {
     id: text("id").primaryKey(),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
     patientId: text("patient_id")
       .notNull()
       .references(() => patients.id),
@@ -524,6 +652,7 @@ export const carePlans = pgTable(
   (table) => [
     index("idx_care_plans_patient").on(table.patientId),
     index("idx_care_plans_condition").on(table.conditionId),
+    index("idx_care_plans_clinic").on(table.clinicId),
   ],
 );
 
@@ -531,6 +660,9 @@ export const carePlanDiagnoses = pgTable(
   "care_plan_diagnoses",
   {
     id: text("id").primaryKey(),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
     carePlanId: text("care_plan_id")
       .notNull()
       .references(() => carePlans.id),
@@ -542,13 +674,19 @@ export const carePlanDiagnoses = pgTable(
     definingCharacteristics: text("defining_characteristics"),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
   },
-  (table) => [index("idx_care_plan_diagnoses_plan").on(table.carePlanId)],
+  (table) => [
+    index("idx_care_plan_diagnoses_plan").on(table.carePlanId),
+    index("idx_care_plan_diagnoses_clinic").on(table.clinicId),
+  ],
 );
 
 export const carePlanOutcomes = pgTable(
   "care_plan_outcomes",
   {
     id: text("id").primaryKey(),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
     carePlanId: text("care_plan_id")
       .notNull()
       .references(() => carePlans.id),
@@ -562,6 +700,7 @@ export const carePlanOutcomes = pgTable(
     index("idx_care_plan_outcomes_plan").on(table.carePlanId),
     check("chk_care_plan_outcomes_baseline_score", sql`${table.baselineScore} BETWEEN 1 AND 5`),
     check("chk_care_plan_outcomes_target_score", sql`${table.targetScore} BETWEEN 1 AND 5`),
+    index("idx_care_plan_outcomes_clinic").on(table.clinicId),
   ],
 );
 
@@ -569,6 +708,9 @@ export const carePlanInterventions = pgTable(
   "care_plan_interventions",
   {
     id: text("id").primaryKey(),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
     carePlanId: text("care_plan_id")
       .notNull()
       .references(() => carePlans.id),
@@ -577,7 +719,10 @@ export const carePlanInterventions = pgTable(
     priority: text("priority").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
   },
-  (table) => [index("idx_care_plan_interventions_plan").on(table.carePlanId)],
+  (table) => [
+    index("idx_care_plan_interventions_plan").on(table.carePlanId),
+    index("idx_care_plan_interventions_clinic").on(table.clinicId),
+  ],
 );
 
 // Reavaliação de resultado NOC — append-only (integridade de prontuário).
@@ -585,6 +730,9 @@ export const outcomeEvaluations = pgTable(
   "outcome_evaluations",
   {
     id: text("id").primaryKey(),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
     outcomeId: text("outcome_id")
       .notNull()
       .references(() => carePlanOutcomes.id),
@@ -596,6 +744,7 @@ export const outcomeEvaluations = pgTable(
   (table) => [
     index("idx_outcome_evaluations_outcome").on(table.outcomeId),
     check("chk_outcome_evaluations_score", sql`${table.score} BETWEEN 1 AND 5`),
+    index("idx_outcome_evaluations_clinic").on(table.clinicId),
   ],
 );
 
@@ -604,6 +753,9 @@ export const interventionRecords = pgTable(
   "intervention_records",
   {
     id: text("id").primaryKey(),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
     interventionId: text("intervention_id")
       .notNull()
       .references(() => carePlanInterventions.id),
@@ -611,5 +763,8 @@ export const interventionRecords = pgTable(
     notes: text("notes"),
     performedAt: timestamp("performed_at", { withTimezone: true, mode: "date" }).notNull(),
   },
-  (table) => [index("idx_intervention_records_intervention").on(table.interventionId)],
+  (table) => [
+    index("idx_intervention_records_intervention").on(table.interventionId),
+    index("idx_intervention_records_clinic").on(table.clinicId),
+  ],
 );

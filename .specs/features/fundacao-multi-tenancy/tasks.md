@@ -120,11 +120,11 @@ T18 → T19 → T20 → T21 → T22 → T23 → T24
 **Tools**: MCP: NONE. Skill: NONE.
 
 **Done when**:
-- [ ] Toda tabela listada em MT-02 tem `clinic_id` não nulo referenciando `clinics`
-- [ ] `patients.email`, `user_accounts.email` únicos por `(clinic_id, email)` (índice global removido)
-- [ ] `procedures.name` único por `(clinic_id, lower(name))` (índice global removido)
-- [ ] `schedule_settings.clinic_id` único e não nulo
-- [ ] `npm run typecheck` limpo (schema puro, sem lógica — sem teste próprio; cobertura via T3)
+- [x] Toda tabela listada em MT-02 tem `clinic_id` não nulo referenciando `clinics`
+- [x] `patients.email`, `user_accounts.email` únicos por `(clinic_id, email)` (índice global removido)
+- [x] `procedures.name` único por `(clinic_id, lower(name))` (índice global removido)
+- [x] `schedule_settings.clinic_id` único e não nulo
+- [x] `npm run typecheck` limpo (schema puro, sem lógica — sem teste próprio; cobertura via T3)
 
 **Tests**: none (schema puro, conforme matriz — excluído da cobertura por `vitest.config.ts`)
 **Gate**: quick
@@ -217,7 +217,7 @@ T18 → T19 → T20 → T21 → T22 → T23 → T24
 
 ### T7: Isolamento de Paciente (piloto) + auditoria de acesso cross-empresa
 
-**What**: `DrizzlePatientRepository` usa `withTenant`; rotas de Paciente (`src/app/api/patients/**`) passam `getRepositories({ clinicId: session.clinicId })`; acesso com `session.clinicId === null` (papel de sistema) grava `AuditEvent` com `clinicId` = clínica do paciente acessado.
+**What**: `DrizzlePatientRepository` usa `withTenant`; rotas de Paciente (`src/app/api/patients/**`) passam `getRepositories({ clinicId: session.clinicId })`; `AuditInput` (`src/lib/audit.ts`) ganha `clinicId?: string | null` opcional, `persistAuditEvent` resolve `input.clinicId ?? session?.clinicId ?? LEGACY_CLINIC_ID` (nenhum dos ~21 call sites existentes de `recordAudit`/`recordAuditNow` precisa mudar); acesso com `session.clinicId === null` (papel de sistema) passa explicitamente `clinicId: patient.clinicId` no `AuditInput` da rota de Paciente.
 **Where**: `src/infrastructure/persistence/drizzle/drizzle-patient-repository.ts`
 **Depends on**: T4, T5, T6
 **Reuses**: `withTenant`, mecanismo de `AuditEvent` já existente (issue pede reaproveitar, não criar novo).
@@ -549,18 +549,18 @@ T18 → T19 → T20 → T21 → T22 → T23 → T24
 
 ### T23: Auditoria carrega empresa própria em todo evento
 
-**What**: Todo call site existente que grava `AuditEvent` (fora do caminho de acesso cross-empresa já coberto pela T7) passa a preencher `clinicId` com a empresa da sessão atual — auditoria de varredura de todos os pontos de escrita de auditoria no código.
-**Where**: `src/domain/audit/audit-event.ts`
+**What**: Já resolvido estruturalmente pela T7 (`persistAuditEvent` resolve `clinicId` via `input.clinicId ?? session?.clinicId ?? LEGACY_CLINIC_ID` para todos os ~21 call sites, sem editá-los). Esta task é a varredura de confirmação: percorrer os call sites de `recordAudit`/`recordAuditNow` tocados por M3–M6 (agenda, procedimento, prontuário, estoque, contas) e confirmar que nenhum precisa do override explícito de `clinicId` além do já coberto pela T7 (Paciente) — e adicionar teste para o caminho "normal" (dentro da própria empresa) que ainda não tinha teste dedicado.
+**Where**: `src/lib/audit.ts`
 **Depends on**: T22
-**Reuses**: mecanismo de auditoria já existente.
+**Reuses**: mecanismo de resolução de `clinicId` já implementado na T7.
 **Requirement**: MT-29
 
 **Tools**: MCP: NONE. Skill: NONE.
 
 **Done when**:
-- [ ] Todo call site de `AuditEvent` no código preenche `clinicId` (compilação já força isso, já que o campo é obrigatório desde T7 — esta task é a varredura/confirmação de que nenhum call site ficou usando um valor incorreto ou fixo)
-- [ ] Teste cobre pelo menos um evento de auditoria "normal" (não cross-empresa) e confirma `clinicId` = empresa da sessão que o gerou
-- [ ] `npm run typecheck && npx vitest run tests/domain tests/api` limpo
+- [ ] Varredura documentada: nenhum call site de M3–M6 precisa de override explícito de `clinicId` (todos resolvem via `session.clinicId`)
+- [ ] Teste cobre pelo menos um evento de auditoria "normal" (não cross-empresa, ação dentro da própria empresa) e confirma `clinicId` = `session.clinicId` de quem gerou o evento
+- [ ] `npm run typecheck && npx vitest run tests/domain tests/lib tests/api` limpo
 
 **Tests**: unit + integration
 **Gate**: quick

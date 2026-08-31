@@ -5,6 +5,7 @@ import {
   type ReminderLogRepository,
 } from "@/domain/messaging/reminder-log";
 import type { AppDb } from "./db";
+import { LEGACY_CLINIC_ID } from "./legacy-clinic";
 import { reminderLogs } from "./schema";
 
 export class DrizzleReminderLogRepository implements ReminderLogRepository {
@@ -15,6 +16,7 @@ export class DrizzleReminderLogRepository implements ReminderLogRepository {
       .insert(reminderLogs)
       .values({
         id: log.id,
+        clinicId: LEGACY_CLINIC_ID,
         kind: log.kind,
         referenceId: log.referenceId,
         sentOn: log.sentOn,

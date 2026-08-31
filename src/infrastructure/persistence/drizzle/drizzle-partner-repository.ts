@@ -2,6 +2,7 @@ import { asc, eq } from "drizzle-orm";
 import { Partner } from "@/domain/partner/partner";
 import type { PartnerRepository } from "@/domain/partner/partner-repository";
 import { MAX_ROWS, type AppDb } from "./db";
+import { LEGACY_CLINIC_ID } from "./legacy-clinic";
 import { partners } from "./schema";
 
 const toPartner = (row: typeof partners.$inferSelect): Partner => Partner.restore(row);
@@ -12,6 +13,7 @@ export class DrizzlePartnerRepository implements PartnerRepository {
   async save(partner: Partner): Promise<void> {
     const values = {
       id: partner.id,
+      clinicId: LEGACY_CLINIC_ID,
       fullName: partner.fullName,
       email: partner.email,
       phone: partner.phone,

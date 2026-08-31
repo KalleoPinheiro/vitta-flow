@@ -29,6 +29,7 @@ import {
   type ConsentRecordRepository,
 } from "@/domain/consent/consent-record";
 import type { AppDb } from "./db";
+import { LEGACY_CLINIC_ID } from "./legacy-clinic";
 import {
   anamneses,
   clinicalConditions,
@@ -43,6 +44,7 @@ export class DrizzleAnamnesisRepository implements AnamnesisRepository {
 
   async save(anamnesis: Anamnesis): Promise<void> {
     const values = {
+      clinicId: LEGACY_CLINIC_ID,
       patientId: anamnesis.patientId,
       comorbidities: anamnesis.comorbidities,
       allergies: anamnesis.allergies,
@@ -73,6 +75,7 @@ export class DrizzleEvolutionNoteRepository implements EvolutionNoteRepository {
   async save(note: EvolutionNote): Promise<void> {
     await this.db.insert(evolutionNotes).values({
       id: note.id,
+      clinicId: LEGACY_CLINIC_ID,
       patientId: note.patientId,
       appointmentId: note.appointmentId,
       professionalId: note.professionalId,
@@ -109,6 +112,7 @@ export class DrizzleClinicalConditionRepository implements ClinicalConditionRepo
   async save(condition: ClinicalCondition): Promise<void> {
     const values = {
       id: condition.id,
+      clinicId: LEGACY_CLINIC_ID,
       patientId: condition.patientId,
       kind: condition.kind,
       title: condition.title,
@@ -174,6 +178,7 @@ export class DrizzleConditionAssessmentRepository implements ConditionAssessment
   async save(assessment: ConditionAssessment): Promise<void> {
     await this.db.insert(conditionAssessments).values({
       id: assessment.id,
+      clinicId: LEGACY_CLINIC_ID,
       conditionId: assessment.conditionId,
       lengthMm: assessment.lengthMm,
       widthMm: assessment.widthMm,
@@ -240,6 +245,7 @@ export class DrizzleConditionPhotoRepository implements ConditionPhotoRepository
   async save(photo: ConditionPhoto): Promise<void> {
     const values = {
       id: photo.id,
+      clinicId: LEGACY_CLINIC_ID,
       conditionId: photo.conditionId,
       assessmentId: photo.assessmentId,
       contentType: photo.contentType,
@@ -307,6 +313,7 @@ export class DrizzleConsentRecordRepository implements ConsentRecordRepository {
   async save(record: ConsentRecord): Promise<void> {
     await this.db.insert(consentRecords).values({
       id: record.id,
+      clinicId: LEGACY_CLINIC_ID,
       patientId: record.patientId,
       textHash: record.textHash,
       ipAddress: record.ipAddress,

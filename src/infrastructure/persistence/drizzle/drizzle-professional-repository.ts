@@ -2,6 +2,7 @@ import { asc, eq, inArray } from "drizzle-orm";
 import { Professional } from "@/domain/professional/professional";
 import type { ProfessionalRepository } from "@/domain/professional/professional-repository";
 import { MAX_ROWS, type AppDb } from "./db";
+import { LEGACY_CLINIC_ID } from "./legacy-clinic";
 import { professionals } from "./schema";
 
 export class DrizzleProfessionalRepository implements ProfessionalRepository {
@@ -10,6 +11,7 @@ export class DrizzleProfessionalRepository implements ProfessionalRepository {
   async save(professional: Professional): Promise<void> {
     const values = {
       id: professional.id,
+      clinicId: LEGACY_CLINIC_ID,
       fullName: professional.fullName,
       registry: professional.registry,
       commissionPct: professional.commissionPct,

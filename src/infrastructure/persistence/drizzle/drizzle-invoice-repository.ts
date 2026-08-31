@@ -8,6 +8,7 @@ import type {
 } from "@/domain/billing/invoice-repository";
 import { Money } from "@/domain/shared/money";
 import { MAX_ROWS, type AppDb } from "./db";
+import { LEGACY_CLINIC_ID } from "./legacy-clinic";
 import { invoices } from "./schema";
 
 type InvoiceRow = typeof invoices.$inferSelect;
@@ -32,6 +33,7 @@ export class DrizzleInvoiceRepository implements InvoiceRepository {
   async save(invoice: Invoice): Promise<void> {
     const values = {
       id: invoice.id,
+      clinicId: LEGACY_CLINIC_ID,
       patientId: invoice.patientId,
       appointmentId: invoice.appointmentId,
       description: invoice.description,

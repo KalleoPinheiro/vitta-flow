@@ -15,6 +15,7 @@ import type {
   FollowUpRepository,
 } from "@/domain/followup/follow-up-repository";
 import { MAX_ROWS, type AppDb } from "./db";
+import { LEGACY_CLINIC_ID } from "./legacy-clinic";
 import { followUps, stockMovements, supplies, supplyBatches } from "./schema";
 
 export class DrizzleSupplyRepository implements SupplyRepository {
@@ -23,6 +24,7 @@ export class DrizzleSupplyRepository implements SupplyRepository {
   async save(supply: Supply): Promise<void> {
     const values = {
       id: supply.id,
+      clinicId: LEGACY_CLINIC_ID,
       name: supply.name,
       unit: supply.unit,
       minQty: supply.minQty,
@@ -67,6 +69,7 @@ export class DrizzleStockMovementRepository implements StockMovementRepository {
   async save(movement: StockMovement): Promise<void> {
     await this.db.insert(stockMovements).values({
       id: movement.id,
+      clinicId: LEGACY_CLINIC_ID,
       supplyId: movement.supplyId,
       type: movement.type,
       quantity: movement.quantity,
@@ -141,6 +144,7 @@ export class DrizzleSupplyBatchRepository implements SupplyBatchRepository {
   async save(batch: SupplyBatch): Promise<void> {
     const values = {
       id: batch.id,
+      clinicId: LEGACY_CLINIC_ID,
       supplyId: batch.supplyId,
       label: batch.label,
       expiresAt: batch.expiresAt,
@@ -184,6 +188,7 @@ export class DrizzleFollowUpRepository implements FollowUpRepository {
   async save(followUp: FollowUp): Promise<void> {
     const values = {
       id: followUp.id,
+      clinicId: LEGACY_CLINIC_ID,
       patientId: followUp.patientId,
       appointmentId: followUp.appointmentId,
       dueDate: followUp.dueDate,

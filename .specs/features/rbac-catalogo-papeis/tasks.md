@@ -479,7 +479,7 @@ T8 → T18 → T19
 
 ---
 
-### T19: Teste de cenário completo de transferência de caso (Dr. A → Dr. B)
+### T19: Teste de cenário completo de transferência de caso (Dr. A → Dr. B) ✅ Complete
 
 **What**: Teste de rota HTTP + PGlite, ponta a ponta, cobrindo exatamente o cenário da spec (RBAC-20): Dr. A atende paciente, depois Dr. B ganha agendamento com o mesmo paciente, ambos continuam acessando o histórico do próprio período.
 **Where**: `tests/api/professional-patient-scope.test.ts` (novo)

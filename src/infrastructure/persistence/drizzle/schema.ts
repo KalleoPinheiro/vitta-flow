@@ -769,3 +769,30 @@ export const interventionRecords = pgTable(
     index("idx_intervention_records_clinic").on(table.clinicId),
   ],
 );
+
+/**
+ * Vínculo Profissional↔Paciente (R4, RBAC-17..21) — nunca revogado uma vez
+ * criado. Concedido por: cadastro do paciente pelo Profissional, criação de
+ * agendamento ou de nota de evolução com esse profissional.
+ */
+export const professionalPatientLinks = pgTable(
+  "professional_patient_links",
+  {
+    id: text("id").primaryKey(),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
+    professionalId: text("professional_id")
+      .notNull()
+      .references(() => professionals.id),
+    patientId: text("patient_id")
+      .notNull()
+      .references(() => patients.id),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("uq_professional_patient_links").on(table.professionalId, table.patientId),
+    index("idx_professional_patient_links_professional").on(table.professionalId),
+    index("idx_professional_patient_links_clinic").on(table.clinicId),
+  ],
+);

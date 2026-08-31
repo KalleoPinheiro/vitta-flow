@@ -393,7 +393,7 @@ T8 → T18 → T19
 
 ---
 
-### T15: Tabela `professional_patient_links` + repositório
+### T15: Tabela `professional_patient_links` + repositório ✅ Complete
 
 **What**: Migração + tabela Drizzle (`clinicId`, `professionalId`, `patientId`, `createdAt`, unique composto) + `ProfessionalPatientLinkRepository` (`ensureLink`, `hasLink`, `findLinkedPatientIds`), usando `withTenant`.
 **Where**: `drizzle/<novo>_professional_patient_links.sql`, `src/infrastructure/persistence/drizzle/schema.ts`, `src/infrastructure/persistence/drizzle/professional-patient-link-repository.ts` (novo), `src/domain/clinical/professional-patient-link.ts` (novo)

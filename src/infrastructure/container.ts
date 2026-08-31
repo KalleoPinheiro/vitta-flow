@@ -52,6 +52,8 @@ import {
 } from "@/application/ports/messaging-gateway";
 import type { ReminderLogRepository } from "@/domain/messaging/reminder-log";
 import { DrizzleProfessionalRepository } from "./persistence/drizzle/drizzle-professional-repository";
+import { DrizzleProfessionalPatientLinkRepository } from "./persistence/drizzle/professional-patient-link-repository";
+import type { ProfessionalPatientLinkRepository } from "@/domain/clinical/professional-patient-link";
 import {
   DrizzleProcedureKitRepository,
   DrizzleProcedureRepository,
@@ -142,6 +144,7 @@ export interface Services {
   stockMovements: StockMovementRepository;
   supplyBatches: SupplyBatchRepository;
   followUps: FollowUpRepository;
+  professionalPatientLinks: ProfessionalPatientLinkRepository;
   auditEvents: AuditEventRepository;
   reminderLog: ReminderLogRepository;
   calendar: CalendarGateway;
@@ -247,6 +250,7 @@ export async function getRepositories(tenant: TenantContext): Promise<Services> 
     stockMovements: new DrizzleStockMovementRepository(db, tenant.clinicId),
     supplyBatches: new DrizzleSupplyBatchRepository(db, tenant.clinicId),
     followUps: new DrizzleFollowUpRepository(db, tenant.clinicId),
+    professionalPatientLinks: new DrizzleProfessionalPatientLinkRepository(db, tenant.clinicId),
     auditEvents: new DrizzleAuditEventRepository(db),
     reminderLog: new DrizzleReminderLogRepository(db, tenant.clinicId),
     calendar,

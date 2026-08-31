@@ -50,7 +50,7 @@ describe("Feature: Persistência PostgreSQL (Drizzle)", () => {
     appDb = db as unknown as AppDb;
     patientRepo = new DrizzlePatientRepository(appDb, "legacy-clinic");
     appointmentRepo = new DrizzleAppointmentRepository(appDb, "legacy-clinic");
-    invoiceRepo = new DrizzleInvoiceRepository(appDb);
+    invoiceRepo = new DrizzleInvoiceRepository(appDb, "legacy-clinic");
     professionalRepo = new DrizzleProfessionalRepository(appDb, "legacy-clinic");
     procedureRepo = new DrizzleProcedureRepository(appDb, "legacy-clinic");
     userAccountRepo = new DrizzleUserAccountRepository(appDb, "legacy-clinic");
@@ -299,7 +299,7 @@ describe("Feature: Persistência PostgreSQL (Drizzle)", () => {
       );
       const { SessionPackage } = await import("@/domain/billing/package");
       const manager = new DrizzleTransactionManager(appDb, "legacy-clinic");
-      const packageRepo = new DrizzleSessionPackageRepository(appDb);
+      const packageRepo = new DrizzleSessionPackageRepository(appDb, "legacy-clinic");
       const patient = await savedPatient();
       const procedure = Procedure.create({
         name: "Curativo pacote tx",

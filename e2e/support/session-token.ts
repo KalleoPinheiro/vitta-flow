@@ -18,14 +18,18 @@ function sign(secret: string, payload: string): string {
   return createHmac("sha256", secret).update(payload).digest("hex");
 }
 
+/** Espelha `LEGACY_CLINIC_ID` (src/infrastructure/persistence/drizzle/legacy-clinic.ts). */
+const LEGACY_CLINIC_ID = "legacy-clinic";
+
 export function mintSessionToken(
   subject: string,
   role: UserRole,
   secret: string = E2E_AUTH_SECRET,
   ttlMs: number = SESSION_TTL_MS,
+  clinicId: string | null = LEGACY_CLINIC_ID,
 ): string {
   const payload = Buffer.from(
-    JSON.stringify({ exp: Date.now() + ttlMs, sub: subject, role }),
+    JSON.stringify({ exp: Date.now() + ttlMs, sub: subject, role, clinicId }),
   ).toString("base64url");
   return `${payload}.${sign(secret, payload)}`;
 }
@@ -46,10 +50,11 @@ export function sessionCookie(
   subject: string,
   role: UserRole,
   host = "localhost",
+  clinicId: string | null = LEGACY_CLINIC_ID,
 ): CookieForContext {
   return {
     name: SESSION_COOKIE_NAME,
-    value: mintSessionToken(subject, role),
+    value: mintSessionToken(subject, role, undefined, undefined, clinicId),
     domain: host,
     path: "/",
     httpOnly: true,

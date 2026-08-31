@@ -578,9 +578,9 @@ T18 → T19 → T20 → T21 → T22 → T23 → T24
 **Tools**: MCP: NONE. Skill: NONE.
 
 **Done when**:
-- [ ] Repositórios e rotas de fatura, pacote de sessões e consumo de pacote escopados por `clinic_id`
-- [ ] Teste de rota com 2 clínicas prova isolamento das três entidades
-- [ ] `npm run typecheck && npx vitest run tests/api tests/infrastructure` limpo
+- [x] Repositórios e rotas de fatura, pacote de sessões e consumo de pacote escopados por `clinic_id`
+- [x] Teste de rota com 2 clínicas prova isolamento das três entidades
+- [x] `npm run typecheck && npx vitest run tests/api tests/infrastructure` limpo
 
 **Tests**: integration
 **Gate**: full — **fechar issue #27 (M6) após este gate passar e o commit existir**

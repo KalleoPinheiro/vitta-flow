@@ -29,7 +29,7 @@ describe("Feature: Persistência PostgreSQL — auditoria, pacotes, equipe e int
   let procedure: Procedure;
 
   const auditRepo = () => new DrizzleAuditEventRepository(appDb);
-  const packageRepo = () => new DrizzleSessionPackageRepository(appDb);
+  const packageRepo = () => new DrizzleSessionPackageRepository(appDb, "legacy-clinic");
   const professionalRepo = () => new DrizzleProfessionalRepository(appDb, "legacy-clinic");
   const reminderLogRepo = () => new DrizzleReminderLogRepository(appDb, "legacy-clinic");
   const googleAccountRepo = () => new DrizzleGoogleAccountRepository(appDb);

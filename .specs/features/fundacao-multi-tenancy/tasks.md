@@ -164,9 +164,9 @@ T18 → T19 → T20 → T21 → T22 → T23 → T24
 **Tools**: MCP: NONE. Skill: NONE.
 
 **Done when**:
-- [ ] `withTenant` implementado e exportado
-- [ ] Teste unitário cobre as duas branches (`clinicId` string, `clinicId` null) e a composição com/sem `extra`
-- [ ] `npm run typecheck` limpo
+- [x] `withTenant` implementado e exportado
+- [x] Teste unitário cobre as duas branches (`clinicId` string, `clinicId` null) e a composição com/sem `extra`
+- [x] `npm run typecheck` limpo
 
 **Tests**: unit
 **Gate**: quick

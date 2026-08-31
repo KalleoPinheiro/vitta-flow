@@ -40,7 +40,12 @@ export async function isStaffSessionRevoked(
   lookup: AccountStatusLookup = lookupAccountStatus,
   nowMs: number = Date.now(),
 ): Promise<boolean> {
-  if (session.role !== "admin" || !session.subject.includes("@")) {
+  const isStaffRole =
+    session.role === "super_admin" ||
+    session.role === "company_admin" ||
+    session.role === "atendente" ||
+    session.role === "profissional";
+  if (!isStaffRole || !session.subject.includes("@")) {
     return false;
   }
 

@@ -36,7 +36,7 @@ export function createSessionToken(
   secret: string,
   expiresAtMs: number,
   subject = "local",
-  role: UserRole = "admin",
+  role: UserRole = "company_admin",
   clinicId: string | null = null,
 ): string {
   const payload = Buffer.from(

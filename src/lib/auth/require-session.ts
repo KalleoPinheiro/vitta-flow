@@ -72,7 +72,10 @@ export function requireStaffSession(request: NextRequest): Guard<Session | null>
   if (!session) {
     return denied(UNAUTHENTICATED_MESSAGE, 401);
   }
-  if (session.role !== "admin") {
+  // SPEC_DEVIATION: qualquer um dos 4 papéis de equipe passa aqui (paridade
+  // com o antigo binário "admin = tudo") até a T8 aplicar a família de rota
+  // por papel (RBAC-05/RBAC-06) e a T13 restringir o Atendente (RBAC-15/16).
+  if (session.role === "patient" || session.role === "partner") {
     return denied(STAFF_ONLY_MESSAGE, 403);
   }
   return { ok: true, session };

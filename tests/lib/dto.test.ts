@@ -597,6 +597,8 @@ describe("Feature: DTO de conta de usuário", () => {
     const account = UserAccount.create({
       email: "ana@clinica.com",
       passwordHash: "scrypt$16384$salt$hash",
+      role: "company_admin",
+      clinicId: "legacy-clinic",
       professionalId: "prof-1",
     });
 

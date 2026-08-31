@@ -159,7 +159,7 @@ T8 → T18 → T19
 
 ---
 
-### T4: Corrigir o bug — login por senha usa o papel da própria conta
+### T4: Corrigir o bug — login por senha usa o papel da própria conta ✅ Complete
 
 **What**: `POST /api/auth/login` deixa de hardcodar `"admin"`/`LEGACY_CLINIC_ID` — lê `role` e `clinicId` do `UserAccount` autenticado (`authenticateAccount`) e grava esses valores no token de sessão. `authenticateMaster` (senha mestre) continua mapeando para `super_admin` (única exceção documentada, até a #21 remover a senha mestre).
 **Where**: `src/app/api/auth/login/route.ts`

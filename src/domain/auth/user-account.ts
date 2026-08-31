@@ -8,6 +8,8 @@ export interface UserAccountProps {
   passwordHash: string;
   /** Papel de acesso — um dos 6 valores do catálogo (RBAC-01). */
   role: UserRole;
+  /** Empresa da conta — nulo somente para super_admin (cross-empresa). */
+  clinicId: string | null;
   /** Profissional vinculado — autoria automática de evoluções. */
   professionalId?: string | null;
 }
@@ -36,6 +38,7 @@ export class UserAccount {
       email,
       passwordHash: props.passwordHash,
       role: props.role,
+      clinicId: props.clinicId,
       professionalId: props.professionalId ?? null,
       id: newId(),
       active: true,
@@ -80,6 +83,10 @@ export class UserAccount {
 
   get role(): UserRole {
     return this.state.role;
+  }
+
+  get clinicId(): string | null {
+    return this.state.clinicId;
   }
 
   get isActive(): boolean {

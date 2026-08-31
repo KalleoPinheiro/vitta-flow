@@ -583,6 +583,7 @@ describe("Feature: Persistência PostgreSQL (Drizzle)", () => {
         email: "Equipe@Clinica.com",
         passwordHash: "scrypt$1$salt$hash",
         role: "company_admin",
+        clinicId: "legacy-clinic",
       });
       await userAccountRepo.save(account);
 
@@ -602,6 +603,7 @@ describe("Feature: Persistência PostgreSQL (Drizzle)", () => {
         email: "outra@clinica.com",
         passwordHash: "scrypt$1$salt$hash",
         role: "company_admin",
+        clinicId: "legacy-clinic",
       });
       await userAccountRepo.save(account);
       await userAccountRepo.save(account.deactivate());

@@ -16,14 +16,14 @@ const secret = (): string => {
 };
 
 export const sessionToken = (
-  role: UserRole = "admin",
+  role: UserRole = "company_admin",
   subject = "equipe@clinica.com",
   expiresAtMs = Date.now() + 3_600_000,
   clinicId: string | null = LEGACY_CLINIC_ID,
 ): string => createSessionToken(secret(), expiresAtMs, subject, role, clinicId);
 
 export const cookieHeaderFor = (
-  role: UserRole = "admin",
+  role: UserRole = "company_admin",
   subject?: string,
   clinicId?: string | null,
 ): Record<string, string> => ({
@@ -32,4 +32,4 @@ export const cookieHeaderFor = (
 
 /** Cabeçalho de sessão da equipe — o papel usado pela maior parte da API. */
 export const adminCookieHeader = (clinicId?: string | null): Record<string, string> =>
-  cookieHeaderFor("admin", undefined, clinicId);
+  cookieHeaderFor("company_admin", undefined, clinicId);

@@ -54,6 +54,11 @@ export async function POST(request: NextRequest) {
     const account = UserAccount.create({
       email: body.email,
       passwordHash: await hashPassword(body.password),
+      // SPEC_DEVIATION: role/clinicId fixos até a T11 aplicar a hierarquia de
+      // provisionamento (RBAC-11..RBAC-14); esta rota ainda não valida quem
+      // pode criar quem.
+      role: "company_admin",
+      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
       professionalId: body.professionalId ?? null,
     });
     await userAccounts.save(account);

@@ -248,6 +248,8 @@ describe("Feature: Fechamento de branches — auth Google, login e rotas do port
       const account = UserAccount.create({
         email: "inativo.gaps@clinica.com",
         passwordHash: await hashPassword("senha-individual"),
+        role: "company_admin",
+        clinicId: "legacy-clinic",
       });
       await userAccounts.save(account.deactivate());
 

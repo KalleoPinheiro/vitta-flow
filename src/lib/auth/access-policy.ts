@@ -57,12 +57,18 @@ export function isSharedPath(pathname: string): boolean {
   );
 }
 
-/** Admin (equipe) acessa tudo; paciente e parceiro só os caminhos compartilhados. */
+/**
+ * Equipe (super_admin, company_admin, atendente, profissional) acessa tudo;
+ * paciente e parceiro só os caminhos compartilhados.
+ *
+ * SPEC_DEVIATION: regra grosseira de paridade com o antigo binário admin/resto
+ * até a T8 aplicar a família de rota por papel (RBAC-05/RBAC-06).
+ */
 export function isAllowedForRole(pathname: string, role: UserRole): boolean {
-  if (role === "admin") {
-    return true;
+  if (role === "patient" || role === "partner") {
+    return isSharedPath(pathname);
   }
-  return isSharedPath(pathname);
+  return true;
 }
 
 /**

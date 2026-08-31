@@ -6,6 +6,7 @@ const validProps = {
   email: "equipe@vittaflow.com",
   passwordHash: "scrypt$16384$abc123$def456",
   role: "company_admin" as const,
+  clinicId: "legacy-clinic",
 };
 
 describe("Feature: Conta de acesso da equipe (UserAccount)", () => {
@@ -97,6 +98,7 @@ describe("Feature: Conta de acesso da equipe (UserAccount)", () => {
         email: "user@x.com",
         passwordHash: "scrypt$16384$s$h",
         role: "profissional",
+        clinicId: "legacy-clinic",
         professionalId: "prof-9",
         active: false,
         createdAt,
@@ -105,6 +107,7 @@ describe("Feature: Conta de acesso da equipe (UserAccount)", () => {
       expect(account.id).toBe("user-1");
       expect(account.professionalId).toBe("prof-9");
       expect(account.role).toBe("profissional");
+      expect(account.clinicId).toBe("legacy-clinic");
       expect(account.isActive).toBe(false);
       expect(account.createdAt).toEqual(createdAt);
     });

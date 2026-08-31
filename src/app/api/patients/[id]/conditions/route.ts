@@ -6,6 +6,7 @@ import { ListConditions } from "@/application/clinical/list-conditions";
 import { CONDITION_KINDS, STOMA_TYPES } from "@/domain/clinical/clinical-condition";
 import { handleRequest } from "@/lib/api-response";
 import { requireStaffSession } from "@/lib/auth/require-session";
+import { assertPatientAccessibleToProfessional } from "@/lib/auth/professional-patient-scope";
 import { recordAudit } from "@/lib/audit";
 import { toConditionDto } from "@/lib/dto";
 import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
@@ -26,9 +27,10 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { conditions, auditEvents } = await getRepositories({
+    const { conditions, auditEvents, professionalPatientLinks } = await getRepositories({
       clinicId: guard.session?.clinicId ?? null,
     });
+    await assertPatientAccessibleToProfessional(guard.session, id, professionalPatientLinks);
     const result = await new ListConditions(conditions).execute({ patientId: id });
     recordAudit(auditEvents, guard.session, {
       action: "read",

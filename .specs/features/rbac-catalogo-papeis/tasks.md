@@ -457,7 +457,7 @@ T8 → T18 → T19
 
 ---
 
-### T18: Checagem de vínculo no handler — Profissional só acessa paciente vinculado
+### T18: Checagem de vínculo no handler — Profissional só acessa paciente vinculado ✅ Complete
 
 **What**: Rotas de paciente individual (`/api/patients/[id]/*` e leitura de `/api/patients/[id]`) ganham checagem extra: se `session.role === "profissional"`, exigir `hasLink(session.professionalId, patientId)`; sem vínculo → 404 (nunca vazar existência).
 **Where**: `src/app/api/patients/[id]/route.ts`, `src/app/api/patients/[id]/evolutions/route.ts`, `src/app/api/patients/[id]/conditions/route.ts`, `src/app/api/patients/[id]/anamnesis/route.ts`, `src/app/api/patients/[id]/care-plans/route.ts` (todas as sub-rotas clínicas de paciente)

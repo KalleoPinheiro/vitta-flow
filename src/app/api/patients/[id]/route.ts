@@ -7,6 +7,7 @@ import { SetPatientActive } from "@/application/patients/set-patient-active";
 import { handleRequest } from "@/lib/api-response";
 import { toPatientDto } from "@/lib/dto";
 import { requireStaffSession } from "@/lib/auth/require-session";
+import { assertPatientAccessibleToProfessional } from "@/lib/auth/professional-patient-scope";
 import { recordAudit } from "@/lib/audit";
 import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
@@ -31,9 +32,10 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { patients, auditEvents } = await getRepositories({
+    const { patients, auditEvents, professionalPatientLinks } = await getRepositories({
       clinicId: guard.session?.clinicId ?? null,
     });
+    await assertPatientAccessibleToProfessional(guard.session, id, professionalPatientLinks);
     const patient = await new GetPatient(patients).execute({ id });
     const clinicId = await patients.findClinicIdById(patient.id);
     recordAudit(auditEvents, guard.session, {

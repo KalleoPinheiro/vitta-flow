@@ -5,6 +5,7 @@ import { AddEvolutionNote } from "@/application/clinical/add-evolution-note";
 import { ListEvolutionNotes } from "@/application/clinical/list-evolution-notes";
 import { handleRequest } from "@/lib/api-response";
 import { requireStaffSession } from "@/lib/auth/require-session";
+import { assertPatientAccessibleToProfessional } from "@/lib/auth/professional-patient-scope";
 import { recordAudit } from "@/lib/audit";
 import { toEvolutionNoteDto } from "@/lib/dto";
 import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
@@ -26,9 +27,10 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { evolutions, auditEvents } = await getRepositories({
+    const { evolutions, auditEvents, professionalPatientLinks } = await getRepositories({
       clinicId: guard.session?.clinicId ?? null,
     });
+    await assertPatientAccessibleToProfessional(guard.session, id, professionalPatientLinks);
     const notes = await new ListEvolutionNotes(evolutions).execute({ patientId: id });
     recordAudit(auditEvents, guard.session, {
       action: "read",

@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 
   return handleRequest(async () => {
     const { nursingDiagnoses, nursingOutcomes, nursingInterventions, taxonomyLinkages, auditEvents } =
-      await getRepositories();
+      await getRepositories({ clinicId: null });
     const result = await importTaxonomyCatalog(
       {
         diagnoses: nursingDiagnoses,

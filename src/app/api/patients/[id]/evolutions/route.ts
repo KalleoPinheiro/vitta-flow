@@ -25,7 +25,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { evolutions, auditEvents } = await getRepositories();
+    const { evolutions, auditEvents } = await getRepositories({ clinicId: null });
     const notes = await new ListEvolutionNotes(evolutions).execute({ patientId: id });
     recordAudit(auditEvents, guard.session, {
       action: "read",
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = evolutionSchema.parse(await request.json());
-    const { evolutions, patients, auditEvents, userAccounts } = await getRepositories();
+    const { evolutions, patients, auditEvents, userAccounts } = await getRepositories({ clinicId: null });
     const { session } = guard;
     // Autoria automática: conta individual logada define o profissional autor.
     let professionalId = body.professionalId ?? null;

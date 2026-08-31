@@ -29,7 +29,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       nursingOutcomes,
       nursingInterventions,
       auditEvents,
-    } = await getRepositories();
+    } = await getRepositories({ clinicId: null });
     const detail = await new GetCarePlan(
       carePlans,
       carePlanDiagnoses,
@@ -68,7 +68,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     actionSchema.parse(await request.json());
-    const { carePlans, auditEvents } = await getRepositories();
+    const { carePlans, auditEvents } = await getRepositories({ clinicId: null });
     const plan = await new ResolveCarePlan(carePlans).execute({ id });
     recordAudit(auditEvents, guard.session, {
       action: "update",

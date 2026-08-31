@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
   return handleRequest(async () => {
     const { partners, patients, appointments, conditions, assessments } =
-      await getRepositories();
+      await getRepositories({ clinicId: null });
     const data = await new GetPartnerPortalData(
       partners,
       patients,
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       assessments,
     ).execute({ email: session.subject });
 
-    recordAudit((await getRepositories()).auditEvents, session, {
+    recordAudit((await getRepositories({ clinicId: null })).auditEvents, session, {
       action: "read",
       resourceType: "portal-partner",
       resourceId: data.partner.id,

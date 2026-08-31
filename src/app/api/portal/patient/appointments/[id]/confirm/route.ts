@@ -14,7 +14,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { patients, appointments } = await getRepositories();
+    const { patients, appointments } = await getRepositories({ clinicId: null });
     const confirmed = await new ConfirmOwnAppointment(patients, appointments).execute({
       email: session.subject,
       appointmentId: id,

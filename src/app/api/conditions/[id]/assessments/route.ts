@@ -38,7 +38,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { assessments, conditions, auditEvents } = await getRepositories();
+    const { assessments, conditions, auditEvents } = await getRepositories({ clinicId: null });
     const [result, condition] = await Promise.all([
       assessments.findByConditionId(id),
       conditions.findById(id),
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = assessmentSchema.parse(await request.json());
-    const { assessments, conditions, auditEvents } = await getRepositories();
+    const { assessments, conditions, auditEvents } = await getRepositories({ clinicId: null });
     const assessment = await new AddConditionAssessment(assessments, conditions).execute({
       conditionId: id,
       ...body,

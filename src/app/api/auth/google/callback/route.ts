@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
       return loginErrorRedirect(request, "Não foi possível obter o email da conta Google");
     }
 
-    const { patients, partners, googleAccounts } = await getRepositories();
+    const { patients, partners, googleAccounts } = await getRepositories({ clinicId: null });
     const role = await new ResolveUserRole(patients, partners).execute({
       email: identity.email,
       adminEmails: config.allowedEmails,

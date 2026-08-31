@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
   return handleRequest(async () => {
     const body = scheduleSchema.parse(await request.json());
-    const services = await getRepositories();
+    const services = await getRepositories({ clinicId: null });
 
     const appointment = await new ScheduleOwnAppointment(
       services.patients,

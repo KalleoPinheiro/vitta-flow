@@ -22,7 +22,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = actionSchema.parse(await request.json());
-    const { invoices } = await getRepositories();
+    const { invoices } = await getRepositories({ clinicId: null });
 
     if (body.action === "pay") {
       return toInvoiceDto(await new PayInvoice(invoices).execute({ id, method: body.method }));

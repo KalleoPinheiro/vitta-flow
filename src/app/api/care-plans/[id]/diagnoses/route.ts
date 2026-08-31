@@ -92,7 +92,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = diagnosisSchema.parse(await request.json());
-    const { carePlanDiagnoses, carePlans, nursingDiagnoses, auditEvents } = await getRepositories();
+    const { carePlanDiagnoses, carePlans, nursingDiagnoses, auditEvents } = await getRepositories({ clinicId: null });
     const diagnosis = await new AddCarePlanDiagnosis(
       carePlanDiagnoses,
       carePlans,

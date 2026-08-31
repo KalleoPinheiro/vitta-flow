@@ -58,7 +58,7 @@ describe("Feature: Rotas do plano de cuidados (SAE) e catálogo de taxonomias", 
     linkedTermsRoute = await import("@/app/api/taxonomy/diagnoses/[code]/linked-terms/route");
 
     const { nursingDiagnoses, nursingOutcomes, nursingInterventions, taxonomyLinkages } =
-      await getRepositories();
+      await getRepositories({ clinicId: null });
     await nursingDiagnoses.save(
       NursingDiagnosis.create({
         code: "00046",

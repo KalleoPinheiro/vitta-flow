@@ -24,7 +24,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { anamneses, auditEvents } = await getRepositories();
+    const { anamneses, auditEvents } = await getRepositories({ clinicId: null });
     const anamnesis = await new GetAnamnesis(anamneses).execute({ patientId: id });
     recordAudit(auditEvents, guard.session, {
       action: "read",
@@ -43,7 +43,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = anamnesisSchema.parse(await request.json());
-    const { anamneses, patients, auditEvents } = await getRepositories();
+    const { anamneses, patients, auditEvents } = await getRepositories({ clinicId: null });
     const anamnesis = await new UpsertAnamnesis(anamneses, patients).execute({
       patientId: id,
       ...body,

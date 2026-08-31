@@ -205,12 +205,16 @@ function buildMessagingGateway(): MessagingGateway {
   return config ? new MetaWhatsAppGateway(config) : new NullMessagingGateway();
 }
 
-export async function getRepositories(): Promise<Services> {
+export interface TenantContext {
+  clinicId: string | null;
+}
+
+export async function getRepositories(tenant: TenantContext): Promise<Services> {
   const db = await getDb();
   const calendar = await buildCalendarGateway(db);
   return {
     clinics: new DrizzleClinicRepository(db),
-    patients: new DrizzlePatientRepository(db),
+    patients: new DrizzlePatientRepository(db, tenant.clinicId),
     partners: new DrizzlePartnerRepository(db),
     professionals: new DrizzleProfessionalRepository(db),
     procedures: new DrizzleProcedureRepository(db),

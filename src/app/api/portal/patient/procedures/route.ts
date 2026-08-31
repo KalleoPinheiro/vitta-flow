@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   if (!guard.ok) return guard.response;
 
   return handleRequest(async () => {
-    const { procedures } = await getRepositories();
+    const { procedures } = await getRepositories({ clinicId: null });
     const catalog = await procedures.findAll();
     return catalog.filter((procedure) => procedure.isActive).map(toProcedureDto);
   });

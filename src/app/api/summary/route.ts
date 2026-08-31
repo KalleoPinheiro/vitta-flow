@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
 
-    const { appointments, patients, invoices } = await getRepositories();
+    const { appointments, patients, invoices } = await getRepositories({ clinicId: null });
     const [billing, monthStats, todayAppointments] = await Promise.all([
       new GetBillingSummary(invoices).execute({ from, to }),
       appointments.getStatsInRange(from, to),

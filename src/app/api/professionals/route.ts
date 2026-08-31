@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   if (!guard.ok) return guard.response;
 
   return handleRequest(async () => {
-    const { professionals } = await getRepositories();
+    const { professionals } = await getRepositories({ clinicId: null });
     const result = await professionals.findAll();
     return result.map(toProfessionalDto);
   });
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
   return handleRequest(async () => {
     const body = professionalSchema.parse(await request.json());
-    const { professionals } = await getRepositories();
+    const { professionals } = await getRepositories({ clinicId: null });
     const professional = Professional.create({
       fullName: body.fullName,
       registry: body.registry ?? null,

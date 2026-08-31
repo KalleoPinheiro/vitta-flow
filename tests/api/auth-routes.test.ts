@@ -161,7 +161,7 @@ describe("Feature: Rotas de autenticação (login, logout, provedores, Google OA
       const { getRepositories } = await import("@/infrastructure/container");
       const { hashPassword } = await import("@/lib/auth/password");
       const { UserAccount } = await import("@/domain/auth/user-account");
-      const { userAccounts } = await getRepositories();
+      const { userAccounts } = await getRepositories({ clinicId: null });
       await userAccounts.save(
         UserAccount.create({
           email: "equipe@clinica.com",

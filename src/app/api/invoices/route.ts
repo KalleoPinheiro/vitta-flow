@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       offset: params.get("offset") ?? undefined,
     });
 
-    const { invoices, patients } = await getRepositories();
+    const { invoices, patients } = await getRepositories({ clinicId: null });
     const result = await new ListInvoices(invoices, patients).execute(
       {
         status,
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
 
   return handleRequest(async () => {
     const body = createInvoiceSchema.parse(await request.json());
-    const { invoices, patients } = await getRepositories();
+    const { invoices, patients } = await getRepositories({ clinicId: null });
     const invoice = await new CreateInvoice(invoices, patients).execute({
       patientId: body.patientId,
       description: body.description,

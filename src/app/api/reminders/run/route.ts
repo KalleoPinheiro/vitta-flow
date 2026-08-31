@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
 
   return handleRequest(async () => {
     const { appointments, followUps, patients, reminderLog, messaging } =
-      await getRepositories();
+      await getRepositories({ clinicId: null });
     return new SendReminders(
       appointments,
       followUps,

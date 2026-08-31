@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   if (!auth.ok) return auth.response;
 
   return handleRequest(async () => {
-    const { patients, consentRecords } = await getRepositories();
+    const { patients, consentRecords } = await getRepositories({ clinicId: null });
     const patient = await patients.findByEmail(auth.session.subject);
     if (!patient) {
       throw new NotFoundError("Paciente", auth.session.subject);
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response;
 
   return handleRequest(async () => {
-    const { patients, consentRecords, auditEvents } = await getRepositories();
+    const { patients, consentRecords, auditEvents } = await getRepositories({ clinicId: null });
     const patient = await patients.findByEmail(auth.session.subject);
     if (!patient || !patient.isActive) {
       throw new NotFoundError("Paciente", auth.session.subject);

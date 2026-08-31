@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   if (!guard.ok) return guard.response;
 
   return handleRequest(async () => {
-    const { supplies, stockMovements, supplyBatches } = await getRepositories();
+    const { supplies, stockMovements, supplyBatches } = await getRepositories({ clinicId: null });
     const insights = await new GetSupplyInsights(
       supplies,
       stockMovements,

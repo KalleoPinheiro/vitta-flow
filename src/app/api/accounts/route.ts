@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
   if (!guard.ok) return guard.response;
 
   return handleRequest(async () => {
-    const { userAccounts } = await getRepositories();
+    const { userAccounts } = await getRepositories({ clinicId: null });
     const accounts = await userAccounts.findAll();
     return accounts.map(toUserAccountDto);
   });
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
   return handleRequest(async () => {
     const body = createSchema.parse(await request.json());
-    const { userAccounts, professionals } = await getRepositories();
+    const { userAccounts, professionals } = await getRepositories({ clinicId: null });
 
     const existing = await userAccounts.findByEmail(body.email);
     if (existing) {

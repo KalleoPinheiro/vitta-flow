@@ -24,7 +24,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { stockMovements } = await getRepositories();
+    const { stockMovements } = await getRepositories({ clinicId: null });
     const movements = await stockMovements.findBySupplyId(id);
     return movements.map(toStockMovementDto);
   });
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = movementSchema.parse(await request.json());
-    const { supplies, stockMovements, appointments, supplyBatches } = await getRepositories();
+    const { supplies, stockMovements, appointments, supplyBatches } = await getRepositories({ clinicId: null });
     const supply = await new RegisterStockMovement(
       supplies,
       stockMovements,

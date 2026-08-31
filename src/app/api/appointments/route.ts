@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
   }
   const professionalId = request.nextUrl.searchParams.get("professionalId") ?? undefined;
   return handleRequest(async () => {
-    const { appointments, patients } = await getRepositories();
+    const { appointments, patients } = await getRepositories({ clinicId: null });
     const result = await new ListAppointments(appointments, patients).execute({
       from: new Date(from),
       to: new Date(to),
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
 
   return handleRequest(async () => {
     const body = scheduleSchema.parse(await request.json());
-    const services = await getRepositories();
+    const services = await getRepositories({ clinicId: null });
     const appointment = await new ScheduleAppointment(
       services.appointments,
       services.patients,

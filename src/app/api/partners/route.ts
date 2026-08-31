@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
   if (!guard.ok) return guard.response;
 
   return handleRequest(async () => {
-    const { partners } = await getRepositories();
+    const { partners } = await getRepositories({ clinicId: null });
     const result = await new ListPartners(partners).execute();
     return result.map(toPartnerDto);
   });
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
   return handleRequest(async () => {
     const body = partnerSchema.parse(await request.json());
-    const { partners } = await getRepositories();
+    const { partners } = await getRepositories({ clinicId: null });
     const partner = await new CreatePartner(partners).execute({
       fullName: body.fullName,
       email: body.email,

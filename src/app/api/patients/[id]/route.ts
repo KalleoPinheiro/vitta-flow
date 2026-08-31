@@ -29,7 +29,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { patients } = await getRepositories();
+    const { patients } = await getRepositories({ clinicId: null });
     return toPatientDto(await new GetPatient(patients).execute({ id }));
   });
 }
@@ -41,7 +41,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = updatePatientSchema.parse(await request.json());
-    const { patients, partners } = await getRepositories();
+    const { patients, partners } = await getRepositories({ clinicId: null });
     const patient = await new UpdatePatient(patients, partners).execute({
       id,
       fullName: body.fullName,
@@ -63,7 +63,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = setActiveSchema.parse(await request.json());
-    const { patients } = await getRepositories();
+    const { patients } = await getRepositories({ clinicId: null });
     const patient = await new SetPatientActive(patients).execute({ id, active: body.active });
     return toPatientDto(patient);
   });

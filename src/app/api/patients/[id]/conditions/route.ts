@@ -25,7 +25,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { conditions, auditEvents } = await getRepositories();
+    const { conditions, auditEvents } = await getRepositories({ clinicId: null });
     const result = await new ListConditions(conditions).execute({ patientId: id });
     recordAudit(auditEvents, guard.session, {
       action: "read",
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = conditionSchema.parse(await request.json());
-    const { conditions, patients, auditEvents } = await getRepositories();
+    const { conditions, patients, auditEvents } = await getRepositories({ clinicId: null });
     const condition = await new CreateCondition(conditions, patients).execute({
       patientId: id,
       kind: body.kind,

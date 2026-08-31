@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   if (!guard.ok) return guard.response;
 
   return handleRequest(async () => {
-    const { supplies } = await getRepositories();
+    const { supplies } = await getRepositories({ clinicId: null });
     const result = await new ListSupplies(supplies).execute();
     return result.map(({ supply }) => toSupplyDto(supply));
   });
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
   return handleRequest(async () => {
     const body = supplySchema.parse(await request.json());
-    const { supplies } = await getRepositories();
+    const { supplies } = await getRepositories({ clinicId: null });
     return toSupplyDto(await new CreateSupply(supplies).execute(body));
   });
 }

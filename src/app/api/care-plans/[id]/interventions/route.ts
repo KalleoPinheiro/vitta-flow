@@ -24,7 +24,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const { id } = await context.params;
     const body = interventionSchema.parse(await request.json());
     const { carePlanInterventions, carePlans, nursingInterventions, auditEvents } =
-      await getRepositories();
+      await getRepositories({ clinicId: null });
     const intervention = await new PrescribeIntervention(
       carePlanInterventions,
       carePlans,

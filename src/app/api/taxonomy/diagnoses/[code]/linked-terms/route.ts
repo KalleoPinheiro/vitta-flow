@@ -13,7 +13,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { code } = await context.params;
-    const { taxonomyLinkages, nursingOutcomes, nursingInterventions } = await getRepositories();
+    const { taxonomyLinkages, nursingOutcomes, nursingInterventions } = await getRepositories({ clinicId: null });
     const linked = await new SuggestLinkedTerms(
       taxonomyLinkages,
       nursingOutcomes,

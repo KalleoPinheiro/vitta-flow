@@ -17,7 +17,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = patchSchema.parse(await request.json());
-    const { followUps } = await getRepositories();
+    const { followUps } = await getRepositories({ clinicId: null });
     return toFollowUpDto(
       await new SetFollowUpStatus(followUps).execute({ id, status: body.status }),
     );

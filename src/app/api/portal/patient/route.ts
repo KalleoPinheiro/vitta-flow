@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       invoices,
       followUps,
       conditionPhotos,
-    } = await getRepositories();
+    } = await getRepositories({ clinicId: null });
     const data = await new GetPatientPortalData(
       patients,
       appointments,
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       conditionPhotos,
     ).execute({ email: session.subject });
 
-    recordAudit((await getRepositories()).auditEvents, session, {
+    recordAudit((await getRepositories({ clinicId: null })).auditEvents, session, {
       action: "read",
       resourceType: "portal-patient",
       resourceId: data.patient.id,

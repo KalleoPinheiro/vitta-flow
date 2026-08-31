@@ -418,7 +418,7 @@ describe("Feature: Rotas de auditoria, export LGPD, fotos (staff) e cron de lemb
       // não de um valor fixo (foto recém-criada não discrimina o cálculo).
       const { getRepositories } = await import("@/infrastructure/container");
       const { ConditionPhoto } = await import("@/domain/clinical/condition-photo");
-      const repos = await getRepositories();
+      const repos = await getRepositories({ clinicId: null });
       const stored = await repos.conditionPhotos.findById(photoId);
       const thirtyHoursAgo = new Date(Date.now() - 30 * 3_600_000);
       await repos.conditionPhotos.save(

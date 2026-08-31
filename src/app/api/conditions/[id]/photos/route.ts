@@ -15,7 +15,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { conditionPhotos, conditions, auditEvents } = await getRepositories();
+    const { conditionPhotos, conditions, auditEvents } = await getRepositories({ clinicId: null });
     const [photos, condition] = await Promise.all([
       conditionPhotos.findByConditionId(id),
       conditions.findById(id),
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   const assessmentId = form?.get("assessmentId");
 
   return handleRequest(async () => {
-    const { conditionPhotos, conditions, photoStorage, auditEvents } = await getRepositories();
+    const { conditionPhotos, conditions, photoStorage, auditEvents } = await getRepositories({ clinicId: null });
     const photo = await new AddConditionPhoto(conditionPhotos, conditions, photoStorage).execute({
       conditionId: id,
       data: new Uint8Array(await file.arrayBuffer()),

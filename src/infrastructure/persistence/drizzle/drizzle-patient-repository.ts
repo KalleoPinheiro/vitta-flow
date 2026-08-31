@@ -21,7 +21,11 @@ const toPatient = (row: PatientRow): Patient =>
   });
 
 export class DrizzlePatientRepository implements PatientRepository {
-  constructor(private readonly db: AppDb) {}
+  // clinicId ainda não é usado nas queries — passado desde T5, consumido pela T7 (withTenant).
+  constructor(
+    private readonly db: AppDb,
+    private readonly clinicId: string | null,
+  ) {}
 
   async save(patient: Patient): Promise<void> {
     const values = {

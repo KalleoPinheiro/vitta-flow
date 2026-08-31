@@ -35,7 +35,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { appointments, patients } = await getRepositories();
+    const { appointments, patients } = await getRepositories({ clinicId: null });
     const appointment = await appointments.findById(id);
     if (!appointment) {
       return null;
@@ -52,7 +52,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = actionSchema.parse(await request.json());
-    const services = await getRepositories();
+    const services = await getRepositories({ clinicId: null });
     const { appointments } = services;
 
     if (body.action === "complete") {

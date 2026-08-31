@@ -23,7 +23,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = updateSchema.parse(await request.json());
-    const { supplies } = await getRepositories();
+    const { supplies } = await getRepositories({ clinicId: null });
     return toSupplyDto(await new UpdateSupply(supplies).execute({ id, ...body }));
   });
 }

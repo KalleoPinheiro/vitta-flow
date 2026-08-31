@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
   return handleRequest(async () => {
     const { patients, conditions, conditionPhotos, consentRecords, photoStorage, auditEvents } =
-      await getRepositories();
+      await getRepositories({ clinicId: null });
 
     const patient = await patients.findByEmail(session.subject);
     const condition = await conditions.findById(conditionId);

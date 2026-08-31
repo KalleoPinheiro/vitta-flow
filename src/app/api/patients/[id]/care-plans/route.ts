@@ -21,7 +21,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { carePlans, auditEvents } = await getRepositories();
+    const { carePlans, auditEvents } = await getRepositories({ clinicId: null });
     const result = await new ListCarePlansByPatient(carePlans).execute({ patientId: id });
     recordAudit(auditEvents, guard.session, {
       action: "read",
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = openCarePlanSchema.parse(await request.json());
-    const { carePlans, patients, conditions, auditEvents } = await getRepositories();
+    const { carePlans, patients, conditions, auditEvents } = await getRepositories({ clinicId: null });
     const plan = await new OpenCarePlan(carePlans, patients, conditions).execute({
       patientId: id,
       conditionId: body.conditionId ?? null,

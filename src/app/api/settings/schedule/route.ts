@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
   if (!guard.ok) return guard.response;
 
   return handleRequest(async () => {
-    const { scheduleConfig } = await getRepositories();
+    const { scheduleConfig } = await getRepositories({ clinicId: null });
     const config = await scheduleConfig.get();
     return { config: config ?? DEFAULT_SCHEDULE_CONFIG, isDefault: config === null };
   });
@@ -32,7 +32,7 @@ export async function PUT(request: NextRequest) {
 
   return handleRequest(async () => {
     const body = configSchema.parse(await request.json());
-    const { scheduleConfig } = await getRepositories();
+    const { scheduleConfig } = await getRepositories({ clinicId: null });
     const validated = validateScheduleConfig(body);
     await scheduleConfig.save(validated);
     return { config: validated, isDefault: false };

@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       offset: params.get("offset") ?? undefined,
     });
 
-    const { auditEvents } = await getRepositories();
+    const { auditEvents } = await getRepositories({ clinicId: null });
     const events = await auditEvents.findAll(
       {
         patientId: query.patientId,

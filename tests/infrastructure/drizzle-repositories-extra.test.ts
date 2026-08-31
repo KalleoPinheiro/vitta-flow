@@ -58,7 +58,7 @@ describe("Feature: Persistência PostgreSQL — auditoria, pacotes, equipe e int
       email: "maria@example.com",
       phone: "11999990000",
     });
-    await new DrizzlePatientRepository(appDb).save(patient);
+    await new DrizzlePatientRepository(appDb, null).save(patient);
 
     procedure = Procedure.create({
       name: "Consulta de enfermagem",

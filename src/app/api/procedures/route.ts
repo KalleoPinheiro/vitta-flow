@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   if (!guard.ok) return guard.response;
 
   return handleRequest(async () => {
-    const { procedures } = await getRepositories();
+    const { procedures } = await getRepositories({ clinicId: null });
     const result = await procedures.findAll();
     return result.map(toProcedureDto);
   });
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
   return handleRequest(async () => {
     const body = procedureSchema.parse(await request.json());
-    const { procedures } = await getRepositories();
+    const { procedures } = await getRepositories({ clinicId: null });
 
     const existing = await procedures.findByName(body.name);
     if (existing) {

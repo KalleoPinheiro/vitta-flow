@@ -21,7 +21,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = updateSchema.parse(await request.json());
-    const { userAccounts } = await getRepositories();
+    const { userAccounts } = await getRepositories({ clinicId: null });
 
     const all = await userAccounts.findAll();
     const existing = all.find((account) => account.id === id);

@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
   return handleRequest(async () => {
     const body = recurringSchema.parse(await request.json());
-    const services = await getRepositories();
+    const services = await getRepositories({ clinicId: null });
 
     const result = await new ScheduleRecurringAppointments(
       new ScheduleAppointment(services.appointments, services.patients, services.scheduleConfig),

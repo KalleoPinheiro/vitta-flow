@@ -48,7 +48,7 @@ describe("Feature: Persistência PostgreSQL (Drizzle)", () => {
     db = drizzle(client, { schema });
     await migrate(db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
     appDb = db as unknown as AppDb;
-    patientRepo = new DrizzlePatientRepository(appDb);
+    patientRepo = new DrizzlePatientRepository(appDb, null);
     appointmentRepo = new DrizzleAppointmentRepository(appDb);
     invoiceRepo = new DrizzleInvoiceRepository(appDb);
     professionalRepo = new DrizzleProfessionalRepository(appDb);

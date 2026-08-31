@@ -184,8 +184,8 @@ T18 → T19 → T20 → T21 → T22 → T23 → T24
 **Tools**: MCP: NONE. Skill: NONE.
 
 **Done when**:
-- [ ] Toda chamada existente a `getRepositories()` no código de produção atualizada para `getRepositories({ clinicId: ... })` (nenhuma rota ainda passa `clinicId` real além do que T7 fizer — usar `null` como placeholder explícito só é aceitável se nenhuma rota depender disso antes de T7; caso contrário, adiar a atualização de call sites de rota para dentro de cada task de isolamento correspondente)
-- [ ] `npm run typecheck` limpo
+- [x] Toda chamada existente a `getRepositories()` no código de produção atualizada para `getRepositories({ clinicId: ... })` (nenhuma rota ainda passa `clinicId` real além do que T7 fizer — usar `null` como placeholder explícito só é aceitável se nenhuma rota depender disso antes de T7; caso contrário, adiar a atualização de call sites de rota para dentro de cada task de isolamento correspondente)
+- [x] `npm run typecheck` limpo
 
 **Tests**: integration (cobertura via testes de repositório/rota já existentes continuando verdes)
 **Gate**: quick

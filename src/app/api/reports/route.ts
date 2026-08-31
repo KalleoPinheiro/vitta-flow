@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       return cached;
     }
 
-    const { appointments, invoices, stockMovements, professionals } = await getRepositories();
+    const { appointments, invoices, stockMovements, professionals } = await getRepositories({ clinicId: null });
     const report = await new GetMonthlyReport(
       appointments,
       invoices,

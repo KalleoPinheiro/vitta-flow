@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
   if (!guard.ok) return guard.response;
 
   return handleRequest(async () => {
-    const { conditionPhotos, conditions, patients, assessments } = await getRepositories();
+    const { conditionPhotos, conditions, patients, assessments } = await getRepositories({ clinicId: null });
     const pending = await conditionPhotos.findPendingTriage();
 
     const conditionIds = [...new Set(pending.map((photo) => photo.conditionId))];

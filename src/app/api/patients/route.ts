@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       limit: params.get("limit") ?? undefined,
       offset: params.get("offset") ?? undefined,
     });
-    const { patients } = await getRepositories();
+    const { patients } = await getRepositories({ clinicId: null });
     const result = await new ListPatients(patients).execute({ search, limit, offset });
     return result.map((p) => toPatientDto(p));
   });
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
   return handleRequest(async () => {
     const body = createPatientSchema.parse(await request.json());
-    const { patients, partners } = await getRepositories();
+    const { patients, partners } = await getRepositories({ clinicId: null });
     const patient = await new CreatePatient(patients, partners).execute({
       fullName: body.fullName,
       email: body.email,

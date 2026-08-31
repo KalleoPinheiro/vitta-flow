@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
 type AuthResult = { subject: string } | { error: string; status: number };
 
 async function authenticateAccount(email: string, password: string): Promise<AuthResult> {
-  const { userAccounts } = await getRepositories();
+  const { userAccounts } = await getRepositories({ clinicId: null });
   const account = await userAccounts.findByEmail(email);
   const isValid =
     account?.isActive === true && (await verifyPassword(password, account.passwordHash));

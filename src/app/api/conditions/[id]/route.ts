@@ -17,7 +17,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { conditions, auditEvents } = await getRepositories();
+    const { conditions, auditEvents } = await getRepositories({ clinicId: null });
     const condition = await conditions.findById(id);
     if (!condition) {
       return null;
@@ -39,7 +39,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     actionSchema.parse(await request.json());
-    const { conditions, auditEvents } = await getRepositories();
+    const { conditions, auditEvents } = await getRepositories({ clinicId: null });
     const condition = await new ResolveCondition(conditions).execute({ id });
     recordAudit(auditEvents, guard.session, {
       action: "update",

@@ -15,7 +15,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
   const { session } = guard;
 
   const { id } = await context.params;
-  const { conditionPhotos, conditions, patients, photoStorage } = await getRepositories();
+  const { conditionPhotos, conditions, patients, photoStorage } = await getRepositories({ clinicId: null });
 
   const photo = await conditionPhotos.findById(id);
   const condition = photo ? await conditions.findById(photo.conditionId) : null;

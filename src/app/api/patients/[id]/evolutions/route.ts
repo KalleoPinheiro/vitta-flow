@@ -48,9 +48,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = evolutionSchema.parse(await request.json());
-    const { evolutions, patients, auditEvents, userAccounts } = await getRepositories({
-      clinicId,
-    });
+    const { evolutions, patients, auditEvents, userAccounts, professionalPatientLinks } =
+      await getRepositories({ clinicId });
     const { session } = guard;
     // Autoria automática: conta individual logada define o profissional autor.
     let professionalId = body.professionalId ?? null;
@@ -67,6 +66,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
       assessment: body.assessment,
       plan: body.plan,
     });
+    // Nota de evolução com profissional concede/renova o vínculo com o
+    // paciente (RBAC-19/20).
+    if (professionalId) {
+      await professionalPatientLinks.ensureLink(professionalId, id);
+    }
     recordAudit(auditEvents, guard.session, {
       action: "create",
       resourceType: "evolution",

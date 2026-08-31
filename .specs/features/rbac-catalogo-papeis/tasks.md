@@ -436,7 +436,7 @@ T8 → T18 → T19
 
 ---
 
-### T17: `ensureLink` chamado na criação de agendamento e nota de evolução
+### T17: `ensureLink` chamado na criação de agendamento e nota de evolução ✅ Complete
 
 **What**: `POST /api/appointments` e `POST /api/patients/[id]/evolutions` chamam `ensureLink` quando o registro criado tem `professionalId`.
 **Where**: `src/app/api/appointments/route.ts`, `src/app/api/patients/[id]/evolutions/route.ts`

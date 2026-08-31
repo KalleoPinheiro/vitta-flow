@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
+import { getRepositories, type Services } from "@/infrastructure/container";
 import { ScheduleAppointment } from "@/application/appointments/schedule-appointment";
 import { ListAppointments } from "@/application/appointments/list-appointments";
 import { handleRequest, fail } from "@/lib/api-response";
@@ -47,6 +47,28 @@ export async function GET(request: NextRequest) {
   });
 }
 
+async function markFollowUpScheduled(
+  services: Services,
+  followUpId: string | null | undefined,
+  patientId: string,
+): Promise<void> {
+  if (!followUpId) return;
+  const followUp = await services.followUps.findById(followUpId);
+  if (followUp?.status === "pending" && followUp.patientId === patientId) {
+    await services.followUps.save(followUp.markScheduled());
+  }
+}
+
+/** Agendamento com profissional concede/renova o vínculo com o paciente, mesmo que quem tenha agendado seja outro papel (RBAC-19/20). */
+async function linkProfessionalToPatient(
+  services: Services,
+  professionalId: string | null | undefined,
+  patientId: string,
+): Promise<void> {
+  if (!professionalId) return;
+  await services.professionalPatientLinks.ensureLink(professionalId, patientId);
+}
+
 export async function POST(request: NextRequest) {
   const guard = requireStaffSession(request);
   if (!guard.ok) return guard.response;
@@ -70,12 +92,8 @@ export async function POST(request: NextRequest) {
       professionalId: body.professionalId ?? null,
       procedureId: body.procedureId ?? null,
     });
-    if (body.followUpId) {
-      const followUp = await services.followUps.findById(body.followUpId);
-      if (followUp?.status === "pending" && followUp.patientId === appointment.patientId) {
-        await services.followUps.save(followUp.markScheduled());
-      }
-    }
+    await markFollowUpScheduled(services, body.followUpId, appointment.patientId);
+    await linkProfessionalToPatient(services, body.professionalId, appointment.patientId);
     scheduleCalendarSync(services, (sync) => sync.created(appointment.id));
     return toAppointmentDto(appointment);
   });

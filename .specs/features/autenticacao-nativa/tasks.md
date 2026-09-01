@@ -282,16 +282,18 @@ T20 → T21
 
 **Done when**:
 
-- [ ] Token válido + senha de 8+ caracteres responde 200 e habilita o login com a nova senha
-- [ ] Token expirado, já usado e inexistente respondem 400 com `Link inválido ou expirado — solicite um novo`
-- [ ] Senha com menos de 8 caracteres responde 400 sem consumir o token
-- [ ] Gate check passes: `npx vitest run tests/api/set-password-route.test.ts`
-- [ ] Test count: 8 tests pass (no silent deletions)
+- [x] Token válido + senha de 8+ caracteres responde 200 e habilita o login com a nova senha
+- [x] Token expirado, já usado e inexistente respondem 400 com `Link inválido ou expirado — solicite um novo`
+- [x] Senha com menos de 8 caracteres responde 400 sem consumir o token
+- [x] Gate check passes: `npx vitest run tests/api/set-password-route.test.ts`
+- [x] Test count: 9 tests pass (no silent deletions)
 
 **Tests**: integration
 **Gate**: full
 
 **Commit**: `feat(auth): adiciona rota de definicao de senha por token`
+
+**Status**: ✅ Done
 
 ---
 

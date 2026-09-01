@@ -24,8 +24,13 @@ import { classifyRoute, isFamilyAllowedForRole } from "./route-family";
 /** Caminhos liberados sem sessão — comparação exata, nunca por prefixo. */
 export const PUBLIC_PATHS = [
   "/login",
+  // Fluxos de primeiro acesso e recuperação: quem os usa, por definição, não tem sessão.
+  "/definir-senha",
+  "/esqueci-senha",
   "/api/auth/login",
   "/api/auth/providers",
+  "/api/auth/set-password",
+  "/api/auth/forgot-password",
   "/api/auth/google",
   "/api/auth/google/callback",
   // Cron externo — a própria rota exige o header x-cron-secret (CRON_SECRET).

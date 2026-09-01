@@ -37,13 +37,14 @@ describe("Feature: Ausência de rota de auto-cadastro (RBAC-14)", () => {
     expect(suspicious).toEqual([]);
   });
 
-  it("Dado nenhuma sessão, Quando POST /api/accounts, Então recusa (não cria conta)", async () => {
+  it("Dado nenhuma sessão, Quando POST /api/accounts, Então recusa com 401 (não cria conta)", async () => {
+    const email = "sem-sessao@x.com";
     const route = await import("@/app/api/accounts/route");
     const response = await route.POST(
       new NextRequest("http://localhost/api/accounts", {
         method: "POST",
         body: JSON.stringify({
-          email: "sem-sessao@x.com",
+          email,
           password: "senhaSegura123", // gitleaks:allow — fixture de teste, não é credencial
           role: "super_admin",
         }),
@@ -51,7 +52,11 @@ describe("Feature: Ausência de rota de auto-cadastro (RBAC-14)", () => {
       }),
     );
 
-    expect(response.status).not.toBe(200);
-    expect(response.status).not.toBe(201);
+    // Guarda de sessão rejeita antes do handler — não a validação de negócio.
+    expect(response.status).toBe(401);
+
+    const { getRepositories } = await import("@/infrastructure/container");
+    const { userAccounts } = await getRepositories({ clinicId: null });
+    expect(await userAccounts.findByEmail(email)).toBeNull();
   });
 });

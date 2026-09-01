@@ -14,6 +14,7 @@ import type { ConditionPhoto } from "@/domain/clinical/condition-photo";
 import type { Professional } from "@/domain/professional/professional";
 import type { Procedure as CatalogProcedure } from "@/domain/catalog/procedure";
 import type { UserAccount } from "@/domain/auth/user-account";
+import { UNSET_PASSWORD_HASH } from "@/lib/auth/password";
 import type { NursingDiagnosis } from "@/domain/taxonomy/nursing-diagnosis";
 import type { NursingOutcome } from "@/domain/taxonomy/nursing-outcome";
 import type { NursingIntervention } from "@/domain/taxonomy/nursing-intervention";
@@ -674,6 +675,8 @@ export interface UserAccountDto {
   email: string;
   professionalId: string | null;
   active: boolean;
+  /** `false` = conta nunca logou (convite ainda não consumido) — habilita reenvio na UI. */
+  passwordSet: boolean;
 }
 
 export const toUserAccountDto = (account: UserAccount): UserAccountDto => ({
@@ -681,4 +684,5 @@ export const toUserAccountDto = (account: UserAccount): UserAccountDto => ({
   email: account.email,
   professionalId: account.professionalId,
   active: account.isActive,
+  passwordSet: account.passwordHash !== UNSET_PASSWORD_HASH,
 });

@@ -1,5 +1,81 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { appUrlFromEnv } from "@/application/auth/send-invite";
+import { appUrlFromEnv, sendInvite } from "@/application/auth/send-invite";
+import { UserAccount } from "@/domain/auth/user-account";
+import type { AuthTokenRepository } from "@/domain/auth/auth-token";
+import type { AuthToken, AuthTokenPurpose } from "@/domain/auth/auth-token";
+import type { EmailGateway, EmailMessage } from "@/application/ports/email-gateway";
+
+class InMemoryAuthTokenRepository implements AuthTokenRepository {
+  readonly items = new Map<string, AuthToken>();
+  async save(token: AuthToken): Promise<void> {
+    this.items.set(token.id, token);
+  }
+  async claimBySecretHash(): Promise<AuthToken | null> {
+    return null;
+  }
+  async markAllUnusedAsUsed(
+    _accountId: string,
+    _purpose: AuthTokenPurpose,
+    _usedAt: Date = new Date(),
+  ): Promise<void> {}
+}
+
+class ThrowingEmailGateway implements EmailGateway {
+  readonly enabled = true;
+  async send(_message: EmailMessage): Promise<void> {
+    throw new Error("provedor fora do ar");
+  }
+}
+
+class WorkingEmailGateway implements EmailGateway {
+  constructor(readonly enabled: boolean) {}
+  async send(_message: EmailMessage): Promise<void> {}
+}
+
+const account = () =>
+  UserAccount.create({
+    email: "convidado@clinica.com",
+    passwordHash: "scrypt$0$sem-senha$sem-senha",
+    role: "atendente",
+    clinicId: "legacy-clinic",
+  });
+
+/**
+ * Issue #52: `sendInvite` engolia a falha de envio sem devolver sinal nenhum
+ * ao chamador — só logava. Agora precisa devolver `delivered`.
+ */
+describe("Feature: sendInvite devolve o resultado da entrega (issue #52)", () => {
+  it("Dado envio bem-sucedido com canal ativo, Quando sendInvite, Então delivered é true", async () => {
+    const result = await sendInvite(
+      { authTokens: new InMemoryAuthTokenRepository(), email: new WorkingEmailGateway(true) },
+      account(),
+    );
+
+    expect(result).toEqual({ delivered: true });
+  });
+
+  it("Dado o gateway em dry-run (enabled false), Quando sendInvite, Então delivered é false mesmo sem lançar", async () => {
+    const result = await sendInvite(
+      { authTokens: new InMemoryAuthTokenRepository(), email: new WorkingEmailGateway(false) },
+      account(),
+    );
+
+    expect(result).toEqual({ delivered: false });
+  });
+
+  it("Dado o envio falhando, Quando sendInvite, Então NÃO lança e delivered é false", async () => {
+    const errors = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const result = await sendInvite(
+      { authTokens: new InMemoryAuthTokenRepository(), email: new ThrowingEmailGateway() },
+      account(),
+    );
+
+    expect(result).toEqual({ delivered: false });
+    expect(errors).toHaveBeenCalled();
+    errors.mockRestore();
+  });
+});
 
 /**
  * O link de convite/reset carrega um segredo de uso único que define a senha da

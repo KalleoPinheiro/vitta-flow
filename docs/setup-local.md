@@ -33,7 +33,8 @@ curl -sX POST http://localhost:3000/api/auth/bootstrap \
   -H "x-bootstrap-token: $VITTA_BOOTSTRAP_TOKEN" \
   -d '{"email":"voce@suaclinica.com"}'
 # o link de convite chega por e-mail; se o envio falhar (ex.: chave de teste),
-# a resposta traz `inviteUrl` para você abrir e definir a senha
+# a resposta traz `delivered: false` e `inviteUrl` para você abrir e definir a senha —
+# confira sempre esses dois campos antes de assumir que o convite chegou
 ```
 
 - App: http://localhost:3000 (login com o e-mail e a senha definidos pelo convite)

@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       clinicId: targetClinicId,
       professionalId: body.professionalId ?? null,
     });
-    await sendInvite(services, account);
-    return toUserAccountDto(account);
+    const { delivered } = await sendInvite(services, account);
+    return { ...toUserAccountDto(account), delivered };
   });
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readdirSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { NextRequest } from "next/server";
 import { PUBLIC_PATHS } from "@/lib/auth/access-policy";
@@ -88,6 +88,27 @@ async function loadHandlers(file: RouteFile): Promise<Array<[HttpMethod, Handler
   ]);
 }
 
+const SRC_ROOT = path.join(process.cwd(), "src");
+
+/** Varredura textual de `src/**` — devolve os arquivos que citam o termo. */
+function sourceFilesMentioning(term: string, dir: string = SRC_ROOT): string[] {
+  const found: string[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      found.push(...sourceFilesMentioning(term, full));
+      continue;
+    }
+    if (!/\.(ts|tsx)$/.test(entry.name)) {
+      continue;
+    }
+    if (readFileSync(full, "utf8").includes(term)) {
+      found.push(path.relative(SRC_ROOT, full));
+    }
+  }
+  return found.sort();
+}
+
 describe("Feature: Conformidade das guardas de rota", () => {
   it("Dado o diretório de rotas, Quando varrer, Então encontra os arquivos de rota", () => {
     expect(routeFiles.length).toBeGreaterThan(50);
@@ -108,6 +129,33 @@ describe("Feature: Conformidade das guardas de rota", () => {
 
     it("Dado a allowlist deste teste, Quando conferir, Então só cobre auth e o cron de lembretes", () => {
       expect([...UNGUARDED_PREFIXES]).toEqual(["api/auth/", "api/reminders/run"]);
+    });
+  });
+
+  /**
+   * AUTH-21 / AUTH-22: o login por Google e a allowlist de e-mails foram
+   * removidos (ADR-004). Estas checagens são estruturais de propósito — uma
+   * rota ou uma leitura de env que ressuscitasse quebraria o build aqui, mesmo
+   * que nenhum teste de comportamento a exercitasse.
+   */
+  describe("Cenário: o caminho de autenticação por Google não existe mais", () => {
+    it("Dado a varredura de rotas, Quando procurar handlers sob api/auth/google, Então não existe nenhum", () => {
+      const googleRoutes = routeFiles.filter((file) =>
+        file.relative.startsWith("api/auth/google"),
+      );
+
+      expect(
+        googleRoutes.map((file) => file.relative),
+        "login por Google foi removido na issue #21 (ADR-004) — nenhuma rota deve reaparecer sob api/auth/google",
+      ).toEqual([]);
+    });
+
+    it("Dado o código-fonte da aplicação, Quando procurar GOOGLE_ALLOWED_EMAILS, Então não há nenhuma leitura", () => {
+      expect(sourceFilesMentioning("GOOGLE_ALLOWED_EMAILS")).toEqual([]);
+    });
+
+    it("Dado PUBLIC_PATHS, Quando conferir, Então nenhuma rota de Google segue liberada", () => {
+      expect(PUBLIC_PATHS.filter((p) => p.includes("google"))).toEqual([]);
     });
   });
 

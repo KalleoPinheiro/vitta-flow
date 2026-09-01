@@ -610,15 +610,17 @@ T20 → T21
 
 **Done when**:
 
-- [ ] O teste falha se um arquivo de rota reaparecer sob `api/auth/google`
-- [ ] O teste falha se `GOOGLE_ALLOWED_EMAILS` voltar a `src/**`
-- [ ] Gate check passes: `npx vitest run tests/api/route-guard-conformance.test.ts`
-- [ ] Test count: 3 novos tests pass (no silent deletions)
+- [x] O teste falha se um arquivo de rota reaparecer sob `api/auth/google`
+- [x] O teste falha se `GOOGLE_ALLOWED_EMAILS` voltar a `src/**`
+- [x] Gate check passes: `npx vitest run tests/api/route-guard-conformance.test.ts`
+- [x] Test count: 3 novos tests pass (no silent deletions)
 
 **Tests**: integration
 **Gate**: full
 
 **Commit**: `test(auth): confirma ausencia das rotas de login por Google`
+
+**Status**: ✅ Done
 
 ---
 

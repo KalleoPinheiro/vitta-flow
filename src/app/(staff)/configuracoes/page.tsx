@@ -235,6 +235,9 @@ function AccountsSection() {
         { method: "POST" },
       );
       setActionError(null);
+      if (result.delivered && account.email === undelivered) {
+        setUndelivered(null);
+      }
       setActionNotice(
         result.delivered
           ? `Convite reenviado para ${account.email}.`

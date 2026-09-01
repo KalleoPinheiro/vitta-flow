@@ -191,16 +191,18 @@ T20 → T21
 
 **Done when**:
 
-- [ ] Migração `drizzle/0023_auth-tokens.sql` cria a tabela com índice único em `secret_hash`
-- [ ] `findUsableBySecretHash` devolve `null` para token expirado, usado ou inexistente
-- [ ] `markAllUnusedAsUsed(accountId, purpose)` invalida só os do propósito informado
-- [ ] Gate check passes: `npx vitest run tests/infrastructure/drizzle-auth-token-repository.test.ts`
-- [ ] Test count: 6 tests pass (no silent deletions)
+- [x] Migração `drizzle/0023_auth-tokens.sql` cria a tabela com índice único em `secret_hash`
+- [x] `findUsableBySecretHash` devolve `null` para token expirado, usado ou inexistente
+- [x] `markAllUnusedAsUsed(accountId, purpose)` invalida só os do propósito informado
+- [x] Gate check passes: `npx vitest run tests/infrastructure/drizzle-auth-token-repository.test.ts`
+- [x] Test count: 6 tests pass (no silent deletions)
 
 **Tests**: integration
 **Gate**: full
 
 **Commit**: `feat(auth): persiste tokens de ativacao em auth_tokens`
+
+**Status**: ✅ Done
 
 ---
 

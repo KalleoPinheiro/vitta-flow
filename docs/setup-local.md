@@ -1,6 +1,6 @@
-# Setup local — VittaFlow (referência)
+# Setup local — VittaFlow
 
-**Pra rodar a aplicação do zero até o primeiro login, siga [`runbooks/rodar-localmente.md`](./runbooks/rodar-localmente.md) — é o passo a passo completo e autossuficiente.** Este arquivo é a referência de apoio: pré-requisitos, todas as variáveis, estrutura do projeto, scripts, testes, segurança.
+Do zero até o primeiro login, mais referência completa (variáveis, scripts, testes, estrutura, segurança) numa página só.
 
 ## Pré-requisitos
 
@@ -12,9 +12,74 @@
 | openssl | qualquer | gerar `AUTH_SECRET` |
 | gh CLI | opcional | baixar gitleaks (seção segurança) |
 
-## Via A — Docker Compose (recomendado)
+## Passo a passo (Docker Compose, recomendado)
 
-Passo a passo: [`runbooks/rodar-localmente.md`](./runbooks/rodar-localmente.md).
+### 1. Configurar variáveis
+
+```bash
+cp .env.example .env
+```
+
+Abra o `.env` e preencha estas quatro (as únicas obrigatórias pra subir):
+
+```bash
+AUTH_SECRET=$(openssl rand -hex 32)
+VITTA_BOOTSTRAP_TOKEN=$(openssl rand -hex 24)
+RESEND_API_KEY=...
+EMAIL_FROM="VittaFlow <nao-responda@suaclinica.com>"
+```
+
+Sem conta no Resend ainda? Sem problema — sem essas duas o app roda em **dry-run de e-mail** (o link de convite sai no log em vez de ser enviado). Configurar de vez: [`runbooks/configurar-resend.md`](./runbooks/configurar-resend.md).
+
+### 2. Subir a stack
+
+```bash
+docker compose up -d --build
+```
+
+Sobe Postgres 16 + app. As migrações do Drizzle rodam sozinhas no boot — nada a fazer manualmente.
+
+Espere o Next aceitar conexões antes do próximo passo:
+
+```bash
+until curl -sf http://localhost:3000/api/auth/providers >/dev/null; do sleep 2; done
+```
+
+### 3. Criar o primeiro acesso (Super Admin)
+
+Instalação vazia não tem senha mestre nem allowlist (ADR-004) — o único caminho é este endpoint, e ele se fecha sozinho depois da primeira conta:
+
+```bash
+set -a; . ./.env; set +a
+curl -sX POST http://localhost:3000/api/auth/bootstrap \
+  -H "Content-Type: application/json" \
+  -H "x-bootstrap-token: $VITTA_BOOTSTRAP_TOKEN" \
+  -d '{"email":"voce@suaclinica.com"}'
+```
+
+A conta nasce **sem senha**. Duas formas de recebê-la:
+
+- **E-mail configurado**: o convite chega na caixa de entrada — abra o link e defina a senha.
+- **Dry-run** (sem Resend): a resposta do curl traz `inviteUrl` — abra direto no navegador.
+
+### 4. Login
+
+Abra http://localhost:3000, entre com o e-mail do passo 3 e a senha que você acabou de definir. Pronto — app rodando, primeira conta criada.
+
+- Postgres, se precisar inspecionar: `localhost:5432` (user/pass `vitta`/`vitta`, db `vitta`)
+
+### Parar / limpar
+
+```bash
+docker compose down       # mantém dados (volume pgdata)
+docker compose down -v    # apaga tudo
+```
+
+### Depois de logado
+
+- Configurar e-mail de verdade: [`runbooks/configurar-resend.md`](./runbooks/configurar-resend.md)
+- Sincronizar Google Agenda: [`runbooks/configurar-google-agenda.md`](./runbooks/configurar-google-agenda.md)
+- Lembretes por WhatsApp: [`runbooks/configurar-whatsapp-lembretes.md`](./runbooks/configurar-whatsapp-lembretes.md)
 
 ## Via B — Node local + Postgres do compose
 
@@ -27,7 +92,7 @@ npm install
 npm run dev                      # http://localhost:3000
 ```
 
-Sem autenticação configurada (`AUTH_SECRET` vazio) e com `VITTA_ALLOW_OPEN_MODE=true`, fora de produção: app roda em **modo aberto** com aviso — ver seção Auth abaixo. Para exercitar o login real, define `AUTH_SECRET` + `VITTA_BOOTSTRAP_TOKEN` e faz o bootstrap.
+Sem autenticação configurada (`AUTH_SECRET` vazio) e com `VITTA_ALLOW_OPEN_MODE=true`, fora de produção: app roda em **modo aberto** com aviso — ver seção Auth abaixo. Para exercitar o login real, define `AUTH_SECRET` + `VITTA_BOOTSTRAP_TOKEN` e faz o bootstrap (passo 3 acima).
 
 ### Migrações manuais (opcional)
 
@@ -60,7 +125,7 @@ Copia `.env.example` → `.env` e ajusta. Referência completa:
 | `CLINIC_NAME` / `CLINIC_CNPJ` / `CLINIC_ADDRESS` / `CLINIC_CITY` / `CLINIC_PROFESSIONAL_NAME` / `CLINIC_PROFESSIONAL_REGISTRY` | Não | Cabeçalho/assinatura de documentos clínicos |
 | `WHATSAPP_TOKEN` / `WHATSAPP_PHONE_NUMBER_ID` | Não | Lembretes via WhatsApp (Meta Cloud API); sem elas roda em dry-run |
 
-Existe um único método de login: e-mail + senha da própria conta (ADR-004). Produção sem `AUTH_SECRET`: 503 fail-closed. A primeira conta de uma instalação vazia sai de `POST /api/auth/bootstrap` (header `x-bootstrap-token`); depois disso a rota responde 403 para sempre — passo a passo em [`runbooks/rodar-localmente.md`](./runbooks/rodar-localmente.md).
+Existe um único método de login: e-mail + senha da própria conta (ADR-004). Produção sem `AUTH_SECRET`: 503 fail-closed. A primeira conta de uma instalação vazia sai de `POST /api/auth/bootstrap` (header `x-bootstrap-token`); depois disso a rota responde 403 para sempre.
 
 ### Modo aberto (dev/demo sem login)
 
@@ -72,14 +137,6 @@ VITTA_ALLOW_OPEN_MODE=true
 ```
 
 Ignorada quando `NODE_ENV=production` — nunca dá pra rodar produção sem auth. Auditoria registra ator `anonymous`.
-
-### Integrações opcionais
-
-Passo a passo de configuração em runbooks dedicados:
-
-- E-mail transacional (convite/reset) — [`runbooks/configurar-resend.md`](./runbooks/configurar-resend.md)
-- Google Agenda, OAuth ou service account — [`runbooks/configurar-google-agenda.md`](./runbooks/configurar-google-agenda.md)
-- Lembretes via WhatsApp — [`runbooks/configurar-whatsapp-lembretes.md`](./runbooks/configurar-whatsapp-lembretes.md)
 
 ## Scripts úteis
 
@@ -152,11 +209,12 @@ Detalhes completos (por que reproduzir local, divergência de scanner hospedado,
 | Sintoma | Causa provável | Ação |
 |---|---|---|
 | 503 em toda rota | Sem `AUTH_SECRET` nem `VITTA_ALLOW_OPEN_MODE` | Define `AUTH_SECRET` ou `VITTA_ALLOW_OPEN_MODE=true` (fora de produção) |
-| Porta 5432/3000 ocupada | Outro serviço na porta | `POSTGRES_PORT=`/`APP_PORT=` no compose, ou ajusta `DATABASE_URL` na via B |
+| `required variable EMAIL_FROM is missing a value` (no `up`) | `.env` sem `RESEND_API_KEY`/`EMAIL_FROM` | Preenche no `.env` antes de subir — ver [`runbooks/configurar-resend.md`](./runbooks/configurar-resend.md) |
+| Porta 5432/3000 ocupada | Outro serviço na porta | `POSTGRES_PORT=5477 APP_PORT=3001 docker compose up -d --build` |
 | Build mata processo (`Ineffective mark-compacts`) | Heap V8 padrão baixo pra máquina | Já mitigado via `--max-old-space-size=4096`; se persistir, sobe o valor em `package.json` |
-| Bootstrap responde 403 | Já existe conta, ou `x-bootstrap-token` não bate com `VITTA_BOOTSTRAP_TOKEN` | Use "esqueci minha senha" se a instalação já tem contas; detalhes em [`runbooks/rodar-localmente.md`](./runbooks/rodar-localmente.md) |
-| Convite/reset não chega | Sem `RESEND_API_KEY`/`EMAIL_FROM` fora de produção, o gateway é dry-run | O link sai no log do servidor (`[e-mail desativado] …`); configura de vez em [`runbooks/configurar-resend.md`](./runbooks/configurar-resend.md) |
-| `docker compose up` falha com "required variable ... is missing a value" | `.env` sem uma variável marcada obrigatória no `docker-compose.yml` (ex.: `RESEND_API_KEY`/`EMAIL_FROM`) | Preenche no `.env` antes de subir |
+| Bootstrap responde 403 | Já existe conta, ou `x-bootstrap-token` não bate com `VITTA_BOOTSTRAP_TOKEN` (a rota não distingue os dois casos, de propósito) | Use "esqueci minha senha" se a instalação já tem contas |
+| Bootstrap responde 429 | Rate limit: 5 tentativas/min por IP | Espera um minuto |
+| Convite/reset não chega | Sem `RESEND_API_KEY`/`EMAIL_FROM` fora de produção, o gateway é dry-run | O link sai no log do servidor (`[e-mail desativado] …`) ou no `inviteUrl` da resposta do bootstrap; configura de vez em [`runbooks/configurar-resend.md`](./runbooks/configurar-resend.md) |
 | Consulta rejeitada com 400 | Fora do horário comercial (seg-sex 08h-18h, `TZ`) | Ajusta horário ou `TZ` |
 | Consulta rejeitada com 409 | Conflito de agenda (folga mínima 15min) | Escolhe outro horário |
 | E2E falha só ao reaproveitar `npm run dev` | `E2E_AUTH_SECRET`/`E2E_BOOTSTRAP_TOKEN` divergentes dos do servidor | Usa os mesmos valores nos dois pares, ou deixa a suíte subir seu próprio servidor |
@@ -164,7 +222,7 @@ Detalhes completos (por que reproduzir local, divergência de scanner hospedado,
 ## Referências
 
 - [README.md](../README.md) — funcionalidades, API, arquitetura, stack
-- [runbooks/](./runbooks/) — passo a passo operacional (subir a stack, Resend, Google Agenda, WhatsApp, bootstrap)
+- [runbooks/](./runbooks/) — configuração de integrações (Resend, Google Agenda, WhatsApp)
 - [prd-fase-1.md](planning/product/prd-fase-1.md), [prd-fase-2.md](planning/product/prd-fase-2.md), [prd-fase-3.md](planning/product/prd-fase-3.md) — requisitos por fase
 - [analise-seguranca-escalabilidade.md](audits/analise-seguranca-escalabilidade.md) — análise de segurança/escalabilidade
 - [.env.example](../.env.example) — todas as variáveis com comentários inline

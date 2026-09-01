@@ -2,18 +2,16 @@
 
 Sistema de gestão completo para clínica de estomaterapia: prontuário eletrônico (anamnese, evolução SOAP, acompanhamento de estomias e feridas), agenda com calendário e regras de negócio, faturamento, estoque de insumos, recall de retornos e relatórios gerenciais.
 
-⚙️ Rodar localmente (passo a passo): [docs/runbooks/rodar-localmente.md](docs/runbooks/rodar-localmente.md) — referência completa: [docs/setup-local.md](docs/setup-local.md)
+⚙️ Rodar localmente (passo a passo + referência completa): [docs/setup-local.md](docs/setup-local.md)
 📄 PRD do módulo clínico: [docs/planning/product/prd-fase-1.md](docs/planning/product/prd-fase-1.md)
 🔐 Análise de segurança/escalabilidade + plano de ação: [docs/audits/analise-seguranca-escalabilidade.md](docs/audits/analise-seguranca-escalabilidade.md)
 🎨 Lacunas do design system, para backlog da lib: [docs/still-void-gaps.md](docs/still-void-gaps.md)
 
 ## Como rodar
 
-Passo a passo completo, do `.env` até o primeiro login: **[docs/runbooks/rodar-localmente.md](docs/runbooks/rodar-localmente.md)**.
+Passo a passo completo, do `.env` até o primeiro login: **[docs/setup-local.md](docs/setup-local.md)**.
 
 Resumo: `cp .env.example .env` → preenche `AUTH_SECRET`/`VITTA_BOOTSTRAP_TOKEN`/e-mail → `docker compose up -d --build` → cria o Super Admin via `POST /api/auth/bootstrap` → app em http://localhost:3000.
-
-Alternativa com hot reload (Node local + só o Postgres do compose): mesmo runbook, seção "Alternativa".
 
 ### Variáveis de ambiente
 

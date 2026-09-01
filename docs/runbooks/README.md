@@ -1,8 +1,7 @@
 # Runbooks
 
-Guias operacionais de tarefa única: "quero fazer X agora". Para referência completa de setup (pré-requisitos, todas as variáveis, estrutura do projeto, troubleshooting geral), ver [`../setup-local.md`](../setup-local.md) — os runbooks aqui aprofundam pontos específicos que lá ficam resumidos.
+Guias operacionais de tarefa única: "quero fazer X agora". Rodar a aplicação do zero até o primeiro login está em [`../setup-local.md`](../setup-local.md) — os runbooks aqui cobrem integrações opcionais.
 
-- [`rodar-localmente.md`](./rodar-localmente.md) — do zero ao primeiro login: subir a stack (Docker Compose) e criar o primeiro Super Admin.
 - [`configurar-resend.md`](./configurar-resend.md) — e-mail transacional (convite/reset de senha): conta, domínio verificado, ou sandbox de teste.
 - [`configurar-google-agenda.md`](./configurar-google-agenda.md) — sincronização de agenda via OAuth ou service account.
 - [`configurar-whatsapp-lembretes.md`](./configurar-whatsapp-lembretes.md) — lembretes de consulta via Meta Cloud API.

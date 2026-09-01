@@ -342,16 +342,18 @@ T20 → T21
 
 **Done when**:
 
-- [ ] E-mail existente recebe mensagem com link de reset de 1 h
-- [ ] E-mail inexistente devolve status e corpo idênticos, sem enviar e-mail
-- [ ] Sexta chamada no mesmo minuto responde 429
-- [ ] Gate check passes: `npx vitest run tests/api/forgot-password-route.test.ts`
-- [ ] Test count: 6 tests pass (no silent deletions)
+- [x] E-mail existente recebe mensagem com link de reset de 1 h
+- [x] E-mail inexistente devolve status e corpo idênticos, sem enviar e-mail
+- [x] Sexta chamada no mesmo minuto responde 429
+- [x] Gate check passes: `npx vitest run tests/api/forgot-password-route.test.ts`
+- [x] Test count: 6 tests pass (no silent deletions)
 
 **Tests**: integration
 **Gate**: full
 
 **Commit**: `feat(auth): adiciona reset de senha self-service por e-mail`
+
+**Status**: ✅ Done
 
 ---
 

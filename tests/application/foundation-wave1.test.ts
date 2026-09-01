@@ -71,11 +71,21 @@ describe("Feature O1.2: Contas individuais (senha scrypt)", () => {
 
   it("Dado email inválido ou hash cru, Quando criar conta, Então ValidationError", async () => {
     const hash = await hashPassword("12345678");
-    expect(() => UserAccount.create({ email: "sem-arroba", passwordHash: hash })).toThrow(
-      ValidationError,
-    );
     expect(() =>
-      UserAccount.create({ email: "a@b.com", passwordHash: "senha-em-claro" }),
+      UserAccount.create({
+        email: "sem-arroba",
+        passwordHash: hash,
+        role: "company_admin",
+        clinicId: "legacy-clinic",
+      }),
+    ).toThrow(ValidationError);
+    expect(() =>
+      UserAccount.create({
+        email: "a@b.com",
+        passwordHash: "senha-em-claro",
+        role: "company_admin",
+        clinicId: "legacy-clinic",
+      }),
     ).toThrow(ValidationError);
   });
 
@@ -83,6 +93,8 @@ describe("Feature O1.2: Contas individuais (senha scrypt)", () => {
     const account = UserAccount.create({
       email: "Ana.Costa@Clinica.COM",
       passwordHash: await hashPassword("12345678"),
+      role: "company_admin",
+      clinicId: "legacy-clinic",
     });
     expect(account.email).toBe("ana.costa@clinica.com");
   });

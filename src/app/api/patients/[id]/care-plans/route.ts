@@ -5,6 +5,7 @@ import { OpenCarePlan } from "@/application/clinical/open-care-plan";
 import { ListCarePlansByPatient } from "@/application/clinical/list-care-plans-by-patient";
 import { handleRequest } from "@/lib/api-response";
 import { requireStaffSession } from "@/lib/auth/require-session";
+import { assertPatientAccessibleToProfessional } from "@/lib/auth/professional-patient-scope";
 import { recordAudit } from "@/lib/audit";
 import { toCarePlanDto } from "@/lib/dto";
 import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
@@ -22,9 +23,10 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { carePlans, auditEvents } = await getRepositories({
+    const { carePlans, auditEvents, professionalPatientLinks } = await getRepositories({
       clinicId: guard.session?.clinicId ?? null,
     });
+    await assertPatientAccessibleToProfessional(guard.session, id, professionalPatientLinks);
     const result = await new ListCarePlansByPatient(carePlans).execute({ patientId: id });
     recordAudit(auditEvents, guard.session, {
       action: "read",
@@ -43,9 +45,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = openCarePlanSchema.parse(await request.json());
-    const { carePlans, patients, conditions, auditEvents } = await getRepositories({
-      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
-    });
+    const { carePlans, patients, conditions, auditEvents, professionalPatientLinks } =
+      await getRepositories({
+        clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+      });
+    await assertPatientAccessibleToProfessional(guard.session, id, professionalPatientLinks);
     const plan = await new OpenCarePlan(carePlans, patients, conditions).execute({
       patientId: id,
       conditionId: body.conditionId ?? null,

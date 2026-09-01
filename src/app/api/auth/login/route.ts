@@ -12,8 +12,8 @@ import { RateLimiter } from "@/lib/auth/rate-limit";
 import { clientIp } from "@/lib/auth/client-ip";
 import { verifyPassword } from "@/lib/auth/password";
 import { getRepositories } from "@/infrastructure/container";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 import { fail } from "@/lib/api-response";
+import type { UserRole } from "@/domain/auth/user-role";
 
 const LOGIN_RATE_LIMIT = new RateLimiter(5, 60_000);
 
@@ -59,29 +59,49 @@ export async function POST(request: NextRequest) {
   const response = NextResponse.json({ success: true, data: { ok: true }, error: null });
   response.cookies.set(
     SESSION_COOKIE,
-    createSessionToken(auth.secret, expiresAtMs, subject, "admin", LEGACY_CLINIC_ID),
+    createSessionToken(
+      auth.secret,
+      expiresAtMs,
+      subject,
+      identity.role,
+      identity.clinicId,
+      identity.professionalId,
+    ),
     sessionCookieOptions(),
   );
   return response;
 }
 
-type AuthResult = { subject: string } | { error: string; status: number };
+type AuthResult =
+  | { subject: string; role: UserRole; clinicId: string | null; professionalId: string | null }
+  | { error: string; status: number };
 
 async function authenticateAccount(email: string, password: string): Promise<AuthResult> {
   const { userAccounts } = await getRepositories({ clinicId: null });
   const account = await userAccounts.findByEmail(email);
   const isValid =
     account?.isActive === true && (await verifyPassword(password, account.passwordHash));
-  return isValid && account
-    ? { subject: account.email }
-    : { error: "Email ou senha incorretos", status: 401 };
+  if (!isValid || !account) {
+    return { error: "Email ou senha incorretos", status: 401 };
+  }
+  // O papel e a empresa vêm sempre da própria conta — nunca um valor fixo por
+  // padrão (fix do bug "senha sempre vira admin", RBAC-02/RBAC-04).
+  return {
+    subject: account.email,
+    role: account.role,
+    clinicId: account.clinicId,
+    professionalId: account.professionalId,
+  };
 }
 
 function authenticateMaster(masterPassword: string | null, password: string): AuthResult {
   if (!masterPassword) {
     return { error: "Login por senha desativado — use conta individual ou Google", status: 403 };
   }
-  return passwordMatches(masterPassword, password)
-    ? { subject: "local" }
-    : { error: "Senha incorreta", status: 401 };
+  if (!passwordMatches(masterPassword, password)) {
+    return { error: "Senha incorreta", status: 401 };
+  }
+  // Senha mestre de emergência: acesso cross-empresa, mapeada para super_admin
+  // até a remoção da senha mestre na issue #21.
+  return { subject: "local", role: "super_admin", clinicId: null, professionalId: null };
 }

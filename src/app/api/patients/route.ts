@@ -33,8 +33,23 @@ export async function GET(request: NextRequest) {
       limit: params.get("limit") ?? undefined,
       offset: params.get("offset") ?? undefined,
     });
-    const { patients } = await getRepositories({ clinicId: guard.session?.clinicId ?? null });
-    const result = await new ListPatients(patients).execute({ search, limit, offset });
+    const { patients, professionalPatientLinks } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? null,
+    });
+    // Escopo dinâmico do Profissional (R4/RBAC-17): a listagem só mostra
+    // pacientes com quem o profissional tem vínculo registrado.
+    let allowedPatientIds: string[] | undefined;
+    if (guard.session?.role === "profissional") {
+      allowedPatientIds = guard.session.professionalId
+        ? await professionalPatientLinks.findLinkedPatientIds(guard.session.professionalId)
+        : [];
+    }
+    const result = await new ListPatients(patients).execute({
+      search,
+      limit,
+      offset,
+      allowedPatientIds,
+    });
     return result.map((p) => toPatientDto(p));
   });
 }
@@ -45,7 +60,7 @@ export async function POST(request: NextRequest) {
 
   return handleRequest(async () => {
     const body = createPatientSchema.parse(await request.json());
-    const { patients, partners } = await getRepositories({
+    const { patients, partners, professionalPatientLinks } = await getRepositories({
       clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
     });
     const patient = await new CreatePatient(patients, partners).execute({
@@ -56,6 +71,11 @@ export async function POST(request: NextRequest) {
       notes: body.notes ?? null,
       referredByPartnerId: body.referredByPartnerId ?? null,
     });
+    // Profissional que cadastra um paciente ganha acesso imediato a ele,
+    // mesmo antes de qualquer agendamento (RBAC-17/18).
+    if (guard.session?.role === "profissional" && guard.session.professionalId) {
+      await professionalPatientLinks.ensureLink(guard.session.professionalId, patient.id);
+    }
     return toPatientDto(patient);
   });
 }

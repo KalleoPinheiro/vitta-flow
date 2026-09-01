@@ -5,9 +5,11 @@ import { AddEvolutionNote } from "@/application/clinical/add-evolution-note";
 import { ListEvolutionNotes } from "@/application/clinical/list-evolution-notes";
 import { handleRequest } from "@/lib/api-response";
 import { requireStaffSession } from "@/lib/auth/require-session";
+import { assertPatientAccessibleToProfessional } from "@/lib/auth/professional-patient-scope";
 import { recordAudit } from "@/lib/audit";
 import { toEvolutionNoteDto } from "@/lib/dto";
 import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import { ValidationError } from "@/domain/shared/errors";
 
 const evolutionSchema = z.object({
   appointmentId: z.string().nullish(),
@@ -26,9 +28,10 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { evolutions, auditEvents } = await getRepositories({
+    const { evolutions, auditEvents, professionalPatientLinks } = await getRepositories({
       clinicId: guard.session?.clinicId ?? null,
     });
+    await assertPatientAccessibleToProfessional(guard.session, id, professionalPatientLinks);
     const notes = await new ListEvolutionNotes(evolutions).execute({ patientId: id });
     recordAudit(auditEvents, guard.session, {
       action: "read",
@@ -48,13 +51,19 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = evolutionSchema.parse(await request.json());
-    const { evolutions, patients, auditEvents, userAccounts } = await getRepositories({
-      clinicId,
-    });
+    const { evolutions, patients, auditEvents, userAccounts, professionalPatientLinks } =
+      await getRepositories({ clinicId });
     const { session } = guard;
+    await assertPatientAccessibleToProfessional(session, id, professionalPatientLinks);
     // Autoria automática: conta individual logada define o profissional autor.
     let professionalId = body.professionalId ?? null;
-    if (!professionalId && session?.subject && session.subject !== "local") {
+    if (session?.role === "profissional") {
+      // Profissional não pode atribuir a nota a outro profissional.
+      if (professionalId && professionalId !== session.professionalId) {
+        throw new ValidationError("Profissional só pode registrar evolução em seu próprio nome");
+      }
+      professionalId = session.professionalId;
+    } else if (!professionalId && session?.subject && session.subject !== "local") {
       const account = await userAccounts.findByEmail(session.subject);
       professionalId = account?.professionalId ?? null;
     }
@@ -67,6 +76,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
       assessment: body.assessment,
       plan: body.plan,
     });
+    // Nota de evolução com profissional concede/renova o vínculo com o
+    // paciente (RBAC-19/20).
+    if (professionalId) {
+      await professionalPatientLinks.ensureLink(professionalId, id);
+    }
     recordAudit(auditEvents, guard.session, {
       action: "create",
       resourceType: "evolution",

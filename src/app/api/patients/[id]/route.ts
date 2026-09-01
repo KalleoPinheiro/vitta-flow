@@ -7,6 +7,7 @@ import { SetPatientActive } from "@/application/patients/set-patient-active";
 import { handleRequest } from "@/lib/api-response";
 import { toPatientDto } from "@/lib/dto";
 import { requireStaffSession } from "@/lib/auth/require-session";
+import { assertPatientAccessibleToProfessional } from "@/lib/auth/professional-patient-scope";
 import { recordAudit } from "@/lib/audit";
 import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
@@ -31,9 +32,10 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { patients, auditEvents } = await getRepositories({
+    const { patients, auditEvents, professionalPatientLinks } = await getRepositories({
       clinicId: guard.session?.clinicId ?? null,
     });
+    await assertPatientAccessibleToProfessional(guard.session, id, professionalPatientLinks);
     const patient = await new GetPatient(patients).execute({ id });
     const clinicId = await patients.findClinicIdById(patient.id);
     recordAudit(auditEvents, guard.session, {
@@ -54,9 +56,10 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = updatePatientSchema.parse(await request.json());
-    const { patients, partners } = await getRepositories({
+    const { patients, partners, professionalPatientLinks } = await getRepositories({
       clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
     });
+    await assertPatientAccessibleToProfessional(guard.session, id, professionalPatientLinks);
     const patient = await new UpdatePatient(patients, partners).execute({
       id,
       fullName: body.fullName,
@@ -78,9 +81,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = setActiveSchema.parse(await request.json());
-    const { patients } = await getRepositories({
+    const { patients, professionalPatientLinks } = await getRepositories({
       clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
     });
+    await assertPatientAccessibleToProfessional(guard.session, id, professionalPatientLinks);
     const patient = await new SetPatientActive(patients).execute({ id, active: body.active });
     return toPatientDto(patient);
   });

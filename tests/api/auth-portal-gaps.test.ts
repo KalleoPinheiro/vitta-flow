@@ -114,7 +114,7 @@ describe("Feature: Fechamento de branches — auth Google, login e rotas do port
   });
 
   const cookieHeader = (token: string) => ({ cookie: `vitta_session=${token}` });
-  const sessionFor = (email: string, role: "admin" | "partner" | "patient") =>
+  const sessionFor = (email: string, role: "company_admin" | "partner" | "patient") =>
     createSessionToken(process.env.AUTH_SECRET as string, Date.now() + 3_600_000, email, role);
 
   describe("GET /api/auth/google — branch 'connect=calendar'", () => {
@@ -248,6 +248,8 @@ describe("Feature: Fechamento de branches — auth Google, login e rotas do port
       const account = UserAccount.create({
         email: "inativo.gaps@clinica.com",
         passwordHash: await hashPassword("senha-individual"),
+        role: "company_admin",
+        clinicId: "legacy-clinic",
       });
       await userAccounts.save(account.deactivate());
 

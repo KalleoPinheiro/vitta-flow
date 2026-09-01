@@ -35,14 +35,14 @@ describe("Feature: Sessão da requisição (defesa em profundidade)", () => {
 
   it("Dado AUTH_SECRET configurado e cookie de sessão válido, Quando getRequestSession, Então retorna a sessão", () => {
     process.env.AUTH_SECRET = SECRET;
-    const token = createSessionToken(SECRET, Date.now() + 60_000, "maria@clinica.com", "admin");
+    const token = createSessionToken(SECRET, Date.now() + 60_000, "maria@clinica.com", "company_admin");
     const request = requestWithCookie(`vitta_session=${token}`);
 
     const session = getRequestSession(request);
 
     expect(session).not.toBeNull();
     expect(session?.subject).toBe("maria@clinica.com");
-    expect(session?.role).toBe("admin");
+    expect(session?.role).toBe("company_admin");
   });
 
   it("Dado AUTH_SECRET configurado e cookie ausente, Quando getRequestSession, Então retorna null", () => {

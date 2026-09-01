@@ -10,7 +10,13 @@ import { E2E_AUTH_SECRET, SESSION_COOKIE_NAME } from "./constants";
  * runner. Qualquer mudança no algoritmo de assinatura em `session.ts` precisa ser
  * espelhada aqui.
  */
-export type UserRole = "admin" | "partner" | "patient";
+export type UserRole =
+  | "super_admin"
+  | "company_admin"
+  | "atendente"
+  | "profissional"
+  | "patient"
+  | "partner";
 
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 

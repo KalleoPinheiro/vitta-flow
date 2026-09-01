@@ -26,21 +26,24 @@ export interface Session {
   expiresAtMs: number;
   /** Quem está logado: "local" (senha da clínica) ou o email da conta Google. */
   subject: string;
-  /** Papel de acesso: admin (equipe), partner (médico parceiro) ou patient (paciente). */
+  /** Papel de acesso — um dos 6 valores do catálogo (ADR-003). */
   role: UserRole;
   /** Empresa da sessão; `null` só no papel de sistema (acesso cross-empresa). */
   clinicId: string | null;
+  /** Profissional vinculado à conta (só quando role === "profissional"), para o escopo dinâmico do R4. */
+  professionalId: string | null;
 }
 
 export function createSessionToken(
   secret: string,
   expiresAtMs: number,
   subject = "local",
-  role: UserRole = "admin",
+  role: UserRole = "company_admin",
   clinicId: string | null = null,
+  professionalId: string | null = null,
 ): string {
   const payload = Buffer.from(
-    JSON.stringify({ exp: expiresAtMs, sub: subject, role, clinicId }),
+    JSON.stringify({ exp: expiresAtMs, sub: subject, role, clinicId, professionalId }),
   ).toString("base64url");
   return `${payload}.${sign(secret, payload)}`;
 }
@@ -54,6 +57,11 @@ function hasValidSignature(secret: string, payload: string, signature: string): 
   );
 }
 
+/** Nulo/ausente é válido (compat com tokens antigos); string é o único outro valor aceito. */
+function isNullableString(value: unknown): value is string | null | undefined {
+  return value === null || value === undefined || typeof value === "string";
+}
+
 function parsePayload(payload: string): Session | null {
   try {
     const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as {
@@ -61,6 +69,7 @@ function parsePayload(payload: string): Session | null {
       sub?: unknown;
       role?: unknown;
       clinicId?: unknown;
+      professionalId?: unknown;
     };
     if (typeof parsed.exp !== "number" || typeof parsed.sub !== "string") {
       return null;
@@ -68,7 +77,7 @@ function parsePayload(payload: string): Session | null {
     if (!USER_ROLES.includes(parsed.role as UserRole)) {
       return null;
     }
-    if (parsed.clinicId !== null && typeof parsed.clinicId !== "string") {
+    if (!isNullableString(parsed.clinicId) || !isNullableString(parsed.professionalId)) {
       return null;
     }
     return {
@@ -76,6 +85,7 @@ function parsePayload(payload: string): Session | null {
       subject: parsed.sub,
       role: parsed.role as UserRole,
       clinicId: parsed.clinicId ?? null,
+      professionalId: (parsed.professionalId as string | null | undefined) ?? null,
     };
   } catch {
     return null;

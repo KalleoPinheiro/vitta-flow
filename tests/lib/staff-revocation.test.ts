@@ -9,8 +9,9 @@ import type { Session } from "@/lib/auth/session";
 const adminSession = (subject: string): Session => ({
   expiresAtMs: Date.now() + 60_000,
   subject,
-  role: "admin",
+  role: "company_admin",
   clinicId: "legacy-clinic",
+  professionalId: null,
 });
 
 describe("Feature: Revogação de sessão de conta staff desativada (SEC1-01..04)", () => {
@@ -45,8 +46,8 @@ describe("Feature: Revogação de sessão de conta staff desativada (SEC1-01..04
 
   it("Dado papel patient/partner, Quando checar, Então válida sem consultar o banco", async () => {
     const lookup = vi.fn();
-    const patient: Session = { expiresAtMs: Date.now() + 60_000, subject: "p@x.com", role: "patient", clinicId: "legacy-clinic" };
-    const partner: Session = { expiresAtMs: Date.now() + 60_000, subject: "d@x.com", role: "partner", clinicId: "legacy-clinic" };
+    const patient: Session = { expiresAtMs: Date.now() + 60_000, subject: "p@x.com", role: "patient", clinicId: "legacy-clinic", professionalId: null };
+    const partner: Session = { expiresAtMs: Date.now() + 60_000, subject: "d@x.com", role: "partner", clinicId: "legacy-clinic", professionalId: null };
 
     expect(await isStaffSessionRevoked(patient, lookup)).toBe(false);
     expect(await isStaffSessionRevoked(partner, lookup)).toBe(false);

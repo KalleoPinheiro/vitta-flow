@@ -3,6 +3,8 @@ import type { Patient } from "./patient";
 export interface PatientPage {
   limit?: number;
   offset?: number;
+  /** Restringe a listagem a este subconjunto de IDs (escopo dinâmico do Profissional, R4). */
+  ids?: string[];
 }
 
 export interface PatientRepository {

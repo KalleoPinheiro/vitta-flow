@@ -91,12 +91,13 @@ export const userAccounts = pgTable(
   "user_accounts",
   {
     id: text("id").primaryKey(),
-    clinicId: text("clinic_id")
-      .notNull()
-      .references(() => clinics.id),
+    // Nulo somente para o papel de sistema (super_admin — cross-empresa, RBAC-01/ADR-003).
+    clinicId: text("clinic_id").references(() => clinics.id),
     email: text("email").notNull(),
     // Formato scrypt$custo$salt$hash — nunca a senha em claro.
     passwordHash: text("password_hash").notNull(),
+    // Um dos 6 valores de UserRole (RBAC-01).
+    role: text("role").notNull(),
     professionalId: text("professional_id").references(() => professionals.id),
     active: boolean("active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
@@ -104,6 +105,13 @@ export const userAccounts = pgTable(
   (table) => [
     // E-mail de login único por empresa, não globalmente (MT-06, ADR-003).
     uniqueIndex("uq_user_accounts_clinic_email").on(table.clinicId, table.email),
+    // Postgres trata NULL como distinto em índice único composto — sem este
+    // índice parcial, duas contas super_admin (clinic_id NULL) poderiam ter
+    // o mesmo email, e o login (findByEmail + LIMIT 1) escolheria uma
+    // identidade de forma ambígua.
+    uniqueIndex("uq_user_accounts_super_admin_email")
+      .on(table.email)
+      .where(sql`${table.clinicId} IS NULL`),
     index("idx_user_accounts_clinic").on(table.clinicId),
   ],
 );
@@ -766,5 +774,32 @@ export const interventionRecords = pgTable(
   (table) => [
     index("idx_intervention_records_intervention").on(table.interventionId),
     index("idx_intervention_records_clinic").on(table.clinicId),
+  ],
+);
+
+/**
+ * Vínculo Profissional↔Paciente (R4, RBAC-17..21) — nunca revogado uma vez
+ * criado. Concedido por: cadastro do paciente pelo Profissional, criação de
+ * agendamento ou de nota de evolução com esse profissional.
+ */
+export const professionalPatientLinks = pgTable(
+  "professional_patient_links",
+  {
+    id: text("id").primaryKey(),
+    clinicId: text("clinic_id")
+      .notNull()
+      .references(() => clinics.id),
+    professionalId: text("professional_id")
+      .notNull()
+      .references(() => professionals.id),
+    patientId: text("patient_id")
+      .notNull()
+      .references(() => patients.id),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("uq_professional_patient_links").on(table.professionalId, table.patientId),
+    index("idx_professional_patient_links_professional").on(table.professionalId),
+    index("idx_professional_patient_links_clinic").on(table.clinicId),
   ],
 );

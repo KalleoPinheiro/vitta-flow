@@ -426,6 +426,7 @@ describe("Feature: Recorrência de consultas, grade de horários, profissionais,
         jsonRequest("/api/accounts", "POST", {
           email: "equipe@example.com",
           password: "senhaSegura123",  // gitleaks:allow — fixture de teste, não é credencial
+          role: "company_admin",
           professionalId: professionalIdForAccount,
         }),
       );
@@ -449,6 +450,7 @@ describe("Feature: Recorrência de consultas, grade de horários, profissionais,
         jsonRequest("/api/accounts", "POST", {
           email: "sem.vinculo@example.com",
           password: "senhaSegura123",  // gitleaks:allow — fixture de teste, não é credencial
+          role: "company_admin",
         }),
       );
       const body = (await response.json()) as Envelope<{ professionalId: string | null }>;
@@ -462,6 +464,7 @@ describe("Feature: Recorrência de consultas, grade de horários, profissionais,
         jsonRequest("/api/accounts", "POST", {
           email: "equipe@example.com",
           password: "outraSenha123",  // gitleaks:allow — fixture de teste, não é credencial
+          role: "company_admin",
         }),
       );
 
@@ -473,6 +476,7 @@ describe("Feature: Recorrência de consultas, grade de horários, profissionais,
         jsonRequest("/api/accounts", "POST", {
           email: "outra.conta@example.com",
           password: "senhaSegura123",  // gitleaks:allow — fixture de teste, não é credencial
+          role: "company_admin",
           professionalId: "profissional-fantasma",
         }),
       );

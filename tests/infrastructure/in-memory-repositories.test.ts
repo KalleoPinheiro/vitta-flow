@@ -131,7 +131,12 @@ describe("Feature: Doubles em memória de infraestrutura", () => {
 
   describe("Cenário: InMemoryUserAccountRepository", () => {
     const makeAccount = (email: string) =>
-      UserAccount.create({ email, passwordHash: "scrypt$1$salt$hash" });
+      UserAccount.create({
+        email,
+        passwordHash: "scrypt$1$salt$hash",
+        role: "company_admin",
+        clinicId: "legacy-clinic",
+      });
 
     it("Dado conta salva, Quando buscar por email (case-insensitive), Então encontra", async () => {
       const repo = new InMemoryUserAccountRepository();

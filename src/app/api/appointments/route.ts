@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
+import { getRepositories, type Services } from "@/infrastructure/container";
 import { ScheduleAppointment } from "@/application/appointments/schedule-appointment";
 import { ListAppointments } from "@/application/appointments/list-appointments";
 import { handleRequest, fail } from "@/lib/api-response";
@@ -31,8 +31,18 @@ export async function GET(request: NextRequest) {
   if (!from || !to) {
     return fail("Parâmetros obrigatórios: from, to (ISO 8601)", 400);
   }
-  const professionalId = request.nextUrl.searchParams.get("professionalId") ?? undefined;
+  // Escopo dinâmico do Profissional (R4/RBAC-19): a sessão profissional só
+  // pode ver a própria agenda — ignora professionalId vindo da query string.
+  const professionalId =
+    guard.session?.role === "profissional"
+      ? (guard.session.professionalId ?? undefined)
+      : (request.nextUrl.searchParams.get("professionalId") ?? undefined);
   return handleRequest(async () => {
+    // Profissional sem vínculo de conta (dado legado/corrompido) nunca vê
+    // agenda alheia por ausência de filtro — nunca cai no "sem filtro = tudo".
+    if (guard.session?.role === "profissional" && !guard.session.professionalId) {
+      return [];
+    }
     const { appointments, patients } = await getRepositories({
       clinicId: guard.session?.clinicId ?? null,
     });
@@ -45,6 +55,28 @@ export async function GET(request: NextRequest) {
       toAppointmentDto(appointment, patientName),
     );
   });
+}
+
+async function markFollowUpScheduled(
+  services: Services,
+  followUpId: string | null | undefined,
+  patientId: string,
+): Promise<void> {
+  if (!followUpId) return;
+  const followUp = await services.followUps.findById(followUpId);
+  if (followUp?.status === "pending" && followUp.patientId === patientId) {
+    await services.followUps.save(followUp.markScheduled());
+  }
+}
+
+/** Agendamento com profissional concede/renova o vínculo com o paciente, mesmo que quem tenha agendado seja outro papel (RBAC-19/20). */
+async function linkProfessionalToPatient(
+  services: Services,
+  professionalId: string | null | undefined,
+  patientId: string,
+): Promise<void> {
+  if (!professionalId) return;
+  await services.professionalPatientLinks.ensureLink(professionalId, patientId);
 }
 
 export async function POST(request: NextRequest) {
@@ -70,12 +102,8 @@ export async function POST(request: NextRequest) {
       professionalId: body.professionalId ?? null,
       procedureId: body.procedureId ?? null,
     });
-    if (body.followUpId) {
-      const followUp = await services.followUps.findById(body.followUpId);
-      if (followUp?.status === "pending" && followUp.patientId === appointment.patientId) {
-        await services.followUps.save(followUp.markScheduled());
-      }
-    }
+    await markFollowUpScheduled(services, body.followUpId, appointment.patientId);
+    await linkProfessionalToPatient(services, body.professionalId, appointment.patientId);
     scheduleCalendarSync(services, (sync) => sync.created(appointment.id));
     return toAppointmentDto(appointment);
   });

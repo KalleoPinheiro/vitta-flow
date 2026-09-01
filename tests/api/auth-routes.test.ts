@@ -166,6 +166,8 @@ describe("Feature: Rotas de autenticação (login, logout, provedores, Google OA
         UserAccount.create({
           email: "equipe@clinica.com",
           passwordHash: await hashPassword("s3nh@individual"),
+          role: "company_admin",
+          clinicId: "legacy-clinic",
         }),
       );
 
@@ -181,6 +183,42 @@ describe("Feature: Rotas de autenticação (login, logout, provedores, Google OA
 
       expect(response.status).toBe(200);
       expect(body.data.ok).toBe(true);
+    });
+
+    it("Dado conta com papel profissional, Quando POST login com email, Então sessão usa o papel e a empresa da própria conta (fix RBAC-02/RBAC-04)", async () => {
+      resetAuthEnv();
+      process.env.AUTH_SECRET = "test-secret-role-fix";
+      process.env.AUTH_PASSWORD = "senha-correta";
+
+      const { getRepositories } = await import("@/infrastructure/container");
+      const { hashPassword } = await import("@/lib/auth/password");
+      const { UserAccount } = await import("@/domain/auth/user-account");
+      const { verifySessionToken } = await import("@/lib/auth/session");
+      const { userAccounts } = await getRepositories({ clinicId: "legacy-clinic" });
+      await userAccounts.save(
+        UserAccount.create({
+          email: "profissional@clinica.com",
+          passwordHash: await hashPassword("s3nh@profissional"),
+          role: "profissional",
+          clinicId: "legacy-clinic",
+        }),
+      );
+
+      const response = await loginRoute.POST(
+        jsonRequest(
+          "/api/auth/login",
+          "POST",
+          { password: "s3nh@profissional", email: "profissional@clinica.com" },
+          { "x-forwarded-for": "10.0.0.60" },
+        ),
+      );
+      const cookie = response.headers.get("set-cookie") ?? "";
+      const token = cookie.match(/vitta_session=([^;]+)/)?.[1] ?? "";
+
+      const session = verifySessionToken("test-secret-role-fix", token);
+      expect(session?.role).toBe("profissional");
+      expect(session?.role).not.toBe("admin");
+      expect(session?.clinicId).toBe("legacy-clinic");
     });
 
     it("Dado body inválido (sem password), Quando POST login, Então retorna 401", async () => {

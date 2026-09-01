@@ -3,6 +3,7 @@ import { readdirSync } from "node:fs";
 import path from "node:path";
 import { NextRequest } from "next/server";
 import { PUBLIC_PATHS } from "@/lib/auth/access-policy";
+import { classifyRoute } from "@/lib/auth/route-family";
 import { cookieHeaderFor } from "../support/session";
 
 process.env.VITTA_DB_DRIVER = "pglite";
@@ -146,5 +147,96 @@ describe("Feature: Conformidade das guardas de rota", () => {
         }
       },
     );
+
+    it.each(
+      guarded.filter((f) => !f.isPortal).map((f) => [f.relative, f] as const),
+    )(
+      "Dado %s com sessão de parceiro, Quando chamar cada handler, Então responde 403",
+      async (_relative, file) => {
+        const headers = cookieHeaderFor("partner", "parceiro@example.com");
+        const handlers = await loadHandlers(file);
+
+        for (const [method, handler] of handlers) {
+          const response = await handler(requestFor(file.pathname, method, headers), anyContext());
+          expect(
+            response.status,
+            `${method} ${file.pathname} deveria ser exclusivo da equipe (recebido ${response.status})`,
+          ).toBe(403);
+        }
+      },
+    );
+  });
+
+  describe("Cenário: 6 papéis × família de rota (RBAC-05/RBAC-06)", () => {
+    const staffGuarded = routeFiles.filter((f) => !f.isUnguarded && !f.isPortal);
+
+    /**
+     * Papéis restritos (Atendente, Profissional) recebem 403 nas famílias que
+     * a matriz de `route-family.ts` nega — Atendente: clinical/administrative;
+     * Profissional: administrative (o escopo fino do R4 é testado à parte).
+     */
+    const RESTRICTED_ROLE_DENIED_FAMILIES = {
+      atendente: new Set(["clinical", "administrative"]),
+      profissional: new Set(["administrative"]),
+    } as const;
+
+    for (const role of Object.keys(RESTRICTED_ROLE_DENIED_FAMILIES) as Array<
+      keyof typeof RESTRICTED_ROLE_DENIED_FAMILIES
+    >) {
+      const deniedFamilies = RESTRICTED_ROLE_DENIED_FAMILIES[role];
+      const deniedRoutes = staffGuarded.filter((f) => deniedFamilies.has(classifyRoute(f.pathname)));
+
+      it.each(deniedRoutes.map((f) => [f.relative, f] as const))(
+        `Dado %s com sessão de ${role}, Quando chamar cada handler, Então responde 403 (família negada)`,
+        async (_relative, file) => {
+          const headers = cookieHeaderFor(role, `${role}@example.com`);
+          const handlers = await loadHandlers(file);
+
+          for (const [method, handler] of handlers) {
+            const response = await handler(requestFor(file.pathname, method, headers), anyContext());
+            expect(
+              response.status,
+              `${method} ${file.pathname} deveria negar o papel ${role} (família ${classifyRoute(file.pathname)}, recebido ${response.status})`,
+            ).toBe(403);
+          }
+        },
+      );
+
+      const allowedRoutes = staffGuarded.filter((f) => !deniedFamilies.has(classifyRoute(f.pathname)));
+
+      it.each(allowedRoutes.map((f) => [f.relative, f] as const))(
+        `Dado %s com sessão de ${role}, Quando chamar cada handler, Então NÃO responde 401/403 (família permitida)`,
+        async (_relative, file) => {
+          const headers = cookieHeaderFor(role, `${role}@example.com`);
+          const handlers = await loadHandlers(file);
+
+          for (const [method, handler] of handlers) {
+            const response = await handler(requestFor(file.pathname, method, headers), anyContext());
+            expect(
+              [401, 403].includes(response.status),
+              `${method} ${file.pathname} deveria permitir o papel ${role} passar da guarda de papel (família ${classifyRoute(file.pathname)}, recebido ${response.status})`,
+            ).toBe(false);
+          }
+        },
+      );
+    }
+
+    for (const role of ["super_admin", "company_admin"] as const) {
+      it.each(staffGuarded.map((f) => [f.relative, f] as const))(
+        `Dado %s com sessão de ${role}, Quando chamar cada handler, Então NÃO responde 401/403 (acesso total)`,
+        async (_relative, file) => {
+          const headers = cookieHeaderFor(role, `${role}@example.com`);
+          const handlers = await loadHandlers(file);
+
+          for (const [method, handler] of handlers) {
+            const response = await handler(requestFor(file.pathname, method, headers), anyContext());
+            expect(
+              [401, 403].includes(response.status),
+              `${method} ${file.pathname} deveria permitir o papel ${role} (recebido ${response.status})`,
+            ).toBe(false);
+          }
+        },
+      );
+    }
   });
 });

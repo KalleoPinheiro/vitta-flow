@@ -1,4 +1,5 @@
 import type { Session } from "./session";
+import { isStaffRole } from "./staff-roles";
 
 /**
  * Deny-list de sessões staff: a sessão HMAC é stateless (vale 12h), então
@@ -40,7 +41,7 @@ export async function isStaffSessionRevoked(
   lookup: AccountStatusLookup = lookupAccountStatus,
   nowMs: number = Date.now(),
 ): Promise<boolean> {
-  if (session.role !== "admin" || !session.subject.includes("@")) {
+  if (!isStaffRole(session.role) || !session.subject.includes("@")) {
     return false;
   }
 

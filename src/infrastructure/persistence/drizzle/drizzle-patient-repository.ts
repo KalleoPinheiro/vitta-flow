@@ -1,4 +1,4 @@
-import { asc, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import { and, asc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { Patient } from "@/domain/patient/patient";
 import type { PatientPage, PatientRepository } from "@/domain/patient/patient-repository";
 import { MAX_ROWS, type AppDb } from "./db";
@@ -105,6 +105,9 @@ export class DrizzlePatientRepository implements PatientRepository {
   }
 
   async findAll(search?: string, page: PatientPage = {}): Promise<Patient[]> {
+    if (page.ids && page.ids.length === 0) {
+      return [];
+    }
     const limit = Math.min(page.limit ?? MAX_ROWS, MAX_ROWS);
     const searchFilter = search
       ? or(
@@ -113,10 +116,13 @@ export class DrizzlePatientRepository implements PatientRepository {
           ilike(patients.phone, `%${search}%`),
         )
       : undefined;
+    const idsFilter = page.ids ? inArray(patients.id, page.ids) : undefined;
+    const filter =
+      searchFilter && idsFilter ? and(searchFilter, idsFilter) : (searchFilter ?? idsFilter);
     const rows = await this.db
       .select()
       .from(patients)
-      .where(withTenant(patients, this.clinicId, searchFilter))
+      .where(withTenant(patients, this.clinicId, filter))
       .orderBy(asc(patients.fullName), asc(patients.id))
       .limit(limit)
       .offset(page.offset ?? 0);

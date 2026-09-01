@@ -81,7 +81,7 @@ describe("Feature: Proxy (camada 1 de autorização, antigo middleware)", () => 
     it("Dado o limite estourado no mesmo IP, Quando chama /api, Então responde 429", async () => {
       process.env.API_RATE_LIMIT_MAX = "2";
       const proxy = await loadProxy();
-      const cookie = sessionCookie("admin");
+      const cookie = sessionCookie("company_admin");
 
       expect((await proxy(request("/api/patients", cookie))).status).not.toBe(429);
       expect((await proxy(request("/api/patients", cookie))).status).not.toBe(429);
@@ -94,7 +94,7 @@ describe("Feature: Proxy (camada 1 de autorização, antigo middleware)", () => 
     it("Dado outro IP, Quando o primeiro estourou o limite, Então não é afetado", async () => {
       process.env.API_RATE_LIMIT_MAX = "1";
       const proxy = await loadProxy();
-      const cookie = sessionCookie("admin");
+      const cookie = sessionCookie("company_admin");
 
       await proxy(request("/api/patients", cookie, "10.0.0.1"));
       expect((await proxy(request("/api/patients", cookie, "10.0.0.1"))).status).toBe(429);
@@ -104,7 +104,7 @@ describe("Feature: Proxy (camada 1 de autorização, antigo middleware)", () => 
     it("Dado o limite estourado, Quando a rota é de página, Então não aplica rate limit", async () => {
       process.env.API_RATE_LIMIT_MAX = "1";
       const proxy = await loadProxy();
-      const cookie = sessionCookie("admin");
+      const cookie = sessionCookie("company_admin");
 
       await proxy(request("/api/patients", cookie));
       expect(isNext(await proxy(request("/agenda", cookie)))).toBe(true);
@@ -193,7 +193,7 @@ describe("Feature: Proxy (camada 1 de autorização, antigo middleware)", () => 
   describe("Cenário: autorização por papel", () => {
     it("Dada sessão admin, Então acessa rota de equipe e portal", async () => {
       const proxy = await loadProxy();
-      const cookie = sessionCookie("admin");
+      const cookie = sessionCookie("company_admin");
 
       expect(isNext(await proxy(request("/api/patients", cookie)))).toBe(true);
       expect(isNext(await proxy(request("/agenda", cookie)))).toBe(true);

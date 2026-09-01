@@ -8,8 +8,8 @@ import { randomBytes } from "node:crypto";
  * proxy). Por isso a suíte roda com autenticação SEMPRE ligada no servidor principal
  * (porta 3000): login mestre real para specs de equipe, e um cookie de sessão assinado
  * manualmente (mesma assinatura HMAC de `src/lib/auth/session.ts`) para os specs de
- * portal, já que não há como logar como paciente/parceiro por senha (login por senha
- * sempre resulta em role "admin" — só há paciente/parceiro via OAuth Google).
+ * portal, já que a senha mestre só resolve para super_admin — contas individuais de
+ * paciente/parceiro por senha existem (RBAC-02), mas a suíte ainda não semeia uma.
  *
  * Um segundo servidor (porta 3100), sem AUTH_SECRET/AUTH_PASSWORD, sobe em paralelo
  * só para o cenário de "modo aberto" em `auth.spec.ts` — ele tem seu próprio banco

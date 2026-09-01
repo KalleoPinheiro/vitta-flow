@@ -1,0 +1,79 @@
+import type { UserRole } from "@/domain/auth/user-role";
+import { STAFF_ROLES } from "./staff-roles";
+
+/**
+ * Classificação grosseira de rota por família (RBAC-05), consumida por
+ * `access-policy.ts` (proxy + handler) para decidir acesso sem precisar
+ * conhecer `:id` de rota — a checagem fina (ex.: vínculo do Profissional com
+ * um paciente específico) acontece no próprio handler (R4).
+ */
+export type RouteFamily = "clinical" | "operational" | "administrative" | "shared";
+
+const SHARED_PREFIXES = ["/portal", "/api/portal", "/api/auth/logout"];
+
+/** Sub-rotas de `/api/patients/:id/*` são tratadas à parte (ver `isClinicalPatientSubroute`). */
+const CLINICAL_PREFIXES = [
+  "/api/conditions",
+  "/api/photos",
+  "/api/care-plan-diagnoses",
+  "/api/care-plan-interventions",
+  "/api/care-plan-outcomes",
+  "/api/care-plans",
+];
+
+const CLINICAL_PATIENT_SUBROUTES = ["/evolutions", "/conditions", "/anamnesis", "/care-plans"];
+
+/**
+ * `/api/accounts` fica de fora desta lista de propósito: a hierarquia de
+ * provisionamento (RBAC-07..10) permite Atendente e Profissional cadastrarem
+ * contas Patient/Partner ali — a checagem fina de "quem pode criar quem" é
+ * feita pelo use-case `CreateAccount`, não pela família de rota.
+ */
+const ADMINISTRATIVE_PREFIXES = [
+  "/api/professionals",
+  "/api/supplies",
+  "/api/procedures",
+  "/api/invoices",
+  "/api/packages",
+  "/api/reports",
+  "/api/summary",
+  "/api/audit",
+  "/api/admin",
+  "/api/clinic-info",
+  "/api/taxonomy",
+];
+
+function startsWithAny(pathname: string, prefixes: readonly string[]): boolean {
+  return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
+function isClinicalPatientSubroute(pathname: string): boolean {
+  if (!pathname.startsWith("/api/patients/")) {
+    return false;
+  }
+  return CLINICAL_PATIENT_SUBROUTES.some((suffix) => pathname.includes(suffix));
+}
+
+export function classifyRoute(pathname: string): RouteFamily {
+  if (startsWithAny(pathname, SHARED_PREFIXES)) {
+    return "shared";
+  }
+  if (isClinicalPatientSubroute(pathname) || startsWithAny(pathname, CLINICAL_PREFIXES)) {
+    return "clinical";
+  }
+  if (startsWithAny(pathname, ADMINISTRATIVE_PREFIXES)) {
+    return "administrative";
+  }
+  return "operational";
+}
+
+const FAMILY_ALLOWED_ROLES: Record<RouteFamily, readonly UserRole[]> = {
+  shared: [...STAFF_ROLES, "patient", "partner"],
+  operational: STAFF_ROLES,
+  clinical: ["super_admin", "company_admin", "profissional"],
+  administrative: ["super_admin", "company_admin"],
+};
+
+export function isFamilyAllowedForRole(family: RouteFamily, role: UserRole): boolean {
+  return FAMILY_ALLOWED_ROLES[family].includes(role);
+}

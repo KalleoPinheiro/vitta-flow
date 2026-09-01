@@ -582,6 +582,8 @@ describe("Feature: Persistência PostgreSQL (Drizzle)", () => {
       const account = UserAccount.create({
         email: "Equipe@Clinica.com",
         passwordHash: "scrypt$1$salt$hash",
+        role: "company_admin",
+        clinicId: "legacy-clinic",
       });
       await userAccountRepo.save(account);
 
@@ -589,6 +591,7 @@ describe("Feature: Persistência PostgreSQL (Drizzle)", () => {
       expect(stored?.email).toBe("equipe@clinica.com");
       expect(stored?.passwordHash).toBe("scrypt$1$salt$hash");
       expect(stored?.isActive).toBe(true);
+      expect(stored?.role).toBe("company_admin");
     });
 
     it("Dado email não cadastrado, Quando buscar, Então retorna null", async () => {
@@ -599,6 +602,8 @@ describe("Feature: Persistência PostgreSQL (Drizzle)", () => {
       const account = UserAccount.create({
         email: "outra@clinica.com",
         passwordHash: "scrypt$1$salt$hash",
+        role: "company_admin",
+        clinicId: "legacy-clinic",
       });
       await userAccountRepo.save(account);
       await userAccountRepo.save(account.deactivate());

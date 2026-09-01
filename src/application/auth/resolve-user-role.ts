@@ -10,8 +10,12 @@ export interface ResolveUserRoleInput {
 
 /**
  * Resolve o papel de um email autenticado pelo Google.
- * Prioridade: admin (equipe) → partner (médico ativo) → patient (paciente ativo).
+ * Prioridade: super_admin (equipe) → partner (médico ativo) → patient (paciente ativo).
  * Retorna null quando o email não pertence a ninguém — acesso negado.
+ *
+ * Mapeamento transitório (issue #20, "Further Notes"): e-mails na allowlist
+ * mapeiam para super_admin (era "admin") até a issue #21 remover o login Google
+ * por completo.
  */
 export class ResolveUserRole {
   constructor(
@@ -22,7 +26,7 @@ export class ResolveUserRole {
   async execute(input: ResolveUserRoleInput): Promise<UserRole | null> {
     const email = input.email.trim().toLowerCase();
     if (input.adminEmails.includes(email)) {
-      return "admin";
+      return "super_admin";
     }
     const partner = await this.partners.findByEmail(email);
     if (partner?.isActive) {

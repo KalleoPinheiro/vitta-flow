@@ -1,6 +1,7 @@
 import type { UserRole } from "@/domain/auth/user-role";
 import { getAuthConfig } from "./session";
 import { googleOAuthConfigFromEnv } from "./google-oauth";
+import { classifyRoute, isFamilyAllowedForRole } from "./route-family";
 
 /**
  * Política de acesso do VittaFlow — fonte única consumida pelas DUAS camadas de
@@ -36,6 +37,8 @@ export const SHARED_PATH_PREFIXES = ["/portal", "/api/portal", "/api/auth/logout
 
 export const UNAUTHENTICATED_MESSAGE = "Não autenticado";
 export const STAFF_ONLY_MESSAGE = "Acesso restrito à equipe da clínica";
+/** Distinto de STAFF_ONLY_MESSAGE: a sessão É da equipe, mas o papel não acessa esta família de rota (RBAC-16). */
+export const ROLE_FAMILY_DENIED_MESSAGE = "Seu papel não tem acesso a este recurso";
 export const AUTH_NOT_CONFIGURED_MESSAGE =
   "Autenticação não configurada: defina AUTH_SECRET e AUTH_PASSWORD (ou login Google via GOOGLE_CLIENT_ID/SECRET + APP_URL + GOOGLE_ALLOWED_EMAILS)";
 
@@ -57,12 +60,14 @@ export function isSharedPath(pathname: string): boolean {
   );
 }
 
-/** Admin (equipe) acessa tudo; paciente e parceiro só os caminhos compartilhados. */
+/**
+ * Regra grosseira de família de rota por papel (RBAC-05): cada papel acessa
+ * só as famílias permitidas pela matriz de `route-family.ts`. A checagem fina
+ * (ex.: vínculo do Profissional com um paciente específico, R4) acontece no
+ * próprio handler, que tem acesso ao `:id` da rota — esta função não.
+ */
 export function isAllowedForRole(pathname: string, role: UserRole): boolean {
-  if (role === "admin") {
-    return true;
-  }
-  return isSharedPath(pathname);
+  return isFamilyAllowedForRole(classifyRoute(pathname), role);
 }
 
 /**

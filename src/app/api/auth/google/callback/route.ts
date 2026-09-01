@@ -132,11 +132,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Credencial do Calendar pertence à clínica: só persiste quando quem loga é da equipe.
-    if (role === "admin") {
+    if (role === "super_admin") {
       await persistRefreshToken(googleAccounts, identity.email, identity.refreshToken, auth.secret);
     }
 
-    const destination = role === "admin" ? "/" : "/portal";
+    const destination = role === "super_admin" ? "/" : "/portal";
     const response = NextResponse.redirect(new URL(destination, publicBaseUrl(request)));
     response.cookies.set(OAUTH_STATE_COOKIE, "", { httpOnly: true, path: "/", maxAge: 0 });
     response.cookies.set(

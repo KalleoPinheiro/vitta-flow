@@ -18,7 +18,7 @@ describe("Feature: Isolamento de Conta de Usuário e e-mail único por empresa (
       jsonRequest(
         "/api/accounts",
         "POST",
-        { email, password: "senha-forte-123" },
+        { email, password: "senha-forte-123", role: "patient" },
         adminCookieHeader(clinicId),
       ),
     );

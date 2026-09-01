@@ -10,7 +10,7 @@
 
 ## 1. Spec-anchored outcome check
 
-Sampled all 4 user stories (P1-P4, 18 ACs total). For each, the test asserts the spec-defined outcome precisely — not a looser proxy.
+Sampled 15 of the 21 acceptance criteria across all 4 user stories (spec.md: P1 has 6, P2 has 8, P3 has 2, P4 has 5) — one representative test per row below, not an exhaustive per-AC walk. For each sampled AC, the test asserts the spec-defined outcome precisely, not a looser proxy. The 6 ACs not individually evidenced here (P1-AC1 "recognizes exactly 6 roles", P1-AC3 self-signup route absence already covered under P2-AC8's row, P2-AC1/2/3/6/7 — the remaining hierarchy-matrix directions and multi-company_admin) are exercised by the same test files cited below (`tests/domain/user-role.test.ts`, `tests/application/create-account.test.ts`, `tests/api/accounts-provisioning.test.ts`) but were not traced line-by-line in this pass; the gate (`npm run test:coverage`, 97.01%) confirms they run and pass.
 
 | Story | AC sampled | Test | Implementation | Verdict |
 | --- | --- | --- | --- | --- |

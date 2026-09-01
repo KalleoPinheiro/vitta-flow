@@ -57,7 +57,7 @@ Hoje só existem 3 papéis (`admin`, `partner`, `patient`), e "admin" é monolí
 
 1. The system SHALL reconhecer exatamente 6 valores de papel: `super_admin`, `company_admin`, `atendente`, `profissional`, `patient`, `partner`. <!-- ubiquitous -->
 2. WHEN uma conta autentica por senha THEN o sistema SHALL atribuir à sessão o papel gravado no próprio registro de `user_accounts`, nunca um valor fixo por padrão. <!-- event-driven -->
-3. WHEN uma conta autentica via Google OAuth e seu e-mail está na allowlist THEN o sistema SHALL atribuir o papel `super_admin` à sessão (mapeamento temporário até a issue #21). <!-- event-driven -->
+3. WHEN uma conta autentica via Google OAuth e seu e-mail está na allowlist THEN o sistema SHALL atribuir o papel `super_admin` à sessão, com prioridade sobre um cadastro de `partner` ou `patient` no mesmo e-mail — mapeamento temporário até a issue #21 (`ResolveUserRole`, testado em `tests/application/rbac-portal.test.ts`: "Dado email na allowlist da equipe, Quando resolver, Então super_admin (mesmo sendo parceiro)"). <!-- event-driven -->
 4. WHILE o mecanismo de resolução de papel por senha está ativo o sistema SHALL nunca produzir uma sessão com papel `super_admin` para uma conta cujo registro em `user_accounts.role` não seja `super_admin`. <!-- state-driven -->
 5. WHEN uma rota de API é chamada por uma sessão de qualquer um dos 6 papéis THEN o sistema SHALL aplicar pelo menos a regra grosseira de família de rota (operacional vs. clínico vs. administrativo) antes de decidir 200 ou 403. <!-- event-driven -->
 6. The system SHALL manter um teste de conformidade de rotas cobrindo os 6 papéis (extensão do já existente `tests/api/route-guard-conformance.test.ts`). <!-- ubiquitous -->
@@ -131,38 +131,38 @@ Hoje só existem 3 papéis (`admin`, `partner`, `patient`), e "admin" é monolí
 
 ## Requirement Traceability
 
-| Requirement ID | Story | Phase | Status |
-| --- | --- | --- | --- |
-| RBAC-01 | P1: Catálogo + correção do bug (R1) | Design | Pending |
-| RBAC-02 | P1: Catálogo + correção do bug (R1) | Design | Pending |
-| RBAC-03 | P1: Catálogo + correção do bug (R1) | Design | Pending |
-| RBAC-04 | P1: Catálogo + correção do bug (R1) | Design | Pending |
-| RBAC-05 | P1: Catálogo + correção do bug (R1) | Design | Pending |
-| RBAC-06 | P1: Catálogo + correção do bug (R1) | Design | Pending |
-| RBAC-07 | P2: Hierarquia de cadastro (R2) | Design | Pending |
-| RBAC-08 | P2: Hierarquia de cadastro (R2) | Design | Pending |
-| RBAC-09 | P2: Hierarquia de cadastro (R2) | Design | Pending |
-| RBAC-10 | P2: Hierarquia de cadastro (R2) | Design | Pending |
-| RBAC-11 | P2: Hierarquia de cadastro (R2) | Design | Pending |
-| RBAC-12 | P2: Hierarquia de cadastro (R2) | Design | Pending |
-| RBAC-13 | P2: Hierarquia de cadastro (R2) | Design | Pending |
-| RBAC-14 | P2: Hierarquia de cadastro (R2) | Design | Pending |
-| RBAC-15 | P3: Restrição do Atendente (R3) | Design | Pending |
-| RBAC-16 | P3: Restrição do Atendente (R3) | Design | Pending |
-| RBAC-17 | P4: Escopo dinâmico do Profissional (R4) | Design | Pending |
-| RBAC-18 | P4: Escopo dinâmico do Profissional (R4) | Design | Pending |
-| RBAC-19 | P4: Escopo dinâmico do Profissional (R4) | Design | Pending |
-| RBAC-20 | P4: Escopo dinâmico do Profissional (R4) | Design | Pending |
-| RBAC-21 | P4: Escopo dinâmico do Profissional (R4) | Design | Pending |
+| Requirement ID | Story | Phase | Task(s) | Status |
+| --- | --- | --- | --- | --- |
+| RBAC-01 | P1: Catálogo + correção do bug (R1) | Design | T1, T2, T3, T6 | Done |
+| RBAC-02 | P1: Catálogo + correção do bug (R1) | Design | T3, T4 | Done |
+| RBAC-03 | P1: Catálogo + correção do bug (R1) | Design | T5 | Done |
+| RBAC-04 | P1: Catálogo + correção do bug (R1) | Design | T4 | Done |
+| RBAC-05 | P1: Catálogo + correção do bug (R1) | Design | T7, T8 | Done |
+| RBAC-06 | P1: Catálogo + correção do bug (R1) | Design | T8 | Done |
+| RBAC-07 | P2: Hierarquia de cadastro (R2) | Design | T9 | Done |
+| RBAC-08 | P2: Hierarquia de cadastro (R2) | Design | T9 | Done |
+| RBAC-09 | P2: Hierarquia de cadastro (R2) | Design | T9 | Done |
+| RBAC-10 | P2: Hierarquia de cadastro (R2) | Design | T9 | Done |
+| RBAC-11 | P2: Hierarquia de cadastro (R2) | Design | T10, T11 | Done |
+| RBAC-12 | P2: Hierarquia de cadastro (R2) | Design | T10, T11 | Done |
+| RBAC-13 | P2: Hierarquia de cadastro (R2) | Design | T11 | Done |
+| RBAC-14 | P2: Hierarquia de cadastro (R2) | Design | T11, T12 | Done |
+| RBAC-15 | P3: Restrição do Atendente (R3) | Design | T13 | Done |
+| RBAC-16 | P3: Restrição do Atendente (R3) | Design | T13, T14 | Done |
+| RBAC-17 | P4: Escopo dinâmico do Profissional (R4) | Design | T15, T16, T18, T19 | Done |
+| RBAC-18 | P4: Escopo dinâmico do Profissional (R4) | Design | T16, T19 | Done |
+| RBAC-19 | P4: Escopo dinâmico do Profissional (R4) | Design | T17, T18, T19 | Done |
+| RBAC-20 | P4: Escopo dinâmico do Profissional (R4) | Design | T17, T19 | Done |
+| RBAC-21 | P4: Escopo dinâmico do Profissional (R4) | Design | T15, T17, T19 | Done |
 
-**Coverage:** 21 total, 0 mapped to tasks yet, 21 unmapped ⚠️ (mapeamento acontece na fase Tasks).
+**Coverage:** 21 total, 21 mapped to tasks, 0 unmapped. Todas as 19 tasks (T1-T19) commitadas; evidência por requisito em `.specs/features/rbac-catalogo-papeis/validation.md` (amostragem verificada pelo Verifier independente).
 
 ---
 
 ## Success Criteria
 
-- [ ] `npm run test:coverage` verde, ≥90%, sem regressão nos 1928 testes existentes.
-- [ ] `tests/api/route-guard-conformance.test.ts` cobre os 6 papéis (permitido + negado por família de rota).
-- [ ] Nenhuma conta consegue se auto-cadastrar (rota inexistente/testada).
-- [ ] Cenário de transferência de caso (Dr. A → Dr. B) tem teste explícito e passa.
-- [ ] `npm run typecheck`, `npm run lint`, `npm run check:sv`, `npm run build` verdes.
+- [x] `npm run test:coverage` verde, ≥90% (97.01% statements medido), sem regressão.
+- [x] `tests/api/route-guard-conformance.test.ts` cobre os 6 papéis (permitido + negado por família de rota).
+- [x] Nenhuma conta consegue se auto-cadastrar (`tests/api/no-self-registration.test.ts`).
+- [x] Cenário de transferência de caso (Dr. A → Dr. B) tem teste explícito e passa (`tests/api/professional-patient-link-on-appointment-evolution.test.ts`).
+- [x] `npm run typecheck`, `npm run lint`, `npm run check:sv`, `npm run build` verdes.

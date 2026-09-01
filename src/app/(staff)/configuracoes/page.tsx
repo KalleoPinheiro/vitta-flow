@@ -285,7 +285,6 @@ function AccountForm({
   onSaved: () => void;
 }) {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [role, setRole] = useState<AccountRole>("company_admin");
   const [professionalId, setProfessionalId] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -306,7 +305,6 @@ function AccountForm({
         method: "POST",
         body: JSON.stringify({
           email,
-          password,
           role,
           professionalId: professionalId || null,
         }),
@@ -332,17 +330,10 @@ function AccountForm({
           className="mt-1"
         />
       </label>
-      <label className="text-sm font-medium">
-        Senha * (mín. 8 caracteres)
-        <Input
-          required
-          type="password"
-          minLength={8}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="mt-1"
-        />
-      </label>
+      <p className="text-sm text-ink-3">
+        A pessoa recebe um e-mail de convite e define a própria senha — ninguém digita
+        senha por ela.
+      </p>
       <label className="text-sm font-medium">
         Papel *
         <NativeSelect

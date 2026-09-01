@@ -556,9 +556,6 @@ describe("Feature: SettingsPage", () => {
       fireEvent.change(screen.getByLabelText(/Email/), {
         target: { value: "nova@clinica.com" },
       });
-      fireEvent.change(screen.getByLabelText(/Senha/), {
-        target: { value: "12345678" },
-      });
       fireEvent.click(screen.getByText("Criar conta"));
 
       await waitFor(() => expect(created).toBe(true));
@@ -589,7 +586,6 @@ describe("Feature: SettingsPage", () => {
 
       fireEvent.click(screen.getByText("+ Nova conta"));
       fireEvent.change(screen.getByLabelText(/Email/), { target: { value: "nova@clinica.com" } });
-      fireEvent.change(screen.getByLabelText(/Senha/), { target: { value: "12345678" } });
       fireEvent.change(screen.getByLabelText(/Profissional vinculado/), {
         target: { value: "pr1" },
       });
@@ -623,7 +619,6 @@ describe("Feature: SettingsPage", () => {
 
       fireEvent.click(screen.getByText("+ Nova conta"));
       fireEvent.change(screen.getByLabelText(/Email/), { target: { value: "nova@clinica.com" } });
-      fireEvent.change(screen.getByLabelText(/Senha/), { target: { value: "12345678" } });
       fireEvent.change(screen.getByLabelText(/Papel/), { target: { value: "profissional" } });
       fireEvent.click(screen.getByText("Criar conta"));
 
@@ -658,14 +653,12 @@ describe("Feature: SettingsPage", () => {
 
       fireEvent.click(screen.getByText("+ Nova conta"));
       fireEvent.change(screen.getByLabelText(/Email/), { target: { value: "nova-prof@clinica.com" } });
-      fireEvent.change(screen.getByLabelText(/Senha/), { target: { value: "12345678" } });
       fireEvent.change(screen.getByLabelText(/Papel/), { target: { value: "profissional" } });
       fireEvent.change(screen.getByLabelText(/Profissional vinculado/), { target: { value: "pr1" } });
       fireEvent.click(screen.getByText("Criar conta"));
 
       await waitFor(() => expect(sentBody).toEqual({
         email: "nova-prof@clinica.com",
-        password: "12345678",
         role: "profissional",
         professionalId: "pr1",
       }));
@@ -718,7 +711,6 @@ describe("Feature: SettingsPage", () => {
 
       fireEvent.click(screen.getByText("+ Nova conta"));
       fireEvent.change(screen.getByLabelText(/Email/), { target: { value: "nova@clinica.com" } });
-      fireEvent.change(screen.getByLabelText(/Senha/), { target: { value: "12345678" } });
       fireEvent.click(screen.getByText("Criar conta"));
 
       expect(await screen.findByText("Email já cadastrado")).toBeInTheDocument();
@@ -745,7 +737,6 @@ describe("Feature: SettingsPage", () => {
 
       fireEvent.click(screen.getByText("+ Nova conta"));
       fireEvent.change(screen.getByLabelText(/Email/), { target: { value: "nova@clinica.com" } });
-      fireEvent.change(screen.getByLabelText(/Senha/), { target: { value: "12345678" } });
       fireEvent.click(screen.getByText("Criar conta"));
 
       expect(await screen.findByText("Erro ao criar conta")).toBeInTheDocument();

@@ -12,6 +12,14 @@ const scryptAsync = (password: string, salt: string, cost: number): Promise<Buff
     });
   });
 
+/**
+ * Hash sentinela de conta que ainda não definiu senha (recém-convidada).
+ * Mantém o formato exigido pelo domínio, mas o custo `0` está fora da faixa
+ * aceita por `verifyPassword`, então NENHUMA senha satisfaz este hash — a conta
+ * só passa a autenticar depois de consumir o convite.
+ */
+export const UNSET_PASSWORD_HASH = "scrypt$0$sem-senha$sem-senha";
+
 /** Gera hash no formato `scrypt$custo$salt$hash` (hex). */
 export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(SALT_BYTES).toString("hex");

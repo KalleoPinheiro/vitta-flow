@@ -38,7 +38,6 @@ describe("Feature: Hierarquia de provisionamento via POST /api/accounts (RBAC-11
       const professionalId = await createProfessional("Dra. Nova Profissional");
       const { response, json } = await create("company_admin", {
         email: "novo-prof@x.com",
-        password: "senhaSegura123", // gitleaks:allow — fixture de teste, não é credencial
         role: "profissional",
         professionalId,
       });
@@ -53,7 +52,6 @@ describe("Feature: Hierarquia de provisionamento via POST /api/accounts (RBAC-11
       await ensureTestClinics();
       const { response } = await create("company_admin", {
         email: "sa-negado@x.com",
-        password: "senhaSegura123", // gitleaks:allow — fixture de teste, não é credencial
         role: "super_admin",
       });
 
@@ -67,7 +65,6 @@ describe("Feature: Hierarquia de provisionamento via POST /api/accounts (RBAC-11
       const professionalId = await createProfessional("Dr. Negado");
       const { response } = await create("atendente", {
         email: "prof-negado@x.com",
-        password: "senhaSegura123", // gitleaks:allow — fixture de teste, não é credencial
         role: "profissional",
         professionalId,
       });
@@ -81,7 +78,6 @@ describe("Feature: Hierarquia de provisionamento via POST /api/accounts (RBAC-11
       await ensureTestClinics();
       const { response } = await create("atendente", {
         email: "paciente-por-atendente@x.com",
-        password: "senhaSegura123", // gitleaks:allow — fixture de teste, não é credencial
         role: "patient",
       });
 
@@ -94,7 +90,6 @@ describe("Feature: Hierarquia de provisionamento via POST /api/accounts (RBAC-11
       await ensureTestClinics();
       const first = await create("super_admin", {
         email: "admin1-provisioning@x.com",
-        password: "senhaSegura123", // gitleaks:allow — fixture de teste, não é credencial
         role: "company_admin",
         clinicId: CLINIC_A_ID,
       });
@@ -102,7 +97,6 @@ describe("Feature: Hierarquia de provisionamento via POST /api/accounts (RBAC-11
 
       const second = await create("company_admin", {
         email: "admin2-provisioning@x.com",
-        password: "senhaSegura123", // gitleaks:allow — fixture de teste, não é credencial
         role: "company_admin",
       });
       expect(second.response.status).toBe(200);
@@ -117,7 +111,6 @@ describe("Feature: Hierarquia de provisionamento via POST /api/accounts (RBAC-11
         method: "POST",
         body: JSON.stringify({
           email: "auto-cadastro@x.com",
-          password: "senhaSegura123", // gitleaks:allow — fixture de teste, não é credencial
           role: "super_admin",
         }),
         headers: { "Content-Type": "application/json" },

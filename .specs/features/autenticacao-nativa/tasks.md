@@ -252,16 +252,18 @@ T20 → T21
 
 **Done when**:
 
-- [ ] Cadastro sem `password` responde 200 e envia um e-mail com link de convite
-- [ ] Login para a conta recém-criada responde 401 enquanto o convite não é consumido
-- [ ] Falha do gateway de e-mail mantém a conta criada e responde 200
-- [ ] Gate check passes: `npx vitest run tests/api/account-invite.test.ts tests/api/accounts-provisioning.test.ts`
-- [ ] Test count: 8 novos tests pass (no silent deletions)
+- [x] Cadastro sem `password` responde 200 e envia um e-mail com link de convite
+- [x] Login para a conta recém-criada responde 401 enquanto o convite não é consumido
+- [x] Falha do gateway de e-mail mantém a conta criada e responde 200
+- [x] Gate check passes: `npx vitest run tests/api/account-invite.test.ts tests/api/accounts-provisioning.test.ts`
+- [x] Test count: 8 novos tests pass (no silent deletions)
 
 **Tests**: integration
 **Gate**: full
 
 **Commit**: `feat(auth): dispara convite por e-mail ao cadastrar conta`
+
+**Status**: ✅ Done
 
 ---
 

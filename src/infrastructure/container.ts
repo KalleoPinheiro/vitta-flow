@@ -37,6 +37,10 @@ import {
   googleCalendarConfigFromEnv,
 } from "./calendar/google-calendar-gateway";
 import { DrizzleGoogleAccountRepository } from "./persistence/drizzle/drizzle-google-account-repository";
+import { DrizzleAuthTokenRepository } from "./persistence/drizzle/drizzle-auth-token-repository";
+import { buildEmailGateway } from "./email/resend-email-gateway";
+import type { EmailGateway } from "@/application/ports/email-gateway";
+import type { AuthTokenRepository } from "@/domain/auth/auth-token";
 import { DrizzlePartnerRepository } from "./persistence/drizzle/drizzle-partner-repository";
 import { DrizzleAuditEventRepository } from "./persistence/drizzle/drizzle-audit-event-repository";
 import { LocalPhotoStorage } from "./storage/local-photo-storage";
@@ -119,6 +123,7 @@ export interface Services {
   procedureKits: ProcedureKitRepository;
   sessionPackages: SessionPackageRepository;
   userAccounts: UserAccountRepository;
+  authTokens: AuthTokenRepository;
   scheduleConfig: ScheduleConfigRepository;
   googleAccounts: DrizzleGoogleAccountRepository;
   appointments: AppointmentRepository;
@@ -149,6 +154,7 @@ export interface Services {
   reminderLog: ReminderLogRepository;
   calendar: CalendarGateway;
   messaging: MessagingGateway;
+  email: EmailGateway;
   transactions: TransactionManager;
 }
 
@@ -225,6 +231,7 @@ export async function getRepositories(tenant: TenantContext): Promise<Services> 
     procedureKits: new DrizzleProcedureKitRepository(db),
     sessionPackages: new DrizzleSessionPackageRepository(db, tenant.clinicId),
     userAccounts: new DrizzleUserAccountRepository(db, tenant.clinicId),
+    authTokens: new DrizzleAuthTokenRepository(db),
     scheduleConfig: new DrizzleScheduleConfigRepository(db, tenant.clinicId),
     googleAccounts: new DrizzleGoogleAccountRepository(db),
     appointments: new DrizzleAppointmentRepository(db, tenant.clinicId),
@@ -255,6 +262,7 @@ export async function getRepositories(tenant: TenantContext): Promise<Services> 
     reminderLog: new DrizzleReminderLogRepository(db, tenant.clinicId),
     calendar,
     messaging: buildMessagingGateway(),
+    email: buildEmailGateway(),
     transactions: new DrizzleTransactionManager(db, tenant.clinicId),
   };
 }

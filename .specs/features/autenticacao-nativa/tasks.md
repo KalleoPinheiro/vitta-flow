@@ -639,17 +639,19 @@ T20 → T21
 
 **Done when**:
 
-- [ ] Nenhuma leitura de `AUTH_PASSWORD` em `src/**`
-- [ ] Login sem `email` responde 401
-- [ ] Com `AUTH_SECRET` definido e nenhuma variável do Google, o modo de auth é `configured`
-- [ ] Sem `AUTH_SECRET` e sem modo aberto, toda rota responde 503
-- [ ] Gate check passes: `npx vitest run tests/api tests/lib tests/proxy.test.ts`
-- [ ] Test count: 6 novos tests pass (no silent deletions)
+- [x] Nenhuma leitura de `AUTH_PASSWORD` em `src/**`
+- [x] Login sem `email` responde 401
+- [x] Com `AUTH_SECRET` definido e nenhuma variável do Google, o modo de auth é `configured`
+- [x] Sem `AUTH_SECRET` e sem modo aberto, toda rota responde 503
+- [x] Gate check passes: `npx vitest run tests/api tests/lib tests/proxy.test.ts`
+- [x] Test count: 6 novos tests pass (no silent deletions)
 
 **Tests**: integration
 **Gate**: full
 
 **Commit**: `feat(auth)!: remove a senha mestre AUTH_PASSWORD`
+
+**Status**: ✅ Done
 
 ---
 

@@ -157,6 +157,11 @@ describe("Feature: Conformidade das guardas de rota", () => {
     it("Dado PUBLIC_PATHS, Quando conferir, Então nenhuma rota de Google segue liberada", () => {
       expect(PUBLIC_PATHS.filter((p) => p.includes("google"))).toEqual([]);
     });
+
+    /** AUTH-23: a senha mestre deixou de existir junto com o login por Google. */
+    it("Dado o código-fonte da aplicação, Quando procurar AUTH_PASSWORD, Então não há nenhuma leitura", () => {
+      expect(sourceFilesMentioning("AUTH_PASSWORD")).toEqual([]);
+    });
   });
 
   describe("Cenário: rota nova nasce protegida", () => {

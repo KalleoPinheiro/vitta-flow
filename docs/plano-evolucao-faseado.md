@@ -46,7 +46,11 @@ re-verificadas. A Fase 4 passou de primeira (7/7 mutantes mortos), com três ach
 corrigidos em seguida — inclusive a causa-raiz de um erro de tipo que escapava do gate: `npm run
 build` não verifica `tests/**`, então o projeto ganhou `npm run typecheck` (`tsc --noEmit`).
 
-**Gate recomendado antes de merge:** `npm test && npm run typecheck && npm run lint && npm run build`.
+**Gate recomendado antes de merge:** `npm test && npm run typecheck && npm run check:sv && npm run build`, mais o lint — este por `npx eslint .`, **não** por `npm run lint`.
+
+> ⚠️ `npm run lint` passa por um wrapper que imprime um resumo e **retorna exit 0 mesmo com erros reais**; foi assim que um erro de `complexity` chegou a passar por um gate inteiro (issue #21). Use `npx eslint . ; echo $?` para ver o código de saída de verdade.
+>
+> `npx eslint .` já sai 1 na baseline do repositório (2 erros `complexity` + 6 warnings `no-unused-vars` herdados). O critério de merge é **"zero achados novos atribuíveis ao diff"**: cruze os arquivos apontados contra `git diff --name-only <base> HEAD`. Exigir exit 0 obrigaria cada PR a consertar dívida alheia.
 
 ---
 

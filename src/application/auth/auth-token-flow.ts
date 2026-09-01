@@ -68,7 +68,8 @@ export class IssueAuthToken {
       await this.deliver(input, inviteUrl);
       return { inviteUrl, delivered: this.email.enabled };
     } catch (error) {
-      console.error(`Convite: falha ao enviar e-mail para ${input.account.email}`, error);
+      // Só o id: o endereço é dado pessoal e log não é lugar para ele (CWE-532).
+      console.error(`Convite: falha ao enviar e-mail (conta ${input.account.id})`, error);
       return { inviteUrl, delivered: false };
     }
   }

@@ -24,7 +24,9 @@ cp .env.example .env
 #   RESEND_API_KEY=...   EMAIL_FROM="VittaFlow <nao-responda@suaclinica.com>"
 # o compose lê o .env sozinho, e o mesmo arquivo alimenta o curl abaixo
 docker compose up -d --build
-# primeira conta (instalação vazia): cria o Super Admin e envia o convite
+# primeira conta (instalação vazia): cria o Super Admin e envia o convite.
+# o compose devolve o controle antes de o Next aceitar conexões — espere subir:
+until curl -sf http://localhost:3000/api/auth/providers >/dev/null; do sleep 2; done
 set -a; . ./.env; set +a
 curl -sX POST http://localhost:3000/api/auth/bootstrap \
   -H "Content-Type: application/json" \

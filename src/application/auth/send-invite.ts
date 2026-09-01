@@ -63,6 +63,7 @@ export async function sendInvite(services: InviteServices, account: UserAccount)
       appUrl: appUrlFromEnv(),
     });
   } catch (error) {
-    console.error(`Convite: falha ao enviar e-mail para ${account.email}`, error);
+    // Só o id: o endereço é dado pessoal e log não é lugar para ele (CWE-532).
+    console.error(`Convite: falha ao enviar e-mail (conta ${account.id})`, error);
   }
 }

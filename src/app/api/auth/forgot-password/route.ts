@@ -1,4 +1,4 @@
-import type { NextRequest } from "next/server";
+import { after, type NextRequest } from "next/server";
 import { z } from "zod";
 import { getRepositories } from "@/infrastructure/container";
 import { IssueAuthToken } from "@/application/auth/auth-token-flow";
@@ -33,12 +33,16 @@ export async function POST(request: NextRequest) {
     return ok(NEUTRAL_RESPONSE);
   }
 
-  // Deliberadamente NÃO aguardado: esperar a emissão + o POST ao provedor de
-  // e-mail deixaria a resposta do caso "conta existe" mensuravelmente mais lenta
-  // que a do caso "não existe", e o corpo idêntico não adiantaria nada — o
-  // relógio viraria o oráculo (CWE-204). O envio segue em background e qualquer
-  // falha vai para o log, nunca para a resposta.
-  void issueResetLink(parsed.data.email);
+  // Deliberadamente FORA do caminho da resposta: aguardar a emissão + o POST ao
+  // provedor deixaria a resposta do caso "conta existe" mensuravelmente mais
+  // lenta que a do caso "não existe", e o corpo idêntico não adiantaria nada —
+  // o relógio viraria o oráculo (CWE-204).
+  //
+  // `after` em vez de um `void promise` solto: só ele registra a tarefa no
+  // ciclo de vida do Next. Com `void`, um runtime serverless pode encerrar a
+  // invocação assim que a resposta sai e matar a emissão no meio — o pedido
+  // seria aceito e o e-mail nunca sairia.
+  after(() => issueResetLink(parsed.data.email));
 
   return ok(NEUTRAL_RESPONSE);
 }

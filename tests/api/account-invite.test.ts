@@ -18,7 +18,11 @@ const createAccount = async (body: Record<string, unknown>) => {
   const route = await import("@/app/api/accounts/route");
   const headers = cookieHeaderFor("company_admin", "admin-convite@example.com", CLINIC_A_ID);
   const response = await route.POST(jsonRequest("/api/accounts", "POST", body, headers));
-  const json = (await response.json()) as Envelope<{ id: string; email: string }>;
+  const json = (await response.json()) as Envelope<{
+    id: string;
+    email: string;
+    delivered: boolean;
+  }>;
   return { response, json };
 };
 
@@ -47,6 +51,16 @@ describe("Feature: Cadastro de conta dispara convite por e-mail", () => {
     expect(emails.bodies).toHaveLength(1);
     expect(emails.bodies[0]).toContain("convidada@x.com");
     expect(emails.bodies[0]).toContain("https://app.vitta.test/definir-senha?token=");
+    emails.restore();
+  });
+
+  it("Dado o canal de e-mail em dry-run, Quando POST /api/accounts, Então delivered é false (issue #52)", async () => {
+    await ensureTestClinics();
+    const emails = spyOnSentEmails();
+
+    const { json } = await createAccount({ email: "dry-run@x.com", role: "atendente" });
+
+    expect(json.data.delivered).toBe(false);
     emails.restore();
   });
 
@@ -98,6 +112,7 @@ describe("Feature: Cadastro de conta dispara convite por e-mail", () => {
 
     expect(response.status).toBe(200);
     expect(json.data.email).toBe("envio-falhou@x.com");
+    expect(json.data.delivered).toBe(false);
     expect(errors).toHaveBeenCalled();
 
     const services = await getRepositories({ clinicId: CLINIC_A_ID });

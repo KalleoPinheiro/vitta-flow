@@ -209,6 +209,8 @@ function AccountsSection() {
   const { data: professionals } = useApiQuery<ProfessionalDto[]>("/api/professionals");
   const [creating, setCreating] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
+  const [undelivered, setUndelivered] = useState<string | null>(null);
 
   const professionalName = (id: string | null) =>
     (professionals ?? []).find((p) => p.id === id)?.fullName ?? "—";
@@ -223,6 +225,24 @@ function AccountsSection() {
       refresh();
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Erro ao atualizar conta");
+    }
+  };
+
+  const resendInvite = async (account: UserAccountDto) => {
+    try {
+      const result = await apiFetch<{ delivered: boolean }>(
+        `/api/accounts/${account.id}/resend-invite`,
+        { method: "POST" },
+      );
+      setActionError(null);
+      setActionNotice(
+        result.delivered
+          ? `Convite reenviado para ${account.email}.`
+          : `Não foi possível enviar o e-mail para ${account.email} — tente novamente mais tarde.`,
+      );
+    } catch (err) {
+      setActionNotice(null);
+      setActionError(err instanceof Error ? err.message : "Erro ao reenviar convite");
     }
   };
 
@@ -242,57 +262,28 @@ function AccountsSection() {
         Cada pessoa com sua senha: auditoria identifica quem acessou o prontuário e a
         evolução assume o autor automaticamente.
       </p>
-      {(error || actionError) && <ErrorAlert message={actionError ?? error ?? ""} />}
+      <AccountAlerts
+        error={error}
+        actionError={actionError}
+        actionNotice={actionNotice}
+        undelivered={undelivered}
+      />
 
-      {!accounts ? (
-        <LoadingIndicator />
-      ) : accounts.length === 0 ? (
-        <EmptyState message="Nenhuma conta cadastrada nesta empresa." />
-      ) : (
-        <Table className="w-full text-left text-sm">
-          <TableHeader>
-            <TableRow>
-              <TableHead className="py-2 pr-3">Email</TableHead>
-              <TableHead className="py-2 pr-3">Profissional vinculado</TableHead>
-              <TableHead className="py-2 pr-3">Situação</TableHead>
-              <TableHead className="py-2 text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {accounts.map((account) => (
-              <TableRow key={account.id} className={account.active ? "" : "opacity-50"}>
-                <TableCell className="py-2 pr-3 font-medium">{account.email}</TableCell>
-                <TableCell className="py-2 pr-3 text-ink-2">
-                  {professionalName(account.professionalId)}
-                </TableCell>
-                <TableCell className="py-2 pr-3">
-                  <StatusBadge
-                    status={account.active ? "confirmed" : "cancelled"}
-                    label={account.active ? "Ativa" : "Desativada"}
-                  />
-                </TableCell>
-                <TableCell className="py-2 text-right">
-                  <Button
-                    type="button"
-                    onClick={() => void toggleActive(account)}
-                    variant="link"
-                    className="h-auto p-0 text-ink-3"
-                  >
-                    {account.active ? "Desativar" : "Reativar"}
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+      <AccountsTable
+        accounts={accounts}
+        professionalName={professionalName}
+        onToggleActive={(account) => void toggleActive(account)}
+        onResendInvite={(account) => void resendInvite(account)}
+      />
 
       {creating && (
         <Modal title="Nova conta de acesso" onClose={() => setCreating(false)}>
           <AccountForm
             professionals={(professionals ?? []).filter((p) => p.active)}
-            onSaved={() => {
+            onSaved={({ email, delivered }) => {
               setCreating(false);
+              setUndelivered(delivered ? null : email);
+              setActionNotice(null);
               refresh();
             }}
           />
@@ -302,12 +293,123 @@ function AccountsSection() {
   );
 }
 
+function AccountAlerts({
+  error,
+  actionError,
+  actionNotice,
+  undelivered,
+}: {
+  error: string | null;
+  actionError: string | null;
+  actionNotice: string | null;
+  undelivered: string | null;
+}) {
+  const errorMessage = actionError ?? error;
+  return (
+    <>
+      {errorMessage && <ErrorAlert message={errorMessage} />}
+      {!actionError && actionNotice && (
+        <Alert className="mb-4">
+          <AlertDescription>{actionNotice}</AlertDescription>
+        </Alert>
+      )}
+      {undelivered && (
+        <Alert variant="warning" className="mb-4">
+          <AlertDescription>
+            Conta criada, mas o convite não foi enviado para {undelivered} — reenvie pela
+            tabela abaixo.
+          </AlertDescription>
+        </Alert>
+      )}
+    </>
+  );
+}
+
+function AccountsTable({
+  accounts,
+  professionalName,
+  onToggleActive,
+  onResendInvite,
+}: {
+  accounts: UserAccountDto[] | null;
+  professionalName: (id: string | null) => string;
+  onToggleActive: (account: UserAccountDto) => void;
+  onResendInvite: (account: UserAccountDto) => void;
+}) {
+  if (!accounts) return <LoadingIndicator />;
+  if (accounts.length === 0) return <EmptyState message="Nenhuma conta cadastrada nesta empresa." />;
+
+  return (
+    <Table className="w-full text-left text-sm">
+      <TableHeader>
+        <TableRow>
+          <TableHead className="py-2 pr-3">Email</TableHead>
+          <TableHead className="py-2 pr-3">Profissional vinculado</TableHead>
+          <TableHead className="py-2 pr-3">Situação</TableHead>
+          <TableHead className="py-2 text-right">Ações</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {accounts.map((account) => (
+          <AccountRow
+            key={account.id}
+            account={account}
+            professionalName={professionalName(account.professionalId)}
+            onToggleActive={() => onToggleActive(account)}
+            onResendInvite={() => onResendInvite(account)}
+          />
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
+function AccountRow({
+  account,
+  professionalName,
+  onToggleActive,
+  onResendInvite,
+}: {
+  account: UserAccountDto;
+  professionalName: string;
+  onToggleActive: () => void;
+  onResendInvite: () => void;
+}) {
+  return (
+    <TableRow className={account.active ? "" : "opacity-50"}>
+      <TableCell className="py-2 pr-3 font-medium">{account.email}</TableCell>
+      <TableCell className="py-2 pr-3 text-ink-2">{professionalName}</TableCell>
+      <TableCell className="py-2 pr-3">
+        <StatusBadge
+          status={account.active ? "confirmed" : "cancelled"}
+          label={account.active ? "Ativa" : "Desativada"}
+        />
+      </TableCell>
+      <TableCell className="py-2 text-right">
+        {account.active && !account.passwordSet && (
+          <Button
+            type="button"
+            onClick={onResendInvite}
+            variant="link"
+            className="mr-3 h-auto p-0 text-ink-3"
+          >
+            Reenviar convite
+          </Button>
+        )}
+        <Button type="button" onClick={onToggleActive} variant="link" className="h-auto p-0 text-ink-3">
+          {account.active ? "Desativar" : "Reativar"}
+        </Button>
+      </TableCell>
+    </TableRow>
+  );
+}
+
 function AccountForm({
   professionals,
   onSaved,
 }: {
   professionals: ProfessionalDto[];
-  onSaved: () => void;
+  onSaved: (created: { email: string; delivered: boolean }) => void;
 }) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<AccountRole>("company_admin");
@@ -326,7 +428,7 @@ function AccountForm({
     setSaving(true);
     setError(null);
     try {
-      await apiFetch("/api/accounts", {
+      const created = await apiFetch<UserAccountDto & { delivered: boolean }>("/api/accounts", {
         method: "POST",
         body: JSON.stringify({
           email,
@@ -334,7 +436,7 @@ function AccountForm({
           professionalId: professionalId || null,
         }),
       });
-      onSaved();
+      onSaved({ email: created.email, delivered: created.delivered });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao criar conta");
     } finally {

@@ -53,17 +53,18 @@ const isSafeOrigin = (url: string): boolean => {
 /**
  * Dispara o convite de primeiro acesso sem deixar a indisponibilidade do
  * provedor de e-mail derrubar o cadastro: a conta permanece criada e o convite
- * pode ser reemitido pelo fluxo de "esqueci minha senha".
+ * pode ser reemitido (`POST /api/accounts/[id]/resend-invite`). `delivered`
+ * volta pro chamador para que a falha não fique invisível — antes só ia pro
+ * log do servidor, sem chegar em quem cadastrou a conta.
  */
-export async function sendInvite(services: InviteServices, account: UserAccount): Promise<void> {
-  try {
-    await new IssueAuthToken(services.authTokens, services.email).execute({
-      account,
-      purpose: "invite",
-      appUrl: appUrlFromEnv(),
-    });
-  } catch (error) {
-    // Só o id: o endereço é dado pessoal e log não é lugar para ele (CWE-532).
-    console.error(`Convite: falha ao enviar e-mail (conta ${account.id})`, error);
-  }
+export async function sendInvite(
+  services: InviteServices,
+  account: UserAccount,
+): Promise<{ delivered: boolean }> {
+  const { delivered } = await new IssueAuthToken(services.authTokens, services.email).issueAndTryDeliver({
+    account,
+    purpose: "invite",
+    appUrl: appUrlFromEnv(),
+  });
+  return { delivered };
 }

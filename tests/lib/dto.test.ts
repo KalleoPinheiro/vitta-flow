@@ -15,6 +15,7 @@ import { ConditionPhoto } from "@/domain/clinical/condition-photo";
 import { Professional } from "@/domain/professional/professional";
 import { Procedure } from "@/domain/catalog/procedure";
 import { UserAccount } from "@/domain/auth/user-account";
+import { UNSET_PASSWORD_HASH } from "@/lib/auth/password";
 import { Money } from "@/domain/shared/money";
 import { TimeSlot } from "@/domain/shared/time-slot";
 import {
@@ -593,7 +594,7 @@ describe("Feature: DTO de procedimento do catálogo", () => {
 });
 
 describe("Feature: DTO de conta de usuário", () => {
-  it("Dado conta de acesso, Quando toUserAccountDto, Então nunca expõe o hash de senha", () => {
+  it("Dado conta de acesso com senha definida, Quando toUserAccountDto, Então nunca expõe o hash e marca passwordSet", () => {
     const account = UserAccount.create({
       email: "ana@clinica.com",
       passwordHash: "scrypt$16384$salt$hash",
@@ -609,7 +610,19 @@ describe("Feature: DTO de conta de usuário", () => {
       email: "ana@clinica.com",
       professionalId: "prof-1",
       active: true,
+      passwordSet: true,
     });
     expect(dto).not.toHaveProperty("passwordHash");
+  });
+
+  it("Dado conta recém-criada por convite (senha ainda não definida), Quando toUserAccountDto, Então passwordSet é false", () => {
+    const account = UserAccount.create({
+      email: "convidado@clinica.com",
+      passwordHash: UNSET_PASSWORD_HASH,
+      role: "atendente",
+      clinicId: "legacy-clinic",
+    });
+
+    expect(toUserAccountDto(account).passwordSet).toBe(false);
   });
 });

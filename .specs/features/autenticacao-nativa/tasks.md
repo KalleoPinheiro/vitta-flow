@@ -312,16 +312,18 @@ T20 → T21
 
 **Done when**:
 
-- [ ] Formulário usa `Input`/`Button` da lib (nenhum `<input>`/`<button>` cru — `npm run check:sv` verde)
-- [ ] Submissão bem-sucedida mostra confirmação e link para `/login`
-- [ ] Erro da API é exibido na tela
-- [ ] Gate check passes: `npm run check:sv && npx vitest run tests/pages/definir-senha.test.tsx`
-- [ ] Test count: 4 tests pass (no silent deletions)
+- [x] Formulário usa `Input`/`Button` da lib (nenhum `<input>`/`<button>` cru — `npm run check:sv` verde)
+- [x] Submissão bem-sucedida mostra confirmação e link para `/login`
+- [x] Erro da API é exibido na tela
+- [x] Gate check passes: `npm run check:sv && npx vitest run tests/pages/definir-senha.test.tsx`
+- [x] Test count: 4 tests pass (no silent deletions)
 
 **Tests**: unit
 **Gate**: build
 
 **Commit**: `feat(auth): adiciona tela de definicao de senha`
+
+**Status**: ✅ Done
 
 ---
 

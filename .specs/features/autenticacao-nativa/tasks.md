@@ -431,16 +431,18 @@ T20 → T21
 
 **Done when**:
 
-- [ ] Config exige apenas `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` e `APP_URL` — nunca allowlist
-- [ ] Redirect aponta para `/api/integrations/google-calendar/callback`
-- [ ] Escopo é exatamente `["https://www.googleapis.com/auth/calendar.events"]`
-- [ ] Gate check passes: `npx vitest run tests/lib/google-calendar-oauth.test.ts`
-- [ ] Test count: 5 tests pass (no silent deletions)
+- [x] Config exige apenas `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` e `APP_URL` — nunca allowlist
+- [x] Redirect aponta para `/api/integrations/google-calendar/callback`
+- [x] Escopo é exatamente `["https://www.googleapis.com/auth/calendar.events"]`
+- [x] Gate check passes: `npx vitest run tests/lib/google-calendar-oauth.test.ts`
+- [x] Test count: 5 tests pass (no silent deletions)
 
 **Tests**: unit
 **Gate**: quick
 
 **Commit**: `feat(calendar): adiciona config de OAuth dedicada ao Google Agenda`
+
+**Status**: ✅ Done
 
 ---
 

@@ -60,9 +60,7 @@ const resetGoogleEnv = () => {
   delete process.env.GOOGLE_ALLOWED_EMAILS;
 };
 
-describe("Feature: Fechamento de branches — auth Google, login e rotas do portal", () => {
-  let googleRoute: typeof import("@/app/api/auth/google/route");
-  let googleCallbackRoute: typeof import("@/app/api/auth/google/callback/route");
+describe("Feature: Fechamento de branches — login e rotas do portal", () => {
   let loginRoute: typeof import("@/app/api/auth/login/route");
 
   let patientsRoute: typeof import("@/app/api/patients/route");
@@ -89,8 +87,6 @@ describe("Feature: Fechamento de branches — auth Google, login e rotas do port
   beforeAll(async () => {
     process.env.AUTH_SECRET = "test-secret-gaps";
 
-    googleRoute = await import("@/app/api/auth/google/route");
-    googleCallbackRoute = await import("@/app/api/auth/google/callback/route");
     loginRoute = await import("@/app/api/auth/login/route");
 
     patientsRoute = await import("@/app/api/patients/route");
@@ -116,125 +112,6 @@ describe("Feature: Fechamento de branches — auth Google, login e rotas do port
   const cookieHeader = (token: string) => ({ cookie: `vitta_session=${token}` });
   const sessionFor = (email: string, role: "company_admin" | "partner" | "patient") =>
     createSessionToken(process.env.AUTH_SECRET as string, Date.now() + 3_600_000, email, role);
-
-  describe("GET /api/auth/google — branch 'connect=calendar'", () => {
-    it("Dado connect=calendar, Quando GET google, Então pede escopo de agenda com access_type offline", async () => {
-      resetGoogleEnv();
-      process.env.GOOGLE_CLIENT_ID = "client-id";
-      process.env.GOOGLE_CLIENT_SECRET = "client-secret";
-      process.env.APP_URL = "http://localhost:3000";
-      process.env.GOOGLE_ALLOWED_EMAILS = "admin@clinica.com";
-
-      const response = await googleRoute.GET(
-        jsonRequest("/api/auth/google?connect=calendar", "GET"),
-      );
-
-      expect(response.status).toBe(307);
-      expect(response.headers.get("set-cookie")).toContain("vitta_oauth_state=");
-      resetGoogleEnv();
-    });
-  });
-
-  describe("GET /api/auth/google/callback — troca de código (googleapis mockado)", () => {
-    const buildCallbackRequest = (state: string, code = "auth-code-123") =>
-      jsonRequest(`/api/auth/google/callback?code=${code}&state=${state}`, "GET", undefined, {
-        cookie: `vitta_oauth_state=${state}`,
-      });
-
-    const configureGoogleEnv = () => {
-      resetGoogleEnv();
-      process.env.GOOGLE_CLIENT_ID = "client-id";
-      process.env.GOOGLE_CLIENT_SECRET = "client-secret";
-      process.env.APP_URL = "http://localhost:3000";
-      process.env.GOOGLE_ALLOWED_EMAILS = "admin.gaps@clinica.com";
-    };
-
-    it("Dado email não retornado pelo Google, Quando GET callback, Então redireciona com erro de email", async () => {
-      configureGoogleEnv();
-      googleMockState.tokenBehavior = "success";
-      googleMockState.userinfoEmail = null;
-
-      const response = await googleCallbackRoute.GET(buildCallbackRequest("state-1"));
-      const location = response.headers.get("location") ?? "";
-
-      expect(response.status).toBe(307);
-      expect(decodeURIComponent(location).replace(/\+/g, " ")).toContain(
-        "Não foi possível obter o email da conta Google",
-      );
-    });
-
-    it("Dado email autenticado sem vínculo (não admin/parceiro/paciente), Quando GET callback, Então redireciona com erro de conta não autorizada", async () => {
-      configureGoogleEnv();
-      googleMockState.tokenBehavior = "success";
-      googleMockState.userinfoEmail = "estranho.gaps@example.com";
-
-      const response = await googleCallbackRoute.GET(buildCallbackRequest("state-2"));
-      const location = response.headers.get("location") ?? "";
-
-      expect(response.status).toBe(307);
-      expect(decodeURIComponent(location).replace(/\+/g, " ")).toContain("não autorizada");
-    });
-
-    it("Dado exchangeCode lança erro, Quando GET callback, Então redireciona com erro genérico de autenticação", async () => {
-      configureGoogleEnv();
-      googleMockState.tokenBehavior = "throw";
-
-      const response = await googleCallbackRoute.GET(buildCallbackRequest("state-3"));
-      const location = response.headers.get("location") ?? "";
-
-      expect(response.status).toBe(307);
-      expect(decodeURIComponent(location).replace(/\+/g, " ")).toContain(
-        "Falha ao autenticar com o Google",
-      );
-    });
-
-    it("Dado email de paciente ativo autenticado via Google, Quando GET callback, Então cria sessão e redireciona para /portal", async () => {
-      configureGoogleEnv();
-      googleMockState.tokenBehavior = "success";
-      googleMockState.userinfoEmail = "paciente.google.gaps@example.com";
-
-      const patientResponse = await patientsRoute.POST(
-        jsonRequest("/api/patients", "POST", {
-          fullName: "Paciente Google Gaps",
-          email: "paciente.google.gaps@example.com",
-          phone: "11911112222",
-        }),
-      );
-      expect(patientResponse.status).toBe(200);
-
-      const response = await googleCallbackRoute.GET(buildCallbackRequest("state-4"));
-
-      expect(response.status).toBe(307);
-      expect(response.headers.get("location")).toContain("/portal");
-      expect(response.headers.get("set-cookie")).toContain("vitta_session=");
-    });
-
-    it("Dado email da allowlist (admin) com refresh token, Quando GET callback, Então persiste credencial do Calendar e redireciona para /", async () => {
-      configureGoogleEnv();
-      googleMockState.tokenBehavior = "success";
-      googleMockState.userinfoEmail = "admin.gaps@clinica.com";
-
-      const response = await googleCallbackRoute.GET(buildCallbackRequest("state-5"));
-
-      expect(response.status).toBe(307);
-      const location = response.headers.get("location") ?? "";
-      expect(location.endsWith("/") || location.includes("localhost:3000/")).toBe(true);
-      expect(location).not.toContain("/portal");
-      expect(response.headers.get("set-cookie")).toContain("vitta_session=");
-    });
-
-    it("Dado admin autenticado sem refresh token (reautorização), Quando GET callback, Então cria sessão sem persistir credencial", async () => {
-      configureGoogleEnv();
-      googleMockState.tokenBehavior = "no-refresh-token";
-      googleMockState.userinfoEmail = "admin.gaps@clinica.com";
-
-      const response = await googleCallbackRoute.GET(buildCallbackRequest("state-6"));
-
-      expect(response.status).toBe(307);
-      expect(response.headers.get("set-cookie")).toContain("vitta_session=");
-    });
-
-  });
 
   describe("POST /api/auth/login — conta individual desativada", () => {
     it("Dado conta individual desativada, Quando POST login, Então retorna 401", async () => {

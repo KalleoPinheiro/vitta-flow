@@ -13,7 +13,6 @@ import { UpdatePatient } from "@/application/patients/update-patient";
 import { CreatePartner } from "@/application/partners/create-partner";
 import { UpdatePartner } from "@/application/partners/update-partner";
 import { ListPartners } from "@/application/partners/list-partners";
-import { ResolveUserRole } from "@/application/auth/resolve-user-role";
 import { ScheduleAppointment } from "@/application/appointments/schedule-appointment";
 import { CreateCondition } from "@/application/clinical/create-condition";
 import { AddConditionAssessment } from "@/application/clinical/add-condition-assessment";
@@ -124,50 +123,6 @@ describe("Feature: RBAC — parceria, indicação e portais", () => {
       expect(list).toHaveLength(1);
       expect(list[0].specialty).toBe("Angiologia");
       expect(list[0].isActive).toBe(false);
-    });
-  });
-
-  describe("Cenário: resolução de papel no login", () => {
-    it("Dado email na allowlist da equipe, Quando resolver, Então super_admin (mesmo sendo parceiro)", async () => {
-      await createPartner("ana@clinica.com");
-
-      const role = await new ResolveUserRole(patientRepo, partnerRepo).execute({
-        email: "Ana@Clinica.com",
-        adminEmails: ["ana@clinica.com"],
-      });
-
-      expect(role).toBe("super_admin");
-    });
-
-    it("Dado email de parceiro ativo, Quando resolver, Então partner", async () => {
-      await createPartner("dr.carlos@x.com");
-
-      const role = await new ResolveUserRole(patientRepo, partnerRepo).execute({
-        email: "dr.carlos@x.com",
-        adminEmails: [],
-      });
-
-      expect(role).toBe("partner");
-    });
-
-    it("Dado email de paciente ativo, Quando resolver, Então patient", async () => {
-      await createPatient("maria@x.com");
-
-      const role = await new ResolveUserRole(patientRepo, partnerRepo).execute({
-        email: "maria@x.com",
-        adminEmails: [],
-      });
-
-      expect(role).toBe("patient");
-    });
-
-    it("Dado parceiro desativado ou email desconhecido, Quando resolver, Então null (negado)", async () => {
-      const partner = await createPartner("dr.ex@x.com");
-      await new UpdatePartner(partnerRepo).execute({ id: partner.id, active: false });
-
-      const resolver = new ResolveUserRole(patientRepo, partnerRepo);
-      expect(await resolver.execute({ email: "dr.ex@x.com", adminEmails: [] })).toBeNull();
-      expect(await resolver.execute({ email: "intruso@x.com", adminEmails: [] })).toBeNull();
     });
   });
 

@@ -581,15 +581,17 @@ T20 → T21
 
 **Done when**:
 
-- [ ] Nenhum arquivo sob `src/app/api/auth/google/` e nenhuma referência a `GOOGLE_ALLOWED_EMAILS` em `src/**`
-- [ ] `PUBLIC_PATHS` não lista mais rotas do Google
-- [ ] Gate check passes: `npm run typecheck && npx vitest run`
-- [ ] Test count: nenhuma queda além dos testes do caminho removido (no silent deletions)
+- [x] Nenhum arquivo sob `src/app/api/auth/google/` e nenhuma referência a `GOOGLE_ALLOWED_EMAILS` em `src/**`
+- [x] `PUBLIC_PATHS` não lista mais rotas do Google
+- [x] Gate check passes: `npm run typecheck && npx vitest run`
+- [x] Test count: nenhuma queda além dos testes do caminho removido (no silent deletions)
 
 **Tests**: integration
 **Gate**: full
 
 **Commit**: `feat(auth)!: remove login via Google e allowlist de e-mails`
+
+**Status**: ✅ Done
 
 ---
 

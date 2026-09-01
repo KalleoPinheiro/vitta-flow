@@ -92,27 +92,19 @@ describe("Feature: Política de acesso compartilhada entre proxy e rotas", () =>
   });
 
   describe("Cenário: modo de autenticação", () => {
-    it("Dado AUTH_SECRET + AUTH_PASSWORD, Então o modo é 'configured'", () => {
+    it("Dado AUTH_SECRET definido, Então o modo é 'configured'", () => {
       process.env.AUTH_SECRET = "segredo-de-teste";
-      process.env.AUTH_PASSWORD = "senha-de-teste";
 
       expect(resolveAuthMode()).toBe("configured");
     });
 
-    it("Dado AUTH_SECRET + Google configurado, Então o modo é 'configured' mesmo sem senha", () => {
+    it("Dado AUTH_SECRET e nenhuma variável do Google, Então o modo continua 'configured'", () => {
       process.env.AUTH_SECRET = "segredo-de-teste";
-      process.env.GOOGLE_CLIENT_ID = "id";
-      process.env.GOOGLE_CLIENT_SECRET = "secret";
-      process.env.APP_URL = "https://clinica.exemplo";
-      process.env.GOOGLE_ALLOWED_EMAILS = "equipe@clinica.exemplo";
+      delete process.env.GOOGLE_CLIENT_ID;
+      delete process.env.GOOGLE_CLIENT_SECRET;
+      delete process.env.GOOGLE_ALLOWED_EMAILS;
 
       expect(resolveAuthMode()).toBe("configured");
-    });
-
-    it("Dado AUTH_SECRET sozinho (sem senha nem Google), Então não é utilizável", () => {
-      process.env.AUTH_SECRET = "segredo-de-teste";
-
-      expect(resolveAuthMode()).not.toBe("configured");
     });
 
     it("Dado NODE_ENV=production sem autenticação, Então o modo é 'unconfigured'", () => {

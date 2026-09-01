@@ -20,8 +20,6 @@ describe("Feature: Rotas de autenticação (login, logout, provedores, Google OA
   let loginRoute: typeof import("@/app/api/auth/login/route");
   let logoutRoute: typeof import("@/app/api/auth/logout/route");
   let providersRoute: typeof import("@/app/api/auth/providers/route");
-  let googleRoute: typeof import("@/app/api/auth/google/route");
-  let googleCallbackRoute: typeof import("@/app/api/auth/google/callback/route");
 
   const originalEnv = { ...process.env };
 
@@ -38,8 +36,6 @@ describe("Feature: Rotas de autenticação (login, logout, provedores, Google OA
     loginRoute = await import("@/app/api/auth/login/route");
     logoutRoute = await import("@/app/api/auth/logout/route");
     providersRoute = await import("@/app/api/auth/providers/route");
-    googleRoute = await import("@/app/api/auth/google/route");
-    googleCallbackRoute = await import("@/app/api/auth/google/callback/route");
   });
 
   afterEach(() => {
@@ -267,114 +263,34 @@ describe("Feature: Rotas de autenticação (login, logout, provedores, Google OA
   });
 
   describe("GET /api/auth/providers", () => {
-    it("Dado nenhuma configuração de auth, Quando GET providers, Então retorna tudo desativado", async () => {
+    it("Dado nenhuma configuração de auth, Quando GET providers, Então retorna senha desativada", async () => {
       resetAuthEnv();
       const response = await providersRoute.GET();
-      const body = (await response.json()) as Envelope<{ password: boolean; google: boolean }>;
+      const body = (await response.json()) as Envelope<{ password: boolean }>;
 
       expect(response.status).toBe(200);
       expect(body.data.password).toBe(false);
-      expect(body.data.google).toBe(false);
     });
 
-    it("Dado AUTH_PASSWORD e Google configurados, Quando GET providers, Então retorna ambos ativos", async () => {
+    it("Dado AUTH_SECRET configurado, Quando GET providers, Então retorna senha ativa", async () => {
       resetAuthEnv();
       process.env.AUTH_SECRET = "test-secret-e2e";
-      process.env.AUTH_PASSWORD = "senha-correta";
-      process.env.GOOGLE_CLIENT_ID = "client-id";
-      process.env.GOOGLE_CLIENT_SECRET = "client-secret";
-      process.env.APP_URL = "http://localhost:3000";
-      process.env.GOOGLE_ALLOWED_EMAILS = "admin@clinica.com";
 
       const response = await providersRoute.GET();
-      const body = (await response.json()) as Envelope<{ password: boolean; google: boolean }>;
+      const body = (await response.json()) as Envelope<{ password: boolean }>;
 
       expect(body.data.password).toBe(true);
-      expect(body.data.google).toBe(true);
       resetAuthEnv();
     });
-  });
 
-  describe("GET /api/auth/google", () => {
-    it("Dado Google não configurado, Quando GET google, Então retorna 503", async () => {
-      resetAuthEnv();
-      const response = await googleRoute.GET(jsonRequest("/api/auth/google", "GET"));
-      const body = (await response.json()) as Envelope<null>;
-
-      expect(response.status).toBe(503);
-      expect(body.error).toContain("Login com Google não configurado");
-    });
-
-    it("Dado Google configurado, Quando GET google, Então redireciona para URL de autorização com cookie de estado", async () => {
-      resetAuthEnv();
-      process.env.GOOGLE_CLIENT_ID = "client-id";
-      process.env.GOOGLE_CLIENT_SECRET = "client-secret";
-      process.env.APP_URL = "http://localhost:3000";
-      process.env.GOOGLE_ALLOWED_EMAILS = "admin@clinica.com";
-
-      const response = await googleRoute.GET(jsonRequest("/api/auth/google", "GET"));
-
-      expect(response.status).toBe(307);
-      expect(response.headers.get("location")).toContain("accounts.google.com");
-      expect(response.headers.get("set-cookie")).toContain("vitta_oauth_state=");
-      resetAuthEnv();
-    });
-  });
-
-  describe("GET /api/auth/google/callback", () => {
-    it("Dado Google não configurado, Quando GET callback, Então redireciona para /login com erro", async () => {
-      resetAuthEnv();
-      const response = await googleCallbackRoute.GET(
-        jsonRequest("/api/auth/google/callback", "GET"),
-      );
-
-      expect(response.status).toBe(307);
-      expect(response.headers.get("location")).toContain("/login");
-      expect(response.headers.get("location")).toContain("error=");
-    });
-
-    it("Dado configurado mas sem code/state, Quando GET callback, Então redireciona com erro de fluxo inválido", async () => {
+    it("Dado AUTH_SECRET configurado e nenhuma variável do Google, Quando GET providers, Então a resposta não anuncia provedor Google", async () => {
       resetAuthEnv();
       process.env.AUTH_SECRET = "test-secret-e2e";
-      process.env.GOOGLE_CLIENT_ID = "client-id";
-      process.env.GOOGLE_CLIENT_SECRET = "client-secret";
-      process.env.APP_URL = "http://localhost:3000";
-      process.env.GOOGLE_ALLOWED_EMAILS = "admin@clinica.com";
 
-      const response = await googleCallbackRoute.GET(
-        jsonRequest("/api/auth/google/callback", "GET"),
-      );
-      const location = response.headers.get("location") ?? "";
+      const response = await providersRoute.GET();
+      const body = (await response.json()) as Envelope<Record<string, boolean>>;
 
-      expect(response.status).toBe(307);
-      expect(location).toContain("/login");
-      expect(decodeURIComponent(location).replace(/\+/g, " ")).toContain(
-        "Fluxo de login inválido",
-      );
-      resetAuthEnv();
-    });
-
-    it("Dado state divergente do cookie, Quando GET callback, Então redireciona com erro de fluxo inválido", async () => {
-      resetAuthEnv();
-      process.env.AUTH_SECRET = "test-secret-e2e";
-      process.env.GOOGLE_CLIENT_ID = "client-id";
-      process.env.GOOGLE_CLIENT_SECRET = "client-secret";
-      process.env.APP_URL = "http://localhost:3000";
-      process.env.GOOGLE_ALLOWED_EMAILS = "admin@clinica.com";
-
-      const request = jsonRequest(
-        "/api/auth/google/callback?code=abc&state=state-da-url",
-        "GET",
-        undefined,
-        { cookie: "vitta_oauth_state=outro-state" },
-      );
-      const response = await googleCallbackRoute.GET(request);
-      const location = response.headers.get("location") ?? "";
-
-      expect(response.status).toBe(307);
-      expect(decodeURIComponent(location).replace(/\+/g, " ")).toContain(
-        "Fluxo de login inválido",
-      );
+      expect(Object.keys(body.data)).toEqual(["password"]);
       resetAuthEnv();
     });
   });

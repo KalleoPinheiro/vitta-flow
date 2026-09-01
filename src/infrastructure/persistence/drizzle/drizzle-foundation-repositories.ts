@@ -126,6 +126,36 @@ export class DrizzleUserAccountRepository implements UserAccountRepository {
     return rows[0] ? UserAccount.restore({ ...rows[0], role: toUserRole(rows[0].role) }) : null;
   }
 
+  async findById(id: string): Promise<UserAccount | null> {
+    const rows = await this.db
+      .select()
+      .from(userAccounts)
+      .where(withTenant(userAccounts, this.clinicId, eq(userAccounts.id, id)))
+      .limit(1);
+    return rows[0] ? UserAccount.restore({ ...rows[0], role: toUserRole(rows[0].role) }) : null;
+  }
+
+  /**
+   * Atualiza apenas o hash de senha, pelo id. Diferente de `save`, não exige
+   * empresa de contexto: o fluxo de convite/reset roda antes de existir sessão
+   * e a autorização vem do token de uso único.
+   */
+  async updatePasswordHash(id: string, passwordHash: string): Promise<void> {
+    await this.db
+      .update(userAccounts)
+      .set({ passwordHash })
+      .where(withTenant(userAccounts, this.clinicId, eq(userAccounts.id, id)));
+  }
+
+  async hasAnyAccount(): Promise<boolean> {
+    const rows = await this.db
+      .select({ id: userAccounts.id })
+      .from(userAccounts)
+      .where(withTenant(userAccounts, this.clinicId))
+      .limit(1);
+    return rows.length > 0;
+  }
+
   async findAll(): Promise<UserAccount[]> {
     const rows = await this.db
       .select()

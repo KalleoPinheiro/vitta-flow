@@ -221,17 +221,19 @@ T20 → T21
 
 **Done when**:
 
-- [ ] `IssueAuthToken` envia e-mail cujo corpo contém `{appUrl}/definir-senha?token={segredo}`
-- [ ] `IssueAuthToken` chama `markAllUnusedAsUsed` antes de persistir o novo token
-- [ ] `ConsumeAuthToken` lança `ValidationError("Link inválido ou expirado — solicite um novo")` para token inválido, expirado, usado e conta inativa
-- [ ] `ConsumeAuthToken` grava o hash da nova senha e marca o token como usado
-- [ ] Gate check passes: `npx vitest run tests/application/auth-token-flow.test.ts`
-- [ ] Test count: 10 tests pass (no silent deletions)
+- [x] `IssueAuthToken` envia e-mail cujo corpo contém `{appUrl}/definir-senha?token={segredo}`
+- [x] `IssueAuthToken` chama `markAllUnusedAsUsed` antes de persistir o novo token
+- [x] `ConsumeAuthToken` lança `ValidationError("Link inválido ou expirado — solicite um novo")` para token inválido, expirado, usado e conta inativa
+- [x] `ConsumeAuthToken` grava o hash da nova senha e marca o token como usado
+- [x] Gate check passes: `npx vitest run tests/application/auth-token-flow.test.ts`
+- [x] Test count: 14 tests pass (no silent deletions)
 
 **Tests**: unit
 **Gate**: quick
 
 **Commit**: `feat(auth): adiciona use-cases de emissao e consumo de token`
+
+**Status**: ✅ Done
 
 ---
 

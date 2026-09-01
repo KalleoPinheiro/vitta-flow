@@ -101,5 +101,15 @@ export class UserAccount {
 export interface UserAccountRepository {
   save(account: UserAccount): Promise<void>;
   findByEmail(email: string): Promise<UserAccount | null>;
+  findById(id: string): Promise<UserAccount | null>;
   findAll(): Promise<UserAccount[]>;
+  /**
+   * Troca só o hash de senha, identificando a conta pelo id. Existe separado de
+   * `save` porque o fluxo de convite/reset roda ANTES de haver sessão: não há
+   * empresa de contexto para escopar o repositório, e a autorização vem do
+   * token de uso único, não do tenant.
+   */
+  updatePasswordHash(id: string, passwordHash: string): Promise<void>;
+  /** Existe ao menos uma conta na instalação? Guarda do bootstrap do primeiro Super Admin. */
+  hasAnyAccount(): Promise<boolean>;
 }

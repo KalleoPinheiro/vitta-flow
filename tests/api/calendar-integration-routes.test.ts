@@ -2,7 +2,10 @@ import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { cookieHeaderFor } from "../support/session";
 import { ensureTestClinics, CLINIC_A_ID } from "../support/clinics";
-import { CALENDAR_OAUTH_STATE_COOKIE } from "@/lib/auth/google-calendar-oauth";
+import {
+  CALENDAR_OAUTH_STATE_COOKIE,
+  encodeCalendarOAuthState,
+} from "@/lib/auth/google-calendar-oauth";
 import { SESSION_COOKIE } from "@/lib/auth/session";
 
 /**
@@ -36,10 +39,18 @@ const staffHeaders = (): Record<string, string> =>
 const getRequest = (url: string, headers: Record<string, string> = staffHeaders()) =>
   new NextRequest(`http://localhost${url}`, { method: "GET", headers });
 
-/** Cookie de sessão + cookie de estado do OAuth na mesma requisição. */
-const withState = (state: string, headers: Record<string, string> = staffHeaders()) => ({
+/**
+ * Cookie de sessão + cookie de estado do OAuth na mesma requisição. O cookie de
+ * estado carrega `<state>:<subject>` — o subject amarra o fluxo à conta que o
+ * iniciou.
+ */
+const withState = (
+  state: string,
+  headers: Record<string, string> = staffHeaders(),
+  subject = "agenda@clinica.com",
+) => ({
   ...headers,
-  cookie: `${headers.cookie}; ${CALENDAR_OAUTH_STATE_COOKIE}=${state}`,
+  cookie: `${headers.cookie}; ${CALENDAR_OAUTH_STATE_COOKIE}=${encodeCalendarOAuthState(state, subject)}`,
 });
 
 /** Credencial gravada para o dono da sessão de teste (null quando não houve gravação). */
@@ -101,7 +112,12 @@ describe("Feature: Conexão do Google Agenda desacoplada do login", () => {
       const setCookie = response.headers.get("set-cookie") ?? "";
       expect(setCookie).toContain(`${CALENDAR_OAUTH_STATE_COOKIE}=`);
       const state = new URL(response.headers.get("location")!).searchParams.get("state");
-      expect(setCookie).toContain(`${CALENDAR_OAUTH_STATE_COOKIE}=${state}`);
+      // O cookie amarra o state à conta que iniciou o fluxo. O valor sai
+      // percent-encoded pelo serializador de cookie, então compara decodificado.
+      const cookieValue = decodeURIComponent(
+        setCookie.match(new RegExp(`${CALENDAR_OAUTH_STATE_COOKIE}=([^;]+)`))?.[1] ?? "",
+      );
+      expect(cookieValue).toBe(encodeCalendarOAuthState(state!, "agenda@clinica.com"));
     });
 
     it("Dado nenhuma sessão, Quando GET na rota de início, Então responde 401 e não redireciona", async () => {
@@ -242,6 +258,29 @@ describe("Feature: Conexão do Google Agenda desacoplada do login", () => {
       );
 
       expect(response.status).toBe(502);
+    });
+
+    it("Dado o fluxo iniciado pela sessão A e o callback chegando na sessão B, Quando GET no callback, Então recusa e não grava a credencial sob B", async () => {
+      await ensureTestClinics();
+      await clearCredential();
+      stubTokenExchange({ refresh_token: "nao-deve-salvar" });
+      const route = await callbackRoute();
+
+      // Cookie de estado emitido para "agenda@clinica.com" (sessão A), mas a
+      // requisição de retorno chega autenticada como outra conta (sessão B).
+      const sessionB = cookieHeaderFor("company_admin", "outra-conta@clinica.com", CLINIC_A_ID);
+      const response = await route.GET(
+        getRequest(
+          "/api/integrations/google-calendar/callback?code=abc&state=estado-6",
+          withState("estado-6", sessionB, "agenda@clinica.com"),
+        ),
+      );
+
+      expect(response.status).toBe(400);
+      const { getRepositories } = await import("@/infrastructure/container");
+      const { googleAccounts } = await getRepositories({ clinicId: CLINIC_A_ID });
+      expect(await googleAccounts.findByEmail("outra-conta@clinica.com")).toBeNull();
+      expect(await googleAccounts.findByEmail("agenda@clinica.com")).toBeNull();
     });
 
     it("Dado nenhuma sessão, Quando GET no callback, Então responde 401", async () => {

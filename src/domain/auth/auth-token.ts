@@ -103,8 +103,16 @@ export class AuthToken {
 
 export interface AuthTokenRepository {
   save(token: AuthToken): Promise<void>;
-  /** Busca pelo hash do segredo; devolve null quando expirado, usado ou inexistente. */
-  findUsableBySecretHash(secretHash: string, nowMs?: number): Promise<AuthToken | null>;
+  /**
+   * Reivindica o token de forma ATÔMICA: marca como usado e devolve-o apenas
+   * se, no mesmo comando, ele ainda estava não usado e dentro da validade.
+   * Devolve `null` quando expirado, já usado ou inexistente.
+   *
+   * Existe separado de uma busca seguida de escrita porque "checar e depois
+   * marcar" é uma janela TOCTOU: duas requisições simultâneas com o mesmo link
+   * passariam as duas pela checagem e o uso único deixaria de valer.
+   */
+  claimBySecretHash(secretHash: string, nowMs?: number): Promise<AuthToken | null>;
   /** Invalida os tokens não usados de um propósito — emitir um novo mata os anteriores. */
   markAllUnusedAsUsed(accountId: string, purpose: AuthTokenPurpose, usedAt?: Date): Promise<void>;
 }

@@ -30,7 +30,7 @@
 | 3 | Compliance e UX clínico | ✅ **Entregue** (PASS na iteração 1) | `.specs/features/fase-3-compliance-ux-clinico/` |
 | 4 | Portal: auto-agendamento e recall | ✅ **Entregue** (Verifier PASS) | `.specs/features/fase-4-portal-auto-agendamento/` |
 | 5 | Monetização e canal | Backlog (depende de decisão de negócio) | seção 5 abaixo |
-| 6 | Plataforma (RBAC fino, multi-tenancy, TISS) | RBAC + multi-tenancy Fases 1–2 + sunset senha master: **especificados**, ver `product/prd-fase-6.md`. TISS e paginação por cursor seguem backlog | `product/prd-fase-6.md`, seção 6 abaixo |
+| 6 | Plataforma (RBAC fino, multi-tenancy, TISS) | RBAC, multi-tenancy Fases 1–2 e sunset da senha master: ✅ **Entregues** (Verifier PASS) — ver `.specs/features/{rbac-catalogo-papeis,fundacao-multi-tenancy,autenticacao-nativa}/`. TISS e paginação por cursor seguem backlog | `product/prd-fase-6.md`, seção 6 abaixo |
 
 ### Registro de entrega
 

@@ -50,8 +50,38 @@ export class IssueAuthToken {
     private readonly email: EmailGateway,
   ) {}
 
+  /** `false` quando o canal está desativado (dry-run) — o link não chega a ninguém. */
+  get emailEnabled(): boolean {
+    return this.email.enabled;
+  }
+
+  /**
+   * Emite o token e tenta enviar, sem deixar a falha de envio perder o link:
+   * devolve sempre o link gerado mais um sinal de se ele saiu por e-mail. Usado
+   * onde não há segunda chance de emitir (bootstrap do primeiro Super Admin).
+   */
+  async issueAndTryDeliver(
+    input: IssueAuthTokenInput,
+  ): Promise<{ inviteUrl: string; delivered: boolean }> {
+    const inviteUrl = await this.persist(input);
+    try {
+      await this.deliver(input, inviteUrl);
+      return { inviteUrl, delivered: this.email.enabled };
+    } catch (error) {
+      console.error(`Convite: falha ao enviar e-mail para ${input.account.email}`, error);
+      return { inviteUrl, delivered: false };
+    }
+  }
+
   /** Devolve o link gerado — o chamador decide se ele pode ser exposto. */
   async execute(input: IssueAuthTokenInput): Promise<string> {
+    const inviteUrl = await this.persist(input);
+    await this.deliver(input, inviteUrl);
+    return inviteUrl;
+  }
+
+  /** Invalida os anteriores do mesmo propósito, persiste o novo e devolve o link. */
+  private async persist(input: IssueAuthTokenInput): Promise<string> {
     const nowMs = input.nowMs ?? Date.now();
     await this.tokens.markAllUnusedAsUsed(input.account.id, input.purpose, new Date(nowMs));
 
@@ -63,13 +93,15 @@ export class IssueAuthToken {
     await this.tokens.save(token);
 
     const base = input.appUrl.replace(/\/$/, "");
-    const link = `${base}/definir-senha?token=${secret}`;
+    return `${base}/definir-senha?token=${secret}`;
+  }
+
+  private async deliver(input: IssueAuthTokenInput, link: string): Promise<void> {
     await this.email.send({
       to: input.account.email,
       subject: SUBJECT_BY_PURPOSE[input.purpose],
       text: `${INTRO_BY_PURPOSE[input.purpose]}\n\n${link}\n\n${VALIDITY_BY_PURPOSE[input.purpose]}`,
     });
-    return link;
   }
 }
 
@@ -92,24 +124,25 @@ export class ConsumeAuthToken {
       throw new ValidationError(`A senha precisa ter ao menos ${MIN_PASSWORD_LENGTH} caracteres`);
     }
     const nowMs = input.nowMs ?? Date.now();
-    const token = await this.tokens.findUsableBySecretHash(
-      hashAuthTokenSecret(input.secret),
-      nowMs,
-    );
+    // Reivindica ANTES de qualquer outra coisa: o token é queimado no mesmo
+    // comando que o valida, então duas requisições simultâneas com o mesmo link
+    // não conseguem as duas trocar a senha (TOCTOU).
+    const token = await this.tokens.claimBySecretHash(hashAuthTokenSecret(input.secret), nowMs);
     if (!token) {
       throw new ValidationError(INVALID_TOKEN_MESSAGE);
     }
 
     const account = await this.accounts.findById(token.accountId);
     if (!account || !account.isActive) {
+      // O token já foi queimado pela reivindicação. É o comportamento correto:
+      // um link de conta desativada não deve continuar valendo.
       throw new ValidationError(INVALID_TOKEN_MESSAGE);
     }
 
-    await this.accounts.updatePasswordHash(account.id, await hashPassword(input.newPassword));
-    // Invalida os irmãos do mesmo propósito antes de marcar este como usado:
-    // consumir um link precisa queimar todos os outros por conta própria, sem
-    // depender da invariante de que a emissão já os invalidou.
+    // Invalida os irmãos do mesmo propósito: consumir um link precisa queimar
+    // todos os outros por conta própria, sem depender da invariante de que a
+    // emissão já os invalidou.
     await this.tokens.markAllUnusedAsUsed(account.id, token.purpose, new Date(nowMs));
-    await this.tokens.save(token.markUsed(new Date(nowMs)));
+    await this.accounts.updatePasswordHash(account.id, await hashPassword(input.newPassword));
   }
 }

@@ -56,28 +56,43 @@ describe("Feature: Persistência de tokens de ativação (Drizzle)", () => {
     await db.delete(schema.authTokens);
   });
 
-  it("Dado um token salvo, Quando buscar pelo hash do segredo, Então devolve o token com os campos preservados", async () => {
+  it("Dado um token salvo, Quando reivindicar pelo hash do segredo, Então devolve o token com os campos preservados e já marcado como usado", async () => {
     const { token, secret } = AuthToken.issue({ accountId, purpose: "invite", nowMs: NOW });
     await tokens.save(token);
 
-    const found = await tokens.findUsableBySecretHash(hashAuthTokenSecret(secret), NOW + 1000);
+    const found = await tokens.claimBySecretHash(hashAuthTokenSecret(secret), NOW + 1000);
 
     expect(found?.id).toBe(token.id);
     expect(found?.accountId).toBe(accountId);
     expect(found?.purpose).toBe("invite");
     expect(found?.expiresAt.getTime()).toBe(token.expiresAt.getTime());
-    expect(found?.usedAt).toBeNull();
+    // A reivindicação queima o token no mesmo comando que o valida.
+    expect(found?.usedAt?.getTime()).toBe(NOW + 1000);
+  });
+
+  it("Dado duas reivindicações do mesmo token, Quando concorrerem, Então só a primeira recebe a linha (uso único sob corrida)", async () => {
+    const { token, secret } = AuthToken.issue({ accountId, purpose: "invite", nowMs: NOW });
+    await tokens.save(token);
+    const hash = hashAuthTokenSecret(secret);
+
+    const [first, second] = await Promise.all([
+      tokens.claimBySecretHash(hash, NOW + 1000),
+      tokens.claimBySecretHash(hash, NOW + 1000),
+    ]);
+
+    // Exatamente uma das duas leva o token; a outra é tratada como link inválido.
+    expect([first, second].filter((claim) => claim !== null)).toHaveLength(1);
   });
 
   it("Dado um hash que não existe, Quando buscar, Então devolve null", async () => {
-    expect(await tokens.findUsableBySecretHash(hashAuthTokenSecret("nao-existe"), NOW)).toBeNull();
+    expect(await tokens.claimBySecretHash(hashAuthTokenSecret("nao-existe"), NOW)).toBeNull();
   });
 
   it("Dado um token expirado, Quando buscar, Então devolve null", async () => {
     const { token, secret } = AuthToken.issue({ accountId, purpose: "reset", nowMs: NOW });
     await tokens.save(token);
 
-    const found = await tokens.findUsableBySecretHash(
+    const found = await tokens.claimBySecretHash(
       hashAuthTokenSecret(secret),
       NOW + 60 * 60 * 1000 + 1,
     );
@@ -90,7 +105,7 @@ describe("Feature: Persistência de tokens de ativação (Drizzle)", () => {
     await tokens.save(token);
     await tokens.save(token.markUsed(new Date(NOW + 10)));
 
-    expect(await tokens.findUsableBySecretHash(hashAuthTokenSecret(secret), NOW + 20)).toBeNull();
+    expect(await tokens.claimBySecretHash(hashAuthTokenSecret(secret), NOW + 20)).toBeNull();
   });
 
   it("Dado tokens de dois propósitos, Quando invalidar em lote um propósito, Então só ele é invalidado", async () => {
@@ -102,10 +117,10 @@ describe("Feature: Persistência de tokens de ativação (Drizzle)", () => {
     await tokens.markAllUnusedAsUsed(accountId, "invite", new Date(NOW + 5));
 
     expect(
-      await tokens.findUsableBySecretHash(hashAuthTokenSecret(invite.secret), NOW + 10),
+      await tokens.claimBySecretHash(hashAuthTokenSecret(invite.secret), NOW + 10),
     ).toBeNull();
     expect(
-      await tokens.findUsableBySecretHash(hashAuthTokenSecret(reset.secret), NOW + 10),
+      await tokens.claimBySecretHash(hashAuthTokenSecret(reset.secret), NOW + 10),
     ).not.toBeNull();
   });
 
@@ -125,10 +140,10 @@ describe("Feature: Persistência de tokens de ativação (Drizzle)", () => {
     await tokens.markAllUnusedAsUsed(accountId, "reset", new Date(NOW + 5));
 
     expect(
-      await tokens.findUsableBySecretHash(hashAuthTokenSecret(mine.secret), NOW + 10),
+      await tokens.claimBySecretHash(hashAuthTokenSecret(mine.secret), NOW + 10),
     ).toBeNull();
     expect(
-      await tokens.findUsableBySecretHash(hashAuthTokenSecret(theirs.secret), NOW + 10),
+      await tokens.claimBySecretHash(hashAuthTokenSecret(theirs.secret), NOW + 10),
     ).not.toBeNull();
   });
 });

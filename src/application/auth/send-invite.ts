@@ -8,8 +8,47 @@ export interface InviteServices {
   email: EmailGateway;
 }
 
-/** Base pública da aplicação; sem APP_URL o link do e-mail não é clicável fora do host. */
-export const appUrlFromEnv = (): string => process.env.APP_URL ?? "http://localhost:3000";
+const DEV_APP_URL = "http://localhost:3000";
+
+/**
+ * Base pública da aplicação, usada para montar os links de convite e reset.
+ *
+ * Em produção é obrigatória e precisa ser HTTPS: o link carrega um segredo de
+ * uso único que concede a definição da senha da conta — em `http://` ele
+ * trafega em claro, e com `APP_URL` ausente apontaria para `localhost`, o que
+ * manda toda a instalação para um link inútil. Falha fechado, como o resto da
+ * configuração de autenticação.
+ */
+export const appUrlFromEnv = (): string => {
+  const configured = process.env.APP_URL;
+  if (process.env.NODE_ENV !== "production") {
+    return configured ?? DEV_APP_URL;
+  }
+  if (!configured || !isSafeOrigin(configured)) {
+    throw new Error(
+      "APP_URL precisa ser uma URL https:// em produção — os links de convite e " +
+        "de reset de senha carregam um segredo de uso único",
+    );
+  }
+  return configured;
+};
+
+/**
+ * `https://` sempre; `http://` só para loopback, que é a imagem de produção
+ * rodando na própria máquina (docker compose local) — ali o segredo não sai do
+ * host, e exigir TLS tornaria o quick-start impossível.
+ */
+const isSafeOrigin = (url: string): boolean => {
+  try {
+    const { protocol, hostname } = new URL(url);
+    if (protocol === "https:") {
+      return true;
+    }
+    return protocol === "http:" && (hostname === "localhost" || hostname === "127.0.0.1");
+  } catch {
+    return false;
+  }
+};
 
 /**
  * Dispara o convite de primeiro acesso sem deixar a indisponibilidade do

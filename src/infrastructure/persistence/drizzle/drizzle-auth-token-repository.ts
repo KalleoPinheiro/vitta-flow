@@ -26,22 +26,29 @@ export class DrizzleAuthTokenRepository implements AuthTokenRepository {
     });
   }
 
-  /** Filtra usado/expirado no próprio SQL: um token inválido nunca sai do banco. */
-  async findUsableBySecretHash(
+  /**
+   * `UPDATE … WHERE used_at IS NULL AND expires_at > now RETURNING *` — uma só
+   * declaração. O predicado de validade e a marca de uso acontecem sob o mesmo
+   * lock de linha, então de duas requisições concorrentes com o mesmo link
+   * exatamente uma recebe a linha; a outra recebe zero linhas e é tratada como
+   * link inválido. Um `SELECT` seguido de `UPDATE` deixaria as duas passarem.
+   */
+  async claimBySecretHash(
     secretHash: string,
     nowMs: number = Date.now(),
   ): Promise<AuthToken | null> {
+    const now = new Date(nowMs);
     const rows = await this.db
-      .select()
-      .from(authTokens)
+      .update(authTokens)
+      .set({ usedAt: now })
       .where(
         and(
           eq(authTokens.secretHash, secretHash),
           isNull(authTokens.usedAt),
-          gt(authTokens.expiresAt, new Date(nowMs)),
+          gt(authTokens.expiresAt, now),
         ),
       )
-      .limit(1);
+      .returning();
     const row = rows[0];
     if (!row) {
       return null;

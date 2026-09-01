@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { jsonRequest } from "../support/request";
 import { cookieHeaderFor } from "../support/session";
 import { ensureTestClinics, CLINIC_A_ID } from "../support/clinics";
-import { spyOnSentEmails, tokenFromLastEmail } from "../support/email";
+import { spyOnSentEmails, tokenFromLastEmail, waitForEmails } from "../support/email";
 
 process.env.VITTA_DB_DRIVER = "pglite";
 process.env.APP_URL = "https://app.vitta.test";
@@ -51,6 +51,7 @@ describe("Feature: POST /api/auth/forgot-password", () => {
     const response = await forgot("reset-ok@x.com");
 
     expect(response.status).toBe(200);
+    await waitForEmails(emails, 1);
     expect(emails.bodies).toHaveLength(1);
     expect(emails.bodies[0]).toContain("reset-ok@x.com");
     expect(emails.bodies[0]).toContain("https://app.vitta.test/definir-senha?token=");
@@ -64,11 +65,15 @@ describe("Feature: POST /api/auth/forgot-password", () => {
     const emailsExisting = spyOnSentEmails();
     const existing = await forgot("existe@x.com");
     const existingJson = (await existing.json()) as Envelope<{ message: string }>;
+    await waitForEmails(emailsExisting, 1);
     emailsExisting.restore();
 
     const emailsMissing = spyOnSentEmails();
     const missing = await forgot("nunca-existiu@x.com");
     const missingJson = (await missing.json()) as Envelope<{ message: string }>;
+    // O envio é disparado sem await; espera um ciclo real antes de afirmar
+    // que nada saiu, para o teste não passar só por chegar antes do envio.
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     expect(missing.status).toBe(existing.status);
     expect(missingJson).toEqual(existingJson);
@@ -87,6 +92,7 @@ describe("Feature: POST /api/auth/forgot-password", () => {
     const response = await forgot("inativa-reset@x.com");
 
     expect(response.status).toBe(200);
+    await new Promise((resolve) => setTimeout(resolve, 100));
     expect(emails.bodies).toHaveLength(0);
     emails.restore();
   });
@@ -106,6 +112,7 @@ describe("Feature: POST /api/auth/forgot-password", () => {
     await createAccount("reset-usavel@x.com");
     const emails = spyOnSentEmails();
     await forgot("reset-usavel@x.com");
+    await waitForEmails(emails, 1);
     const token = tokenFromLastEmail(emails);
     emails.restore();
 

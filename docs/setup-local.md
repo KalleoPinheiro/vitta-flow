@@ -17,14 +17,21 @@ Guia detalhado pra configurar e rodar app local. Duas vias: Docker Compose (reco
 Sobe Postgres 16 + app numa tacada. Migrações Drizzle rodam sozinhas no boot (advisory lock, seguro com múltiplas réplicas).
 
 ```bash
-AUTH_SECRET=$(openssl rand -hex 32) VITTA_BOOTSTRAP_TOKEN=$(openssl rand -hex 24) \
-  docker compose up -d --build
-
-# primeira conta (instalação vazia): cria o Super Admin e devolve o link de convite
+cp .env.example .env
+# edite .env e preencha, no mínimo:
+#   AUTH_SECRET=$(openssl rand -hex 32)
+#   VITTA_BOOTSTRAP_TOKEN=$(openssl rand -hex 24)
+#   RESEND_API_KEY=...   EMAIL_FROM="VittaFlow <nao-responda@suaclinica.com>"
+# o compose lê o .env sozinho, e o mesmo arquivo alimenta o curl abaixo
+docker compose up -d --build
+# primeira conta (instalação vazia): cria o Super Admin e envia o convite
+set -a; . ./.env; set +a
 curl -sX POST http://localhost:3000/api/auth/bootstrap \
   -H "Content-Type: application/json" \
   -H "x-bootstrap-token: $VITTA_BOOTSTRAP_TOKEN" \
   -d '{"email":"voce@suaclinica.com"}'
+# o link de convite chega por e-mail; se o envio falhar (ex.: chave de teste),
+# a resposta traz `inviteUrl` para você abrir e definir a senha
 ```
 
 - App: http://localhost:3000 (login com o e-mail e a senha definidos pelo convite)
@@ -33,7 +40,7 @@ curl -sX POST http://localhost:3000/api/auth/bootstrap \
 Porta ocupada? Sobrescreve:
 
 ```bash
-POSTGRES_PORT=5477 APP_PORT=3001 AUTH_SECRET=$(openssl rand -hex 32) docker compose up -d --build
+POSTGRES_PORT=5477 APP_PORT=3001 docker compose up -d --build   # demais valores vêm do .env
 ```
 
 Parar: `docker compose down` (volume `pgdata` mantém dados). Apagar dados: `docker compose down -v`.

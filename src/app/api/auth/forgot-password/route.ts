@@ -33,21 +33,30 @@ export async function POST(request: NextRequest) {
     return ok(NEUTRAL_RESPONSE);
   }
 
-  try {
-    // clinicId nulo: quem pede o reset não tem sessão, logo não há empresa de contexto.
-    const { userAccounts, authTokens, email } = await getRepositories({ clinicId: null });
-    const account = await userAccounts.findByEmail(parsed.data.email);
-    if (account?.isActive) {
-      await new IssueAuthToken(authTokens, email).execute({
-        account,
-        purpose: "reset",
-        appUrl: appUrlFromEnv(),
-      });
-    }
-  } catch (error) {
-    // Falhar aqui revelaria, pela diferença de resposta, que a conta existe.
-    console.error("Reset de senha: falha ao emitir o link", error);
-  }
+  // Deliberadamente NÃO aguardado: esperar a emissão + o POST ao provedor de
+  // e-mail deixaria a resposta do caso "conta existe" mensuravelmente mais lenta
+  // que a do caso "não existe", e o corpo idêntico não adiantaria nada — o
+  // relógio viraria o oráculo (CWE-204). O envio segue em background e qualquer
+  // falha vai para o log, nunca para a resposta.
+  void issueResetLink(parsed.data.email);
 
   return ok(NEUTRAL_RESPONSE);
+}
+
+async function issueResetLink(email: string): Promise<void> {
+  try {
+    // clinicId nulo: quem pede o reset não tem sessão, logo não há empresa de contexto.
+    const services = await getRepositories({ clinicId: null });
+    const account = await services.userAccounts.findByEmail(email);
+    if (!account?.isActive) {
+      return;
+    }
+    await new IssueAuthToken(services.authTokens, services.email).execute({
+      account,
+      purpose: "reset",
+      appUrl: appUrlFromEnv(),
+    });
+  } catch (error) {
+    console.error("Reset de senha: falha ao emitir o link", error);
+  }
 }

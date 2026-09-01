@@ -63,20 +63,26 @@ export async function POST(request: NextRequest) {
       role: "super_admin",
       clinicId: null,
     });
+    // O link é montado ANTES de criar a conta: se `APP_URL` estiver inválida em
+    // produção, falhar aqui evita gravar a conta que trava o bootstrap para
+    // sempre sem que ninguém consiga o link dela.
+    const appUrl = appUrlFromEnv();
     await services.userAccounts.save(account);
-    const inviteUrl = await new IssueAuthToken(services.authTokens, services.email).execute({
-      account,
-      purpose: "invite",
-      appUrl: appUrlFromEnv(),
-    });
+
+    // Uma falha de envio não pode derrubar o bootstrap: a conta já existe e a
+    // rota é de uso único, então um 500 aqui deixaria a instalação sem nenhum
+    // caminho de primeiro acesso.
+    const { inviteUrl, delivered } = await new IssueAuthToken(
+      services.authTokens,
+      services.email,
+    ).issueAndTryDeliver({ account, purpose: "invite", appUrl });
+
     return {
       email: account.email,
       role: account.role,
-      // Sem canal de e-mail (dev, testes, `NullEmailGateway`) o link não chega a
-      // lugar nenhum — devolvê-lo aqui é o que torna o bootstrap utilizável
-      // nesses ambientes. Em produção o gateway falha na inicialização quando
-      // não há credenciais, então `enabled` é sempre true e o campo vem nulo.
-      inviteUrl: services.email.enabled ? null : inviteUrl,
+      // Devolvido quando o link não chega por e-mail — sem canal configurado
+      // (dev, testes) ou envio falhado. Quem chama já detém o segredo de deploy.
+      inviteUrl: delivered ? null : inviteUrl,
     };
   });
 }

@@ -3,6 +3,7 @@ import { jsonRequest } from "../support/request";
 import { cookieHeaderFor } from "../support/session";
 import { ensureTestClinics, CLINIC_A_ID } from "../support/clinics";
 import { spyOnSentEmails } from "../support/email";
+import { UNSET_PASSWORD_HASH } from "@/lib/auth/password";
 
 process.env.VITTA_DB_DRIVER = "pglite";
 process.env.APP_URL = "https://app.vitta.test";
@@ -77,7 +78,9 @@ describe("Feature: Cadastro de conta dispara convite por e-mail", () => {
     await createAccount({ email: "sentinela@x.com", role: "atendente" });
     emails.restore();
 
-    const response = await login("sentinela@x.com", "scrypt$0$sem-senha$sem-senha");
+    // O próprio hash sentinela como senha — importado, não copiado, para o teste
+    // acompanhar qualquer mudança do valor.
+    const response = await login("sentinela@x.com", UNSET_PASSWORD_HASH);
 
     expect(response.status).toBe(401);
   });

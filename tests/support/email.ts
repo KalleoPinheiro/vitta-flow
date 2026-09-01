@@ -26,6 +26,20 @@ export function spyOnSentEmails(): EmailSpy {
   };
 }
 
+/**
+ * Espera até que `count` e-mails tenham sido capturados. Necessário porque
+ * `POST /api/auth/forgot-password` dispara o envio SEM aguardar (o await
+ * transformaria o tempo de resposta num oráculo de existência de conta), então
+ * o e-mail chega depois que a rota já respondeu.
+ */
+export async function waitForEmails(spy: EmailSpy, count: number): Promise<void> {
+  await vi.waitFor(() => {
+    if (spy.bodies.length < count) {
+      throw new Error(`Esperando ${count} e-mail(s), capturados ${spy.bodies.length}`);
+    }
+  });
+}
+
 /** Extrai o segredo do link `/definir-senha?token=…` do último e-mail capturado. */
 export function tokenFromLastEmail(spy: EmailSpy): string {
   const last = spy.bodies[spy.bodies.length - 1];

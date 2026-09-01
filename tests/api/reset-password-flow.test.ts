@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { jsonRequest } from "../support/request";
 import { cookieHeaderFor } from "../support/session";
 import { ensureTestClinics, CLINIC_A_ID } from "../support/clinics";
-import { spyOnSentEmails, tokenFromLastEmail } from "../support/email";
+import { spyOnSentEmails, tokenFromLastEmail, waitForEmails } from "../support/email";
 import { INVALID_TOKEN_MESSAGE } from "@/application/auth/auth-token-flow";
 
 process.env.VITTA_DB_DRIVER = "pglite";
@@ -45,6 +45,8 @@ const requestReset = async (email: string): Promise<string> => {
   const emails = spyOnSentEmails();
   try {
     await route.POST(jsonRequest("/api/auth/forgot-password", "POST", { email }, freshIp()));
+    // O envio do reset não é aguardado pela rota (ver CWE-204 na própria rota).
+    await waitForEmails(emails, 1);
     return tokenFromLastEmail(emails);
   } finally {
     emails.restore();

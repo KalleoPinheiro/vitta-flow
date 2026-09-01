@@ -21,6 +21,23 @@ class InMemoryAuthTokenRepository implements AuthTokenRepository {
     this.items.set(token.id, token);
   }
 
+  /** Espelha a semântica atômica do repositório real: valida e queima de uma vez. */
+  async claimBySecretHash(
+    secretHash: string,
+    nowMs: number = Date.now(),
+  ): Promise<AuthToken | null> {
+    const found = [...this.items.values()].find(
+      (token) => token.secretHash === secretHash && token.isUsable(nowMs),
+    );
+    if (!found) {
+      return null;
+    }
+    const claimed = found.markUsed(new Date(nowMs));
+    this.items.set(claimed.id, claimed);
+    return claimed;
+  }
+
+  /** Só para asserção nos testes — não faz parte da porta. */
   async findUsableBySecretHash(
     secretHash: string,
     nowMs: number = Date.now(),

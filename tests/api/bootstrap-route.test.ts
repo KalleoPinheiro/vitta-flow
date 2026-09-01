@@ -55,6 +55,9 @@ describe("Feature: POST /api/auth/bootstrap (primeiro Super Admin)", () => {
   afterEach(() => {
     process.env = { ...originalEnv };
     vi.restoreAllMocks();
+    // Em hook, não depois da asserção: um caso que falhe no meio não pode
+    // deixar o `fetch` stubado vazar para o próximo.
+    vi.unstubAllGlobals();
   });
 
   it("Dado uma instalação vazia e o segredo correto, Quando POST, Então cria a conta super_admin", async () => {
@@ -103,7 +106,6 @@ describe("Feature: POST /api/auth/bootstrap (primeiro Super Admin)", () => {
     const json = (await response.json()) as Envelope<{ inviteUrl: string | null }>;
 
     expect(json.data.inviteUrl).toBeNull();
-    vi.unstubAllGlobals();
   });
 
   it("Dado o bootstrap concluído, Quando conferir o e-mail, Então recebeu o convite para definir a senha", async () => {
@@ -209,6 +211,22 @@ describe("Feature: POST /api/auth/bootstrap (primeiro Super Admin)", () => {
     const { getRepositories } = await import("@/infrastructure/container");
     const { userAccounts } = await getRepositories({ clinicId: null });
     expect(await userAccounts.hasAnyAccount()).toBe(false);
+  });
+
+  it("Dado o envio do convite falhando, Quando POST, Então ainda responde 200 e devolve o link (senão a instalação fica sem primeiro acesso)", async () => {
+    const { NullEmailGateway } = await import("@/application/ports/email-gateway");
+    vi.spyOn(NullEmailGateway.prototype, "send").mockRejectedValue(new Error("provedor fora"));
+    const errors = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const route = await import("@/app/api/auth/bootstrap/route");
+
+    const response = await route.POST(
+      bootstrapRequest({ email: "envio-falhou-sa@clinica.com" }, withToken()),
+    );
+    const json = (await response.json()) as Envelope<{ inviteUrl: string | null }>;
+
+    expect(response.status).toBe(200);
+    expect(json.data.inviteUrl).toContain("https://app.vitta.test/definir-senha?token=");
+    expect(errors).toHaveBeenCalled();
   });
 
   it("Dado seis tentativas do mesmo IP em um minuto, Quando a sexta chegar, Então responde 429", async () => {

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import {
   CALENDAR_OAUTH_STATE_COOKIE,
+  decodeCalendarOAuthState,
   googleCalendarOAuthConfigFromEnv,
   type GoogleCalendarOAuthConfig,
 } from "@/lib/auth/google-calendar-oauth";
@@ -19,13 +20,23 @@ function clearState(response: NextResponse): NextResponse {
   return response;
 }
 
-/** Valida `code` + `state` anti-CSRF; devolve o code ou null. */
-function extractValidatedCode(request: NextRequest): string | null {
+/**
+ * Valida `code`, o `state` anti-CSRF e — igualmente importante — que a sessão
+ * do retorno é a MESMA que iniciou o fluxo. Sem essa segunda checagem, trocar
+ * de conta entre o redirect e o callback gravaria a credencial do Google sob a
+ * conta errada, possivelmente de outra empresa.
+ */
+function extractValidatedCode(request: NextRequest, subject: string): string | null {
   const params = request.nextUrl.searchParams;
   const code = params.get("code");
   const state = params.get("state");
-  const expectedState = request.cookies.get(CALENDAR_OAUTH_STATE_COOKIE)?.value;
-  if (!code || !state || !expectedState || state !== expectedState) {
+  const expected = decodeCalendarOAuthState(
+    request.cookies.get(CALENDAR_OAUTH_STATE_COOKIE)?.value,
+  );
+  if (!code || !state || !expected) {
+    return null;
+  }
+  if (state !== expected.state || subject !== expected.subject) {
     return null;
   }
   return code;
@@ -93,13 +104,13 @@ export async function GET(request: NextRequest) {
     return fail("Integração com Google Agenda não configurada", 503);
   }
 
-  const code = extractValidatedCode(request);
+  const owner = credentialOwner(guard.session);
+  const code = extractValidatedCode(request, owner.subject);
   if (!code) {
     return clearState(fail("Fluxo de conexão inválido, tente novamente", 400));
   }
 
   try {
-    const owner = credentialOwner(guard.session);
     const failure = await persistCalendarCredential(config, code, owner, auth.secret);
     return clearState(
       failure ??

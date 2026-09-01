@@ -14,17 +14,24 @@ Sistema de gestão completo para clínica de estomaterapia: prontuário eletrôn
 Pré-requisito: Docker + Docker Compose. Sobe PostgreSQL 16 + aplicação; as migrações do Drizzle rodam automaticamente na primeira requisição.
 
 ```bash
-AUTH_SECRET=$(openssl rand -hex 32) VITTA_BOOTSTRAP_TOKEN=$(openssl rand -hex 24) \
-  docker compose up -d --build
+cp .env.example .env
+# edite .env e preencha, no mínimo:
+#   AUTH_SECRET=$(openssl rand -hex 32)
+#   VITTA_BOOTSTRAP_TOKEN=$(openssl rand -hex 24)
+#   RESEND_API_KEY=...   EMAIL_FROM="VittaFlow <nao-responda@suaclinica.com>"
+# o compose lê o .env sozinho, e o mesmo arquivo alimenta o curl abaixo
+docker compose up -d --build
 # aplicação: http://localhost:3000
 # postgres:  localhost:5432 (vitta/vitta, database vitta)
 
-# primeira conta (instalação vazia): cria o Super Admin e devolve o link de convite
+# primeira conta (instalação vazia): cria o Super Admin e envia o convite
+set -a; . ./.env; set +a
 curl -sX POST http://localhost:3000/api/auth/bootstrap \
   -H "Content-Type: application/json" \
   -H "x-bootstrap-token: $VITTA_BOOTSTRAP_TOKEN" \
   -d '{"email":"voce@suaclinica.com"}'
-# sem canal de e-mail configurado, a resposta traz `inviteUrl` — abra-o e defina a senha
+# o link de convite chega por e-mail; se o envio falhar (ex.: chave de teste),
+# a resposta traz `inviteUrl` para você abrir e definir a senha
 ```
 
 Portas ocupadas? Use variáveis: `POSTGRES_PORT=5477 APP_PORT=3001 docker compose up -d`.
@@ -149,19 +156,22 @@ comporte igual em qualquer máquina. Se o pico do build subir, ajuste o número 
 - Recebido × a receber no mês; **receita por procedimento** das consultas concluídas.
 
 ### Papéis de acesso (RBAC) e portais
-Três papéis, resolvidos automaticamente no login com Google pelo email da conta (senha local = admin):
+Catálogo fechado de seis papéis (ADR-003), gravados na própria conta em `user_accounts`. **Todo papel autentica com e-mail e senha própria** (ADR-004) — nenhum deles é resolvido por login com Google, que existe apenas como integração de agenda:
 
 | Papel | Quem | O que acessa |
 |-------|------|--------------|
-| **admin** | Equipe da clínica (contas em `user_accounts`) | Sistema completo |
+| **super_admin** | Operador do sistema (sem empresa própria) | Todas as empresas, incluindo dado clínico; todo acesso cross-empresa é auditado |
+| **company_admin** | Admin da própria clínica | Sistema completo dentro da própria empresa: operacional, clínico, configurações e contas |
+| **atendente** | Recepção | Só operacional: agenda e cadastro de paciente/parceiro. Sem acesso a evolução, avaliação ou foto |
+| **profissional** | Equipe clínica | Acesso clínico **escopado por vínculo**: só pacientes com quem tem consulta ou evolução |
 | **partner** | Médico parceiro cadastrado em `/parceiros` | Portal com **apenas os pacientes que ele indicou**: consultas e evolução clínica (sem financeiro, sem anamnese) |
 | **patient** | Paciente cadastrado em `/pacientes` | Portal com **apenas os próprios dados**: próximas consultas, retornos recomendados, evolução clínica, histórico e faturas |
 
 - **Parceria e indicação**: cadastro de médicos parceiros (`/parceiros` — nome, email, CRM, especialidade) e campo "Indicado por" no cadastro do paciente.
 - **Portais** em `/portal` (layout próprio, sem menu da clínica): a visão é escolhida pelo papel da sessão.
-- **Enforcement no proxy**: papel embutido no cookie assinado; rotas da clínica são exclusivas do admin (paciente/parceiro recebem 403 na API e redirect para `/portal` nas páginas); rotas `/api/portal/*` revalidam o papel e escopam os dados pelo email da sessão no servidor.
-- Parceiro/paciente desativado perde o login imediatamente (resolução nega o acesso).
-- Login Google de paciente/parceiro **não** grava credencial de Calendar (ela pertence à equipe).
+- **Enforcement no proxy**: papel embutido no cookie assinado; rotas da clínica são exclusivas dos papéis de equipe (paciente/parceiro recebem 403 na API e redirect para `/portal` nas páginas); rotas `/api/portal/*` revalidam o papel e escopam os dados pelo e-mail da sessão no servidor.
+- Conta desativada perde o acesso em até 60 s, mesmo com cookie ainda válido (deny-list de revogação).
+- A credencial do Google Agenda é conectada por uma conta de equipe em **Configurações**, nunca por um login — paciente e parceiro não têm como gravá-la.
 
 ### Regras de negócio garantidas por teste
 - Máquina de estados da consulta: `scheduled → confirmed → completed`, com desvios para `cancelled`/`no_show`; transições inválidas são rejeitadas.

@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import {
   CALENDAR_OAUTH_STATE_COOKIE,
   GOOGLE_CALENDAR_SCOPES,
+  encodeCalendarOAuthState,
   googleCalendarOAuthConfigFromEnv,
 } from "@/lib/auth/google-calendar-oauth";
 import { createOAuthClient } from "@/lib/auth/google-oauth-client";
@@ -39,7 +40,10 @@ export async function GET(request: NextRequest) {
   });
 
   const response = NextResponse.redirect(authUrl);
-  response.cookies.set(CALENDAR_OAUTH_STATE_COOKIE, state, {
+  // O cookie guarda também QUEM iniciou: o callback recusa se a sessão do
+  // retorno for outra, em vez de gravar a credencial na conta errada.
+  const cookieValue = encodeCalendarOAuthState(state, guard.session?.subject ?? "sessao-aberta");
+  response.cookies.set(CALENDAR_OAUTH_STATE_COOKIE, cookieValue, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",

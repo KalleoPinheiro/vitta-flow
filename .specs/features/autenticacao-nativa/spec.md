@@ -8,11 +8,11 @@ A autenticação depende hoje de duas fontes conflitantes: uma senha mestre de d
 
 ## Goals
 
-- [ ] Toda conta (os 6 papéis) autentica com senha própria, definida por ela mesma a partir de um link de convite recebido por e-mail.
-- [ ] Reset de senha self-service por e-mail, sem depender de outra pessoa.
-- [ ] Google Calendar continua sincronizando, conectado por uma sessão nativa já autenticada, sem nenhuma relação com login.
-- [ ] Login via Google, `GOOGLE_ALLOWED_EMAILS` e `AUTH_PASSWORD` deixam de existir; fail-closed passa a depender só de `AUTH_SECRET`.
-- [ ] Instalação nova consegue criar a primeira conta Super Admin sem allowlist e sem senha mestre.
+- [x] Toda conta (os 6 papéis) autentica com senha própria, definida por ela mesma a partir de um link de convite recebido por e-mail.
+- [x] Reset de senha self-service por e-mail, sem depender de outra pessoa.
+- [x] Google Calendar continua sincronizando, conectado por uma sessão nativa já autenticada, sem nenhuma relação com login.
+- [x] Login via Google, `GOOGLE_ALLOWED_EMAILS` e `AUTH_PASSWORD` deixam de existir; fail-closed passa a depender só de `AUTH_SECRET`.
+- [x] Instalação nova consegue criar a primeira conta Super Admin sem allowlist e sem senha mestre.
 
 ## Out of Scope
 
@@ -153,36 +153,36 @@ Toda ambiguidade está resolvida ou registrada aqui. As linhas abaixo foram leva
 
 | Requirement ID | Story | Phase | Status |
 | --- | --- | --- | --- |
-| AUTH-01 | P1: Convite (#32) | Tasks | Pending |
-| AUTH-02 | P1: Convite (#32) | Tasks | Pending |
-| AUTH-03 | P1: Convite (#32) | Tasks | Pending |
-| AUTH-04 | P1: Convite (#32) | Tasks | Pending |
-| AUTH-05 | P1: Convite (#32) | Tasks | Pending |
-| AUTH-06 | P1: Convite (#32) | Tasks | Pending |
-| AUTH-07 | P1: Convite (#32) | Tasks | Pending |
-| AUTH-08 | P1: Convite (#32) | Tasks | Pending |
-| AUTH-09 | P1: Convite (#32) | Tasks | Pending |
-| AUTH-10 | P2: Reset (#34) | Tasks | Pending |
-| AUTH-11 | P2: Reset (#34) | Tasks | Pending |
-| AUTH-12 | P2: Reset (#34) | Tasks | Pending |
-| AUTH-13 | P2: Reset (#34) | Tasks | Pending |
-| AUTH-14 | P2: Reset (#34) | Tasks | Pending |
-| AUTH-15 | P3: Calendar (#33) | Tasks | Pending |
-| AUTH-16 | P3: Calendar (#33) | Tasks | Pending |
-| AUTH-17 | P3: Calendar (#33) | Tasks | Pending |
-| AUTH-18 | P3: Calendar (#33) | Tasks | Pending |
-| AUTH-19 | P3: Calendar (#33) | Tasks | Pending |
-| AUTH-20 | P3: Calendar (#33) | Tasks | Pending |
-| AUTH-21 | P4: Remoção + bootstrap (#35) | Tasks | Pending |
-| AUTH-22 | P4: Remoção + bootstrap (#35) | Tasks | Pending |
-| AUTH-23 | P4: Remoção + bootstrap (#35) | Tasks | Pending |
-| AUTH-24 | P4: Remoção + bootstrap (#35) | Tasks | Pending |
-| AUTH-25 | P4: Remoção + bootstrap (#35) | Tasks | Pending |
-| AUTH-26 | P4: Remoção + bootstrap (#35) | Tasks | Pending |
-| AUTH-27 | P4: Remoção + bootstrap (#35) | Tasks | Pending |
-| AUTH-28 | P4: Remoção + bootstrap (#35) | Tasks | Pending |
-| AUTH-29 | P4: Remoção + bootstrap (#35) | Tasks | Pending |
-| AUTH-30 | P4: Remoção + bootstrap (#35) | Tasks | Pending |
+| AUTH-01 | P1: Convite (#32) | Tasks | Verified |
+| AUTH-02 | P1: Convite (#32) | Tasks | Verified |
+| AUTH-03 | P1: Convite (#32) | Tasks | Verified |
+| AUTH-04 | P1: Convite (#32) | Tasks | Verified |
+| AUTH-05 | P1: Convite (#32) | Tasks | Verified |
+| AUTH-06 | P1: Convite (#32) | Tasks | Verified |
+| AUTH-07 | P1: Convite (#32) | Tasks | Verified |
+| AUTH-08 | P1: Convite (#32) | Tasks | Verified |
+| AUTH-09 | P1: Convite (#32) | Tasks | Verified |
+| AUTH-10 | P2: Reset (#34) | Tasks | Verified |
+| AUTH-11 | P2: Reset (#34) | Tasks | Verified |
+| AUTH-12 | P2: Reset (#34) | Tasks | Verified |
+| AUTH-13 | P2: Reset (#34) | Tasks | Verified |
+| AUTH-14 | P2: Reset (#34) | Tasks | Verified |
+| AUTH-15 | P3: Calendar (#33) | Tasks | Verified |
+| AUTH-16 | P3: Calendar (#33) | Tasks | Verified |
+| AUTH-17 | P3: Calendar (#33) | Tasks | Verified |
+| AUTH-18 | P3: Calendar (#33) | Tasks | Verified |
+| AUTH-19 | P3: Calendar (#33) | Tasks | Verified |
+| AUTH-20 | P3: Calendar (#33) | Tasks | Verified |
+| AUTH-21 | P4: Remoção + bootstrap (#35) | Tasks | Verified |
+| AUTH-22 | P4: Remoção + bootstrap (#35) | Tasks | Verified |
+| AUTH-23 | P4: Remoção + bootstrap (#35) | Tasks | Verified |
+| AUTH-24 | P4: Remoção + bootstrap (#35) | Tasks | Verified |
+| AUTH-25 | P4: Remoção + bootstrap (#35) | Tasks | Verified |
+| AUTH-26 | P4: Remoção + bootstrap (#35) | Tasks | Verified |
+| AUTH-27 | P4: Remoção + bootstrap (#35) | Tasks | Verified |
+| AUTH-28 | P4: Remoção + bootstrap (#35) | Tasks | Verified |
+| AUTH-29 | P4: Remoção + bootstrap (#35) | Tasks | Verified |
+| AUTH-30 | P4: Remoção + bootstrap (#35) | Tasks | Verified |
 
 **ID format:** `AUTH-NN`, na ordem das ACs de cada história (P1 → AUTH-01..09, P2 → AUTH-10..14, P3 → AUTH-15..20, P4 → AUTH-21..30).
 
@@ -192,8 +192,8 @@ Toda ambiguidade está resolvida ou registrada aqui. As linhas abaixo foram leva
 
 ## Success Criteria
 
-- [ ] Uma conta criada por qualquer papel autorizado recebe convite e consegue definir a própria senha e logar, sem que ninguém lhe comunique uma senha.
-- [ ] Nenhuma variável de ambiente concede papel ou acesso: `GOOGLE_ALLOWED_EMAILS` e `AUTH_PASSWORD` não existem mais em `src/**`.
-- [ ] A sincronização de agenda continua funcionando com credencial obtida pelo fluxo dedicado do Calendar.
-- [ ] Uma instalação vazia consegue criar seu primeiro Super Admin e, depois disso, a rota de bootstrap deixa de funcionar.
-- [ ] Gate completo verde: `typecheck`, `lint`, `test:coverage` (≥ 90 %), `check:sv`, `build`.
+- [x] Uma conta criada por qualquer papel autorizado recebe convite e consegue definir a própria senha e logar, sem que ninguém lhe comunique uma senha.
+- [x] Nenhuma variável de ambiente concede papel ou acesso: `GOOGLE_ALLOWED_EMAILS` e `AUTH_PASSWORD` não existem mais em `src/**`.
+- [x] A sincronização de agenda continua funcionando com credencial obtida pelo fluxo dedicado do Calendar.
+- [x] Uma instalação vazia consegue criar seu primeiro Super Admin e, depois disso, a rota de bootstrap deixa de funcionar.
+- [x] Gate completo verde: `typecheck`, `lint`, `test:coverage` (≥ 90 %), `check:sv`, `build`.

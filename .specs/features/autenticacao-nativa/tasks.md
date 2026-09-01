@@ -700,16 +700,18 @@ T20 → T21
 
 **Done when**:
 
-- [ ] `.env.example` documenta `RESEND_API_KEY`, `EMAIL_FROM`, `VITTA_BOOTSTRAP_TOKEN` e não cita mais `AUTH_PASSWORD`/`GOOGLE_ALLOWED_EMAILS`
-- [ ] `AGENTS.md` e `README.md` descrevem o novo fail-closed e o fluxo de convite
-- [ ] `.specs/STATE.md` ganha as decisões novas sem tocar nas anteriores
-- [ ] Gate check passes: `npm run typecheck && npm run lint && npm run check:sv && npx vitest run --coverage && npm run build`
-- [ ] Test count: suíte completa verde com cobertura ≥ 90 % (no silent deletions)
+- [x] `.env.example` documenta `RESEND_API_KEY`, `EMAIL_FROM`, `VITTA_BOOTSTRAP_TOKEN` e não cita mais `AUTH_PASSWORD`/`GOOGLE_ALLOWED_EMAILS`
+- [x] `AGENTS.md` e `README.md` descrevem o novo fail-closed e o fluxo de convite
+- [x] `.specs/STATE.md` ganha as decisões novas sem tocar nas anteriores
+- [x] Gate check passes: `npm run typecheck && npm run lint && npm run check:sv && npx vitest run --coverage && npm run build`
+- [x] Test count: suíte completa verde com cobertura ≥ 90 % (no silent deletions)
 
 **Tests**: none
 **Gate**: build
 
 **Commit**: `docs(auth): documenta autenticacao nativa e registra decisoes`
+
+**Status**: ✅ Done
 
 ---
 

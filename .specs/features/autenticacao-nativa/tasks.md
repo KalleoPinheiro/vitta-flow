@@ -101,15 +101,17 @@ T20 → T21
 
 **Done when**:
 
-- [ ] `EmailGateway` expõe `enabled` e `send(message)`
-- [ ] `NullEmailGateway.enabled === false` e `send` registra destinatário, assunto e corpo sem lançar
-- [ ] Gate check passes: `npx vitest run tests/infrastructure/email-gateway.test.ts`
-- [ ] Test count: 3 tests pass (no silent deletions)
+- [x] `EmailGateway` expõe `enabled` e `send(message)`
+- [x] `NullEmailGateway.enabled === false` e `send` registra destinatário, assunto e corpo sem lançar
+- [x] Gate check passes: `npx vitest run tests/infrastructure/email-gateway.test.ts`
+- [x] Test count: 3 tests pass (no silent deletions)
 
 **Tests**: unit
 **Gate**: quick
 
 **Commit**: `feat(auth): adiciona porta de e-mail transacional com gateway nulo`
+
+**Status**: ✅ Done
 
 ---
 

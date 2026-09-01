@@ -130,16 +130,18 @@ T20 → T21
 
 **Done when**:
 
-- [ ] `send` faz `POST https://api.resend.com/emails` com `Authorization: Bearer`, timeout de 10 s, e lança em resposta não-ok
-- [ ] `buildEmailGateway()` em `NODE_ENV=production` sem config lança erro citando `RESEND_API_KEY` e `EMAIL_FROM`
-- [ ] `buildEmailGateway()` fora de produção sem config devolve `NullEmailGateway`
-- [ ] Gate check passes: `npx vitest run tests/infrastructure/resend-email-gateway.test.ts`
-- [ ] Test count: 6 tests pass (no silent deletions)
+- [x] `send` faz `POST https://api.resend.com/emails` com `Authorization: Bearer`, timeout de 10 s, e lança em resposta não-ok
+- [x] `buildEmailGateway()` em `NODE_ENV=production` sem config lança erro citando `RESEND_API_KEY` e `EMAIL_FROM`
+- [x] `buildEmailGateway()` fora de produção sem config devolve `NullEmailGateway`
+- [x] Gate check passes: `npx vitest run tests/infrastructure/resend-email-gateway.test.ts`
+- [x] Test count: 9 tests pass (no silent deletions)
 
 **Tests**: unit
 **Gate**: quick
 
 **Commit**: `feat(auth): implementa gateway de e-mail Resend com fail-closed em producao`
+
+**Status**: ✅ Done
 
 ---
 

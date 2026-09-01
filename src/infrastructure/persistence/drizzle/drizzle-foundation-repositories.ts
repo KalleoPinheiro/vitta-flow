@@ -94,14 +94,13 @@ export class DrizzleUserAccountRepository implements UserAccountRepository {
   ) {}
 
   async save(account: UserAccount): Promise<void> {
-    if (this.clinicId === null) {
-      throw new Error(
-        "Papel de sistema não pode salvar conta de usuário (somente leitura cross-empresa)",
-      );
-    }
+    // Repositório escopado grava na própria empresa; repositório de sistema
+    // (clinicId nulo) grava a empresa que a própria conta carrega — que é
+    // `null` para super_admin, papel cross-empresa por definição. Sem esse
+    // caminho não haveria como semear o primeiro Super Admin (AUTH-27).
     const values = {
       id: account.id,
-      clinicId: this.clinicId,
+      clinicId: this.clinicId ?? account.clinicId,
       email: account.email,
       passwordHash: account.passwordHash,
       role: account.role,

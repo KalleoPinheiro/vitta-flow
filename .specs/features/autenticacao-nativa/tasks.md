@@ -551,16 +551,18 @@ T20 → T21
 
 **Done when**:
 
-- [ ] Base vazia + header correto cria conta `super_admin` e envia convite
-- [ ] Segunda chamada (já existe conta) responde 403 sem criar nada
-- [ ] Header ausente/incorreto e `VITTA_BOOTSTRAP_TOKEN` não configurado respondem 403
-- [ ] Gate check passes: `npx vitest run tests/api/bootstrap-route.test.ts`
-- [ ] Test count: 6 tests pass (no silent deletions)
+- [x] Base vazia + header correto cria conta `super_admin` e envia convite
+- [x] Segunda chamada (já existe conta) responde 403 sem criar nada
+- [x] Header ausente/incorreto e `VITTA_BOOTSTRAP_TOKEN` não configurado respondem 403
+- [x] Gate check passes: `npx vitest run tests/api/bootstrap-route.test.ts`
+- [x] Test count: 6 tests pass (no silent deletions)
 
 **Tests**: integration
 **Gate**: full
 
 **Commit**: `feat(auth): adiciona bootstrap do primeiro super admin`
+
+**Status**: ✅ Done
 
 ---
 

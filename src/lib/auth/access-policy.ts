@@ -31,6 +31,10 @@ export const PUBLIC_PATHS = [
   "/api/auth/providers",
   "/api/auth/set-password",
   "/api/auth/forgot-password",
+  // Bootstrap do primeiro Super Admin: por definição não há sessão nem conta.
+  // A própria rota exige o segredo `VITTA_BOOTSTRAP_TOKEN` e só funciona
+  // enquanto a instalação está vazia.
+  "/api/auth/bootstrap",
   "/api/auth/google",
   "/api/auth/google/callback",
   // Cron externo — a própria rota exige o header x-cron-secret (CRON_SECRET).

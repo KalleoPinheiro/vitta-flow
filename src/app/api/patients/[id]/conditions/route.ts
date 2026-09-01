@@ -49,9 +49,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = conditionSchema.parse(await request.json());
-    const { conditions, patients, auditEvents } = await getRepositories({
+    const { conditions, patients, auditEvents, professionalPatientLinks } = await getRepositories({
       clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
     });
+    await assertPatientAccessibleToProfessional(guard.session, id, professionalPatientLinks);
     const condition = await new CreateCondition(conditions, patients).execute({
       patientId: id,
       kind: body.kind,

@@ -45,9 +45,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = openCarePlanSchema.parse(await request.json());
-    const { carePlans, patients, conditions, auditEvents } = await getRepositories({
-      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
-    });
+    const { carePlans, patients, conditions, auditEvents, professionalPatientLinks } =
+      await getRepositories({
+        clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+      });
+    await assertPatientAccessibleToProfessional(guard.session, id, professionalPatientLinks);
     const plan = await new OpenCarePlan(carePlans, patients, conditions).execute({
       patientId: id,
       conditionId: body.conditionId ?? null,

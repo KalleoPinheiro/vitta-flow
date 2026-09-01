@@ -48,9 +48,10 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = anamnesisSchema.parse(await request.json());
-    const { anamneses, patients, auditEvents } = await getRepositories({
+    const { anamneses, patients, auditEvents, professionalPatientLinks } = await getRepositories({
       clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
     });
+    await assertPatientAccessibleToProfessional(guard.session, id, professionalPatientLinks);
     const anamnesis = await new UpsertAnamnesis(anamneses, patients).execute({
       patientId: id,
       ...body,

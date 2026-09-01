@@ -9,6 +9,7 @@ import { assertPatientAccessibleToProfessional } from "@/lib/auth/professional-p
 import { recordAudit } from "@/lib/audit";
 import { toEvolutionNoteDto } from "@/lib/dto";
 import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import { ValidationError } from "@/domain/shared/errors";
 
 const evolutionSchema = z.object({
   appointmentId: z.string().nullish(),
@@ -53,9 +54,16 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const { evolutions, patients, auditEvents, userAccounts, professionalPatientLinks } =
       await getRepositories({ clinicId });
     const { session } = guard;
+    await assertPatientAccessibleToProfessional(session, id, professionalPatientLinks);
     // Autoria automática: conta individual logada define o profissional autor.
     let professionalId = body.professionalId ?? null;
-    if (!professionalId && session?.subject && session.subject !== "local") {
+    if (session?.role === "profissional") {
+      // Profissional não pode atribuir a nota a outro profissional.
+      if (professionalId && professionalId !== session.professionalId) {
+        throw new ValidationError("Profissional só pode registrar evolução em seu próprio nome");
+      }
+      professionalId = session.professionalId;
+    } else if (!professionalId && session?.subject && session.subject !== "local") {
       const account = await userAccounts.findByEmail(session.subject);
       professionalId = account?.professionalId ?? null;
     }

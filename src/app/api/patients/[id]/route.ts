@@ -56,9 +56,10 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = updatePatientSchema.parse(await request.json());
-    const { patients, partners } = await getRepositories({
+    const { patients, partners, professionalPatientLinks } = await getRepositories({
       clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
     });
+    await assertPatientAccessibleToProfessional(guard.session, id, professionalPatientLinks);
     const patient = await new UpdatePatient(patients, partners).execute({
       id,
       fullName: body.fullName,
@@ -80,9 +81,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = setActiveSchema.parse(await request.json());
-    const { patients } = await getRepositories({
+    const { patients, professionalPatientLinks } = await getRepositories({
       clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
     });
+    await assertPatientAccessibleToProfessional(guard.session, id, professionalPatientLinks);
     const patient = await new SetPatientActive(patients).execute({ id, active: body.active });
     return toPatientDto(patient);
   });

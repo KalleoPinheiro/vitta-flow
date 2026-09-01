@@ -598,6 +598,79 @@ describe("Feature: SettingsPage", () => {
       await waitFor(() => expect(sentProfessionalId).toBe("pr1"));
     });
 
+    it("Dado papel profissional selecionado, Quando enviar sem profissional vinculado, Então recusa sem chamar a API", async () => {
+      let called = false;
+      mockFetch(({ url, init }) => {
+        if (url.startsWith("/api/settings/schedule")) {
+          return jsonResponse({
+            config: { weekdays: [], startHour: 8, endHour: 18, minGapMinutes: 30 },
+            isDefault: true,
+          });
+        }
+        if (url === "/api/accounts" && init?.method === "POST") {
+          called = true;
+          return jsonResponse({ id: "a2", email: "nova@clinica.com", professionalId: "pr1", active: true });
+        }
+        if (url.startsWith("/api/accounts")) return jsonResponse([]);
+        if (url.startsWith("/api/professionals")) {
+          return jsonResponse([{ id: "pr1", fullName: "Dra. Ana", registry: null, commissionPct: null, active: true }]);
+        }
+        return jsonResponse(null, false);
+      });
+
+      render(<SettingsPage />);
+      await screen.findByText(/todos usam a senha master/);
+
+      fireEvent.click(screen.getByText("+ Nova conta"));
+      fireEvent.change(screen.getByLabelText(/Email/), { target: { value: "nova@clinica.com" } });
+      fireEvent.change(screen.getByLabelText(/Senha/), { target: { value: "12345678" } });
+      fireEvent.change(screen.getByLabelText(/Papel/), { target: { value: "profissional" } });
+      fireEvent.click(screen.getByText("Criar conta"));
+
+      // O <select required> nativo bloqueia o submit antes do handler rodar
+      // (constraint validation do jsdom) — a API nunca é chamada.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(called).toBe(false);
+    });
+
+    it("Dado papel profissional selecionado com profissional vinculado, Quando enviar, Então envia role e professionalId", async () => {
+      let sentBody: { role?: string; professionalId?: string } = {};
+      mockFetch(({ url, init }) => {
+        if (url.startsWith("/api/settings/schedule")) {
+          return jsonResponse({
+            config: { weekdays: [], startHour: 8, endHour: 18, minGapMinutes: 30 },
+            isDefault: true,
+          });
+        }
+        if (url === "/api/accounts" && init?.method === "POST") {
+          sentBody = JSON.parse(String(init.body));
+          return jsonResponse({ id: "a2", email: "nova-prof@clinica.com", professionalId: "pr1", active: true });
+        }
+        if (url.startsWith("/api/accounts")) return jsonResponse([]);
+        if (url.startsWith("/api/professionals")) {
+          return jsonResponse([{ id: "pr1", fullName: "Dra. Ana", registry: null, commissionPct: null, active: true }]);
+        }
+        return jsonResponse(null, false);
+      });
+
+      render(<SettingsPage />);
+      await screen.findByText(/todos usam a senha master/);
+
+      fireEvent.click(screen.getByText("+ Nova conta"));
+      fireEvent.change(screen.getByLabelText(/Email/), { target: { value: "nova-prof@clinica.com" } });
+      fireEvent.change(screen.getByLabelText(/Senha/), { target: { value: "12345678" } });
+      fireEvent.change(screen.getByLabelText(/Papel/), { target: { value: "profissional" } });
+      fireEvent.change(screen.getByLabelText(/Profissional vinculado/), { target: { value: "pr1" } });
+      fireEvent.click(screen.getByText("Criar conta"));
+
+      await waitFor(() => expect(sentBody).toEqual({
+        email: "nova-prof@clinica.com",
+        password: "12345678",
+        role: "profissional",
+        professionalId: "pr1",
+      }));
+    });
+
     it("Dado modal de nova conta aberto, Quando fechado sem submeter, Então o modal desaparece", async () => {
       mockFetch(({ url }) => {
         if (url.startsWith("/api/settings/schedule")) {
@@ -704,7 +777,7 @@ describe("Feature: SettingsPage", () => {
       expect(await screen.findByText("Nova conta de acesso")).toBeInTheDocument();
       expect(
         screen.getByLabelText(/Profissional vinculado/),
-      ).toHaveDisplayValue("— nenhum (recepção/gestão) —");
+      ).toHaveDisplayValue("— nenhum —");
     });
   });
 });

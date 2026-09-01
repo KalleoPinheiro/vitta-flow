@@ -12,14 +12,21 @@ import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-cl
 
 const MIN_PASSWORD_LENGTH = 8;
 
-const createSchema = z.object({
-  email: z.string().min(3).max(200),
-  password: z.string().min(MIN_PASSWORD_LENGTH).max(200),
-  role: z.enum(USER_ROLES),
-  // Só super_admin (clinicId de sessão nulo) pode/precisa escolher a empresa-alvo.
-  clinicId: z.string().max(100).nullish(),
-  professionalId: z.string().max(100).nullish(),
-});
+const createSchema = z
+  .object({
+    email: z.string().min(3).max(200),
+    password: z.string().min(MIN_PASSWORD_LENGTH).max(200),
+    role: z.enum(USER_ROLES),
+    // Só super_admin (clinicId de sessão nulo) pode/precisa escolher a empresa-alvo.
+    clinicId: z.string().max(100).nullish(),
+    professionalId: z.string().max(100).nullish(),
+  })
+  .refine((data) => data.role !== "profissional" || !!data.professionalId, {
+    // Sem professionalId, a sessão do profissional nasce com vínculo nulo e o
+    // escopo dinâmico (R4) nega acesso a todo paciente — conta inutilizável.
+    message: "professionalId é obrigatório para o papel profissional",
+    path: ["professionalId"],
+  });
 
 export async function GET(request: NextRequest) {
   const guard = requireStaffSession(request);

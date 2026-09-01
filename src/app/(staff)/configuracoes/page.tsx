@@ -22,6 +22,18 @@ import {
   TableRow,
 } from "@still-void/ui/react";
 
+// Papéis que uma conta Admin de Empresa pode cadastrar (PROVISIONING_MATRIX.company_admin,
+// src/domain/auth/role-hierarchy.ts) — super_admin fica fora desta tela por design.
+type AccountRole = "company_admin" | "atendente" | "profissional" | "patient" | "partner";
+
+const ACCOUNT_ROLE_OPTIONS: { value: AccountRole; label: string }[] = [
+  { value: "company_admin", label: "Admin de Empresa" },
+  { value: "atendente", label: "Atendente" },
+  { value: "profissional", label: "Profissional" },
+  { value: "patient", label: "Paciente" },
+  { value: "partner", label: "Parceiro" },
+];
+
 const WEEKDAYS = [
   { value: 0, label: "Dom" },
   { value: 1, label: "Seg" },
@@ -274,24 +286,28 @@ function AccountForm({
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState<AccountRole>("company_admin");
   const [professionalId, setProfessionalId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const requiresProfessional = role === "profissional";
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (requiresProfessional && !professionalId) {
+      setError("Selecione o profissional vinculado a esta conta");
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
       await apiFetch("/api/accounts", {
         method: "POST",
-        // SPEC_DEVIATION: seletor de papel na UI fica para um follow-up de
-        // frontend — o backend já exige role (RBAC-11..14); esta tela cria
-        // sempre como company_admin (paridade com o comportamento anterior).
         body: JSON.stringify({
           email,
           password,
-          role: "company_admin",
+          role,
           professionalId: professionalId || null,
         }),
       });
@@ -328,13 +344,30 @@ function AccountForm({
         />
       </label>
       <label className="text-sm font-medium">
-        Profissional vinculado
+        Papel *
         <NativeSelect
+          value={role}
+          onChange={(e) => setRole(e.target.value as AccountRole)}
+          className="mt-1"
+        >
+          {ACCOUNT_ROLE_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </NativeSelect>
+      </label>
+      <label className="text-sm font-medium">
+        Profissional vinculado{requiresProfessional ? " *" : ""}
+        <NativeSelect
+          required={requiresProfessional}
           value={professionalId}
           onChange={(e) => setProfessionalId(e.target.value)}
           className="mt-1"
         >
-          <option value="">— nenhum (recepção/gestão) —</option>
+          <option value="">
+            {requiresProfessional ? "— selecione —" : "— nenhum —"}
+          </option>
           {professionals.map((professional) => (
             <option key={professional.id} value={professional.id}>
               {professional.fullName}

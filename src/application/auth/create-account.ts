@@ -38,6 +38,12 @@ export class CreateAccount {
         "Não é possível cadastrar conta em uma empresa diferente da própria",
       );
     }
+    if (input.role === "profissional" && !input.professionalId) {
+      // Sem professionalId, a sessão nasce com vínculo nulo e o escopo
+      // dinâmico (R4, professional-patient-scope.ts) nega acesso a todo
+      // paciente — conta inutilizável por construção.
+      throw new ValidationError("professionalId é obrigatório para o papel profissional");
+    }
 
     const existing = await this.accounts.findByEmail(input.email);
     if (existing) {

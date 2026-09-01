@@ -13,6 +13,14 @@ interface Envelope<T> {
 }
 
 describe("Feature: Hierarquia de provisionamento via POST /api/accounts (RBAC-11..14)", () => {
+  const createProfessional = async (fullName: string) => {
+    const route = await import("@/app/api/professionals/route");
+    const headers = cookieHeaderFor("company_admin", "company_admin@example.com", CLINIC_A_ID);
+    const response = await route.POST(jsonRequest("/api/professionals", "POST", { fullName }, headers));
+    const body = (await response.json()) as Envelope<{ id: string }>;
+    return body.data.id;
+  };
+
   const create = async (
     actorRole: Parameters<typeof cookieHeaderFor>[0],
     body: Record<string, unknown>,
@@ -27,10 +35,12 @@ describe("Feature: Hierarquia de provisionamento via POST /api/accounts (RBAC-11
   describe("Cenário: caminho permitido — company_admin cadastra profissional na própria empresa", () => {
     it("Dado company_admin, Quando cadastrar profissional, Então 200", async () => {
       await ensureTestClinics();
+      const professionalId = await createProfessional("Dra. Nova Profissional");
       const { response, json } = await create("company_admin", {
         email: "novo-prof@x.com",
         password: "senhaSegura123", // gitleaks:allow — fixture de teste, não é credencial
         role: "profissional",
+        professionalId,
       });
 
       expect(response.status).toBe(200);
@@ -54,10 +64,12 @@ describe("Feature: Hierarquia de provisionamento via POST /api/accounts (RBAC-11
   describe("Cenário: caminho negado — atendente tentando cadastrar profissional", () => {
     it("Dado atendente, Quando cadastrar profissional, Então 403", async () => {
       await ensureTestClinics();
+      const professionalId = await createProfessional("Dr. Negado");
       const { response } = await create("atendente", {
         email: "prof-negado@x.com",
         password: "senhaSegura123", // gitleaks:allow — fixture de teste, não é credencial
         role: "profissional",
+        professionalId,
       });
 
       expect(response.status).toBe(403);

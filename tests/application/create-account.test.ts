@@ -42,12 +42,37 @@ describe("Feature: Cadastro de conta respeitando a hierarquia (RBAC-11..14)", ()
 
         const account = await useCase.execute(
           { role: "company_admin", clinicId: "clinic-a" },
-          { email: `${targetRole}@x.com`, passwordHash: HASH, role: targetRole, clinicId: "clinic-a" },
+          {
+            email: `${targetRole}@x.com`,
+            passwordHash: HASH,
+            role: targetRole,
+            clinicId: "clinic-a",
+            professionalId: targetRole === "profissional" ? "professional-1" : null,
+          },
         );
 
         expect(account.role).toBe(targetRole);
       },
     );
+
+    it("Dado role profissional sem professionalId, Quando cadastrar, Então rejeita (ValidationError)", async () => {
+      const repo = new InMemoryUserAccountRepository();
+      const useCase = new CreateAccount(repo);
+
+      await expect(
+        useCase.execute(
+          { role: "company_admin", clinicId: "clinic-a" },
+          {
+            email: "prof-sem-vinculo@x.com",
+            passwordHash: HASH,
+            role: "profissional",
+            clinicId: "clinic-a",
+            professionalId: null,
+          },
+        ),
+      ).rejects.toThrow(ValidationError);
+      expect(await repo.findAll()).toHaveLength(0);
+    });
 
     it("Dado company_admin, Quando cadastrar super_admin, Então rejeita (ProvisioningDeniedError)", async () => {
       const repo = new InMemoryUserAccountRepository();

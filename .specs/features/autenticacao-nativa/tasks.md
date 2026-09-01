@@ -402,15 +402,17 @@ T20 → T21
 
 **Done when**:
 
-- [ ] Formulário usa `Input`/`Button` da lib (`npm run check:sv` verde)
-- [ ] Mensagem de confirmação não revela se a conta existe
-- [ ] Gate check passes: `npm run check:sv && npx vitest run tests/pages/esqueci-senha.test.tsx`
-- [ ] Test count: 3 tests pass (no silent deletions)
+- [x] Formulário usa `Input`/`Button` da lib (`npm run check:sv` verde)
+- [x] Mensagem de confirmação não revela se a conta existe
+- [x] Gate check passes: `npm run check:sv && npx vitest run tests/pages/esqueci-senha.test.tsx`
+- [x] Test count: 3 tests pass (no silent deletions)
 
 **Tests**: unit
 **Gate**: build
 
 **Commit**: `feat(auth): adiciona tela de esqueci minha senha`
+
+**Status**: ✅ Done
 
 ---
 

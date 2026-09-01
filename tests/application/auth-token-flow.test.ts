@@ -252,6 +252,43 @@ describe("Feature: Emissão e consumo de token de convite/reset", () => {
       vi.restoreAllMocks();
     });
 
+    it("Dado dois convites pendentes da mesma conta, Quando consumir um, Então o outro deixa de ser usável", async () => {
+      // Os dois tokens são persistidos direto no repositório para isolar a
+      // garantia do CONSUMO — passar pela emissão mascararia o caso, já que
+      // emitir também invalida os anteriores.
+      const first = AuthToken.issue({ accountId: account.id, purpose: "invite", nowMs: NOW });
+      const second = AuthToken.issue({ accountId: account.id, purpose: "invite", nowMs: NOW });
+      await tokens.save(first.token);
+      await tokens.save(second.token);
+
+      await new ConsumeAuthToken(tokens, accounts).execute({
+        secret: first.secret,
+        newPassword: "senha-nova-1",
+        nowMs: NOW + 1000,
+      });
+
+      expect(
+        await tokens.findUsableBySecretHash(hashAuthTokenSecret(second.secret), NOW + 2000),
+      ).toBeNull();
+    });
+
+    it("Dado um convite e um reset pendentes, Quando consumir o convite, Então o reset continua usável (propósitos independentes)", async () => {
+      const invite = AuthToken.issue({ accountId: account.id, purpose: "invite", nowMs: NOW });
+      const reset = AuthToken.issue({ accountId: account.id, purpose: "reset", nowMs: NOW });
+      await tokens.save(invite.token);
+      await tokens.save(reset.token);
+
+      await new ConsumeAuthToken(tokens, accounts).execute({
+        secret: invite.secret,
+        newPassword: "senha-nova-1",
+        nowMs: NOW + 1000,
+      });
+
+      expect(
+        await tokens.findUsableBySecretHash(hashAuthTokenSecret(reset.secret), NOW + 2000),
+      ).not.toBeNull();
+    });
+
     it("Dado senha com menos de 8 caracteres, Quando consumir, Então recusa e o token continua usável", async () => {
       const secret = await issueInvite();
 

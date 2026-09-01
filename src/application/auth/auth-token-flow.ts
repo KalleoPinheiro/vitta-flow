@@ -106,6 +106,10 @@ export class ConsumeAuthToken {
     }
 
     await this.accounts.updatePasswordHash(account.id, await hashPassword(input.newPassword));
+    // Invalida os irmãos do mesmo propósito antes de marcar este como usado:
+    // consumir um link precisa queimar todos os outros por conta própria, sem
+    // depender da invariante de que a emissão já os invalidou.
+    await this.tokens.markAllUnusedAsUsed(account.id, token.purpose, new Date(nowMs));
     await this.tokens.save(token.markUsed(new Date(nowMs)));
   }
 }

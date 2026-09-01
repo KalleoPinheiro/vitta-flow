@@ -2,12 +2,13 @@ import { NextResponse, type NextRequest } from "next/server";
 import {
   CALENDAR_OAUTH_STATE_COOKIE,
   googleCalendarOAuthConfigFromEnv,
+  type GoogleCalendarOAuthConfig,
 } from "@/lib/auth/google-calendar-oauth";
 import { createOAuthClient } from "@/lib/auth/google-oauth-client";
 import { requireStaffSession } from "@/lib/auth/require-session";
 import { encryptSecret } from "@/lib/auth/crypto";
 import { getRepositories } from "@/infrastructure/container";
-import { getAuthConfig } from "@/lib/auth/session";
+import { getAuthConfig, type Session } from "@/lib/auth/session";
 import { fail } from "@/lib/api-response";
 
 /** Base pública p/ redirects: a URL interna do container não é acessível ao navegador. */
@@ -36,6 +37,52 @@ function extractValidatedCode(request: NextRequest): string | null {
  * troca cookie de sessão: quem já está autenticado continua exatamente com a
  * mesma sessão que tinha (AUTH-18).
  */
+/**
+ * Troca o `code` pelo refresh token e persiste a credencial cifrada sob o dono
+ * informado. Extraída do handler para manter a complexidade dele dentro do
+ * limite do projeto — a guarda de sessão, a de config e a de `state` já vivem
+ * lá, e este trecho tem o próprio ramo de erro.
+ */
+interface CredentialOwner {
+  subject: string;
+  clinicId: string | null;
+}
+
+/**
+ * Dono da credencial = a sessão nativa que iniciou o fluxo. Em modo aberto não
+ * há sessão, e a credencial fica sob um rótulo fixo em vez de um e-mail real.
+ */
+function credentialOwner(session: Session | null): CredentialOwner {
+  return {
+    subject: session?.subject ?? "sessao-aberta",
+    clinicId: session?.clinicId ?? null,
+  };
+}
+
+async function persistCalendarCredential(
+  config: GoogleCalendarOAuthConfig,
+  code: string,
+  owner: CredentialOwner,
+  secret: string,
+): Promise<NextResponse | null> {
+  const { tokens } = await createOAuthClient(config).getToken(code);
+  if (!tokens.refresh_token) {
+    return fail(
+      "O Google não devolveu credencial de longa duração — revogue o acesso do VittaFlow na sua conta Google e conecte de novo",
+      400,
+    );
+  }
+
+  // Titular da credencial é a sessão nativa, não uma identidade do Google.
+  const { googleAccounts } = await getRepositories({ clinicId: owner.clinicId });
+  await googleAccounts.save({
+    email: owner.subject,
+    encryptedRefreshToken: encryptSecret(tokens.refresh_token, secret),
+    connectedAt: new Date(),
+  });
+  return null;
+}
+
 export async function GET(request: NextRequest) {
   const guard = requireStaffSession(request);
   if (!guard.ok) return guard.response;
@@ -52,27 +99,11 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const client = createOAuthClient(config);
-    const { tokens } = await client.getToken(code);
-    if (!tokens.refresh_token) {
-      return clearState(
-        fail(
-          "O Google não devolveu credencial de longa duração — revogue o acesso do VittaFlow na sua conta Google e conecte de novo",
-          400,
-        ),
-      );
-    }
-
-    // Titular da credencial é a sessão nativa, não uma identidade do Google.
-    const { googleAccounts } = await getRepositories({ clinicId: guard.session?.clinicId ?? null });
-    await googleAccounts.save({
-      email: guard.session?.subject ?? "sessao-aberta",
-      encryptedRefreshToken: encryptSecret(tokens.refresh_token, auth.secret),
-      connectedAt: new Date(),
-    });
-
+    const owner = credentialOwner(guard.session);
+    const failure = await persistCalendarCredential(config, code, owner, auth.secret);
     return clearState(
-      NextResponse.redirect(new URL("/configuracoes?calendar=conectado", publicBaseUrl(request))),
+      failure ??
+        NextResponse.redirect(new URL("/configuracoes?calendar=conectado", publicBaseUrl(request))),
     );
   } catch (error) {
     console.error("Google Agenda: falha ao concluir a conexão", error);

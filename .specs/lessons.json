@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 26,
+  "next_id": 30,
   "lessons": [
     {
       "id": "L-001",
@@ -456,6 +456,78 @@
       ],
       "created": "2026-08-30T07:13:58Z",
       "last_seen": "2026-08-30T07:13:58Z"
+    },
+    {
+      "id": "L-026",
+      "key": "gate_fail::run the full lint gate and read its exit code not its summary text before declaring a feature done",
+      "text": "Run the full lint gate and read its exit code, not its summary text, before declaring a feature done.",
+      "signal": "gate_fail",
+      "scope": "gates",
+      "status": "candidate",
+      "features": [
+        "autenticacao-nativa"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "src/app/api/integrations/google-calendar/callback/route.ts:39 (gates)"
+      ],
+      "created": "2026-09-01T04:31:51Z",
+      "last_seen": "2026-09-01T04:31:51Z"
+    },
+    {
+      "id": "L-027",
+      "key": "ac_gap::every listed edge case needs its own test and its own line of implementation even when another rule appears to make it unreachable",
+      "text": "Every listed edge case needs its own test and its own line of implementation, even when another rule appears to make it unreachable.",
+      "signal": "ac_gap",
+      "scope": "edge-cases",
+      "status": "candidate",
+      "features": [
+        "autenticacao-nativa"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        ".specs/features/autenticacao-nativa/spec.md:147 (edge-cases)"
+      ],
+      "created": "2026-09-01T04:31:55Z",
+      "last_seen": "2026-09-01T04:31:55Z"
+    },
+    {
+      "id": "L-028",
+      "key": "spec_precision_gap::do not write an acceptance criterion whose condition no code path can produce make it verifiable or drop it",
+      "text": "Do not write an acceptance criterion whose condition no code path can produce; make it verifiable or drop it.",
+      "signal": "spec_precision_gap",
+      "scope": "spec",
+      "status": "candidate",
+      "features": [
+        "autenticacao-nativa"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        ".specs/features/autenticacao-nativa/spec.md:143 (spec)"
+      ],
+      "created": "2026-09-01T04:31:59Z",
+      "last_seen": "2026-09-01T04:31:59Z"
+    },
+    {
+      "id": "L-029",
+      "key": "ac_gap::when a criterion says an operation is refused without a side effect assert the absence of the side effect as well as the status code",
+      "text": "When a criterion says an operation is refused without a side effect, assert the absence of the side effect as well as the status code.",
+      "signal": "ac_gap",
+      "scope": "tests",
+      "status": "candidate",
+      "features": [
+        "autenticacao-nativa"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "tests/api/calendar-integration-routes.test.ts:174 (tests)"
+      ],
+      "created": "2026-09-01T04:32:08Z",
+      "last_seen": "2026-09-01T04:32:08Z"
     }
   ]
 }

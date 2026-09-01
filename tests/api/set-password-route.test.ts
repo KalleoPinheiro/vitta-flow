@@ -76,7 +76,16 @@ describe("Feature: POST /api/auth/set-password", () => {
     const response = await login("login-apos-convite@x.com", "senha-forte-2");
 
     expect(response.status).toBe(200);
-    expect(response.headers.get("set-cookie")).toContain("vitta_session=");
+    const cookie = response.headers.get("set-cookie") ?? "";
+    expect(cookie).toContain("vitta_session=");
+
+    // O cookie precisa carregar o papel gravado na conta (a conta foi criada
+    // com role "atendente"), não um valor fixo — AUTH-06.
+    const { verifySessionToken } = await import("@/lib/auth/session");
+    const sessionToken = cookie.match(/vitta_session=([^;]+)/)?.[1] ?? "";
+    const session = verifySessionToken(process.env.AUTH_SECRET!, sessionToken);
+    expect(session?.role).toBe("atendente");
+    expect(session?.subject).toBe("login-apos-convite@x.com");
   });
 
   it("Dado a senha definida, Quando fizer login com outra senha, Então responde 401", async () => {

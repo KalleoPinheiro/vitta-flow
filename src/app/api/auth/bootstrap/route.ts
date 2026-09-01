@@ -1,9 +1,9 @@
-import { timingSafeEqual } from "node:crypto";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { getRepositories } from "@/infrastructure/container";
 import { UserAccount } from "@/domain/auth/user-account";
 import { UNSET_PASSWORD_HASH } from "@/lib/auth/password";
+import { passwordMatches } from "@/lib/auth/session";
 import { IssueAuthToken } from "@/application/auth/auth-token-flow";
 import { appUrlFromEnv } from "@/application/auth/send-invite";
 import { RateLimiter } from "@/lib/auth/rate-limit";
@@ -20,19 +20,12 @@ const schema = z.object({
   email: z.string().min(3).max(200),
 });
 
-function secretMatches(expected: string, provided: string): boolean {
-  const expectedBuffer = Buffer.from(expected);
-  const providedBuffer = Buffer.from(provided);
-  return (
-    expectedBuffer.length === providedBuffer.length &&
-    timingSafeEqual(expectedBuffer, providedBuffer)
-  );
-}
-
 function hasValidBootstrapToken(request: NextRequest): boolean {
   const expected = process.env.VITTA_BOOTSTRAP_TOKEN;
   const provided = request.headers.get(BOOTSTRAP_TOKEN_HEADER);
-  return Boolean(expected) && Boolean(provided) && secretMatches(expected!, provided!);
+  // `passwordMatches` é a comparação em tempo constante do projeto — o nome vem
+  // do primeiro uso (senha), mas o contrato é "compara dois segredos".
+  return Boolean(expected) && Boolean(provided) && passwordMatches(expected!, provided!);
 }
 
 /**

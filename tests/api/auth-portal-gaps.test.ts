@@ -53,13 +53,6 @@ interface Envelope<T> {
 
 const context = (id: string) => ({ params: Promise.resolve({ id }) });
 
-const resetGoogleEnv = () => {
-  delete process.env.GOOGLE_CLIENT_ID;
-  delete process.env.GOOGLE_CLIENT_SECRET;
-  delete process.env.APP_URL;
-  delete process.env.GOOGLE_ALLOWED_EMAILS;
-};
-
 describe("Feature: Fechamento de branches — login e rotas do portal", () => {
   let loginRoute: typeof import("@/app/api/auth/login/route");
 

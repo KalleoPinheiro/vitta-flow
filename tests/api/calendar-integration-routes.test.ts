@@ -42,6 +42,20 @@ const withState = (state: string, headers: Record<string, string> = staffHeaders
   cookie: `${headers.cookie}; ${CALENDAR_OAUTH_STATE_COOKIE}=${state}`,
 });
 
+/** Credencial gravada para o dono da sessão de teste (null quando não houve gravação). */
+const storedCredential = async () => {
+  const { getRepositories } = await import("@/infrastructure/container");
+  const { googleAccounts } = await getRepositories({ clinicId: CLINIC_A_ID });
+  return googleAccounts.findByEmail("agenda@clinica.com");
+};
+
+/** Zera a credencial para que "não persistiu" não passe por resíduo de outro caso. */
+const clearCredential = async () => {
+  const { getDb } = await import("@/infrastructure/persistence/drizzle/db");
+  const schema = await import("@/infrastructure/persistence/drizzle/schema");
+  await (await getDb()).delete(schema.googleAccounts);
+};
+
 /**
  * AUTH-15..AUTH-19: conectar a agenda é uma integração iniciada por sessão
  * nativa; o fluxo nunca cria, renova ou troca sessão.
@@ -160,6 +174,7 @@ describe("Feature: Conexão do Google Agenda desacoplada do login", () => {
 
     it("Dado state divergente do cookie, Quando GET no callback, Então responde 400 e não persiste credencial", async () => {
       await ensureTestClinics();
+      await clearCredential();
       stubTokenExchange({ refresh_token: "nao-deve-salvar" });
       const route = await callbackRoute();
 
@@ -173,9 +188,13 @@ describe("Feature: Conexão do Google Agenda desacoplada do login", () => {
 
       expect(response.status).toBe(400);
       expect(json.error).toContain("Fluxo de conexão inválido");
+      expect(await storedCredential()).toBeNull();
     });
 
-    it("Dado state ausente na query, Quando GET no callback, Então responde 400", async () => {
+    it("Dado state ausente na query, Quando GET no callback, Então responde 400 e não persiste credencial", async () => {
+      await ensureTestClinics();
+      await clearCredential();
+      stubTokenExchange({ refresh_token: "nao-deve-salvar" });
       const route = await callbackRoute();
 
       const response = await route.GET(
@@ -183,10 +202,12 @@ describe("Feature: Conexão do Google Agenda desacoplada do login", () => {
       );
 
       expect(response.status).toBe(400);
+      expect(await storedCredential()).toBeNull();
     });
 
     it("Dado o Google não devolver refresh token, Quando GET no callback, Então responde 400 e não persiste credencial", async () => {
       await ensureTestClinics();
+      await clearCredential();
       stubTokenExchange({ refresh_token: null });
       const route = await callbackRoute();
 
@@ -200,6 +221,7 @@ describe("Feature: Conexão do Google Agenda desacoplada do login", () => {
 
       expect(response.status).toBe(400);
       expect(json.error).toContain("credencial de longa duração");
+      expect(await storedCredential()).toBeNull();
     });
 
     it("Dado falha na troca do code, Quando GET no callback, Então responde 502", async () => {

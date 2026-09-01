@@ -20,7 +20,7 @@
 - **Status**: active
 
 ### AD-003
-- **Decision**: Itens que exigem decisão de negócio (matriz RBAC fina, taxa/janela de cancelamento, escolha de PSP, cadência de relatório ao parceiro, multi-tenancy) NÃO são implementados por conta própria — ficam como fases planejadas (5–6) no docs/plano-evolucao-faseado.md.
+- **Decision**: Itens que exigem decisão de negócio (matriz RBAC fina, taxa/janela de cancelamento, escolha de PSP, cadência de relatório ao parceiro, multi-tenancy) NÃO são implementados por conta própria — ficam como fases planejadas (5–6) no docs/planning/plano-evolucao-faseado.md.
 - **Reason**: inventar requisitos de negócio viola o processo spec-driven; o usuário decide.
 - **Trade-off**: brechas conhecidas (ex.: toda conta staff é admin) permanecem até a decisão.
 - **Scope**: programa de evolução

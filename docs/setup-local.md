@@ -1,6 +1,8 @@
 # Setup local — VittaFlow
 
-Guia detalhado pra configurar e rodar app local. Duas vias: Docker Compose (recomendado) ou Node direto contra Postgres do compose.
+Referência completa: pré-requisitos, variáveis de ambiente, estrutura do projeto, scripts, testes, segurança. Pra passo a passo operacional (subir a stack, configurar Resend/Google Agenda/WhatsApp, bootstrap do primeiro acesso), ver [`runbooks/`](./runbooks/) — os dois se complementam, este arquivo é o "porquê e o que existe", os runbooks são o "faz assim".
+
+Duas vias pra rodar local: Docker Compose (recomendado) ou Node direto contra Postgres do compose.
 
 ## Pré-requisitos
 
@@ -14,27 +16,7 @@ Guia detalhado pra configurar e rodar app local. Duas vias: Docker Compose (reco
 
 ## Via A — Docker Compose (recomendado)
 
-Sobe Postgres 16 + app numa tacada. Migrações Drizzle rodam sozinhas no boot (advisory lock, seguro com múltiplas réplicas).
-
-```bash
-cp .env.example .env
-# edite .env e preencha, no mínimo:
-#   AUTH_SECRET=$(openssl rand -hex 32)
-#   VITTA_BOOTSTRAP_TOKEN=$(openssl rand -hex 24)
-#   RESEND_API_KEY=...   EMAIL_FROM="VittaFlow <nao-responda@suaclinica.com>"
-# o compose lê o .env sozinho, e o mesmo arquivo alimenta o curl abaixo
-docker compose up -d --build
-# primeira conta (instalação vazia): cria o Super Admin e envia o convite.
-# o compose devolve o controle antes de o Next aceitar conexões — espere subir:
-until curl -sf http://localhost:3000/api/auth/providers >/dev/null; do sleep 2; done
-set -a; . ./.env; set +a
-curl -sX POST http://localhost:3000/api/auth/bootstrap \
-  -H "Content-Type: application/json" \
-  -H "x-bootstrap-token: $VITTA_BOOTSTRAP_TOKEN" \
-  -d '{"email":"voce@suaclinica.com"}'
-# o link de convite chega por e-mail; se o envio falhar (ex.: chave de teste),
-# a resposta traz `inviteUrl` para você abrir e definir a senha
-```
+Sobe Postgres 16 + app numa tacada. Migrações Drizzle rodam sozinhas no boot (advisory lock, seguro com múltiplas réplicas). Passo a passo completo, do `.env` até login funcionando: [`runbooks/rodar-localmente.md`](./runbooks/rodar-localmente.md).
 
 - App: http://localhost:3000 (login com o e-mail e a senha definidos pelo convite)
 - Postgres: `localhost:5432` (user/pass `vitta`/`vitta`, db `vitta`)
@@ -93,7 +75,7 @@ Copia `.env.example` → `.env` e ajusta. Referência completa:
 | `CLINIC_NAME` / `CLINIC_CNPJ` / `CLINIC_ADDRESS` / `CLINIC_CITY` / `CLINIC_PROFESSIONAL_NAME` / `CLINIC_PROFESSIONAL_REGISTRY` | Não | Cabeçalho/assinatura de documentos clínicos |
 | `WHATSAPP_TOKEN` / `WHATSAPP_PHONE_NUMBER_ID` | Não | Lembretes via WhatsApp (Meta Cloud API); sem elas roda em dry-run |
 
-Existe um único método de login: e-mail + senha da própria conta (ADR-004). Produção sem `AUTH_SECRET`: 503 fail-closed. A primeira conta de uma instalação vazia sai de `POST /api/auth/bootstrap` (header `x-bootstrap-token`); depois disso a rota responde 403 para sempre.
+Existe um único método de login: e-mail + senha da própria conta (ADR-004). Produção sem `AUTH_SECRET`: 503 fail-closed. A primeira conta de uma instalação vazia sai de `POST /api/auth/bootstrap` (header `x-bootstrap-token`); depois disso a rota responde 403 para sempre — passo a passo em [`runbooks/bootstrap-primeiro-acesso.md`](./runbooks/bootstrap-primeiro-acesso.md).
 
 ### Modo aberto (dev/demo sem login)
 
@@ -106,24 +88,13 @@ VITTA_ALLOW_OPEN_MODE=true
 
 Ignorada quando `NODE_ENV=production` — nunca dá pra rodar produção sem auth. Auditoria registra ator `anonymous`.
 
-### Google Agenda via OAuth (opcional, recomendado)
+### Integrações opcionais
 
-1. Google Cloud Console → APIs & Services → Credentials → **OAuth client ID** (tipo Web application).
-2. Redirect URI: `{APP_URL}/api/integrations/google-calendar/callback`.
-3. Habilita **Google Calendar API** no projeto.
-4. Preenche `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `APP_URL`.
+Passo a passo de configuração em runbooks dedicados:
 
-Resultado: em **Configurações → Google Agenda**, uma conta de equipe já logada clica em "Conectar Google Agenda". O fluxo pede só o escopo `calendar.events` e não toca na sessão; o refresh token fica cifrado AES-256-GCM e os eventos sincronizam no calendário `primary` da conta conectada (sobrescrevível via `GOOGLE_CALENDAR_ID`).
-
-### Google Calendar via service account (alternativa)
-
-Sem OAuth, só sincronização de agenda:
-
-1. Cria service account no Google Cloud, habilita Calendar API.
-2. Compartilha o calendário-alvo com o email da service account, permissão "Fazer alterações em eventos".
-3. Preenche `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY`, `GOOGLE_CALENDAR_ID`.
-
-Usada só quando nenhuma conta Google está conectada via OAuth. Sem nenhuma das duas: agenda funciona normal, sem sync.
+- E-mail transacional (convite/reset) — [`runbooks/configurar-resend.md`](./runbooks/configurar-resend.md)
+- Google Agenda, OAuth ou service account — [`runbooks/configurar-google-agenda.md`](./runbooks/configurar-google-agenda.md)
+- Lembretes via WhatsApp — [`runbooks/configurar-whatsapp-lembretes.md`](./runbooks/configurar-whatsapp-lembretes.md)
 
 ## Scripts úteis
 
@@ -198,8 +169,9 @@ Detalhes completos (por que reproduzir local, divergência de scanner hospedado,
 | 503 em toda rota | Sem `AUTH_SECRET` nem `VITTA_ALLOW_OPEN_MODE` | Define `AUTH_SECRET` ou `VITTA_ALLOW_OPEN_MODE=true` (fora de produção) |
 | Porta 5432/3000 ocupada | Outro serviço na porta | `POSTGRES_PORT=`/`APP_PORT=` no compose, ou ajusta `DATABASE_URL` na via B |
 | Build mata processo (`Ineffective mark-compacts`) | Heap V8 padrão baixo pra máquina | Já mitigado via `--max-old-space-size=4096`; se persistir, sobe o valor em `package.json` |
-| Bootstrap responde 403 | Já existe conta, ou `x-bootstrap-token` não bate com `VITTA_BOOTSTRAP_TOKEN` | Use "esqueci minha senha" se a instalação já tem contas |
-| Convite/reset não chega | Sem `RESEND_API_KEY`/`EMAIL_FROM` fora de produção, o gateway é dry-run | O link sai no log do servidor (`[e-mail desativado] …`) |
+| Bootstrap responde 403 | Já existe conta, ou `x-bootstrap-token` não bate com `VITTA_BOOTSTRAP_TOKEN` | Use "esqueci minha senha" se a instalação já tem contas; detalhes em [`runbooks/bootstrap-primeiro-acesso.md`](./runbooks/bootstrap-primeiro-acesso.md) |
+| Convite/reset não chega | Sem `RESEND_API_KEY`/`EMAIL_FROM` fora de produção, o gateway é dry-run | O link sai no log do servidor (`[e-mail desativado] …`); configura de vez em [`runbooks/configurar-resend.md`](./runbooks/configurar-resend.md) |
+| `docker compose up` falha com "required variable ... is missing a value" | `.env` sem uma variável marcada obrigatória no `docker-compose.yml` (ex.: `RESEND_API_KEY`/`EMAIL_FROM`) | Preenche no `.env` antes de subir |
 | Consulta rejeitada com 400 | Fora do horário comercial (seg-sex 08h-18h, `TZ`) | Ajusta horário ou `TZ` |
 | Consulta rejeitada com 409 | Conflito de agenda (folga mínima 15min) | Escolhe outro horário |
 | E2E falha só ao reaproveitar `npm run dev` | `E2E_AUTH_SECRET`/`E2E_BOOTSTRAP_TOKEN` divergentes dos do servidor | Usa os mesmos valores nos dois pares, ou deixa a suíte subir seu próprio servidor |
@@ -207,6 +179,7 @@ Detalhes completos (por que reproduzir local, divergência de scanner hospedado,
 ## Referências
 
 - [README.md](../README.md) — funcionalidades, API, arquitetura, stack
-- [prd-fase-1.md](product/prd-fase-1.md), [prd-fase-2.md](product/prd-fase-2.md), [prd-fase-3.md](product/prd-fase-3.md) — requisitos por fase
+- [runbooks/](./runbooks/) — passo a passo operacional (subir a stack, Resend, Google Agenda, WhatsApp, bootstrap)
+- [prd-fase-1.md](planning/product/prd-fase-1.md), [prd-fase-2.md](planning/product/prd-fase-2.md), [prd-fase-3.md](planning/product/prd-fase-3.md) — requisitos por fase
 - [analise-seguranca-escalabilidade.md](audits/analise-seguranca-escalabilidade.md) — análise de segurança/escalabilidade
 - [.env.example](../.env.example) — todas as variáveis com comentários inline

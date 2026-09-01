@@ -3,7 +3,7 @@
 Sistema de gestão completo para clínica de estomaterapia: prontuário eletrônico (anamnese, evolução SOAP, acompanhamento de estomias e feridas), agenda com calendário e regras de negócio, faturamento, estoque de insumos, recall de retornos e relatórios gerenciais.
 
 ⚙️ Setup local detalhado: [docs/setup-local.md](docs/setup-local.md)
-📄 PRD do módulo clínico: [docs/product/prd-fase-1.md](docs/product/prd-fase-1.md)
+📄 PRD do módulo clínico: [docs/planning/product/prd-fase-1.md](docs/planning/product/prd-fase-1.md)
 🔐 Análise de segurança/escalabilidade + plano de ação: [docs/audits/analise-seguranca-escalabilidade.md](docs/audits/analise-seguranca-escalabilidade.md)
 🎨 Lacunas do design system, para backlog da lib: [docs/still-void-gaps.md](docs/still-void-gaps.md)
 

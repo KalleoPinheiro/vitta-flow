@@ -4,17 +4,17 @@ How phase and initiative planning is organized in `docs/`, and how it relates to
 
 ## What lives where
 
-- **`docs/plano-evolucao-faseado.md`** — the master roadmap. One row per phase, links out to each phase's PRD and `.specs/` execution folder. This is the entry point: start here to see what's delivered, specified, or still backlog.
-- **`docs/product/`** — one PRD per phase (`prd-fase-N.md`), written **only when a phase requires an explicit product/business decision** (scope, priority, a trade-off the user made, not the engineering team). See "When a phase does NOT get a PRD" below.
+- **`docs/planning/plano-evolucao-faseado.md`** — the master roadmap. One row per phase, links out to each phase's PRD and `.specs/` execution folder. This is the entry point: start here to see what's delivered, specified, or still backlog.
+- **`docs/planning/product/`** — one PRD per phase (`prd-fase-N.md`), written **only when a phase requires an explicit product/business decision** (scope, priority, a trade-off the user made, not the engineering team). See "When a phase does NOT get a PRD" below.
 - **`docs/audits/`** — raw audit/analysis findings (security, UX, design-system gaps). These are **input** to planning, not a work request by themselves: an audit's findings get triaged into a phase (with a PRD) or a standalone `.specs/features/` entry, never executed directly off the audit doc.
 - **`docs/adr/`** — durable architecture/domain decisions. Owned by the `domain-modeling` skill. See "Two decision logs" below.
 - **`.specs/features/<slug>/`** — execution-level spec/design/tasks/validation for one feature or initiative. Owned by the `tlc-spec-driven` skill; naming and structure there are fixed by that skill's tooling — don't reorganize it from here.
 
 ## When a phase does NOT get a PRD
 
-Not every unit of work is a numbered "Fase N" with a product decision behind it. Technical initiatives — dependency/security cleanup, a design-system library migration, scanner noise triage — go straight into `.specs/features/<slug>/spec.md` with no matching `docs/product/` file. Examples already in this repo: `still-void-v2-migration`, `still-void-v3.3-adoption`, `ruido-scanners-seguranca`, `auditoria-seguranca-dependencias`.
+Not every unit of work is a numbered "Fase N" with a product decision behind it. Technical initiatives — dependency/security cleanup, a design-system library migration, scanner noise triage — go straight into `.specs/features/<slug>/spec.md` with no matching `docs/planning/product/` file. Examples already in this repo: `still-void-v2-migration`, `still-void-v3.3-adoption`, `ruido-scanners-seguranca`, `auditoria-seguranca-dependencias`.
 
-Write a `docs/product/prd-fase-N.md` only when the initiative involves a genuine product/business choice (pricing, RBAC matrix, what a role can do, a UX trade-off affecting patients or staff) — the kind of decision `.specs/STATE.md`'s AD-003 already commits to never inventing on the team's own authority.
+Write a `docs/planning/product/prd-fase-N.md` only when the initiative involves a genuine product/business choice (pricing, RBAC matrix, what a role can do, a UX trade-off affecting patients or staff) — the kind of decision `.specs/STATE.md`'s AD-003 already commits to never inventing on the team's own authority.
 
 ## Two decision logs — don't confuse them
 
@@ -27,6 +27,6 @@ If you're about to write a new decision and unsure which log it belongs in: does
 
 ## Naming
 
-- `docs/product/`, `docs/audits/`, `docs/adr/`, `docs/agents/` — `lower-kebab-case.md`.
+- `docs/planning/product/`, `docs/audits/`, `docs/adr/`, `docs/agents/` — `lower-kebab-case.md`.
 - Audits keep a date suffix (`auditoria-ux-2026-08.md`) — the name signals "snapshot as of," not a document updated in place.
-- `docs/plano-evolucao-faseado.md` is the one file agents should treat as living/updated as phases progress; everything under `docs/audits/` is a frozen snapshot once written.
+- `docs/planning/plano-evolucao-faseado.md` is the one file agents should treat as living/updated as phases progress; everything under `docs/audits/` is a frozen snapshot once written.

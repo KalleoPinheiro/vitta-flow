@@ -88,7 +88,7 @@ como integração desacoplada, conectada por conta já autenticada). Toda conta 
 própria, definida por convite enviado por e-mail no cadastro, com reset self-service também por
 e-mail. Remove a senha mestre de emergência (`AUTH_PASSWORD`); primeiro Super Admin nasce por
 bootstrap dedicado. Realiza também o "sunset da senha master" que a Fase 1 já tinha só avisado
-(`docs/plano-evolucao-faseado.md`, Fase 6).
+(`docs/planning/plano-evolucao-faseado.md`, Fase 6).
 
 **Critérios de aceite:**
 - Toda conta nova recebe convite por e-mail para definir a própria senha.
@@ -110,7 +110,7 @@ bootstrap dedicado. Realiza também o "sunset da senha master" que a Fase 1 já 
 - Suporte a uma pessoa com conta em mais de uma empresa (1 conta = 1 empresa).
 - RBAC configurável por empresa (o catálogo de papéis é fixo, não customizável).
 - TISS/convênios e paginação por cursor — seguem como backlog da Fase 6
-  (`docs/plano-evolucao-faseado.md`).
+  (`docs/planning/plano-evolucao-faseado.md`).
 
 ## Decisões registradas
 

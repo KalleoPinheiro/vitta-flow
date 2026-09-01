@@ -180,6 +180,28 @@ describe("Feature: AuditPage", () => {
 });
 
 describe("Feature: SettingsPage", () => {
+  /** AUTH-20: a conexão da agenda é oferecida como integração, fora do login. */
+  describe("Cenário: integração do Google Agenda", () => {
+    it("Dado a tela de configurações, Quando carregar, Então oferece o link de conexão da agenda apontando para a rota de integração", async () => {
+      mockFetch(({ url }) => {
+        if (url.startsWith("/api/settings/schedule")) {
+          return jsonResponse({
+            config: { weekdays: [1], startHour: 8, endHour: 18, minGapMinutes: 30 },
+            isDefault: true,
+          });
+        }
+        if (url.startsWith("/api/accounts")) return jsonResponse([]);
+        if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        return jsonResponse(null, false);
+      });
+
+      render(<SettingsPage />);
+
+      const link = await screen.findByRole("link", { name: "Conectar Google Agenda" });
+      expect(link).toHaveAttribute("href", "/api/integrations/google-calendar");
+    });
+  });
+
   describe("Cenário: grade de horários", () => {
     it("Dado configuração padrão, Quando a página carrega, Então exibe aviso de padrão e valores", async () => {
       mockFetch(({ url }) => {

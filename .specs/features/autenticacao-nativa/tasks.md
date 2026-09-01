@@ -522,15 +522,17 @@ T20 → T21
 
 **Done when**:
 
-- [ ] O gateway de agenda é construído a partir da credencial gravada pelo fluxo novo, sem depender de `GOOGLE_ALLOWED_EMAILS`
-- [ ] `/configuracoes` oferece o link para conectar a agenda (`npm run check:sv` verde)
-- [ ] Gate check passes: `npm run typecheck && npm run check:sv && npx vitest run tests/api tests/pages`
-- [ ] Test count: 2 novos tests pass (no silent deletions)
+- [x] O gateway de agenda é construído a partir da credencial gravada pelo fluxo novo, sem depender de `GOOGLE_ALLOWED_EMAILS`
+- [x] `/configuracoes` oferece o link para conectar a agenda (`npm run check:sv` verde)
+- [x] Gate check passes: `npm run typecheck && npm run check:sv && npx vitest run tests/api tests/pages`
+- [x] Test count: 2 novos tests pass (no silent deletions)
 
 **Tests**: integration
 **Gate**: build
 
 **Commit**: `refactor(calendar): monta gateway de agenda pela config dedicada`
+
+**Status**: ✅ Done
 
 ---
 

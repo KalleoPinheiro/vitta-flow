@@ -76,7 +76,7 @@ import type { ProfessionalRepository } from "@/domain/professional/professional-
 import type { PhotoStorage } from "@/application/ports/photo-storage";
 import type { AuditEventRepository } from "@/domain/audit/audit-event-repository";
 import type { PartnerRepository } from "@/domain/partner/partner-repository";
-import { googleOAuthConfigFromEnv } from "@/lib/auth/google-oauth";
+import { googleCalendarOAuthConfigFromEnv } from "@/lib/auth/google-calendar-oauth";
 import { getAuthConfig } from "@/lib/auth/session";
 import { decryptSecret } from "@/lib/auth/crypto";
 import type { AppDb } from "./persistence/drizzle/db";
@@ -163,7 +163,7 @@ const globalForServices = globalThis as unknown as {
 };
 
 async function oauthCalendarGateway(db: AppDb): Promise<{ key: string; gateway: CalendarGateway } | null> {
-  const oauthConfig = googleOAuthConfigFromEnv();
+  const oauthConfig = googleCalendarOAuthConfigFromEnv();
   const auth = getAuthConfig();
   if (!oauthConfig || !auth) {
     return null;

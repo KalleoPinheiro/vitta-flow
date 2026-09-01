@@ -160,17 +160,19 @@ T20 → T21
 
 **Done when**:
 
-- [ ] `AuthToken.issue` devolve o segredo em claro e uma entidade que guarda só o hash
-- [ ] `isUsable` é falso para token expirado e para token já usado
-- [ ] TTL de convite é 24 h e de reset é 1 h
-- [ ] `markUsed` não muta a instância original
-- [ ] Gate check passes: `npx vitest run tests/domain/auth-token.test.ts`
-- [ ] Test count: 9 tests pass (no silent deletions)
+- [x] `AuthToken.issue` devolve o segredo em claro e uma entidade que guarda só o hash
+- [x] `isUsable` é falso para token expirado e para token já usado
+- [x] TTL de convite é 24 h e de reset é 1 h
+- [x] `markUsed` não muta a instância original
+- [x] Gate check passes: `npx vitest run tests/domain/auth-token.test.ts`
+- [x] Test count: 13 tests pass (no silent deletions)
 
 **Tests**: unit
 **Gate**: quick
 
 **Commit**: `feat(auth): adiciona primitivo de token de ativacao com uso unico`
+
+**Status**: ✅ Done
 
 ---
 

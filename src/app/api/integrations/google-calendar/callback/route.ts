@@ -31,18 +31,6 @@ function extractValidatedCode(request: NextRequest): string | null {
   return code;
 }
 
-/**
- * Conclusão da conexão do Google Agenda. Guarda apenas o refresh token cifrado
- * sob o `subject` da sessão que iniciou o fluxo. **Nunca** emite, renova ou
- * troca cookie de sessão: quem já está autenticado continua exatamente com a
- * mesma sessão que tinha (AUTH-18).
- */
-/**
- * Troca o `code` pelo refresh token e persiste a credencial cifrada sob o dono
- * informado. Extraída do handler para manter a complexidade dele dentro do
- * limite do projeto — a guarda de sessão, a de config e a de `state` já vivem
- * lá, e este trecho tem o próprio ramo de erro.
- */
 interface CredentialOwner {
   subject: string;
   clinicId: string | null;
@@ -59,6 +47,12 @@ function credentialOwner(session: Session | null): CredentialOwner {
   };
 }
 
+/**
+ * Troca o `code` pelo refresh token e persiste a credencial cifrada sob o dono
+ * informado. Extraída do handler para manter a complexidade dele dentro do
+ * limite do projeto — a guarda de sessão, a de config e a de `state` já vivem
+ * lá, e este trecho tem o próprio ramo de erro.
+ */
 async function persistCalendarCredential(
   config: GoogleCalendarOAuthConfig,
   code: string,
@@ -83,6 +77,12 @@ async function persistCalendarCredential(
   return null;
 }
 
+/**
+ * Conclusão da conexão do Google Agenda. Guarda apenas o refresh token cifrado
+ * sob o `subject` da sessão que iniciou o fluxo. **Nunca** emite, renova ou
+ * troca cookie de sessão: quem já está autenticado continua exatamente com a
+ * mesma sessão que tinha (AUTH-18).
+ */
 export async function GET(request: NextRequest) {
   const guard = requireStaffSession(request);
   if (!guard.ok) return guard.response;

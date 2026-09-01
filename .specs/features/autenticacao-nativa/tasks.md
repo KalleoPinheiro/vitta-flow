@@ -670,16 +670,18 @@ T20 → T21
 
 **Done when**:
 
-- [ ] `/login` não renderiza mais nada de Google e mostra o link para `/esqueci-senha`
-- [ ] `global-setup.ts` obtém a sessão admin por bootstrap + convite consumido, sem senha mestre
-- [ ] `npm run check:sv` verde
-- [ ] Gate check passes: `npm run typecheck && npm run lint && npm run check:sv && npx vitest run && npm run build`
-- [ ] Test count: suíte completa verde (no silent deletions)
+- [x] `/login` não renderiza mais nada de Google e mostra o link para `/esqueci-senha`
+- [x] `global-setup.ts` obtém a sessão admin por bootstrap + convite consumido, sem senha mestre
+- [x] `npm run check:sv` verde
+- [x] Gate check passes: `npm run typecheck && npm run lint && npm run check:sv && npx vitest run && npm run build`
+- [x] Test count: suíte completa verde (no silent deletions)
 
 **Tests**: unit
 **Gate**: build
 
 **Commit**: `feat(auth): simplifica tela de login e migra setup do E2E`
+
+**Status**: ✅ Done
 
 ---
 

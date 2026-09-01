@@ -1,8 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 import {
   ADMIN_STORAGE_STATE_PATH,
-  E2E_AUTH_PASSWORD,
   E2E_AUTH_SECRET,
+  E2E_BOOTSTRAP_TOKEN,
   MAIN_BASE_URL,
   OPEN_MODE_BASE_URL,
   OPEN_MODE_PORT,
@@ -13,13 +13,14 @@ import {
  * portal do paciente/parceiro (`getRequestSession()` não depende só do proxy, ver
  * `src/lib/auth/request-session.ts`). Por isso o servidor principal (porta 3000)
  * roda sempre com autenticação ligada: specs de equipe reaproveitam uma sessão
- * admin já logada via `storageState` (gerada em `global-setup.ts`); specs de
- * portal assinam um cookie de sessão paciente/parceiro na hora (mesmo segredo);
- * `auth.spec.ts` testa o fluxo de login de verdade.
+ * do Super Admin já logada via `storageState` (criada em `global-setup.ts` pelo
+ * fluxo real de bootstrap + convite + login); specs de portal assinam um cookie de
+ * sessão paciente/parceiro na hora (mesmo segredo); `auth.spec.ts` testa o fluxo de
+ * login de verdade.
  *
- * Um segundo servidor (porta 3100), sem AUTH_SECRET/AUTH_PASSWORD, sobe só para o
- * cenário de "modo aberto" em `auth.spec.ts` — processo Next isolado, então tem seu
- * próprio PGlite em memória (não compartilha dados semeados com o servidor principal).
+ * Um segundo servidor (porta 3100), sem AUTH_SECRET, sobe só para o cenário de
+ * "modo aberto" em `auth.spec.ts` — processo Next isolado, então tem seu próprio
+ * PGlite em memória (não compartilha dados semeados com o servidor principal).
  */
 export default defineConfig({
   testDir: "./e2e",
@@ -64,7 +65,10 @@ export default defineConfig({
         VITTA_DB_DRIVER: "pglite",
         TZ: "America/Sao_Paulo",
         AUTH_SECRET: E2E_AUTH_SECRET,
-        AUTH_PASSWORD: E2E_AUTH_PASSWORD,
+        // Libera POST /api/auth/bootstrap, o caminho que o global-setup usa
+        // para criar o primeiro Super Admin da instalação limpa da suíte.
+        VITTA_BOOTSTRAP_TOKEN: E2E_BOOTSTRAP_TOKEN,
+        APP_URL: MAIN_BASE_URL,
         // A suíte inteira roda no mesmo IP (loopback) contra um processo só —
         // o limite de produção (120/min) estoura fácil com o volume de setup via API.
         API_RATE_LIMIT_MAX: "100000",
@@ -80,7 +84,6 @@ export default defineConfig({
         TZ: "America/Sao_Paulo",
         PORT: String(OPEN_MODE_PORT),
         AUTH_SECRET: "",
-        AUTH_PASSWORD: "",
         // Sem auth configurada o app é fail-closed (503) — o modo aberto exige
         // este opt-in explícito. Ver src/lib/auth/access-policy.ts.
         VITTA_ALLOW_OPEN_MODE: "true",

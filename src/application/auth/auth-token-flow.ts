@@ -50,7 +50,8 @@ export class IssueAuthToken {
     private readonly email: EmailGateway,
   ) {}
 
-  async execute(input: IssueAuthTokenInput): Promise<void> {
+  /** Devolve o link gerado — o chamador decide se ele pode ser exposto. */
+  async execute(input: IssueAuthTokenInput): Promise<string> {
     const nowMs = input.nowMs ?? Date.now();
     await this.tokens.markAllUnusedAsUsed(input.account.id, input.purpose, new Date(nowMs));
 
@@ -68,6 +69,7 @@ export class IssueAuthToken {
       subject: SUBJECT_BY_PURPOSE[input.purpose],
       text: `${INTRO_BY_PURPOSE[input.purpose]}\n\n${link}\n\n${VALIDITY_BY_PURPOSE[input.purpose]}`,
     });
+    return link;
   }
 }
 

@@ -247,7 +247,7 @@ function AccountsSection() {
       {!accounts ? (
         <LoadingIndicator />
       ) : accounts.length === 0 ? (
-        <EmptyState message="Nenhuma conta individual — todos usam a senha master (auditoria sem identificação pessoal)." />
+        <EmptyState message="Nenhuma conta cadastrada nesta empresa." />
       ) : (
         <Table className="w-full text-left text-sm">
           <TableHeader>

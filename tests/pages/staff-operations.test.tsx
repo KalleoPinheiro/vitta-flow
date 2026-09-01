@@ -395,7 +395,7 @@ describe("Feature: SettingsPage", () => {
   });
 
   describe("Cenário: contas de acesso", () => {
-    it("Dado nenhuma conta cadastrada, Quando a página carrega, Então exibe mensagem de senha master", async () => {
+    it("Dado nenhuma conta cadastrada, Quando a página carrega, Então exibe o estado vazio", async () => {
       mockFetch(({ url }) => {
         if (url.startsWith("/api/settings/schedule")) {
           return jsonResponse({
@@ -411,7 +411,7 @@ describe("Feature: SettingsPage", () => {
       render(<SettingsPage />);
 
       expect(
-        await screen.findByText(/todos usam a senha master/),
+        await screen.findByText(/Nenhuma conta cadastrada nesta empresa/),
       ).toBeInTheDocument();
     });
 
@@ -572,7 +572,7 @@ describe("Feature: SettingsPage", () => {
       });
 
       render(<SettingsPage />);
-      await screen.findByText(/todos usam a senha master/);
+      await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
       fireEvent.change(screen.getByLabelText(/Email/), {
@@ -604,7 +604,7 @@ describe("Feature: SettingsPage", () => {
       });
 
       render(<SettingsPage />);
-      await screen.findByText(/todos usam a senha master/);
+      await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
       fireEvent.change(screen.getByLabelText(/Email/), { target: { value: "nova@clinica.com" } });
@@ -637,7 +637,7 @@ describe("Feature: SettingsPage", () => {
       });
 
       render(<SettingsPage />);
-      await screen.findByText(/todos usam a senha master/);
+      await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
       fireEvent.change(screen.getByLabelText(/Email/), { target: { value: "nova@clinica.com" } });
@@ -671,7 +671,7 @@ describe("Feature: SettingsPage", () => {
       });
 
       render(<SettingsPage />);
-      await screen.findByText(/todos usam a senha master/);
+      await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
       fireEvent.change(screen.getByLabelText(/Email/), { target: { value: "nova-prof@clinica.com" } });
@@ -700,7 +700,7 @@ describe("Feature: SettingsPage", () => {
       });
 
       render(<SettingsPage />);
-      await screen.findByText(/todos usam a senha master/);
+      await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
       expect(await screen.findByText("Nova conta de acesso")).toBeInTheDocument();
@@ -729,7 +729,7 @@ describe("Feature: SettingsPage", () => {
       });
 
       render(<SettingsPage />);
-      await screen.findByText(/todos usam a senha master/);
+      await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
       fireEvent.change(screen.getByLabelText(/Email/), { target: { value: "nova@clinica.com" } });
@@ -755,7 +755,7 @@ describe("Feature: SettingsPage", () => {
       });
 
       render(<SettingsPage />);
-      await screen.findByText(/todos usam a senha master/);
+      await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
       fireEvent.change(screen.getByLabelText(/Email/), { target: { value: "nova@clinica.com" } });

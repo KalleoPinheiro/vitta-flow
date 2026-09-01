@@ -2,7 +2,9 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
   ADMIN_STORAGE_STATE_PATH,
-  E2E_AUTH_PASSWORD,
+  E2E_ADMIN_EMAIL,
+  E2E_ADMIN_PASSWORD,
+  E2E_BOOTSTRAP_TOKEN,
   MAIN_BASE_URL,
   SEED_DATA_PATH,
   SESSION_COOKIE_NAME,
@@ -12,9 +14,11 @@ import {
  * Roda uma vez antes de toda a suíte (depois que o(s) `webServer` já respondem —
  * Playwright só chama `globalSetup` após a checagem de `url` do webServer passar).
  *
- * 1. Loga como super_admin (senha mestre) no servidor principal e salva o cookie de
- *    sessão como `storageState` — reaproveitado por padrão em todos os specs
- *    (ver `use.storageState` em `playwright.config.ts`).
+ * 1. Faz o bootstrap do primeiro Super Admin (`POST /api/auth/bootstrap`, guardado
+ *    por `VITTA_BOOTSTRAP_TOKEN`), consome o convite para definir a senha e loga —
+ *    o mesmo caminho que uma instalação nova percorre, agora que não existe mais
+ *    senha mestre (issue #21 / ADR-004). O cookie vira `storageState`, reaproveitado
+ *    por padrão em todos os specs (ver `use.storageState` em `playwright.config.ts`).
  * 2. Semeia dados base via REST (profissional, procedimentos com kit, insumos
  *    com lote) e grava os IDs em `e2e/support/seed-data.json` para os specs.
  */
@@ -54,22 +58,60 @@ async function put<T>(cookie: string, url: string, data: unknown): Promise<T> {
   return body.data;
 }
 
-async function loginAsAdmin(): Promise<string> {
-  const response = await fetch(`${MAIN_BASE_URL}/api/auth/login`, {
+/**
+ * Cria o primeiro Super Admin e devolve o link do convite. Sem canal de e-mail
+ * configurado (o servidor da suíte não tem), a rota devolve o link na resposta —
+ * é o único jeito de alcançá-lo fora de produção.
+ */
+async function bootstrapSuperAdmin(): Promise<string> {
+  const response = await fetch(`${MAIN_BASE_URL}/api/auth/bootstrap`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-bootstrap-token": E2E_BOOTSTRAP_TOKEN },
+    body: JSON.stringify({ email: E2E_ADMIN_EMAIL }),
+  });
+  const body = (await response.json()) as Envelope<{ inviteUrl: string | null }>;
+  if (!response.ok || !body.success || !body.data?.inviteUrl) {
+    throw new Error(
+      `Bootstrap do Super Admin falhou no global-setup (${response.status}): ${body.error ?? "?"}. ` +
+        "Verifique se AUTH_SECRET/VITTA_BOOTSTRAP_TOKEN do webServer principal batem com e2e/support/constants.ts.",
+    );
+  }
+  return body.data.inviteUrl;
+}
+
+async function consumeInvite(inviteUrl: string): Promise<void> {
+  const token = new URL(inviteUrl).searchParams.get("token");
+  if (!token) {
+    throw new Error(`Link de convite sem token: ${inviteUrl}`);
+  }
+  const response = await fetch(`${MAIN_BASE_URL}/api/auth/set-password`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ password: E2E_AUTH_PASSWORD }),
+    body: JSON.stringify({ token, password: E2E_ADMIN_PASSWORD }),
   });
   const body = (await response.json()) as Envelope<{ ok: boolean }>;
   if (!response.ok || !body.success) {
     throw new Error(
-      `Login mestre falhou no global-setup (${response.status}): ${body.error ?? "?"}. ` +
-        "Verifique se AUTH_SECRET/AUTH_PASSWORD do webServer principal batem com e2e/support/constants.ts.",
+      `Definição da senha do Super Admin falhou (${response.status}): ${body.error ?? "?"}`,
+    );
+  }
+}
+
+async function loginAsAdmin(): Promise<string> {
+  const response = await fetch(`${MAIN_BASE_URL}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: E2E_ADMIN_EMAIL, password: E2E_ADMIN_PASSWORD }),
+  });
+  const body = (await response.json()) as Envelope<{ ok: boolean }>;
+  if (!response.ok || !body.success) {
+    throw new Error(
+      `Login do Super Admin falhou no global-setup (${response.status}): ${body.error ?? "?"}`,
     );
   }
   const setCookie = response.headers.get("set-cookie");
   if (!setCookie) {
-    throw new Error("Login mestre não retornou Set-Cookie");
+    throw new Error("Login do Super Admin não retornou Set-Cookie");
   }
   // Formato: "vitta_session=xxx; Path=/; HttpOnly; SameSite=Lax" — só o par nome=valor interessa.
   const pair = setCookie.split(";")[0];
@@ -173,6 +215,7 @@ async function seedBaseData(cookie: string): Promise<SeedIds> {
 }
 
 export default async function globalSetup(): Promise<void> {
+  await consumeInvite(await bootstrapSuperAdmin());
   const cookie = await loginAsAdmin();
   await writeStorageState(cookie);
   const seed = await seedBaseData(cookie);

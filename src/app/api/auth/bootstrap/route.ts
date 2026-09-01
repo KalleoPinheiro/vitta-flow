@@ -71,11 +71,19 @@ export async function POST(request: NextRequest) {
       clinicId: null,
     });
     await services.userAccounts.save(account);
-    await new IssueAuthToken(services.authTokens, services.email).execute({
+    const inviteUrl = await new IssueAuthToken(services.authTokens, services.email).execute({
       account,
       purpose: "invite",
       appUrl: appUrlFromEnv(),
     });
-    return { email: account.email, role: account.role };
+    return {
+      email: account.email,
+      role: account.role,
+      // Sem canal de e-mail (dev, testes, `NullEmailGateway`) o link não chega a
+      // lugar nenhum — devolvê-lo aqui é o que torna o bootstrap utilizável
+      // nesses ambientes. Em produção o gateway falha na inicialização quando
+      // não há credenciais, então `enabled` é sempre true e o campo vem nulo.
+      inviteUrl: services.email.enabled ? null : inviteUrl,
+    };
   });
 }

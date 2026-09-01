@@ -64,11 +64,46 @@ describe("Feature: POST /api/auth/bootstrap (primeiro Super Admin)", () => {
     const response = await route.POST(
       bootstrapRequest({ email: "fundador@clinica.com" }, withToken()),
     );
-    const json = (await response.json()) as Envelope<{ email: string; role: string }>;
+    const json = (await response.json()) as Envelope<{
+      email: string;
+      role: string;
+      inviteUrl: string | null;
+    }>;
     emails.restore();
 
     expect(response.status).toBe(200);
-    expect(json.data).toEqual({ email: "fundador@clinica.com", role: "super_admin" });
+    expect(json.data.email).toBe("fundador@clinica.com");
+    expect(json.data.role).toBe("super_admin");
+  });
+
+  it("Dado o gateway de e-mail desativado (dry-run), Quando POST, Então a resposta traz o link do convite", async () => {
+    const route = await import("@/app/api/auth/bootstrap/route");
+    const emails = spyOnSentEmails();
+
+    const response = await route.POST(
+      bootstrapRequest({ email: "sem-canal@clinica.com" }, withToken()),
+    );
+    const json = (await response.json()) as Envelope<{ inviteUrl: string | null }>;
+    emails.restore();
+
+    expect(json.data.inviteUrl).toContain("https://app.vitta.test/definir-senha?token=");
+  });
+
+  it("Dado um canal de e-mail ativo, Quando POST, Então o link NÃO é devolvido na resposta", async () => {
+    // Com credenciais presentes o container monta o gateway real (enabled), que
+    // é o caminho de produção; o `fetch` é interceptado para não sair nada.
+    process.env.RESEND_API_KEY = "re_fixture_de_teste"; // gitleaks:allow — fixture de teste, não é credencial
+    process.env.EMAIL_FROM = "clinica@vitta.test";
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true })));
+    const route = await import("@/app/api/auth/bootstrap/route");
+
+    const response = await route.POST(
+      bootstrapRequest({ email: "com-canal@clinica.com" }, withToken()),
+    );
+    const json = (await response.json()) as Envelope<{ inviteUrl: string | null }>;
+
+    expect(json.data.inviteUrl).toBeNull();
+    vi.unstubAllGlobals();
   });
 
   it("Dado o bootstrap concluído, Quando conferir o e-mail, Então recebeu o convite para definir a senha", async () => {

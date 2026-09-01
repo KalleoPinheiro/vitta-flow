@@ -461,16 +461,18 @@ T20 → T21
 
 **Done when**:
 
-- [ ] Sessão de equipe recebe redirect para `accounts.google.com` com `access_type=offline` e o escopo de Calendar
-- [ ] Chamada sem sessão responde 401
-- [ ] Chamada sem config responde 503
-- [ ] Gate check passes: `npx vitest run tests/api/calendar-integration-routes.test.ts`
-- [ ] Test count: 4 tests pass (no silent deletions)
+- [x] Sessão de equipe recebe redirect para `accounts.google.com` com `access_type=offline` e o escopo de Calendar
+- [x] Chamada sem sessão responde 401
+- [x] Chamada sem config responde 503
+- [x] Gate check passes: `npx vitest run tests/api/calendar-integration-routes.test.ts`
+- [x] Test count: 4 tests pass (no silent deletions)
 
 **Tests**: integration
 **Gate**: full
 
 **Commit**: `feat(calendar): inicia conexao do Google Agenda por sessao nativa`
+
+**Status**: ✅ Done
 
 ---
 

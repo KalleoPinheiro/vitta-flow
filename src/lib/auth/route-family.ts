@@ -41,6 +41,9 @@ const ADMINISTRATIVE_PREFIXES = [
   "/api/admin",
   "/api/clinic-info",
   "/api/taxonomy",
+  // Conectar a agenda do Google é ato administrativo da empresa, não operação
+  // de atendimento — mesma família de /api/clinic-info.
+  "/api/integrations",
 ];
 
 function startsWithAny(pathname: string, prefixes: readonly string[]): boolean {

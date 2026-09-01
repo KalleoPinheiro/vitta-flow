@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "uq_user_accounts_super_admin_email" ON "user_accounts" USING btree ("email") WHERE "user_accounts"."clinic_id" IS NULL;

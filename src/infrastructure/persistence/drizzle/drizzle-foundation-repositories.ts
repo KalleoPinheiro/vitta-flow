@@ -2,7 +2,7 @@ import { asc, eq, sql } from "drizzle-orm";
 import { Procedure } from "@/domain/catalog/procedure";
 import type { ProcedureRepository } from "@/domain/catalog/procedure-repository";
 import { UserAccount, type UserAccountRepository } from "@/domain/auth/user-account";
-import type { UserRole } from "@/domain/auth/user-role";
+import { USER_ROLES, type UserRole } from "@/domain/auth/user-role";
 import {
   validateScheduleConfig,
   type ScheduleConfig,
@@ -80,6 +80,13 @@ export class DrizzleProcedureRepository implements ProcedureRepository {
   }
 }
 
+function toUserRole(value: string): UserRole {
+  if (!(USER_ROLES as readonly string[]).includes(value)) {
+    throw new Error(`Papel de conta inválido persistido: "${value}"`);
+  }
+  return value as UserRole;
+}
+
 export class DrizzleUserAccountRepository implements UserAccountRepository {
   constructor(
     private readonly db: AppDb,
@@ -116,7 +123,7 @@ export class DrizzleUserAccountRepository implements UserAccountRepository {
         withTenant(userAccounts, this.clinicId, eq(userAccounts.email, email.trim().toLowerCase())),
       )
       .limit(1);
-    return rows[0] ? UserAccount.restore({ ...rows[0], role: rows[0].role as UserRole }) : null;
+    return rows[0] ? UserAccount.restore({ ...rows[0], role: toUserRole(rows[0].role) }) : null;
   }
 
   async findAll(): Promise<UserAccount[]> {
@@ -126,7 +133,7 @@ export class DrizzleUserAccountRepository implements UserAccountRepository {
       .where(withTenant(userAccounts, this.clinicId))
       .orderBy(asc(userAccounts.email))
       .limit(MAX_ROWS);
-    return rows.map((row) => UserAccount.restore({ ...row, role: row.role as UserRole }));
+    return rows.map((row) => UserAccount.restore({ ...row, role: toUserRole(row.role) }));
   }
 }
 

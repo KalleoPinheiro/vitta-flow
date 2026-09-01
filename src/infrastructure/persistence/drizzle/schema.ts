@@ -105,6 +105,13 @@ export const userAccounts = pgTable(
   (table) => [
     // E-mail de login único por empresa, não globalmente (MT-06, ADR-003).
     uniqueIndex("uq_user_accounts_clinic_email").on(table.clinicId, table.email),
+    // Postgres trata NULL como distinto em índice único composto — sem este
+    // índice parcial, duas contas super_admin (clinic_id NULL) poderiam ter
+    // o mesmo email, e o login (findByEmail + LIMIT 1) escolheria uma
+    // identidade de forma ambígua.
+    uniqueIndex("uq_user_accounts_super_admin_email")
+      .on(table.email)
+      .where(sql`${table.clinicId} IS NULL`),
     index("idx_user_accounts_clinic").on(table.clinicId),
   ],
 );

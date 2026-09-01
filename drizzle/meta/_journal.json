@@ -155,6 +155,13 @@
       "when": 1788198589124,
       "tag": "0021_professional-patient-links",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1788223603224,
+      "tag": "0022_add-super-admin-email-unique-index",
+      "breakpoints": true
     }
   ]
 }

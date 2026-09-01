@@ -40,11 +40,14 @@ export class InMemoryPatientRepository implements PatientRepository {
   }
 
   async findAll(search?: string, page: PatientPage = {}): Promise<Patient[]> {
+    if (page.ids && page.ids.length === 0) {
+      return [];
+    }
     const all = [...this.patients.values()].sort((a, b) =>
       a.fullName.localeCompare(b.fullName),
     );
     const term = search?.toLowerCase();
-    const filtered = term
+    const byTerm = term
       ? all.filter(
           (p) =>
             p.fullName.toLowerCase().includes(term) ||
@@ -52,6 +55,7 @@ export class InMemoryPatientRepository implements PatientRepository {
             p.phone.includes(term),
         )
       : all;
+    const filtered = page.ids ? byTerm.filter((p) => page.ids!.includes(p.id)) : byTerm;
     const offset = page.offset ?? 0;
     return page.limit != null
       ? filtered.slice(offset, offset + page.limit)

@@ -33,8 +33,23 @@ export async function GET(request: NextRequest) {
       limit: params.get("limit") ?? undefined,
       offset: params.get("offset") ?? undefined,
     });
-    const { patients } = await getRepositories({ clinicId: guard.session?.clinicId ?? null });
-    const result = await new ListPatients(patients).execute({ search, limit, offset });
+    const { patients, professionalPatientLinks } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? null,
+    });
+    // Escopo dinâmico do Profissional (R4/RBAC-17): a listagem só mostra
+    // pacientes com quem o profissional tem vínculo registrado.
+    let allowedPatientIds: string[] | undefined;
+    if (guard.session?.role === "profissional") {
+      allowedPatientIds = guard.session.professionalId
+        ? await professionalPatientLinks.findLinkedPatientIds(guard.session.professionalId)
+        : [];
+    }
+    const result = await new ListPatients(patients).execute({
+      search,
+      limit,
+      offset,
+      allowedPatientIds,
+    });
     return result.map((p) => toPatientDto(p));
   });
 }

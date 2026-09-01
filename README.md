@@ -2,54 +2,18 @@
 
 Sistema de gestão completo para clínica de estomaterapia: prontuário eletrônico (anamnese, evolução SOAP, acompanhamento de estomias e feridas), agenda com calendário e regras de negócio, faturamento, estoque de insumos, recall de retornos e relatórios gerenciais.
 
-⚙️ Setup local detalhado: [docs/setup-local.md](docs/setup-local.md)
+⚙️ Rodar localmente (passo a passo): [docs/runbooks/rodar-localmente.md](docs/runbooks/rodar-localmente.md) — referência completa: [docs/setup-local.md](docs/setup-local.md)
 📄 PRD do módulo clínico: [docs/planning/product/prd-fase-1.md](docs/planning/product/prd-fase-1.md)
 🔐 Análise de segurança/escalabilidade + plano de ação: [docs/audits/analise-seguranca-escalabilidade.md](docs/audits/analise-seguranca-escalabilidade.md)
 🎨 Lacunas do design system, para backlog da lib: [docs/still-void-gaps.md](docs/still-void-gaps.md)
 
 ## Como rodar
 
-### Com Docker Compose (recomendado)
+Passo a passo completo, do `.env` até o primeiro login: **[docs/runbooks/rodar-localmente.md](docs/runbooks/rodar-localmente.md)**.
 
-Pré-requisito: Docker + Docker Compose. Sobe PostgreSQL 16 + aplicação; as migrações do Drizzle rodam automaticamente na primeira requisição.
+Resumo: `cp .env.example .env` → preenche `AUTH_SECRET`/`VITTA_BOOTSTRAP_TOKEN`/e-mail → `docker compose up -d --build` → cria o Super Admin via `POST /api/auth/bootstrap` → app em http://localhost:3000.
 
-```bash
-cp .env.example .env
-# edite .env e preencha, no mínimo:
-#   AUTH_SECRET=$(openssl rand -hex 32)
-#   VITTA_BOOTSTRAP_TOKEN=$(openssl rand -hex 24)
-#   RESEND_API_KEY=...   EMAIL_FROM="VittaFlow <nao-responda@suaclinica.com>"
-# o compose lê o .env sozinho, e o mesmo arquivo alimenta o curl abaixo
-docker compose up -d --build
-# aplicação: http://localhost:3000
-# postgres:  localhost:5432 (vitta/vitta, database vitta)
-
-# primeira conta (instalação vazia): cria o Super Admin e envia o convite.
-# o compose devolve o controle antes de o Next aceitar conexões — espere subir:
-until curl -sf http://localhost:3000/api/auth/providers >/dev/null; do sleep 2; done
-set -a; . ./.env; set +a
-curl -sX POST http://localhost:3000/api/auth/bootstrap \
-  -H "Content-Type: application/json" \
-  -H "x-bootstrap-token: $VITTA_BOOTSTRAP_TOKEN" \
-  -d '{"email":"voce@suaclinica.com"}'
-# o link de convite chega por e-mail; se o envio falhar (ex.: chave de teste),
-# a resposta traz `inviteUrl` para você abrir e definir a senha
-```
-
-Portas ocupadas? Use variáveis: `POSTGRES_PORT=5477 APP_PORT=3001 docker compose up -d`.
-
-Para parar: `docker compose down` (dados ficam no volume `pgdata`; `down -v` apaga).
-
-### Desenvolvimento local (Node + Postgres do compose)
-
-Pré-requisito: Node.js 20+ (testado com 24).
-
-```bash
-docker compose up -d db          # só o PostgreSQL
-cp .env.example .env             # DATABASE_URL já aponta para localhost:5432
-npm install
-npm run dev                      # http://localhost:3000
-```
+Alternativa com hot reload (Node local + só o Postgres do compose): mesmo runbook, seção "Alternativa".
 
 ### Variáveis de ambiente
 

@@ -1,8 +1,6 @@
-# Setup local — VittaFlow
+# Setup local — VittaFlow (referência)
 
-Referência completa: pré-requisitos, variáveis de ambiente, estrutura do projeto, scripts, testes, segurança. Pra passo a passo operacional (subir a stack, configurar Resend/Google Agenda/WhatsApp, bootstrap do primeiro acesso), ver [`runbooks/`](./runbooks/) — os dois se complementam, este arquivo é o "porquê e o que existe", os runbooks são o "faz assim".
-
-Duas vias pra rodar local: Docker Compose (recomendado) ou Node direto contra Postgres do compose.
+**Pra rodar a aplicação do zero até o primeiro login, siga [`runbooks/rodar-localmente.md`](./runbooks/rodar-localmente.md) — é o passo a passo completo e autossuficiente.** Este arquivo é a referência de apoio: pré-requisitos, todas as variáveis, estrutura do projeto, scripts, testes, segurança.
 
 ## Pré-requisitos
 
@@ -16,20 +14,7 @@ Duas vias pra rodar local: Docker Compose (recomendado) ou Node direto contra Po
 
 ## Via A — Docker Compose (recomendado)
 
-Sobe Postgres 16 + app numa tacada. Migrações Drizzle rodam sozinhas no boot (advisory lock, seguro com múltiplas réplicas). Passo a passo completo, do `.env` até login funcionando: [`runbooks/rodar-localmente.md`](./runbooks/rodar-localmente.md).
-
-- App: http://localhost:3000 (login com o e-mail e a senha definidos pelo convite)
-- Postgres: `localhost:5432` (user/pass `vitta`/`vitta`, db `vitta`)
-
-Porta ocupada? Sobrescreve:
-
-```bash
-POSTGRES_PORT=5477 APP_PORT=3001 docker compose up -d --build   # demais valores vêm do .env
-```
-
-Parar: `docker compose down` (volume `pgdata` mantém dados). Apagar dados: `docker compose down -v`.
-
-Rebuild após mudar código: repete o `docker compose up -d --build` (Dockerfile faz build multi-stage: deps → build → runner standalone).
+Passo a passo: [`runbooks/rodar-localmente.md`](./runbooks/rodar-localmente.md).
 
 ## Via B — Node local + Postgres do compose
 
@@ -75,7 +60,7 @@ Copia `.env.example` → `.env` e ajusta. Referência completa:
 | `CLINIC_NAME` / `CLINIC_CNPJ` / `CLINIC_ADDRESS` / `CLINIC_CITY` / `CLINIC_PROFESSIONAL_NAME` / `CLINIC_PROFESSIONAL_REGISTRY` | Não | Cabeçalho/assinatura de documentos clínicos |
 | `WHATSAPP_TOKEN` / `WHATSAPP_PHONE_NUMBER_ID` | Não | Lembretes via WhatsApp (Meta Cloud API); sem elas roda em dry-run |
 
-Existe um único método de login: e-mail + senha da própria conta (ADR-004). Produção sem `AUTH_SECRET`: 503 fail-closed. A primeira conta de uma instalação vazia sai de `POST /api/auth/bootstrap` (header `x-bootstrap-token`); depois disso a rota responde 403 para sempre — passo a passo em [`runbooks/bootstrap-primeiro-acesso.md`](./runbooks/bootstrap-primeiro-acesso.md).
+Existe um único método de login: e-mail + senha da própria conta (ADR-004). Produção sem `AUTH_SECRET`: 503 fail-closed. A primeira conta de uma instalação vazia sai de `POST /api/auth/bootstrap` (header `x-bootstrap-token`); depois disso a rota responde 403 para sempre — passo a passo em [`runbooks/rodar-localmente.md`](./runbooks/rodar-localmente.md).
 
 ### Modo aberto (dev/demo sem login)
 
@@ -169,7 +154,7 @@ Detalhes completos (por que reproduzir local, divergência de scanner hospedado,
 | 503 em toda rota | Sem `AUTH_SECRET` nem `VITTA_ALLOW_OPEN_MODE` | Define `AUTH_SECRET` ou `VITTA_ALLOW_OPEN_MODE=true` (fora de produção) |
 | Porta 5432/3000 ocupada | Outro serviço na porta | `POSTGRES_PORT=`/`APP_PORT=` no compose, ou ajusta `DATABASE_URL` na via B |
 | Build mata processo (`Ineffective mark-compacts`) | Heap V8 padrão baixo pra máquina | Já mitigado via `--max-old-space-size=4096`; se persistir, sobe o valor em `package.json` |
-| Bootstrap responde 403 | Já existe conta, ou `x-bootstrap-token` não bate com `VITTA_BOOTSTRAP_TOKEN` | Use "esqueci minha senha" se a instalação já tem contas; detalhes em [`runbooks/bootstrap-primeiro-acesso.md`](./runbooks/bootstrap-primeiro-acesso.md) |
+| Bootstrap responde 403 | Já existe conta, ou `x-bootstrap-token` não bate com `VITTA_BOOTSTRAP_TOKEN` | Use "esqueci minha senha" se a instalação já tem contas; detalhes em [`runbooks/rodar-localmente.md`](./runbooks/rodar-localmente.md) |
 | Convite/reset não chega | Sem `RESEND_API_KEY`/`EMAIL_FROM` fora de produção, o gateway é dry-run | O link sai no log do servidor (`[e-mail desativado] …`); configura de vez em [`runbooks/configurar-resend.md`](./runbooks/configurar-resend.md) |
 | `docker compose up` falha com "required variable ... is missing a value" | `.env` sem uma variável marcada obrigatória no `docker-compose.yml` (ex.: `RESEND_API_KEY`/`EMAIL_FROM`) | Preenche no `.env` antes de subir |
 | Consulta rejeitada com 400 | Fora do horário comercial (seg-sex 08h-18h, `TZ`) | Ajusta horário ou `TZ` |

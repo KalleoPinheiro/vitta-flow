@@ -491,17 +491,19 @@ T20 → T21
 
 **Done when**:
 
-- [ ] Callback com `state` correto persiste a credencial cifrada sob o `subject` da sessão
-- [ ] Resposta não contém `Set-Cookie` do cookie de sessão
-- [ ] `state` ausente ou divergente não persiste credencial
-- [ ] Chamada sem sessão responde 401
-- [ ] Gate check passes: `npx vitest run tests/api/calendar-integration-routes.test.ts`
-- [ ] Test count: 6 novos tests pass (no silent deletions)
+- [x] Callback com `state` correto persiste a credencial cifrada sob o `subject` da sessão
+- [x] Resposta não contém `Set-Cookie` do cookie de sessão
+- [x] `state` ausente ou divergente não persiste credencial
+- [x] Chamada sem sessão responde 401
+- [x] Gate check passes: `npx vitest run tests/api/calendar-integration-routes.test.ts`
+- [x] Test count: 6 novos tests pass (no silent deletions)
 
 **Tests**: integration
 **Gate**: full
 
 **Commit**: `feat(calendar): conclui conexao do Google Agenda sem tocar na sessao`
+
+**Status**: ✅ Done
 
 ---
 

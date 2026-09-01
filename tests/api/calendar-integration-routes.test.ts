@@ -1,8 +1,9 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { cookieHeaderFor } from "../support/session";
-import { CLINIC_A_ID } from "../support/clinics";
+import { ensureTestClinics, CLINIC_A_ID } from "../support/clinics";
 import { CALENDAR_OAUTH_STATE_COOKIE } from "@/lib/auth/google-calendar-oauth";
+import { SESSION_COOKIE } from "@/lib/auth/session";
 
 /**
  * O cliente OAuth é interceptável para os casos de callback (a troca do `code`
@@ -23,15 +24,27 @@ vi.mock("@/lib/auth/google-oauth-client", async (importOriginal) => {
 
 process.env.VITTA_DB_DRIVER = "pglite";
 
+interface Envelope<T> {
+  success: boolean;
+  data: T;
+  error: string | null;
+}
+
 const staffHeaders = (): Record<string, string> =>
   cookieHeaderFor("company_admin", "agenda@clinica.com", CLINIC_A_ID);
 
 const getRequest = (url: string, headers: Record<string, string> = staffHeaders()) =>
   new NextRequest(`http://localhost${url}`, { method: "GET", headers });
 
+/** Cookie de sessão + cookie de estado do OAuth na mesma requisição. */
+const withState = (state: string, headers: Record<string, string> = staffHeaders()) => ({
+  ...headers,
+  cookie: `${headers.cookie}; ${CALENDAR_OAUTH_STATE_COOKIE}=${state}`,
+});
+
 /**
- * AUTH-15 / AUTH-16: conectar a agenda é uma integração iniciada por sessão
- * nativa de equipe — sem sessão, o fluxo nem começa.
+ * AUTH-15..AUTH-19: conectar a agenda é uma integração iniciada por sessão
+ * nativa; o fluxo nunca cria, renova ou troca sessão.
  */
 describe("Feature: Conexão do Google Agenda desacoplada do login", () => {
   const originalEnv = { ...process.env };
@@ -98,4 +111,128 @@ describe("Feature: Conexão do Google Agenda desacoplada do login", () => {
     });
   });
 
+  describe("Cenário: concluir a conexão", () => {
+    const callbackRoute = async () =>
+      import("@/app/api/integrations/google-calendar/callback/route");
+
+    /**
+     * O cliente OAuth real faria uma chamada HTTP ao Google; só o contrato
+     * importa aqui (trocar o `code` por um refresh token).
+     */
+    const stubTokenExchange = (tokens: { refresh_token?: string | null }) => {
+      oauthClientMock.mockReturnValue({ getToken: async () => ({ tokens }) });
+    };
+
+    it("Dado state conferindo e refresh token, Quando GET no callback, Então persiste a credencial cifrada sob o subject da sessão", async () => {
+      await ensureTestClinics();
+      stubTokenExchange({ refresh_token: "refresh-token-real" });
+      const route = await callbackRoute();
+
+      const response = await route.GET(
+        getRequest(
+          "/api/integrations/google-calendar/callback?code=abc&state=estado-1",
+          withState("estado-1"),
+        ),
+      );
+
+      expect(response.status).toBe(307);
+      const { getRepositories } = await import("@/infrastructure/container");
+      const { googleAccounts } = await getRepositories({ clinicId: CLINIC_A_ID });
+      const stored = await googleAccounts.findByEmail("agenda@clinica.com");
+      expect(stored).not.toBeNull();
+      expect(stored!.encryptedRefreshToken).not.toContain("refresh-token-real");
+    });
+
+    it("Dado a conexão concluída, Quando ler a resposta, Então nenhum cookie de sessão é emitido", async () => {
+      await ensureTestClinics();
+      stubTokenExchange({ refresh_token: "outro-refresh" });
+      const route = await callbackRoute();
+
+      const response = await route.GET(
+        getRequest(
+          "/api/integrations/google-calendar/callback?code=abc&state=estado-2",
+          withState("estado-2"),
+        ),
+      );
+
+      expect(response.headers.get("set-cookie") ?? "").not.toContain(`${SESSION_COOKIE}=`);
+    });
+
+    it("Dado state divergente do cookie, Quando GET no callback, Então responde 400 e não persiste credencial", async () => {
+      await ensureTestClinics();
+      stubTokenExchange({ refresh_token: "nao-deve-salvar" });
+      const route = await callbackRoute();
+
+      const response = await route.GET(
+        getRequest(
+          "/api/integrations/google-calendar/callback?code=abc&state=estado-forjado",
+          withState("estado-real"),
+        ),
+      );
+      const json = (await response.json()) as Envelope<null>;
+
+      expect(response.status).toBe(400);
+      expect(json.error).toContain("Fluxo de conexão inválido");
+    });
+
+    it("Dado state ausente na query, Quando GET no callback, Então responde 400", async () => {
+      const route = await callbackRoute();
+
+      const response = await route.GET(
+        getRequest("/api/integrations/google-calendar/callback?code=abc", withState("estado-3")),
+      );
+
+      expect(response.status).toBe(400);
+    });
+
+    it("Dado o Google não devolver refresh token, Quando GET no callback, Então responde 400 e não persiste credencial", async () => {
+      await ensureTestClinics();
+      stubTokenExchange({ refresh_token: null });
+      const route = await callbackRoute();
+
+      const response = await route.GET(
+        getRequest(
+          "/api/integrations/google-calendar/callback?code=abc&state=estado-4",
+          withState("estado-4"),
+        ),
+      );
+      const json = (await response.json()) as Envelope<null>;
+
+      expect(response.status).toBe(400);
+      expect(json.error).toContain("credencial de longa duração");
+    });
+
+    it("Dado falha na troca do code, Quando GET no callback, Então responde 502", async () => {
+      await ensureTestClinics();
+      oauthClientMock.mockReturnValue({
+        getToken: async () => {
+          throw new Error("invalid_grant");
+        },
+      });
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
+      const route = await callbackRoute();
+
+      const response = await route.GET(
+        getRequest(
+          "/api/integrations/google-calendar/callback?code=abc&state=estado-5",
+          withState("estado-5"),
+        ),
+      );
+
+      expect(response.status).toBe(502);
+    });
+
+    it("Dado nenhuma sessão, Quando GET no callback, Então responde 401", async () => {
+      const route = await callbackRoute();
+
+      const response = await route.GET(
+        new NextRequest(
+          "http://localhost/api/integrations/google-calendar/callback?code=abc&state=x",
+          { method: "GET" },
+        ),
+      );
+
+      expect(response.status).toBe(401);
+    });
+  });
 });

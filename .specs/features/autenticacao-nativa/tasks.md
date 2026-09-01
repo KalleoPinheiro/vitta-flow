@@ -372,16 +372,18 @@ T20 → T21
 
 **Done when**:
 
-- [ ] Após reset, login com a senha antiga responde 401 e com a nova responde 200
-- [ ] Token de reset expirado e token já usado respondem 400 com a mensagem única
-- [ ] Emitir um segundo reset invalida o primeiro link
-- [ ] Gate check passes: `npx vitest run tests/api/reset-password-flow.test.ts`
-- [ ] Test count: 5 tests pass (no silent deletions)
+- [x] Após reset, login com a senha antiga responde 401 e com a nova responde 200
+- [x] Token de reset expirado e token já usado respondem 400 com a mensagem única
+- [x] Emitir um segundo reset invalida o primeiro link
+- [x] Gate check passes: `npx vitest run tests/api/reset-password-flow.test.ts`
+- [x] Test count: 5 tests pass (no silent deletions)
 
 **Tests**: integration
 **Gate**: full
 
 **Commit**: `test(auth): cobre o ciclo completo de reset de senha`
+
+**Status**: ✅ Done
 
 ---
 

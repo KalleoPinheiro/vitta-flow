@@ -17,16 +17,32 @@ Guia detalhado pra configurar e rodar app local. Duas vias: Docker Compose (reco
 Sobe Postgres 16 + app numa tacada. Migrações Drizzle rodam sozinhas no boot (advisory lock, seguro com múltiplas réplicas).
 
 ```bash
-AUTH_PASSWORD=sua-senha AUTH_SECRET=$(openssl rand -hex 32) docker compose up -d --build
+cp .env.example .env
+# edite .env e preencha, no mínimo:
+#   AUTH_SECRET=$(openssl rand -hex 32)
+#   VITTA_BOOTSTRAP_TOKEN=$(openssl rand -hex 24)
+#   RESEND_API_KEY=...   EMAIL_FROM="VittaFlow <nao-responda@suaclinica.com>"
+# o compose lê o .env sozinho, e o mesmo arquivo alimenta o curl abaixo
+docker compose up -d --build
+# primeira conta (instalação vazia): cria o Super Admin e envia o convite.
+# o compose devolve o controle antes de o Next aceitar conexões — espere subir:
+until curl -sf http://localhost:3000/api/auth/providers >/dev/null; do sleep 2; done
+set -a; . ./.env; set +a
+curl -sX POST http://localhost:3000/api/auth/bootstrap \
+  -H "Content-Type: application/json" \
+  -H "x-bootstrap-token: $VITTA_BOOTSTRAP_TOKEN" \
+  -d '{"email":"voce@suaclinica.com"}'
+# o link de convite chega por e-mail; se o envio falhar (ex.: chave de teste),
+# a resposta traz `inviteUrl` para você abrir e definir a senha
 ```
 
-- App: http://localhost:3000 (login com `AUTH_PASSWORD`)
+- App: http://localhost:3000 (login com o e-mail e a senha definidos pelo convite)
 - Postgres: `localhost:5432` (user/pass `vitta`/`vitta`, db `vitta`)
 
 Porta ocupada? Sobrescreve:
 
 ```bash
-POSTGRES_PORT=5477 APP_PORT=3001 AUTH_PASSWORD=sua-senha AUTH_SECRET=$(openssl rand -hex 32) docker compose up -d --build
+POSTGRES_PORT=5477 APP_PORT=3001 docker compose up -d --build   # demais valores vêm do .env
 ```
 
 Parar: `docker compose down` (volume `pgdata` mantém dados). Apagar dados: `docker compose down -v`.
@@ -44,7 +60,7 @@ npm install
 npm run dev                      # http://localhost:3000
 ```
 
-Sem autenticação configurada (`AUTH_PASSWORD`/`AUTH_SECRET` vazios) e fora de produção: app roda em **modo aberto** com aviso — ver seção Auth abaixo. Se quiser senha local, edita `.env` e reinicia `npm run dev`.
+Sem autenticação configurada (`AUTH_SECRET` vazio) e com `VITTA_ALLOW_OPEN_MODE=true`, fora de produção: app roda em **modo aberto** com aviso — ver seção Auth abaixo. Para exercitar o login real, define `AUTH_SECRET` + `VITTA_BOOTSTRAP_TOKEN` e faz o bootstrap.
 
 ### Migrações manuais (opcional)
 
@@ -62,11 +78,11 @@ Copia `.env.example` → `.env` e ajusta. Referência completa:
 | Variável | Obrigatória | Descrição |
 |---|---|---|
 | `DATABASE_URL` | Sim (fora do compose) | `postgres://vitta:vitta@localhost:5432/vitta` |
-| `AUTH_PASSWORD` | Sim em produção* | Senha de acesso (login local da equipe) |
 | `AUTH_SECRET` | Sim em produção | Assina sessão + cifra credenciais — `openssl rand -hex 32` |
-| `APP_URL` | P/ login Google | URL pública (redirect OAuth), ex. `http://localhost:3000` |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | P/ login Google | OAuth client (Web) no Google Cloud Console |
-| `GOOGLE_ALLOWED_EMAILS` | P/ login Google | Allowlist obrigatória, emails separados por vírgula |
+| `APP_URL` | Sim em produção | URL pública — links de convite/reset e redirect do OAuth da agenda |
+| `RESEND_API_KEY` / `EMAIL_FROM` | Sim em produção | E-mail transacional (convite/reset). Faltando em produção, a inicialização falha |
+| `VITTA_BOOTSTRAP_TOKEN` | P/ primeira conta | Header `x-bootstrap-token` em `POST /api/auth/bootstrap` |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | P/ Google Agenda | OAuth client (Web) — integração de agenda, nunca login |
 | `TZ` | Recomendada | Fuso da clínica (horário comercial validado em hora local) |
 | `CRON_SECRET` | P/ lembretes | Header `x-cron-secret` em `POST /api/reminders/run`; sem ele rota fica 503 |
 | `API_RATE_LIMIT_MAX` | Não | Req/min por IP em `/api/*` (padrão 120) |
@@ -77,7 +93,7 @@ Copia `.env.example` → `.env` e ajusta. Referência completa:
 | `CLINIC_NAME` / `CLINIC_CNPJ` / `CLINIC_ADDRESS` / `CLINIC_CITY` / `CLINIC_PROFESSIONAL_NAME` / `CLINIC_PROFESSIONAL_REGISTRY` | Não | Cabeçalho/assinatura de documentos clínicos |
 | `WHATSAPP_TOKEN` / `WHATSAPP_PHONE_NUMBER_ID` | Não | Lembretes via WhatsApp (Meta Cloud API); sem elas roda em dry-run |
 
-\* Produção precisa de ao menos um método de login (senha ou Google). Sem nenhum: 503 fail-closed.
+Existe um único método de login: e-mail + senha da própria conta (ADR-004). Produção sem `AUTH_SECRET`: 503 fail-closed. A primeira conta de uma instalação vazia sai de `POST /api/auth/bootstrap` (header `x-bootstrap-token`); depois disso a rota responde 403 para sempre.
 
 ### Modo aberto (dev/demo sem login)
 
@@ -90,18 +106,18 @@ VITTA_ALLOW_OPEN_MODE=true
 
 Ignorada quando `NODE_ENV=production` — nunca dá pra rodar produção sem auth. Auditoria registra ator `anonymous`.
 
-### Login Google + Calendar (opcional, recomendado)
+### Google Agenda via OAuth (opcional, recomendado)
 
 1. Google Cloud Console → APIs & Services → Credentials → **OAuth client ID** (tipo Web application).
-2. Redirect URI: `{APP_URL}/api/auth/google/callback`.
+2. Redirect URI: `{APP_URL}/api/integrations/google-calendar/callback`.
 3. Habilita **Google Calendar API** no projeto.
-4. Preenche `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `APP_URL`, `GOOGLE_ALLOWED_EMAILS`.
+4. Preenche `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `APP_URL`.
 
-Resultado: tela de login mostra "Entrar com Google" (só allowlist entra); refresh token fica cifrado AES-256-GCM; eventos de agenda sincronizam no calendário `primary` da conta logada (sobrescrevível via `GOOGLE_CALENDAR_ID`).
+Resultado: em **Configurações → Google Agenda**, uma conta de equipe já logada clica em "Conectar Google Agenda". O fluxo pede só o escopo `calendar.events` e não toca na sessão; o refresh token fica cifrado AES-256-GCM e os eventos sincronizam no calendário `primary` da conta conectada (sobrescrevível via `GOOGLE_CALENDAR_ID`).
 
 ### Google Calendar via service account (alternativa)
 
-Sem login Google, só sincronização de agenda:
+Sem OAuth, só sincronização de agenda:
 
 1. Cria service account no Google Cloud, habilita Calendar API.
 2. Compartilha o calendário-alvo com o email da service account, permissão "Fazer alterações em eventos".
@@ -134,7 +150,7 @@ npm run test:e2e         # Playwright — primeira execução (ou após bump do 
 npm run test:e2e:ui      # Playwright modo UI
 ```
 
-Suíte E2E sobe os próprios servidores Next e gera credenciais a cada execução — nada fica hardcoded, nada a configurar no fluxo normal. Pra reaproveitar um `npm run dev` já rodando: `webServer.env` do Playwright não se aplica, então `E2E_AUTH_SECRET`/`E2E_AUTH_PASSWORD` (suíte) e `AUTH_SECRET`/`AUTH_PASSWORD` (servidor) precisam ter os mesmos valores.
+Suíte E2E sobe os próprios servidores Next e gera credenciais a cada execução — nada fica hardcoded, nada a configurar no fluxo normal. Pra reaproveitar um `npm run dev` já rodando: `webServer.env` do Playwright não se aplica, então `E2E_AUTH_SECRET`/`E2E_BOOTSTRAP_TOKEN` (suíte) e `AUTH_SECRET`/`VITTA_BOOTSTRAP_TOKEN` (servidor) precisam ter os mesmos valores. O `globalSetup` cria o Super Admin pelo fluxo real: bootstrap → convite → definir senha → login.
 
 ## Estrutura do projeto (DDD em camadas)
 
@@ -179,13 +195,14 @@ Detalhes completos (por que reproduzir local, divergência de scanner hospedado,
 
 | Sintoma | Causa provável | Ação |
 |---|---|---|
-| 503 em toda rota | Sem `AUTH_PASSWORD`/`AUTH_SECRET` nem `VITTA_ALLOW_OPEN_MODE` | Define auth ou `VITTA_ALLOW_OPEN_MODE=true` (fora de produção) |
+| 503 em toda rota | Sem `AUTH_SECRET` nem `VITTA_ALLOW_OPEN_MODE` | Define `AUTH_SECRET` ou `VITTA_ALLOW_OPEN_MODE=true` (fora de produção) |
 | Porta 5432/3000 ocupada | Outro serviço na porta | `POSTGRES_PORT=`/`APP_PORT=` no compose, ou ajusta `DATABASE_URL` na via B |
 | Build mata processo (`Ineffective mark-compacts`) | Heap V8 padrão baixo pra máquina | Já mitigado via `--max-old-space-size=4096`; se persistir, sobe o valor em `package.json` |
-| Login Google recusa conta | Email fora de `GOOGLE_ALLOWED_EMAILS` | Adiciona email à allowlist (separado por vírgula) |
+| Bootstrap responde 403 | Já existe conta, ou `x-bootstrap-token` não bate com `VITTA_BOOTSTRAP_TOKEN` | Use "esqueci minha senha" se a instalação já tem contas |
+| Convite/reset não chega | Sem `RESEND_API_KEY`/`EMAIL_FROM` fora de produção, o gateway é dry-run | O link sai no log do servidor (`[e-mail desativado] …`) |
 | Consulta rejeitada com 400 | Fora do horário comercial (seg-sex 08h-18h, `TZ`) | Ajusta horário ou `TZ` |
 | Consulta rejeitada com 409 | Conflito de agenda (folga mínima 15min) | Escolhe outro horário |
-| E2E falha só ao reaproveitar `npm run dev` | `E2E_AUTH_*` e `AUTH_*` divergentes | Usa os mesmos valores nos dois pares, ou deixa a suíte subir seu próprio servidor |
+| E2E falha só ao reaproveitar `npm run dev` | `E2E_AUTH_SECRET`/`E2E_BOOTSTRAP_TOKEN` divergentes dos do servidor | Usa os mesmos valores nos dois pares, ou deixa a suíte subir seu próprio servidor |
 
 ## Referências
 

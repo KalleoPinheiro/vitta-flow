@@ -37,6 +37,10 @@ import {
   googleCalendarConfigFromEnv,
 } from "./calendar/google-calendar-gateway";
 import { DrizzleGoogleAccountRepository } from "./persistence/drizzle/drizzle-google-account-repository";
+import { DrizzleAuthTokenRepository } from "./persistence/drizzle/drizzle-auth-token-repository";
+import { buildEmailGateway } from "./email/resend-email-gateway";
+import type { EmailGateway } from "@/application/ports/email-gateway";
+import type { AuthTokenRepository } from "@/domain/auth/auth-token";
 import { DrizzlePartnerRepository } from "./persistence/drizzle/drizzle-partner-repository";
 import { DrizzleAuditEventRepository } from "./persistence/drizzle/drizzle-audit-event-repository";
 import { LocalPhotoStorage } from "./storage/local-photo-storage";
@@ -72,7 +76,7 @@ import type { ProfessionalRepository } from "@/domain/professional/professional-
 import type { PhotoStorage } from "@/application/ports/photo-storage";
 import type { AuditEventRepository } from "@/domain/audit/audit-event-repository";
 import type { PartnerRepository } from "@/domain/partner/partner-repository";
-import { googleOAuthConfigFromEnv } from "@/lib/auth/google-oauth";
+import { googleCalendarOAuthConfigFromEnv } from "@/lib/auth/google-calendar-oauth";
 import { getAuthConfig } from "@/lib/auth/session";
 import { decryptSecret } from "@/lib/auth/crypto";
 import type { AppDb } from "./persistence/drizzle/db";
@@ -119,6 +123,7 @@ export interface Services {
   procedureKits: ProcedureKitRepository;
   sessionPackages: SessionPackageRepository;
   userAccounts: UserAccountRepository;
+  authTokens: AuthTokenRepository;
   scheduleConfig: ScheduleConfigRepository;
   googleAccounts: DrizzleGoogleAccountRepository;
   appointments: AppointmentRepository;
@@ -149,6 +154,7 @@ export interface Services {
   reminderLog: ReminderLogRepository;
   calendar: CalendarGateway;
   messaging: MessagingGateway;
+  email: EmailGateway;
   transactions: TransactionManager;
 }
 
@@ -157,7 +163,7 @@ const globalForServices = globalThis as unknown as {
 };
 
 async function oauthCalendarGateway(db: AppDb): Promise<{ key: string; gateway: CalendarGateway } | null> {
-  const oauthConfig = googleOAuthConfigFromEnv();
+  const oauthConfig = googleCalendarOAuthConfigFromEnv();
   const auth = getAuthConfig();
   if (!oauthConfig || !auth) {
     return null;
@@ -225,6 +231,7 @@ export async function getRepositories(tenant: TenantContext): Promise<Services> 
     procedureKits: new DrizzleProcedureKitRepository(db),
     sessionPackages: new DrizzleSessionPackageRepository(db, tenant.clinicId),
     userAccounts: new DrizzleUserAccountRepository(db, tenant.clinicId),
+    authTokens: new DrizzleAuthTokenRepository(db),
     scheduleConfig: new DrizzleScheduleConfigRepository(db, tenant.clinicId),
     googleAccounts: new DrizzleGoogleAccountRepository(db),
     appointments: new DrizzleAppointmentRepository(db, tenant.clinicId),
@@ -255,6 +262,7 @@ export async function getRepositories(tenant: TenantContext): Promise<Services> 
     reminderLog: new DrizzleReminderLogRepository(db, tenant.clinicId),
     calendar,
     messaging: buildMessagingGateway(),
+    email: buildEmailGateway(),
     transactions: new DrizzleTransactionManager(db, tenant.clinicId),
   };
 }

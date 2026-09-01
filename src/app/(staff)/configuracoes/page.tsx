@@ -56,6 +56,7 @@ export default function SettingsPage() {
     <div className="flex flex-col gap-8">
       <h1 className="sv-display text-2xl font-bold">Configurações</h1>
       <ScheduleSection />
+      <CalendarIntegrationSection />
       <AccountsSection />
     </div>
   );
@@ -179,6 +180,30 @@ function ScheduleSection() {
   );
 }
 
+/**
+ * A conexão da agenda é uma integração, não um login: parte de uma sessão já
+ * autenticada por senha e não interfere em nenhum fluxo de autenticação
+ * (ADR-004). É um link direto porque a rota responde com um redirect do OAuth,
+ * que o navegador precisa seguir na própria janela.
+ */
+function CalendarIntegrationSection() {
+  return (
+    <Card as="section" className="p-5">
+      <h2 className="text-lg font-semibold">Google Agenda</h2>
+      <p className="mb-4 mt-1 text-sm text-ink-3">
+        Conecte a agenda do Google da clínica para sincronizar os agendamentos. A conexão é
+        independente do login — sua sessão continua a mesma.
+      </p>
+      <a
+        href="/api/integrations/google-calendar"
+        className="text-sm text-accent-ink hover:underline"
+      >
+        Conectar Google Agenda
+      </a>
+    </Card>
+  );
+}
+
 function AccountsSection() {
   const { data: accounts, error, refresh } = useApiQuery<UserAccountDto[]>("/api/accounts");
   const { data: professionals } = useApiQuery<ProfessionalDto[]>("/api/professionals");
@@ -222,7 +247,7 @@ function AccountsSection() {
       {!accounts ? (
         <LoadingIndicator />
       ) : accounts.length === 0 ? (
-        <EmptyState message="Nenhuma conta individual — todos usam a senha master (auditoria sem identificação pessoal)." />
+        <EmptyState message="Nenhuma conta cadastrada nesta empresa." />
       ) : (
         <Table className="w-full text-left text-sm">
           <TableHeader>
@@ -285,7 +310,6 @@ function AccountForm({
   onSaved: () => void;
 }) {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [role, setRole] = useState<AccountRole>("company_admin");
   const [professionalId, setProfessionalId] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -306,7 +330,6 @@ function AccountForm({
         method: "POST",
         body: JSON.stringify({
           email,
-          password,
           role,
           professionalId: professionalId || null,
         }),
@@ -332,17 +355,10 @@ function AccountForm({
           className="mt-1"
         />
       </label>
-      <label className="text-sm font-medium">
-        Senha * (mín. 8 caracteres)
-        <Input
-          required
-          type="password"
-          minLength={8}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="mt-1"
-        />
-      </label>
+      <p className="text-sm text-ink-3">
+        A pessoa recebe um e-mail de convite e define a própria senha — ninguém digita
+        senha por ela.
+      </p>
       <label className="text-sm font-medium">
         Papel *
         <NativeSelect

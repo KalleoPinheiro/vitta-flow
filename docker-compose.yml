@@ -25,12 +25,17 @@ services:
     environment:
       DATABASE_URL: postgres://vitta:vitta@db:5432/vitta
       TZ: America/Sao_Paulo
-      AUTH_PASSWORD: ${AUTH_PASSWORD:?defina AUTH_PASSWORD (senha de acesso ao sistema)}
       AUTH_SECRET: ${AUTH_SECRET:?defina AUTH_SECRET (ex. openssl rand -hex 32)}
       APP_URL: ${APP_URL:-http://localhost:3000}
+      # Convite e reset de senha (ADR-004). A imagem roda com NODE_ENV=production,
+      # onde a ausência destas duas derruba a inicialização de propósito — sem
+      # canal de e-mail ninguém consegue o primeiro acesso.
+      RESEND_API_KEY: ${RESEND_API_KEY:?defina RESEND_API_KEY (convite e reset de senha dependem dele)}
+      EMAIL_FROM: ${EMAIL_FROM:?defina EMAIL_FROM (remetente verificado no provedor)}
+      # Libera POST /api/auth/bootstrap enquanto a instalação não tem nenhuma conta.
+      VITTA_BOOTSTRAP_TOKEN: ${VITTA_BOOTSTRAP_TOKEN:-}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      GOOGLE_ALLOWED_EMAILS: ${GOOGLE_ALLOWED_EMAILS:-}
       GOOGLE_SERVICE_ACCOUNT_EMAIL: ${GOOGLE_SERVICE_ACCOUNT_EMAIL:-}
       GOOGLE_PRIVATE_KEY: ${GOOGLE_PRIVATE_KEY:-}
       GOOGLE_CALENDAR_ID: ${GOOGLE_CALENDAR_ID:-}

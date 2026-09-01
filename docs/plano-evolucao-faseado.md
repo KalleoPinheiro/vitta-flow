@@ -30,7 +30,7 @@
 | 3 | Compliance e UX clínico | ✅ **Entregue** (PASS na iteração 1) | `.specs/features/fase-3-compliance-ux-clinico/` |
 | 4 | Portal: auto-agendamento e recall | ✅ **Entregue** (Verifier PASS) | `.specs/features/fase-4-portal-auto-agendamento/` |
 | 5 | Monetização e canal | Backlog (depende de decisão de negócio) | seção 5 abaixo |
-| 6 | Plataforma (RBAC fino, multi-tenancy, TISS) | RBAC + multi-tenancy Fases 1–2 + sunset senha master: **especificados**, ver `product/prd-fase-6.md`. TISS e paginação por cursor seguem backlog | `product/prd-fase-6.md`, seção 6 abaixo |
+| 6 | Plataforma (RBAC fino, multi-tenancy, TISS) | RBAC, multi-tenancy Fases 1–2 e sunset da senha master: ✅ **Entregues** (Verifier PASS) — ver `.specs/features/{rbac-catalogo-papeis,fundacao-multi-tenancy,autenticacao-nativa}/`. TISS e paginação por cursor seguem backlog | `product/prd-fase-6.md`, seção 6 abaixo |
 
 ### Registro de entrega
 
@@ -46,7 +46,11 @@ re-verificadas. A Fase 4 passou de primeira (7/7 mutantes mortos), com três ach
 corrigidos em seguida — inclusive a causa-raiz de um erro de tipo que escapava do gate: `npm run
 build` não verifica `tests/**`, então o projeto ganhou `npm run typecheck` (`tsc --noEmit`).
 
-**Gate recomendado antes de merge:** `npm test && npm run typecheck && npm run lint && npm run build`.
+**Gate recomendado antes de merge:** `npm test && npm run typecheck && npm run check:sv && npm run build`, mais o lint — este por `npx eslint .`, **não** por `npm run lint`.
+
+> ⚠️ `npm run lint` passa por um wrapper que imprime um resumo e **retorna exit 0 mesmo com erros reais**; foi assim que um erro de `complexity` chegou a passar por um gate inteiro (issue #21). Use `npx eslint . ; echo $?` para ver o código de saída de verdade.
+>
+> `npx eslint .` já sai 1 na baseline do repositório (2 erros `complexity` + 6 warnings `no-unused-vars` herdados). O critério de merge é **"zero achados novos atribuíveis ao diff"**: cruze os arquivos apontados contra `git diff --name-only <base> HEAD`. Exigir exit 0 obrigaria cada PR a consertar dívida alheia.
 
 ---
 
@@ -122,11 +126,12 @@ Exige escolhas do negócio antes de executar:
   em [`prd-fase-6.md`](./product/prd-fase-6.md) (P6.1) — Fase 1 (`clinics` + `clinic_id`) e a parte de
   aplicação da Fase 2 (sessão + filtro por tenant); RLS completo segue como épico dedicado à parte.
   Execução: issue [#19](https://github.com/KalleoPinheiro/vitta-flow/issues/19) e tickets #22–#27.
-- **Sunset da senha master:** ~~flag `AUTH_MASTER_DISABLED` + comunicação~~ **especificado** em
-  [`prd-fase-6.md`](./product/prd-fase-6.md) (P6.3) e [ADR-004](./adr/004-remocao-google-oauth-autenticacao.md)
-  — remoção completa (não flag), junto da remoção do login via Google e da introdução de
-  convite/reset de senha por e-mail. Execução: issue
-  [#21](https://github.com/KalleoPinheiro/vitta-flow/issues/21) e tickets #32–#35.
+- **Sunset da senha master:** ~~flag `AUTH_MASTER_DISABLED` + comunicação~~ ~~especificado~~
+  **entregue** — remoção completa (não flag) de `AUTH_PASSWORD`, do login via Google e de
+  `GOOGLE_ALLOWED_EMAILS`, com convite e reset de senha por e-mail e bootstrap do primeiro
+  Super Admin. Executa [ADR-004](./adr/004-remocao-google-oauth-autenticacao.md); spec em
+  [`.specs/features/autenticacao-nativa/`](../.specs/features/autenticacao-nativa/spec.md).
+  Issue [#21](https://github.com/KalleoPinheiro/vitta-flow/issues/21) e tickets #32–#35.
 - **TISS/convênios:** operadora no paciente, guia por atendimento, relatório por operadora com
   série de scores como evidência. Ainda backlog, sem spec.
 - **Paginação por cursor** nas listagens (necessária só em escala de plataforma). Ainda backlog,

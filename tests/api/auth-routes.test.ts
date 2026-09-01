@@ -16,30 +16,21 @@ interface Envelope<T> {
   error: string | null;
 }
 
-describe("Feature: Rotas de autenticação (login, logout, provedores, Google OAuth)", () => {
+describe("Feature: Rotas de autenticação (login, logout, provedores)", () => {
   let loginRoute: typeof import("@/app/api/auth/login/route");
   let logoutRoute: typeof import("@/app/api/auth/logout/route");
   let providersRoute: typeof import("@/app/api/auth/providers/route");
-  let googleRoute: typeof import("@/app/api/auth/google/route");
-  let googleCallbackRoute: typeof import("@/app/api/auth/google/callback/route");
 
   const originalEnv = { ...process.env };
 
   const resetAuthEnv = () => {
     delete process.env.AUTH_SECRET;
-    delete process.env.AUTH_PASSWORD;
-    delete process.env.GOOGLE_CLIENT_ID;
-    delete process.env.GOOGLE_CLIENT_SECRET;
-    delete process.env.APP_URL;
-    delete process.env.GOOGLE_ALLOWED_EMAILS;
   };
 
   beforeAll(async () => {
     loginRoute = await import("@/app/api/auth/login/route");
     logoutRoute = await import("@/app/api/auth/logout/route");
     providersRoute = await import("@/app/api/auth/providers/route");
-    googleRoute = await import("@/app/api/auth/google/route");
-    googleCallbackRoute = await import("@/app/api/auth/google/callback/route");
   });
 
   afterEach(() => {
@@ -50,9 +41,12 @@ describe("Feature: Rotas de autenticação (login, logout, provedores, Google OA
     it("Dado AUTH_SECRET ausente, Quando POST login, Então retorna 503", async () => {
       resetAuthEnv();
       const response = await loginRoute.POST(
-        jsonRequest("/api/auth/login", "POST", { password: "qualquer" }, {
-          "x-forwarded-for": "10.0.0.1",
-        }),
+        jsonRequest(
+          "/api/auth/login",
+          "POST",
+          { email: "alguem@clinica.com", password: "qualquer" },
+          { "x-forwarded-for": "10.0.0.1" },
+        ),
       );
       const body = (await response.json()) as Envelope<null>;
 
@@ -63,82 +57,52 @@ describe("Feature: Rotas de autenticação (login, logout, provedores, Google OA
     it("Dado requisição sem x-forwarded-for, Quando POST login, Então usa IP 'unknown' e responde normalmente", async () => {
       resetAuthEnv();
       process.env.AUTH_SECRET = "test-secret-e2e";
-      process.env.AUTH_PASSWORD = "senha-correta";
-
+  
       const response = await loginRoute.POST(
-        jsonRequest("/api/auth/login", "POST", { password: "senha-errada" }),
-      );
-
-      expect(response.status).toBe(401);
-    });
-
-    it("Dado senha master incorreta, Quando POST login, Então retorna 401", async () => {
-      resetAuthEnv();
-      process.env.AUTH_SECRET = "test-secret-e2e";
-      process.env.AUTH_PASSWORD = "senha-correta";
-
-      const response = await loginRoute.POST(
-        jsonRequest("/api/auth/login", "POST", { password: "senha-errada" }, {
-          "x-forwarded-for": "10.0.0.2",
+        jsonRequest("/api/auth/login", "POST", {
+          email: "ninguem@clinica.com",
+          password: "senha-errada",
         }),
       );
 
       expect(response.status).toBe(401);
     });
 
-    it("Dado login por senha master desativado (sem AUTH_PASSWORD), Quando POST login, Então retorna 403", async () => {
+    it("Dado uma requisição sem email, Quando POST login, Então retorna 401 e nenhum cookie de sessão", async () => {
       resetAuthEnv();
       process.env.AUTH_SECRET = "test-secret-e2e";
 
       const response = await loginRoute.POST(
-        jsonRequest("/api/auth/login", "POST", { password: "qualquer" }, {
+        jsonRequest("/api/auth/login", "POST", { password: "qualquer-senha" }, {
           "x-forwarded-for": "10.0.0.3",
         }),
       );
       const body = (await response.json()) as Envelope<null>;
 
-      expect(response.status).toBe(403);
-      expect(body.error).toContain("Login por senha desativado");
+      expect(response.status).toBe(401);
+      expect(body.error).toContain("Credenciais inválidas");
+      expect(response.headers.get("set-cookie")).toBeNull();
     });
 
-    it("Dado senha master correta, Quando POST login, Então cria sessão com cookie", async () => {
+    it("Dado uma senha que era a mestre e nenhum email, Quando POST login, Então continua 401 (senha mestre não existe mais)", async () => {
       resetAuthEnv();
       process.env.AUTH_SECRET = "test-secret-e2e";
-      process.env.AUTH_PASSWORD = "senha-correta";
+      process.env.AUTH_PASSWORD_LEGADO = "senha-correta"; // gitleaks:allow — fixture de teste, não é credencial
 
       const response = await loginRoute.POST(
         jsonRequest("/api/auth/login", "POST", { password: "senha-correta" }, {
           "x-forwarded-for": "10.0.0.4",
         }),
       );
-      const body = (await response.json()) as Envelope<{ ok: boolean }>;
 
-      expect(response.status).toBe(200);
-      expect(body.data.ok).toBe(true);
-      expect(response.headers.get("set-cookie")).toContain("vitta_session=");
-    });
-
-    it("Dado senha master correta, Quando POST login, Então loga aviso de credencial compartilhada (SEC1-19)", async () => {
-      resetAuthEnv();
-      process.env.AUTH_SECRET = "test-secret-e2e";
-      process.env.AUTH_PASSWORD = "senha-correta";
-      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-
-      await loginRoute.POST(
-        jsonRequest("/api/auth/login", "POST", { password: "senha-correta" }, {
-          "x-forwarded-for": "10.0.0.44",
-        }),
-      );
-
-      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("senha master"));
-      warnSpy.mockRestore();
+      expect(response.status).toBe(401);
+      delete process.env.AUTH_PASSWORD_LEGADO;
     });
 
     it("Dado conta individual inexistente, Quando POST login com email, Então retorna 401", async () => {
       resetAuthEnv();
       process.env.AUTH_SECRET = "test-secret-e2e";
-      process.env.AUTH_PASSWORD = "senha-correta";
-
+  
       const response = await loginRoute.POST(
         jsonRequest(
           "/api/auth/login",
@@ -156,8 +120,7 @@ describe("Feature: Rotas de autenticação (login, logout, provedores, Google OA
     it("Dado conta individual ativa com senha correta, Quando POST login com email, Então cria sessão", async () => {
       resetAuthEnv();
       process.env.AUTH_SECRET = "test-secret-e2e";
-      process.env.AUTH_PASSWORD = "senha-correta";
-
+  
       const { getRepositories } = await import("@/infrastructure/container");
       const { hashPassword } = await import("@/lib/auth/password");
       const { UserAccount } = await import("@/domain/auth/user-account");
@@ -188,8 +151,7 @@ describe("Feature: Rotas de autenticação (login, logout, provedores, Google OA
     it("Dado conta com papel profissional, Quando POST login com email, Então sessão usa o papel e a empresa da própria conta (fix RBAC-02/RBAC-04)", async () => {
       resetAuthEnv();
       process.env.AUTH_SECRET = "test-secret-role-fix";
-      process.env.AUTH_PASSWORD = "senha-correta";
-
+  
       const { getRepositories } = await import("@/infrastructure/container");
       const { hashPassword } = await import("@/lib/auth/password");
       const { UserAccount } = await import("@/domain/auth/user-account");
@@ -224,8 +186,7 @@ describe("Feature: Rotas de autenticação (login, logout, provedores, Google OA
     it("Dado body inválido (sem password), Quando POST login, Então retorna 401", async () => {
       resetAuthEnv();
       process.env.AUTH_SECRET = "test-secret-e2e";
-      process.env.AUTH_PASSWORD = "senha-correta";
-
+  
       const response = await loginRoute.POST(
         jsonRequest("/api/auth/login", "POST", {}, { "x-forwarded-for": "10.0.0.7" }),
       );
@@ -236,8 +197,7 @@ describe("Feature: Rotas de autenticação (login, logout, provedores, Google OA
     it("Dado múltiplas tentativas seguidas do mesmo IP, Quando excede o limite, Então retorna 429", async () => {
       resetAuthEnv();
       process.env.AUTH_SECRET = "test-secret-e2e";
-      process.env.AUTH_PASSWORD = "senha-correta";
-      const ip = "10.0.0.100";
+        const ip = "10.0.0.100";
 
       let lastStatus = 0;
       for (let attempt = 0; attempt < 6; attempt += 1) {
@@ -267,114 +227,34 @@ describe("Feature: Rotas de autenticação (login, logout, provedores, Google OA
   });
 
   describe("GET /api/auth/providers", () => {
-    it("Dado nenhuma configuração de auth, Quando GET providers, Então retorna tudo desativado", async () => {
+    it("Dado nenhuma configuração de auth, Quando GET providers, Então retorna senha desativada", async () => {
       resetAuthEnv();
       const response = await providersRoute.GET();
-      const body = (await response.json()) as Envelope<{ password: boolean; google: boolean }>;
+      const body = (await response.json()) as Envelope<{ password: boolean }>;
 
       expect(response.status).toBe(200);
       expect(body.data.password).toBe(false);
-      expect(body.data.google).toBe(false);
     });
 
-    it("Dado AUTH_PASSWORD e Google configurados, Quando GET providers, Então retorna ambos ativos", async () => {
+    it("Dado AUTH_SECRET configurado, Quando GET providers, Então retorna senha ativa", async () => {
       resetAuthEnv();
       process.env.AUTH_SECRET = "test-secret-e2e";
-      process.env.AUTH_PASSWORD = "senha-correta";
-      process.env.GOOGLE_CLIENT_ID = "client-id";
-      process.env.GOOGLE_CLIENT_SECRET = "client-secret";
-      process.env.APP_URL = "http://localhost:3000";
-      process.env.GOOGLE_ALLOWED_EMAILS = "admin@clinica.com";
 
       const response = await providersRoute.GET();
-      const body = (await response.json()) as Envelope<{ password: boolean; google: boolean }>;
+      const body = (await response.json()) as Envelope<{ password: boolean }>;
 
       expect(body.data.password).toBe(true);
-      expect(body.data.google).toBe(true);
       resetAuthEnv();
     });
-  });
 
-  describe("GET /api/auth/google", () => {
-    it("Dado Google não configurado, Quando GET google, Então retorna 503", async () => {
-      resetAuthEnv();
-      const response = await googleRoute.GET(jsonRequest("/api/auth/google", "GET"));
-      const body = (await response.json()) as Envelope<null>;
-
-      expect(response.status).toBe(503);
-      expect(body.error).toContain("Login com Google não configurado");
-    });
-
-    it("Dado Google configurado, Quando GET google, Então redireciona para URL de autorização com cookie de estado", async () => {
-      resetAuthEnv();
-      process.env.GOOGLE_CLIENT_ID = "client-id";
-      process.env.GOOGLE_CLIENT_SECRET = "client-secret";
-      process.env.APP_URL = "http://localhost:3000";
-      process.env.GOOGLE_ALLOWED_EMAILS = "admin@clinica.com";
-
-      const response = await googleRoute.GET(jsonRequest("/api/auth/google", "GET"));
-
-      expect(response.status).toBe(307);
-      expect(response.headers.get("location")).toContain("accounts.google.com");
-      expect(response.headers.get("set-cookie")).toContain("vitta_oauth_state=");
-      resetAuthEnv();
-    });
-  });
-
-  describe("GET /api/auth/google/callback", () => {
-    it("Dado Google não configurado, Quando GET callback, Então redireciona para /login com erro", async () => {
-      resetAuthEnv();
-      const response = await googleCallbackRoute.GET(
-        jsonRequest("/api/auth/google/callback", "GET"),
-      );
-
-      expect(response.status).toBe(307);
-      expect(response.headers.get("location")).toContain("/login");
-      expect(response.headers.get("location")).toContain("error=");
-    });
-
-    it("Dado configurado mas sem code/state, Quando GET callback, Então redireciona com erro de fluxo inválido", async () => {
+    it("Dado AUTH_SECRET configurado e nenhuma variável do Google, Quando GET providers, Então a resposta não anuncia provedor Google", async () => {
       resetAuthEnv();
       process.env.AUTH_SECRET = "test-secret-e2e";
-      process.env.GOOGLE_CLIENT_ID = "client-id";
-      process.env.GOOGLE_CLIENT_SECRET = "client-secret";
-      process.env.APP_URL = "http://localhost:3000";
-      process.env.GOOGLE_ALLOWED_EMAILS = "admin@clinica.com";
 
-      const response = await googleCallbackRoute.GET(
-        jsonRequest("/api/auth/google/callback", "GET"),
-      );
-      const location = response.headers.get("location") ?? "";
+      const response = await providersRoute.GET();
+      const body = (await response.json()) as Envelope<Record<string, boolean>>;
 
-      expect(response.status).toBe(307);
-      expect(location).toContain("/login");
-      expect(decodeURIComponent(location).replace(/\+/g, " ")).toContain(
-        "Fluxo de login inválido",
-      );
-      resetAuthEnv();
-    });
-
-    it("Dado state divergente do cookie, Quando GET callback, Então redireciona com erro de fluxo inválido", async () => {
-      resetAuthEnv();
-      process.env.AUTH_SECRET = "test-secret-e2e";
-      process.env.GOOGLE_CLIENT_ID = "client-id";
-      process.env.GOOGLE_CLIENT_SECRET = "client-secret";
-      process.env.APP_URL = "http://localhost:3000";
-      process.env.GOOGLE_ALLOWED_EMAILS = "admin@clinica.com";
-
-      const request = jsonRequest(
-        "/api/auth/google/callback?code=abc&state=state-da-url",
-        "GET",
-        undefined,
-        { cookie: "vitta_oauth_state=outro-state" },
-      );
-      const response = await googleCallbackRoute.GET(request);
-      const location = response.headers.get("location") ?? "";
-
-      expect(response.status).toBe(307);
-      expect(decodeURIComponent(location).replace(/\+/g, " ")).toContain(
-        "Fluxo de login inválido",
-      );
+      expect(Object.keys(body.data)).toEqual(["password"]);
       resetAuthEnv();
     });
   });

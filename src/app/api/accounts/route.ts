@@ -4,18 +4,18 @@ import { getRepositories } from "@/infrastructure/container";
 import { ValidationError } from "@/domain/shared/errors";
 import { USER_ROLES } from "@/domain/auth/user-role";
 import { CreateAccount } from "@/application/auth/create-account";
-import { hashPassword } from "@/lib/auth/password";
+import { UNSET_PASSWORD_HASH } from "@/lib/auth/password";
+import { sendInvite } from "@/application/auth/send-invite";
 import { handleRequest } from "@/lib/api-response";
 import { toUserAccountDto } from "@/lib/dto";
 import { requireStaffSession } from "@/lib/auth/require-session";
 import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
-const MIN_PASSWORD_LENGTH = 8;
-
 const createSchema = z
   .object({
     email: z.string().min(3).max(200),
-    password: z.string().min(MIN_PASSWORD_LENGTH).max(200),
+    // Sem `password`: quem define a senha é a própria pessoa, pelo link do
+    // convite enviado por e-mail (ADR-004). A conta nasce sem senha usável.
     role: z.enum(USER_ROLES),
     // Só super_admin (clinicId de sessão nulo) pode/precisa escolher a empresa-alvo.
     clinicId: z.string().max(100).nullish(),
@@ -58,7 +58,8 @@ export async function POST(request: NextRequest) {
         ? (body.clinicId ?? LEGACY_CLINIC_ID)
         : (actor.clinicId ?? LEGACY_CLINIC_ID);
 
-    const { userAccounts, professionals } = await getRepositories({ clinicId: targetClinicId });
+    const services = await getRepositories({ clinicId: targetClinicId });
+    const { userAccounts, professionals } = services;
 
     if (body.professionalId) {
       const professional = await professionals.findById(body.professionalId);
@@ -69,11 +70,12 @@ export async function POST(request: NextRequest) {
 
     const account = await new CreateAccount(userAccounts).execute(actor, {
       email: body.email,
-      passwordHash: await hashPassword(body.password),
+      passwordHash: UNSET_PASSWORD_HASH,
       role: body.role,
       clinicId: targetClinicId,
       professionalId: body.professionalId ?? null,
     });
+    await sendInvite(services, account);
     return toUserAccountDto(account);
   });
 }

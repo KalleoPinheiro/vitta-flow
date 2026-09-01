@@ -197,6 +197,35 @@ export const appointments = pgTable(
   ],
 );
 
+/**
+ * Tokens de convite e reset de senha. Sem `clinic_id` de propósito: o consumo
+ * acontece antes de existir sessão (não há tenant de contexto), a conta alvo já
+ * carrega a empresa e o acesso é sempre pela chave única `secret_hash` — nunca
+ * por listagem que pudesse cruzar empresas.
+ */
+export const authTokens = pgTable(
+  "auth_tokens",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id")
+      .notNull()
+      .references(() => userAccounts.id),
+    // "invite" | "reset" (AuthTokenPurpose).
+    purpose: text("purpose").notNull(),
+    // SHA-256 hex do segredo entregue no link — o segredo em si nunca é persistido.
+    secretHash: text("secret_hash").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true, mode: "date" }),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [
+    // Única chave de busca no consumo do link.
+    uniqueIndex("uq_auth_tokens_secret_hash").on(table.secretHash),
+    // Invalidação em lote dos tokens anteriores do mesmo propósito.
+    index("idx_auth_tokens_account_purpose").on(table.accountId, table.purpose),
+  ],
+);
+
 export const googleAccounts = pgTable("google_accounts", {
   email: text("email").primaryKey(),
   // Refresh token do OAuth cifrado com AES-256-GCM (chave derivada de AUTH_SECRET).

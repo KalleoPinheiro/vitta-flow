@@ -14,9 +14,26 @@ Sistema de gestão completo para clínica de estomaterapia: prontuário eletrôn
 Pré-requisito: Docker + Docker Compose. Sobe PostgreSQL 16 + aplicação; as migrações do Drizzle rodam automaticamente na primeira requisição.
 
 ```bash
-AUTH_PASSWORD=sua-senha AUTH_SECRET=$(openssl rand -hex 32) docker compose up -d --build
-# aplicação: http://localhost:3000 (login com AUTH_PASSWORD)
+cp .env.example .env
+# edite .env e preencha, no mínimo:
+#   AUTH_SECRET=$(openssl rand -hex 32)
+#   VITTA_BOOTSTRAP_TOKEN=$(openssl rand -hex 24)
+#   RESEND_API_KEY=...   EMAIL_FROM="VittaFlow <nao-responda@suaclinica.com>"
+# o compose lê o .env sozinho, e o mesmo arquivo alimenta o curl abaixo
+docker compose up -d --build
+# aplicação: http://localhost:3000
 # postgres:  localhost:5432 (vitta/vitta, database vitta)
+
+# primeira conta (instalação vazia): cria o Super Admin e envia o convite.
+# o compose devolve o controle antes de o Next aceitar conexões — espere subir:
+until curl -sf http://localhost:3000/api/auth/providers >/dev/null; do sleep 2; done
+set -a; . ./.env; set +a
+curl -sX POST http://localhost:3000/api/auth/bootstrap \
+  -H "Content-Type: application/json" \
+  -H "x-bootstrap-token: $VITTA_BOOTSTRAP_TOKEN" \
+  -d '{"email":"voce@suaclinica.com"}'
+# o link de convite chega por e-mail; se o envio falhar (ex.: chave de teste),
+# a resposta traz `inviteUrl` para você abrir e definir a senha
 ```
 
 Portas ocupadas? Use variáveis: `POSTGRES_PORT=5477 APP_PORT=3001 docker compose up -d`.
@@ -39,11 +56,11 @@ npm run dev                      # http://localhost:3000
 | Variável | Obrigatória | Descrição |
 |----------|-------------|-----------|
 | `DATABASE_URL` | Sim (fora do compose) | Conexão PostgreSQL, ex.: `postgres://vitta:vitta@localhost:5432/vitta` |
-| `AUTH_PASSWORD` | Sim em produção* | Senha de acesso ao sistema (login local da equipe) |
 | `AUTH_SECRET` | Sim em produção | Segredo de assinatura da sessão e da cifra de credenciais — `openssl rand -hex 32` |
-| `APP_URL` | P/ login Google | URL pública da aplicação (redirect do OAuth), ex.: `http://localhost:3000` |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | P/ login Google | OAuth client (Web) do Google Cloud Console |
-| `GOOGLE_ALLOWED_EMAILS` | P/ login Google | **Allowlist obrigatória** de emails autorizados, separados por vírgula |
+| `APP_URL` | Sim em produção | URL pública da aplicação — compõe os links de convite/reset e o redirect do OAuth da agenda |
+| `RESEND_API_KEY` / `EMAIL_FROM` | Sim em produção | Provedor de e-mail transacional (convite e reset). Faltando em produção, a inicialização falha com erro explícito |
+| `VITTA_BOOTSTRAP_TOKEN` | P/ primeira conta | Segredo do header `x-bootstrap-token` em `POST /api/auth/bootstrap`; sem ele não há caminho de bootstrap |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | P/ Google Agenda | OAuth client (Web) do Google Cloud Console — usado só pela integração de agenda, nunca por login |
 | `TZ` | Recomendada | Fuso da clínica — horário comercial é validado em hora local (`America/Sao_Paulo` no compose) |
 | `CRON_SECRET` | P/ lembretes | Segredo do header `x-cron-secret` em `POST /api/reminders/run`; sem ele a rota fica desativada (503) |
 | `API_RATE_LIMIT_MAX` | Não | Requisições/minuto por IP em `/api/*` (padrão 120) |
@@ -52,15 +69,17 @@ npm run dev                      # http://localhost:3000
 | `GOOGLE_PRIVATE_KEY` | Não | Chave privada da service account (aceita `\n` escapado) |
 | `GOOGLE_CALENDAR_ID` | Não | ID do calendário que receberá os eventos |
 
-\* Em produção é preciso ao menos um método de login: senha (`AUTH_PASSWORD`) ou Google (3 variáveis acima). Sem nenhum, o sistema responde 503 (fail-closed).
+**Autenticação (ADR-004)**: existe um único método de login — e-mail + senha da própria conta. Não há senha mestre, allowlist de e-mails nem login via Google. Quem é cadastrado recebe um e-mail de convite com um link de 24 h para definir a própria senha; "esqueci minha senha" emite um link equivalente de 1 h. Em produção, `AUTH_SECRET` ausente responde 503 em toda rota (fail-closed).
+
+**Primeira conta**: numa instalação sem nenhuma conta, `POST /api/auth/bootstrap` cria o Super Admin. A rota exige o header `x-bootstrap-token` igual a `VITTA_BOOTSTRAP_TOKEN` **e** que não exista nenhuma conta — depois da primeira, responde 403 para sempre.
 
 **Modo aberto (`VITTA_ALLOW_OPEN_MODE`)**: sem autenticação configurada e sem esta variável, o app responde **503 em todas as rotas** — inclusive em desenvolvimento (fail-closed). Para rodar sem login (demo local, testes E2E de navegação), defina `VITTA_ALLOW_OPEN_MODE=true`. A variável é ignorada quando `NODE_ENV=production`: **nunca** é possível rodar produção sem autenticação. Em modo aberto o app registra a auditoria com o ator `anonymous`.
 
-**Login com Google + Calendar (recomendado)**: no Google Cloud Console crie um *OAuth client ID* (tipo Web application) com redirect URI `{APP_URL}/api/auth/google/callback` e habilite a **Google Calendar API**. Preencha `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `APP_URL` e `GOOGLE_ALLOWED_EMAILS`. A partir daí:
-- A tela de login mostra **"Entrar com Google"**; apenas emails da allowlist entram (qualquer outra conta é recusada).
-- Ao logar, o sistema guarda o refresh token **cifrado (AES-256-GCM)** e passa a criar/atualizar/remover os eventos da agenda **no calendário da própria conta logada** (`primary`) — sem precisar de service account nem compartilhamento manual. `GOOGLE_CALENDAR_ID` pode sobrescrever o destino.
+**Google Calendar via OAuth (recomendado)**: no Google Cloud Console crie um *OAuth client ID* (tipo Web application) com redirect URI `{APP_URL}/api/integrations/google-calendar/callback` e habilite a **Google Calendar API**. Preencha `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` e `APP_URL`. A partir daí:
+- Em **Configurações → Google Agenda**, uma conta de equipe já logada clica em "Conectar Google Agenda". O fluxo pede apenas o escopo `calendar.events` e **não** cria, renova ou troca sessão — é integração, não login.
+- O sistema guarda o refresh token **cifrado (AES-256-GCM)** e passa a criar/atualizar/remover os eventos da agenda **no calendário da conta conectada** (`primary`). `GOOGLE_CALENDAR_ID` pode sobrescrever o destino.
 
-**Google Calendar via service account (alternativa sem login Google)**: crie uma service account, habilite a Calendar API e compartilhe o calendário com o email dela (permissão "Fazer alterações em eventos"); preencha `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY` e `GOOGLE_CALENDAR_ID`. Usada apenas quando nenhuma conta Google está conectada. Sem nenhuma das duas integrações, a agenda funciona normalmente sem sincronização.
+**Google Calendar via service account (alternativa sem OAuth)**: crie uma service account, habilite a Calendar API e compartilhe o calendário com o email dela (permissão "Fazer alterações em eventos"); preencha `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY` e `GOOGLE_CALENDAR_ID`. Usada apenas quando nenhuma conta Google está conectada. Sem nenhuma das duas integrações, a agenda funciona normalmente sem sincronização.
 
 Qualidade:
 
@@ -139,19 +158,22 @@ comporte igual em qualquer máquina. Se o pico do build subir, ajuste o número 
 - Recebido × a receber no mês; **receita por procedimento** das consultas concluídas.
 
 ### Papéis de acesso (RBAC) e portais
-Três papéis, resolvidos automaticamente no login com Google pelo email da conta (senha local = admin):
+Catálogo fechado de seis papéis (ADR-003), gravados na própria conta em `user_accounts`. **Todo papel autentica com e-mail e senha própria** (ADR-004) — nenhum deles é resolvido por login com Google, que existe apenas como integração de agenda:
 
 | Papel | Quem | O que acessa |
 |-------|------|--------------|
-| **admin** | Equipe da clínica (emails em `GOOGLE_ALLOWED_EMAILS` ou senha local) | Sistema completo |
+| **super_admin** | Operador do sistema (sem empresa própria) | Todas as empresas, incluindo dado clínico; todo acesso cross-empresa é auditado |
+| **company_admin** | Admin da própria clínica | Sistema completo dentro da própria empresa: operacional, clínico, configurações e contas |
+| **atendente** | Recepção | Só operacional: agenda e cadastro de paciente/parceiro. Sem acesso a evolução, avaliação ou foto |
+| **profissional** | Equipe clínica | Acesso clínico **escopado por vínculo**: só pacientes com quem tem consulta ou evolução |
 | **partner** | Médico parceiro cadastrado em `/parceiros` | Portal com **apenas os pacientes que ele indicou**: consultas e evolução clínica (sem financeiro, sem anamnese) |
 | **patient** | Paciente cadastrado em `/pacientes` | Portal com **apenas os próprios dados**: próximas consultas, retornos recomendados, evolução clínica, histórico e faturas |
 
 - **Parceria e indicação**: cadastro de médicos parceiros (`/parceiros` — nome, email, CRM, especialidade) e campo "Indicado por" no cadastro do paciente.
 - **Portais** em `/portal` (layout próprio, sem menu da clínica): a visão é escolhida pelo papel da sessão.
-- **Enforcement no proxy**: papel embutido no cookie assinado; rotas da clínica são exclusivas do admin (paciente/parceiro recebem 403 na API e redirect para `/portal` nas páginas); rotas `/api/portal/*` revalidam o papel e escopam os dados pelo email da sessão no servidor.
-- Parceiro/paciente desativado perde o login imediatamente (resolução nega o acesso).
-- Login Google de paciente/parceiro **não** grava credencial de Calendar (ela pertence à equipe).
+- **Enforcement no proxy**: papel embutido no cookie assinado; rotas da clínica são exclusivas dos papéis de equipe (paciente/parceiro recebem 403 na API e redirect para `/portal` nas páginas); rotas `/api/portal/*` revalidam o papel e escopam os dados pelo e-mail da sessão no servidor.
+- Conta desativada perde o acesso em até 60 s, mesmo com cookie ainda válido (deny-list de revogação).
+- A credencial do Google Agenda é conectada por uma conta de equipe em **Configurações**, nunca por um login — paciente e parceiro não têm como gravá-la.
 
 ### Regras de negócio garantidas por teste
 - Máquina de estados da consulta: `scheduled → confirmed → completed`, com desvios para `cancelled`/`no_show`; transições inválidas são rejeitadas.
@@ -210,7 +232,7 @@ Testes escritos em estilo BDD (`Feature / Cenário / Dado-Quando-Então`), com c
 
 `npm run check:sv` é um gate à parte: falha se um `<button>`/`<input>` cru voltar, se uma cor sair da ponte de tokens, ou se uma marcação `sv-gap:` ficar sem entrada em [docs/still-void-gaps.md](docs/still-void-gaps.md).
 
-A suíte E2E sobe os próprios servidores Next e **gera as credenciais a cada execução** — nenhum segredo fica no código-fonte, e no fluxo normal não é preciso configurar nada. Para reaproveitar um `npm run dev` já em pé, o `webServer.env` do Playwright não se aplica: os dois pares precisam bater — `E2E_AUTH_SECRET`/`E2E_AUTH_PASSWORD` para a suíte e `AUTH_SECRET`/`AUTH_PASSWORD` com os mesmos valores para o servidor.
+A suíte E2E sobe os próprios servidores Next e **gera as credenciais a cada execução** — nenhum segredo fica no código-fonte, e no fluxo normal não é preciso configurar nada. Para reaproveitar um `npm run dev` já em pé, o `webServer.env` do Playwright não se aplica: os pares precisam bater — `E2E_AUTH_SECRET`/`E2E_BOOTSTRAP_TOKEN` para a suíte e `AUTH_SECRET`/`VITTA_BOOTSTRAP_TOKEN` com os mesmos valores para o servidor. O `globalSetup` cria o Super Admin da suíte pelo fluxo real (bootstrap → convite → definir senha → login), sem senha mestre.
 
 ## Varredura de segurança
 

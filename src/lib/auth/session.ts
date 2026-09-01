@@ -114,20 +114,24 @@ export function verifySessionToken(
 }
 
 export interface AuthConfig {
+  /** Segredo de assinatura da sessão — única variável que a autenticação exige. */
   secret: string;
-  /** Senha local; null quando o login por senha está desativado (só Google). */
-  password: string | null;
 }
 
+/**
+ * Não existe mais senha mestre (ADR-004): toda credencial vive em
+ * `user_accounts`, e a configuração de autenticação se resume ao segredo que
+ * assina o cookie de sessão.
+ */
 export function getAuthConfig(): AuthConfig | null {
   const secret = process.env.AUTH_SECRET;
   if (!secret) {
     return null;
   }
-  return { secret, password: process.env.AUTH_PASSWORD || null };
+  return { secret };
 }
 
-/** Comparação de senha em tempo constante (evita timing attack). */
+/** Comparação de segredo em tempo constante (evita timing attack). */
 export function passwordMatches(expected: string, provided: string): boolean {
   const expectedBuffer = Buffer.from(expected);
   const providedBuffer = Buffer.from(provided);

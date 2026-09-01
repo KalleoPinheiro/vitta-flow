@@ -180,6 +180,28 @@ describe("Feature: AuditPage", () => {
 });
 
 describe("Feature: SettingsPage", () => {
+  /** AUTH-20: a conexão da agenda é oferecida como integração, fora do login. */
+  describe("Cenário: integração do Google Agenda", () => {
+    it("Dado a tela de configurações, Quando carregar, Então oferece o link de conexão da agenda apontando para a rota de integração", async () => {
+      mockFetch(({ url }) => {
+        if (url.startsWith("/api/settings/schedule")) {
+          return jsonResponse({
+            config: { weekdays: [1], startHour: 8, endHour: 18, minGapMinutes: 30 },
+            isDefault: true,
+          });
+        }
+        if (url.startsWith("/api/accounts")) return jsonResponse([]);
+        if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        return jsonResponse(null, false);
+      });
+
+      render(<SettingsPage />);
+
+      const link = await screen.findByRole("link", { name: "Conectar Google Agenda" });
+      expect(link).toHaveAttribute("href", "/api/integrations/google-calendar");
+    });
+  });
+
   describe("Cenário: grade de horários", () => {
     it("Dado configuração padrão, Quando a página carrega, Então exibe aviso de padrão e valores", async () => {
       mockFetch(({ url }) => {
@@ -373,7 +395,7 @@ describe("Feature: SettingsPage", () => {
   });
 
   describe("Cenário: contas de acesso", () => {
-    it("Dado nenhuma conta cadastrada, Quando a página carrega, Então exibe mensagem de senha master", async () => {
+    it("Dado nenhuma conta cadastrada, Quando a página carrega, Então exibe o estado vazio", async () => {
       mockFetch(({ url }) => {
         if (url.startsWith("/api/settings/schedule")) {
           return jsonResponse({
@@ -389,7 +411,7 @@ describe("Feature: SettingsPage", () => {
       render(<SettingsPage />);
 
       expect(
-        await screen.findByText(/todos usam a senha master/),
+        await screen.findByText(/Nenhuma conta cadastrada nesta empresa/),
       ).toBeInTheDocument();
     });
 
@@ -550,14 +572,11 @@ describe("Feature: SettingsPage", () => {
       });
 
       render(<SettingsPage />);
-      await screen.findByText(/todos usam a senha master/);
+      await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
       fireEvent.change(screen.getByLabelText(/Email/), {
         target: { value: "nova@clinica.com" },
-      });
-      fireEvent.change(screen.getByLabelText(/Senha/), {
-        target: { value: "12345678" },
       });
       fireEvent.click(screen.getByText("Criar conta"));
 
@@ -585,11 +604,10 @@ describe("Feature: SettingsPage", () => {
       });
 
       render(<SettingsPage />);
-      await screen.findByText(/todos usam a senha master/);
+      await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
       fireEvent.change(screen.getByLabelText(/Email/), { target: { value: "nova@clinica.com" } });
-      fireEvent.change(screen.getByLabelText(/Senha/), { target: { value: "12345678" } });
       fireEvent.change(screen.getByLabelText(/Profissional vinculado/), {
         target: { value: "pr1" },
       });
@@ -619,11 +637,10 @@ describe("Feature: SettingsPage", () => {
       });
 
       render(<SettingsPage />);
-      await screen.findByText(/todos usam a senha master/);
+      await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
       fireEvent.change(screen.getByLabelText(/Email/), { target: { value: "nova@clinica.com" } });
-      fireEvent.change(screen.getByLabelText(/Senha/), { target: { value: "12345678" } });
       fireEvent.change(screen.getByLabelText(/Papel/), { target: { value: "profissional" } });
       fireEvent.click(screen.getByText("Criar conta"));
 
@@ -654,18 +671,16 @@ describe("Feature: SettingsPage", () => {
       });
 
       render(<SettingsPage />);
-      await screen.findByText(/todos usam a senha master/);
+      await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
       fireEvent.change(screen.getByLabelText(/Email/), { target: { value: "nova-prof@clinica.com" } });
-      fireEvent.change(screen.getByLabelText(/Senha/), { target: { value: "12345678" } });
       fireEvent.change(screen.getByLabelText(/Papel/), { target: { value: "profissional" } });
       fireEvent.change(screen.getByLabelText(/Profissional vinculado/), { target: { value: "pr1" } });
       fireEvent.click(screen.getByText("Criar conta"));
 
       await waitFor(() => expect(sentBody).toEqual({
         email: "nova-prof@clinica.com",
-        password: "12345678",
         role: "profissional",
         professionalId: "pr1",
       }));
@@ -685,7 +700,7 @@ describe("Feature: SettingsPage", () => {
       });
 
       render(<SettingsPage />);
-      await screen.findByText(/todos usam a senha master/);
+      await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
       expect(await screen.findByText("Nova conta de acesso")).toBeInTheDocument();
@@ -714,11 +729,10 @@ describe("Feature: SettingsPage", () => {
       });
 
       render(<SettingsPage />);
-      await screen.findByText(/todos usam a senha master/);
+      await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
       fireEvent.change(screen.getByLabelText(/Email/), { target: { value: "nova@clinica.com" } });
-      fireEvent.change(screen.getByLabelText(/Senha/), { target: { value: "12345678" } });
       fireEvent.click(screen.getByText("Criar conta"));
 
       expect(await screen.findByText("Email já cadastrado")).toBeInTheDocument();
@@ -741,11 +755,10 @@ describe("Feature: SettingsPage", () => {
       });
 
       render(<SettingsPage />);
-      await screen.findByText(/todos usam a senha master/);
+      await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
       fireEvent.change(screen.getByLabelText(/Email/), { target: { value: "nova@clinica.com" } });
-      fireEvent.change(screen.getByLabelText(/Senha/), { target: { value: "12345678" } });
       fireEvent.click(screen.getByText("Criar conta"));
 
       expect(await screen.findByText("Erro ao criar conta")).toBeInTheDocument();

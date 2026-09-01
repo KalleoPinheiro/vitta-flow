@@ -94,14 +94,13 @@ export class DrizzleUserAccountRepository implements UserAccountRepository {
   ) {}
 
   async save(account: UserAccount): Promise<void> {
-    if (this.clinicId === null) {
-      throw new Error(
-        "Papel de sistema não pode salvar conta de usuário (somente leitura cross-empresa)",
-      );
-    }
+    // Repositório escopado grava na própria empresa; repositório de sistema
+    // (clinicId nulo) grava a empresa que a própria conta carrega — que é
+    // `null` para super_admin, papel cross-empresa por definição. Sem esse
+    // caminho não haveria como semear o primeiro Super Admin (AUTH-27).
     const values = {
       id: account.id,
-      clinicId: this.clinicId,
+      clinicId: this.clinicId ?? account.clinicId,
       email: account.email,
       passwordHash: account.passwordHash,
       role: account.role,
@@ -124,6 +123,36 @@ export class DrizzleUserAccountRepository implements UserAccountRepository {
       )
       .limit(1);
     return rows[0] ? UserAccount.restore({ ...rows[0], role: toUserRole(rows[0].role) }) : null;
+  }
+
+  async findById(id: string): Promise<UserAccount | null> {
+    const rows = await this.db
+      .select()
+      .from(userAccounts)
+      .where(withTenant(userAccounts, this.clinicId, eq(userAccounts.id, id)))
+      .limit(1);
+    return rows[0] ? UserAccount.restore({ ...rows[0], role: toUserRole(rows[0].role) }) : null;
+  }
+
+  /**
+   * Atualiza apenas o hash de senha, pelo id. Diferente de `save`, não exige
+   * empresa de contexto: o fluxo de convite/reset roda antes de existir sessão
+   * e a autorização vem do token de uso único.
+   */
+  async updatePasswordHash(id: string, passwordHash: string): Promise<void> {
+    await this.db
+      .update(userAccounts)
+      .set({ passwordHash })
+      .where(withTenant(userAccounts, this.clinicId, eq(userAccounts.id, id)));
+  }
+
+  async hasAnyAccount(): Promise<boolean> {
+    const rows = await this.db
+      .select({ id: userAccounts.id })
+      .from(userAccounts)
+      .where(withTenant(userAccounts, this.clinicId))
+      .limit(1);
+    return rows.length > 0;
   }
 
   async findAll(): Promise<UserAccount[]> {

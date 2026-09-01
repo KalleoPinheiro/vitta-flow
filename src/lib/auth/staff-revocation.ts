@@ -5,8 +5,9 @@ import { isStaffRole } from "./staff-roles";
  * Deny-list de sessões staff: a sessão HMAC é stateless (vale 12h), então
  * desativar uma conta em `user_accounts` não invalidava sessões já emitidas.
  * Semântica de deny-list (AD-001): só bloqueia quando a conta EXISTE e está
- * inativa — subject sem linha (login Google via allowlist, senha master) segue
- * válido. Falha de infraestrutura é fail-open com log (AD-004).
+ * inativa — subject sem linha correspondente (sessões forjadas pela suíte E2E,
+ * cookies de instalações antigas) segue válido. Falha de infraestrutura é
+ * fail-open com log (AD-004).
  */
 export const REVOCATION_CACHE_TTL_MS = 60_000;
 

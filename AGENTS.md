@@ -32,11 +32,17 @@ Raw `<button>`, `<input>`, `<select>`, `<textarea>`, `<table>`, and raw Tailwind
 
 ## Auth (fails closed)
 
-Without `AUTH_PASSWORD`/`AUTH_SECRET` or Google OAuth vars set, the app returns 503 everywhere. `VITTA_ALLOW_OPEN_MODE=true` bypasses this in dev only (ignored in production). `GOOGLE_ALLOWED_EMAILS` is a required allowlist even when OAuth is configured.
+Every account authenticates with email + its own password (ADR-004) — there is no master password, no email allowlist and no Google login. Without `AUTH_SECRET` the app returns 503 everywhere; `VITTA_ALLOW_OPEN_MODE=true` bypasses this in dev only (ignored in production).
+
+First access is always self-served: creating an account emails an invite link (`/definir-senha?token=…`, 24 h, single use), and `POST /api/auth/forgot-password` issues a 1 h reset link through the same primitive. A fresh install creates its first Super Admin via `POST /api/auth/bootstrap`, guarded by the `VITTA_BOOTSTRAP_TOKEN` header **and** by there being zero accounts.
+
+In production, missing `RESEND_API_KEY`/`EMAIL_FROM` fails at gateway construction with an explicit error — outside production the null gateway logs the link instead of sending (dry-run).
+
+Google Calendar sync is an integration, not a login: `/api/integrations/google-calendar` starts a dedicated OAuth flow from an already-authenticated staff session and never touches the session cookie.
 
 ## Env vars
 
-`DATABASE_URL`, `APP_URL`, `AUTH_PASSWORD`, `AUTH_SECRET`, `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`, `GOOGLE_ALLOWED_EMAILS`, `TZ` (business hours validated in local time), `CRON_SECRET`, `API_RATE_LIMIT_MAX`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`/`PRIVATE_KEY`/`CALENDAR_ID`.
+`DATABASE_URL`, `APP_URL`, `AUTH_SECRET`, `RESEND_API_KEY`/`EMAIL_FROM`, `VITTA_BOOTSTRAP_TOKEN`, `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` (Calendar OAuth only), `TZ` (business hours validated in local time), `CRON_SECRET`, `API_RATE_LIMIT_MAX`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`/`PRIVATE_KEY`/`CALENDAR_ID`.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

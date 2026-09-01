@@ -1,6 +1,5 @@
 import type { UserRole } from "@/domain/auth/user-role";
 import { getAuthConfig } from "./session";
-import { googleOAuthConfigFromEnv } from "./google-oauth";
 import { classifyRoute, isFamilyAllowedForRole } from "./route-family";
 
 /**
@@ -24,10 +23,17 @@ import { classifyRoute, isFamilyAllowedForRole } from "./route-family";
 /** Caminhos liberados sem sessão — comparação exata, nunca por prefixo. */
 export const PUBLIC_PATHS = [
   "/login",
+  // Fluxos de primeiro acesso e recuperação: quem os usa, por definição, não tem sessão.
+  "/definir-senha",
+  "/esqueci-senha",
   "/api/auth/login",
   "/api/auth/providers",
-  "/api/auth/google",
-  "/api/auth/google/callback",
+  "/api/auth/set-password",
+  "/api/auth/forgot-password",
+  // Bootstrap do primeiro Super Admin: por definição não há sessão nem conta.
+  // A própria rota exige o segredo `VITTA_BOOTSTRAP_TOKEN` e só funciona
+  // enquanto a instalação está vazia.
+  "/api/auth/bootstrap",
   // Cron externo — a própria rota exige o header x-cron-secret (CRON_SECRET).
   "/api/reminders/run",
 ] as const;
@@ -40,7 +46,7 @@ export const STAFF_ONLY_MESSAGE = "Acesso restrito à equipe da clínica";
 /** Distinto de STAFF_ONLY_MESSAGE: a sessão É da equipe, mas o papel não acessa esta família de rota (RBAC-16). */
 export const ROLE_FAMILY_DENIED_MESSAGE = "Seu papel não tem acesso a este recurso";
 export const AUTH_NOT_CONFIGURED_MESSAGE =
-  "Autenticação não configurada: defina AUTH_SECRET e AUTH_PASSWORD (ou login Google via GOOGLE_CLIENT_ID/SECRET + APP_URL + GOOGLE_ALLOWED_EMAILS)";
+  "Autenticação não configurada: defina AUTH_SECRET";
 
 /**
  * Opt-in explícito para rodar SEM autenticação (desenvolvimento, testes E2E do
@@ -96,13 +102,13 @@ export function resetAuthModeWarning(): void {
   warnedAuthDisabled = false;
 }
 
-/** Um segredo sozinho não autentica ninguém: é preciso senha local OU Google. */
+/**
+ * Autenticação utilizável = segredo de assinatura de sessão presente. Depois da
+ * remoção do login Google e da senha mestre (ADR-004), toda credencial vive no
+ * banco: nenhuma outra variável de ambiente participa da decisão.
+ */
 function isAuthUsable(): boolean {
-  const auth = getAuthConfig();
-  if (!auth) {
-    return false;
-  }
-  return Boolean(auth.password) || Boolean(googleOAuthConfigFromEnv());
+  return getAuthConfig() !== null;
 }
 
 export function resolveAuthMode(): AuthMode {

@@ -46,6 +46,21 @@ export class InMemoryUserAccountRepository implements UserAccountRepository {
     return [...this.items.values()].find((a) => a.email === normalized) ?? null;
   }
 
+  async findById(id: string): Promise<UserAccount | null> {
+    return this.items.get(id) ?? null;
+  }
+
+  async updatePasswordHash(id: string, passwordHash: string): Promise<void> {
+    const existing = this.items.get(id);
+    if (existing) {
+      this.items.set(id, existing.withPasswordHash(passwordHash));
+    }
+  }
+
+  async hasAnyAccount(): Promise<boolean> {
+    return this.items.size > 0;
+  }
+
   async findAll(): Promise<UserAccount[]> {
     return [...this.items.values()].sort((a, b) => a.email.localeCompare(b.email));
   }

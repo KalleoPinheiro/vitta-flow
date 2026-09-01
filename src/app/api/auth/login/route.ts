@@ -3,7 +3,6 @@ import { z } from "zod";
 import {
   createSessionToken,
   getAuthConfig,
-  passwordMatches,
   sessionCookieOptions,
   SESSION_COOKIE,
   SESSION_TTL_MS,
@@ -17,10 +16,13 @@ import type { UserRole } from "@/domain/auth/user-role";
 
 const LOGIN_RATE_LIMIT = new RateLimiter(5, 60_000);
 
+/**
+ * Único caminho de login desde a ADR-004: e-mail + senha da própria conta.
+ * `email` é obrigatório — não existe mais senha mestre nem login por Google.
+ */
 const loginSchema = z.object({
+  email: z.string().min(3).max(200),
   password: z.string().min(1).max(200),
-  /** Presente → login por conta individual; ausente → senha master da clínica. */
-  email: z.string().max(200).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -39,20 +41,9 @@ export async function POST(request: NextRequest) {
     return fail("Credenciais inválidas", 401);
   }
 
-  // Identidade da sessão: email da conta individual ou "local" (senha master).
-  const identity = parsed.data.email
-    ? await authenticateAccount(parsed.data.email, parsed.data.password)
-    : authenticateMaster(auth.password, parsed.data.password);
+  const identity = await authenticateAccount(parsed.data.email, parsed.data.password);
   if ("error" in identity) {
     return fail(identity.error, identity.status);
-  }
-  const subject = identity.subject;
-  if (subject === "local") {
-    // Credencial compartilhada corrói a trilha de auditoria (ator "local") —
-    // caminho de descontinuação registrado no plano de evolução (Fase 6).
-    console.warn(
-      "Login com a senha master da clínica — prefira contas individuais para auditoria nominal",
-    );
   }
 
   const expiresAtMs = Date.now() + SESSION_TTL_MS;
@@ -62,7 +53,7 @@ export async function POST(request: NextRequest) {
     createSessionToken(
       auth.secret,
       expiresAtMs,
-      subject,
+      identity.subject,
       identity.role,
       identity.clinicId,
       identity.professionalId,
@@ -92,16 +83,4 @@ async function authenticateAccount(email: string, password: string): Promise<Aut
     clinicId: account.clinicId,
     professionalId: account.professionalId,
   };
-}
-
-function authenticateMaster(masterPassword: string | null, password: string): AuthResult {
-  if (!masterPassword) {
-    return { error: "Login por senha desativado — use conta individual ou Google", status: 403 };
-  }
-  if (!passwordMatches(masterPassword, password)) {
-    return { error: "Senha incorreta", status: 401 };
-  }
-  // Senha mestre de emergência: acesso cross-empresa, mapeada para super_admin
-  // até a remoção da senha mestre na issue #21.
-  return { subject: "local", role: "super_admin", clinicId: null, professionalId: null };
 }

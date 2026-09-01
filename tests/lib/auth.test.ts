@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import {
   createSessionToken,
@@ -6,11 +6,6 @@ import {
   passwordMatches,
 } from "@/lib/auth/session";
 import { encryptSecret, decryptSecret } from "@/lib/auth/crypto";
-import {
-  isEmailAllowed,
-  parseAllowedEmails,
-  googleOAuthConfigFromEnv,
-} from "@/lib/auth/google-oauth";
 import { RateLimiter } from "@/lib/auth/rate-limit";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 
@@ -132,23 +127,6 @@ describe("Feature: Criptografia de segredos em repouso (AES-256-GCM)", () => {
   });
 });
 
-describe("Feature: Allowlist de emails do login Google", () => {
-  it("Dado lista com espaços e maiúsculas, Quando parsear, Então normaliza", () => {
-    expect(parseAllowedEmails(" Ana@Clinica.com , joao@x.com ,")).toEqual([
-      "ana@clinica.com",
-      "joao@x.com",
-    ]);
-    expect(parseAllowedEmails(undefined)).toEqual([]);
-  });
-
-  it("Dado email na lista (qualquer caixa), Quando checar, Então permitido; fora dela, negado", () => {
-    const allowed = ["ana@clinica.com"];
-
-    expect(isEmailAllowed("ANA@clinica.com", allowed)).toBe(true);
-    expect(isEmailAllowed("intruso@gmail.com", allowed)).toBe(false);
-  });
-});
-
 describe("Feature: Rate limiting de janela fixa", () => {
   it("Dado limite 3/janela, Quando 4ª requisição na janela, Então bloqueia", () => {
     const limiter = new RateLimiter(3, 60_000);
@@ -217,50 +195,6 @@ describe("Feature: Criptografia de segredos — payload malformado", () => {
 
     expect(Buffer.from(legacy.split(".")[1], "base64url")).toHaveLength(16);
     expect(decryptSecret(legacy, SECRET)).toBe("refresh-token-legado");
-  });
-});
-
-describe("Feature: Configuração de OAuth do Google a partir do ambiente", () => {
-  const ENV_KEYS = ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "APP_URL", "GOOGLE_ALLOWED_EMAILS"] as const;
-  const savedEnv: Record<string, string | undefined> = {};
-
-  afterEach(() => {
-    for (const key of ENV_KEYS) {
-      if (savedEnv[key] === undefined) {
-        delete process.env[key];
-      } else {
-        process.env[key] = savedEnv[key];
-      }
-    }
-  });
-
-  it("Dado alguma variável de ambiente ausente, Quando googleOAuthConfigFromEnv, Então retorna null", () => {
-    for (const key of ENV_KEYS) {
-      savedEnv[key] = process.env[key];
-      delete process.env[key];
-    }
-    process.env.GOOGLE_CLIENT_ID = "client-id";
-
-    expect(googleOAuthConfigFromEnv()).toBeNull();
-  });
-
-  it("Dado todas as variáveis configuradas, Quando googleOAuthConfigFromEnv, Então monta config com redirectUri normalizada", () => {
-    for (const key of ENV_KEYS) {
-      savedEnv[key] = process.env[key];
-    }
-    process.env.GOOGLE_CLIENT_ID = "client-id";
-    process.env.GOOGLE_CLIENT_SECRET = "client-secret";
-    process.env.APP_URL = "https://vitta.exemplo.com/";
-    process.env.GOOGLE_ALLOWED_EMAILS = "ana@clinica.com";
-
-    const config = googleOAuthConfigFromEnv();
-
-    expect(config).toEqual({
-      clientId: "client-id",
-      clientSecret: "client-secret",
-      redirectUri: "https://vitta.exemplo.com/api/auth/google/callback",
-      allowedEmails: ["ana@clinica.com"],
-    });
   });
 });
 

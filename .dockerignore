@@ -1,5 +1,6 @@
 node_modules
 .next
+.next-open-mode
 .git
 coverage
 data

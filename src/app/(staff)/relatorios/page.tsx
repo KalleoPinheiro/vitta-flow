@@ -73,38 +73,40 @@ export default function ReportsPage() {
                 <EmptyState message="Nenhuma consulta concluída no mês." />
               ) : (
                 <>
-                  <Table className="w-full text-left text-sm">
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="py-2">Procedimento</TableHead>
-                        <TableHead className="py-2 text-right">Qtde</TableHead>
-                        <TableHead className="py-2 text-right">Receita</TableHead>
-                        <TableHead className="py-2 text-right">Insumos</TableHead>
-                        <TableHead className="py-2 text-right">Margem</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {report.revenueByProcedure.map((row) => (
-                        <TableRow key={row.procedure}>
-                          <TableCell className="py-2">{row.procedure}</TableCell>
-                          <TableCell className="py-2 text-right">{row.count}</TableCell>
-                          <TableCell className="py-2 text-right font-medium">
-                            {formatCurrency(row.totalCents)}
-                          </TableCell>
-                          <TableCell className="py-2 text-right text-ink-3">
-                            {formatCurrency(row.supplyCostCents)}
-                          </TableCell>
-                          <TableCell
-                            className={`py-2 text-right font-medium ${
-                              row.marginCents >= 0 ? "text-success" : "text-danger"
-                            }`}
-                          >
-                            {formatCurrency(row.marginCents)}
-                          </TableCell>
+                  <div className="overflow-x-auto">
+                    <Table className="w-full text-left text-sm">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="py-2">Procedimento</TableHead>
+                          <TableHead className="py-2 text-right">Qtde</TableHead>
+                          <TableHead className="py-2 text-right">Receita</TableHead>
+                          <TableHead className="py-2 text-right">Insumos</TableHead>
+                          <TableHead className="py-2 text-right">Margem</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {report.revenueByProcedure.map((row) => (
+                          <TableRow key={row.procedure}>
+                            <TableCell className="py-2">{row.procedure}</TableCell>
+                            <TableCell className="py-2 text-right">{row.count}</TableCell>
+                            <TableCell className="py-2 text-right font-medium">
+                              {formatCurrency(row.totalCents)}
+                            </TableCell>
+                            <TableCell className="py-2 text-right text-ink-3">
+                              {formatCurrency(row.supplyCostCents)}
+                            </TableCell>
+                            <TableCell
+                              className={`py-2 text-right font-medium ${
+                                row.marginCents >= 0 ? "text-success" : "text-danger"
+                              }`}
+                            >
+                              {formatCurrency(row.marginCents)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                   {report.unattributedSupplyCostCents > 0 && (
                     <p className="mt-3 text-xs text-warning">
                       Custo de insumos não vinculado a consulta no mês:{" "}
@@ -120,30 +122,32 @@ export default function ReportsPage() {
           {report.productionByProfessional.length > 0 && (
             <Card as="section" className="p-5">
               <h2 className="mb-3 text-lg font-semibold">Produção por profissional</h2>
-              <Table className="w-full text-left text-sm">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="py-2">Profissional</TableHead>
-                    <TableHead className="py-2 text-right">Concluídas</TableHead>
-                    <TableHead className="py-2 text-right">Receita</TableHead>
-                    <TableHead className="py-2 text-right">Repasse</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {report.productionByProfessional.map((row) => (
-                    <TableRow key={row.professionalId ?? "none"}>
-                      <TableCell className="py-2">{row.professionalName}</TableCell>
-                      <TableCell className="py-2 text-right">{row.count}</TableCell>
-                      <TableCell className="py-2 text-right font-medium">
-                        {formatCurrency(row.totalCents)}
-                      </TableCell>
-                      <TableCell className="py-2 text-right text-ink-2">
-                        {row.commissionCents != null ? formatCurrency(row.commissionCents) : "—"}
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table className="w-full text-left text-sm">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="py-2">Profissional</TableHead>
+                      <TableHead className="py-2 text-right">Concluídas</TableHead>
+                      <TableHead className="py-2 text-right">Receita</TableHead>
+                      <TableHead className="py-2 text-right">Repasse</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {report.productionByProfessional.map((row) => (
+                      <TableRow key={row.professionalId ?? "none"}>
+                        <TableCell className="py-2">{row.professionalName}</TableCell>
+                        <TableCell className="py-2 text-right">{row.count}</TableCell>
+                        <TableCell className="py-2 text-right font-medium">
+                          {formatCurrency(row.totalCents)}
+                        </TableCell>
+                        <TableCell className="py-2 text-right text-ink-2">
+                          {row.commissionCents != null ? formatCurrency(row.commissionCents) : "—"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </Card>
           )}
         </div>

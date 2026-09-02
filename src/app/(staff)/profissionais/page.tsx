@@ -66,48 +66,50 @@ export default function ProfessionalsPage() {
         ) : professionals.length === 0 ? (
           <EmptyState message="Nenhum profissional cadastrado. Consultas e evoluções podem ser atribuídas após o cadastro." />
         ) : (
-          <Table className="w-full text-left text-sm">
-            <TableHeader>
-              <TableRow>
-                <TableHead className="px-4 py-3">Nome</TableHead>
-                <TableHead className="px-4 py-3">Registro</TableHead>
-                <TableHead className="px-4 py-3">Situação</TableHead>
-                <TableHead className="px-4 py-3 text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {professionals.map((professional) => (
-                <TableRow key={professional.id} className={professional.active ? "" : "opacity-50"}>
-                  <TableCell className="px-4 py-3 font-medium">{professional.fullName}</TableCell>
-                  <TableCell className="px-4 py-3 text-ink-2">{professional.registry ?? "—"}</TableCell>
-                  <TableCell className="px-4 py-3">
-                    <StatusBadge
-                      status={professional.active ? "confirmed" : "cancelled"}
-                      label={professional.active ? "Ativo" : "Inativo"}
-                    />
-                  </TableCell>
-                  <TableCell className="px-4 py-3 text-right">
-                    <Button
-                      type="button"
-                      onClick={() => setEditing(professional)}
-                      variant="link"
-                      className="h-auto p-0 mr-2 text-accent-ink"
-                    >
-                      Editar
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={() => void toggleActive(professional)}
-                      variant="link"
-                      className="h-auto p-0 text-ink-3"
-                    >
-                      {professional.active ? "Desativar" : "Reativar"}
-                    </Button>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table className="w-full text-left text-sm">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="px-4 py-3">Nome</TableHead>
+                  <TableHead className="px-4 py-3">Registro</TableHead>
+                  <TableHead className="px-4 py-3">Situação</TableHead>
+                  <TableHead className="px-4 py-3 text-right">Ações</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {professionals.map((professional) => (
+                  <TableRow key={professional.id} className={professional.active ? "" : "opacity-50"}>
+                    <TableCell className="px-4 py-3 font-medium">{professional.fullName}</TableCell>
+                    <TableCell className="px-4 py-3 text-ink-2">{professional.registry ?? "—"}</TableCell>
+                    <TableCell className="px-4 py-3">
+                      <StatusBadge
+                        status={professional.active ? "confirmed" : "cancelled"}
+                        label={professional.active ? "Ativo" : "Inativo"}
+                      />
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-right">
+                      <Button
+                        type="button"
+                        onClick={() => setEditing(professional)}
+                        variant="link"
+                        className="h-auto p-0 mr-2 text-accent-ink"
+                      >
+                        Editar
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={() => void toggleActive(professional)}
+                        variant="link"
+                        className="h-auto p-0 text-ink-3"
+                      >
+                        {professional.active ? "Desativar" : "Reativar"}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </Card>
 

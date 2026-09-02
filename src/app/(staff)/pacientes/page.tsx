@@ -36,61 +36,63 @@ interface PatientsTableProps {
 
 function PatientsTable({ patients, onEdit, onToggleActive }: PatientsTableProps) {
   return (
-    <Table className="w-full text-left text-sm">
-      <TableHeader>
-        <TableRow>
-          <TableHead className="px-4 py-3">Nome</TableHead>
-          <TableHead className="px-4 py-3">Contato</TableHead>
-          <TableHead className="px-4 py-3">Nascimento</TableHead>
-          <TableHead className="px-4 py-3">Situação</TableHead>
-          <TableHead className="px-4 py-3 text-right">Ações</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {patients.map((patient) => (
-          <TableRow key={patient.id} className={patient.active ? "" : "opacity-50"}>
-            <TableCell className="px-4 py-3 font-medium">{patient.fullName}</TableCell>
-            <TableCell className="px-4 py-3 text-ink-2">
-              <div>{patient.email}</div>
-              <div className="text-xs text-ink-3">{patient.phone}</div>
-            </TableCell>
-            <TableCell className="px-4 py-3 text-ink-2">
-              {patient.birthDate ? formatDate(patient.birthDate) : "—"}
-            </TableCell>
-            <TableCell className="px-4 py-3">
-              <StatusBadge
-                status={patient.active ? "confirmed" : "cancelled"}
-                label={patient.active ? "Ativo" : "Inativo"}
-              />
-            </TableCell>
-            <TableCell className="px-4 py-3 text-right">
-              <a
-                href={`/pacientes/${patient.id}`}
-                className="mr-2 font-medium text-accent-ink hover:underline"
-              >
-                Prontuário
-              </a>
-              <Button
-                type="button"
-                onClick={() => onEdit(patient)}
-                variant="link"
-                className="h-auto p-0 mr-2 text-accent-ink"
-              >
-                Editar
-              </Button>
-              <Button
-                type="button"
-                onClick={() => onToggleActive(patient)}
-                variant="link"
-                className="h-auto p-0 text-ink-3"
-              >
-                {patient.active ? "Desativar" : "Reativar"}
-              </Button>
-            </TableCell>
+    <div className="overflow-x-auto">
+      <Table className="w-full text-left text-sm">
+        <TableHeader>
+          <TableRow>
+            <TableHead className="px-4 py-3">Nome</TableHead>
+            <TableHead className="px-4 py-3">Contato</TableHead>
+            <TableHead className="px-4 py-3">Nascimento</TableHead>
+            <TableHead className="px-4 py-3">Situação</TableHead>
+            <TableHead className="px-4 py-3 text-right">Ações</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {patients.map((patient) => (
+            <TableRow key={patient.id} className={patient.active ? "" : "opacity-50"}>
+              <TableCell className="px-4 py-3 font-medium">{patient.fullName}</TableCell>
+              <TableCell className="px-4 py-3 text-ink-2">
+                <div>{patient.email}</div>
+                <div className="text-xs text-ink-3">{patient.phone}</div>
+              </TableCell>
+              <TableCell className="px-4 py-3 text-ink-2">
+                {patient.birthDate ? formatDate(patient.birthDate) : "—"}
+              </TableCell>
+              <TableCell className="px-4 py-3">
+                <StatusBadge
+                  status={patient.active ? "confirmed" : "cancelled"}
+                  label={patient.active ? "Ativo" : "Inativo"}
+                />
+              </TableCell>
+              <TableCell className="px-4 py-3 text-right">
+                <a
+                  href={`/pacientes/${patient.id}`}
+                  className="mr-2 font-medium text-accent-ink hover:underline"
+                >
+                  Prontuário
+                </a>
+                <Button
+                  type="button"
+                  onClick={() => onEdit(patient)}
+                  variant="link"
+                  className="h-auto p-0 mr-2 text-accent-ink"
+                >
+                  Editar
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => onToggleActive(patient)}
+                  variant="link"
+                  className="h-auto p-0 text-ink-3"
+                >
+                  {patient.active ? "Desativar" : "Reativar"}
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 

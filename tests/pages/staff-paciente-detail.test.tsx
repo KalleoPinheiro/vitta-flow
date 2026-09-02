@@ -454,6 +454,79 @@ describe("Feature: PatientRecordPage", () => {
     });
   });
 
+  describe("Cenário: guarda de troca de aba com formulário sujo (#66)", () => {
+    it("Dado SOAP com campo preenchido, Quando trocar de aba, Então pede confirmação antes de descartar", async () => {
+      mockFetch(buildRouter());
+
+      await renderDetail();
+      await screen.findByText("Maria Souza");
+
+      fireEvent.click(screen.getByText("Evoluções (SOAP)"));
+      fireEvent.click(screen.getByText("+ Nova evolução"));
+      fireEvent.change(screen.getByLabelText(/S — Subjetivo/), {
+        target: { value: "Rascunho não salvo" },
+      });
+
+      fireEvent.click(screen.getByText("Anamnese"));
+
+      expect(await screen.findByText("Descartar alterações?")).toBeInTheDocument();
+      // Cancelar mantém a aba e o texto digitado intactos.
+      fireEvent.click(screen.getByText("Cancelar"));
+      expect(screen.queryByText("Descartar alterações?")).not.toBeInTheDocument();
+      expect(screen.getByDisplayValue("Rascunho não salvo")).toBeInTheDocument();
+    });
+
+    it("Dado SOAP sujo, Quando confirmar o descarte, Então troca de aba e limpa o rascunho", async () => {
+      mockFetch(buildRouter());
+
+      await renderDetail();
+      await screen.findByText("Maria Souza");
+
+      fireEvent.click(screen.getByText("Evoluções (SOAP)"));
+      fireEvent.click(screen.getByText("+ Nova evolução"));
+      fireEvent.change(screen.getByLabelText(/S — Subjetivo/), {
+        target: { value: "Rascunho descartável" },
+      });
+
+      fireEvent.click(screen.getByText("Anamnese"));
+      fireEvent.click(await screen.findByText("Descartar e trocar"));
+
+      expect(screen.queryByText("Descartar alterações?")).not.toBeInTheDocument();
+      expect(screen.getByLabelText("Comorbidades")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("Evoluções (SOAP)"));
+      fireEvent.click(screen.getByText("+ Nova evolução"));
+      expect(screen.queryByDisplayValue("Rascunho descartável")).not.toBeInTheDocument();
+    });
+
+    it("Dado anamnese alterada e não salva, Quando trocar de aba, Então pede confirmação", async () => {
+      mockFetch(buildRouter({ anamnesis: anamnesisFixture }));
+
+      await renderDetail();
+      await screen.findByText("Maria Souza");
+
+      fireEvent.change(screen.getByLabelText("Comorbidades"), {
+        target: { value: "Hipertensão não salva" },
+      });
+
+      fireEvent.click(screen.getByText("Evoluções (SOAP)"));
+
+      expect(await screen.findByText("Descartar alterações?")).toBeInTheDocument();
+    });
+
+    it("Dado nenhuma alteração pendente, Quando trocar de aba, Então troca direto sem diálogo", async () => {
+      mockFetch(buildRouter());
+
+      await renderDetail();
+      await screen.findByText("Maria Souza");
+
+      fireEvent.click(screen.getByText("Evoluções (SOAP)"));
+
+      expect(screen.queryByText("Descartar alterações?")).not.toBeInTheDocument();
+      expect(await screen.findByText("Nenhuma evolução registrada.")).toBeInTheDocument();
+    });
+  });
+
   describe("Cenário: conditions-section", () => {
     async function openConditionsTab() {
       await renderDetail();

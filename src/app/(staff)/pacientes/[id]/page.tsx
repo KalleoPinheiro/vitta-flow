@@ -19,6 +19,16 @@ import { EvolutionsSection } from "./evolutions-section";
 import { CarePlansSection } from "./care-plans-section";
 import { PackagesSection } from "./packages-section";
 import { Alert, AlertDescription, Button, Card, Icon } from "@still-void/ui/react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@still-void/ui/react/client";
 
 const TABS = [
   { key: "anamnese", label: "Anamnese" },
@@ -112,9 +122,56 @@ function TabButton({ label, isActive, onClick }: TabButtonProps) {
   );
 }
 
+/**
+ * Guarda de troca de aba (issue #66): SOAP em edição ou anamnese alterada
+ * pedem confirmação antes de descartar. Extraído em hook próprio para manter
+ * a complexidade de `PatientRecordPage` dentro do limite do projeto.
+ */
+function useDirtyTabGuard(tab: TabKey) {
+  const [evolutionsDirty, setEvolutionsDirty] = useState(false);
+  const [anamnesisDirty, setAnamnesisDirty] = useState(false);
+  const [pendingTab, setPendingTab] = useState<TabKey | null>(null);
+
+  const isCurrentTabDirty =
+    (tab === "evolucoes" && evolutionsDirty) || (tab === "anamnese" && anamnesisDirty);
+
+  const requestTabChange = (nextTab: TabKey, setTab: (next: TabKey) => void) => {
+    if (nextTab === tab) return;
+    if (isCurrentTabDirty) {
+      setPendingTab(nextTab);
+      return;
+    }
+    setTab(nextTab);
+  };
+
+  const confirmDiscardAndSwitch = (setTab: (next: TabKey) => void) => {
+    if (pendingTab) {
+      setTab(pendingTab);
+    }
+    setPendingTab(null);
+  };
+
+  return {
+    pendingTab,
+    setEvolutionsDirty,
+    setAnamnesisDirty,
+    requestTabChange,
+    confirmDiscardAndSwitch,
+    cancelPendingTab: () => setPendingTab(null),
+  };
+}
+
 export default function PatientRecordPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [tab, setTab] = useState<TabKey>("anamnese");
+  const {
+    pendingTab,
+    setEvolutionsDirty,
+    setAnamnesisDirty,
+    requestTabChange,
+    confirmDiscardAndSwitch,
+    cancelPendingTab,
+  } = useDirtyTabGuard(tab);
 
   const { data: patient, error } = useApiQuery<PatientDto>(`/api/patients/${id}`);
   const {
@@ -161,7 +218,7 @@ export default function PatientRecordPage({ params }: { params: Promise<{ id: st
             key={item.key}
             label={tabLabel(item, conditions ?? [], evolutions ?? [], carePlans ?? [])}
             isActive={tab === item.key}
-            onClick={() => setTab(item.key)}
+            onClick={() => requestTabChange(item.key, setTab)}
           />
         ))}
       </div>
@@ -173,12 +230,14 @@ export default function PatientRecordPage({ params }: { params: Promise<{ id: st
           anamnesis={anamnesis ?? null}
           anamnesisError={anamnesisError}
           anamnesisLoading={anamnesisLoading}
+          onAnamnesisDirtyChange={setAnamnesisDirty}
           conditions={conditions ?? []}
           conditionsError={conditionsError}
           conditionsLoading={conditionsLoading}
           evolutions={evolutions ?? []}
           evolutionsError={evolutionsError}
           evolutionsLoading={evolutionsLoading}
+          onEvolutionsDirtyChange={setEvolutionsDirty}
           carePlans={carePlans ?? []}
           carePlansError={carePlansError}
           carePlansLoading={carePlansLoading}
@@ -188,6 +247,23 @@ export default function PatientRecordPage({ params }: { params: Promise<{ id: st
           refreshCarePlans={refreshCarePlans}
         />
       </Card>
+
+      <AlertDialog open={pendingTab !== null} onOpenChange={(open) => !open && cancelPendingTab()}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Descartar alterações?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Há texto não salvo nesta aba. Trocar de aba agora descarta o que foi digitado.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => confirmDiscardAndSwitch(setTab)}>
+              Descartar e trocar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -198,12 +274,14 @@ interface RecordTabPanelProps {
   anamnesis: AnamnesisDto | null;
   anamnesisError: string | null;
   anamnesisLoading: boolean;
+  onAnamnesisDirtyChange: (dirty: boolean) => void;
   conditions: ConditionDto[];
   conditionsError: string | null;
   conditionsLoading: boolean;
   evolutions: EvolutionNoteDto[];
   evolutionsError: string | null;
   evolutionsLoading: boolean;
+  onEvolutionsDirtyChange: (dirty: boolean) => void;
   carePlans: CarePlanDto[];
   carePlansError: string | null;
   carePlansLoading: boolean;
@@ -219,12 +297,14 @@ function RecordTabPanel({
   anamnesis,
   anamnesisError,
   anamnesisLoading,
+  onAnamnesisDirtyChange,
   conditions,
   conditionsError,
   conditionsLoading,
   evolutions,
   evolutionsError,
   evolutionsLoading,
+  onEvolutionsDirtyChange,
   carePlans,
   carePlansError,
   carePlansLoading,
@@ -254,6 +334,7 @@ function RecordTabPanel({
         isLoading={evolutionsLoading}
         onSaved={refreshEvolutions}
         onRetry={refreshEvolutions}
+        onDirtyChange={onEvolutionsDirtyChange}
       />
     );
   }
@@ -282,6 +363,7 @@ function RecordTabPanel({
       isLoading={anamnesisLoading}
       onSaved={refreshAnamnesis}
       onRetry={refreshAnamnesis}
+      onDirtyChange={onAnamnesisDirtyChange}
     />
   );
 }

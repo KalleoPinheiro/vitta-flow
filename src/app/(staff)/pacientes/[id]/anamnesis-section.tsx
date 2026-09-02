@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "@still-void/ui/react/client";
 import { apiFetch } from "@/lib/client";
 import type { AnamnesisDto } from "@/lib/dto";
@@ -15,6 +15,8 @@ interface AnamnesisSectionProps {
   isLoading: boolean;
   onSaved: () => void;
   onRetry: () => void;
+  /** Reporta se há alteração não salva — troca de aba pede confirmação (issue #66). */
+  onDirtyChange: (dirty: boolean) => void;
 }
 
 const FIELDS = [
@@ -39,11 +41,18 @@ export function AnamnesisSection({
   isLoading,
   onSaved,
   onRetry,
+  onDirtyChange,
 }: AnamnesisSectionProps) {
   const { toast } = useToast();
   const [values, setValues] = useState<Record<FieldKey, string>>(() => toFormValues(anamnesis));
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const baseline = toFormValues(anamnesis);
+  const isDirty = FIELDS.some((field) => values[field.key] !== baseline[field.key]);
+  useEffect(() => {
+    onDirtyChange(isDirty);
+  }, [isDirty, onDirtyChange]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();

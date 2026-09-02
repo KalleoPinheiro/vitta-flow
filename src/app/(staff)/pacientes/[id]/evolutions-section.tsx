@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "@still-void/ui/react/client";
 import { apiFetch } from "@/lib/client";
 import type { EvolutionNoteDto, ProfessionalDto } from "@/lib/dto";
@@ -16,6 +16,8 @@ interface EvolutionsSectionProps {
   isLoading: boolean;
   onSaved: () => void;
   onRetry: () => void;
+  /** Reporta se há SOAP não salvo — troca de aba pede confirmação (issue #66). */
+  onDirtyChange: (dirty: boolean) => void;
 }
 
 const SOAP_FIELDS = [
@@ -36,6 +38,7 @@ export function EvolutionsSection({
   isLoading,
   onSaved,
   onRetry,
+  onDirtyChange,
 }: EvolutionsSectionProps) {
   const { toast } = useToast();
   const [values, setValues] = useState(EMPTY);
@@ -45,6 +48,11 @@ export function EvolutionsSection({
   const { data: professionals } = useApiQuery<ProfessionalDto[]>("/api/professionals");
   const professionalName = (id: string | null) =>
     (professionals ?? []).find((p) => p.id === id)?.fullName ?? null;
+
+  const isDirty = showForm && Object.values(values).some((value) => value.trim() !== "");
+  useEffect(() => {
+    onDirtyChange(isDirty);
+  }, [isDirty, onDirtyChange]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();

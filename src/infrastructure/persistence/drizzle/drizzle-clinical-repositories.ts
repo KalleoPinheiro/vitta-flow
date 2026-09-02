@@ -26,6 +26,7 @@ import {
 } from "@/domain/clinical/condition-photo";
 import {
   ConsentRecord,
+  type ConsentRecordKind,
   type ConsentRecordRepository,
 } from "@/domain/consent/consent-record";
 import type { AppDb } from "./db";
@@ -385,7 +386,9 @@ export class DrizzleConsentRecordRepository implements ConsentRecordRepository {
       id: record.id,
       clinicId: this.clinicId,
       patientId: record.patientId,
+      kind: record.kind,
       textHash: record.textHash,
+      textVersion: record.textVersion,
       ipAddress: record.ipAddress,
       acceptedAt: record.acceptedAt,
     });
@@ -397,6 +400,16 @@ export class DrizzleConsentRecordRepository implements ConsentRecordRepository {
       .from(consentRecords)
       .where(withTenant(consentRecords, this.clinicId, eq(consentRecords.patientId, patientId)))
       .orderBy(desc(consentRecords.acceptedAt));
-    return rows.map((row) => ConsentRecord.restore(row));
+    return rows.map((row) => ConsentRecord.restore({ ...row, kind: row.kind as ConsentRecordKind }));
+  }
+
+  async findLatestByPatientId(patientId: string): Promise<ConsentRecord | null> {
+    const [row] = await this.db
+      .select()
+      .from(consentRecords)
+      .where(withTenant(consentRecords, this.clinicId, eq(consentRecords.patientId, patientId)))
+      .orderBy(desc(consentRecords.acceptedAt))
+      .limit(1);
+    return row ? ConsentRecord.restore({ ...row, kind: row.kind as ConsentRecordKind }) : null;
   }
 }

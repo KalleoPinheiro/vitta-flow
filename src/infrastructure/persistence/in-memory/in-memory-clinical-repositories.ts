@@ -148,4 +148,9 @@ export class InMemoryConsentRecordRepository implements ConsentRecordRepository 
       .filter((r) => r.patientId === patientId)
       .sort((a, b) => b.acceptedAt.getTime() - a.acceptedAt.getTime());
   }
+
+  async findLatestByPatientId(patientId: string): Promise<ConsentRecord | null> {
+    const records = await this.findByPatientId(patientId);
+    return records[0] ?? null;
+  }
 }

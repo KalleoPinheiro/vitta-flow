@@ -139,4 +139,6 @@ export class ConsentRecord {
 export interface ConsentRecordRepository {
   save(record: ConsentRecord): Promise<void>;
   findByPatientId(patientId: string): Promise<ConsentRecord[]>;
+  /** Registro mais recente por `acceptedAt` (qualquer `kind`) — usado pra resolver status. */
+  findLatestByPatientId(patientId: string): Promise<ConsentRecord | null>;
 }

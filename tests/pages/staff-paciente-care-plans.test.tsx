@@ -361,6 +361,22 @@ describe("Feature: Plano de Cuidados (SAE) na página do paciente", () => {
     expect(within(planCard).getByText("Ativo")).toBeInTheDocument();
   });
 
+  it("Dado erro 500 ao carregar planos, Quando abrir a aba, Então exibe alerta de erro, não estado vazio", async () => {
+    mockFetch(({ url }) => {
+      const staticRoute = handleStaticPatientRoutes(url);
+      if (staticRoute) return staticRoute;
+      if (url === "/api/patients/pac-1/care-plans") return errorResponse("Erro ao carregar planos");
+      return errorResponse(`URL não mapeada no mock: ${url}`);
+    });
+    await renderDetail();
+    await screen.findByText("Maria Souza");
+
+    await openCarePlanTab();
+
+    expect(await screen.findByText("Erro ao carregar planos")).toBeInTheDocument();
+    expect(screen.queryByText("Nenhum plano de cuidados aberto.")).not.toBeInTheDocument();
+  });
+
   it("Dado plano geral sem condição, Quando abrir, Então rotula como plano geral do paciente", async () => {
     mockFetch(createCarePlanServer());
     await renderDetail();

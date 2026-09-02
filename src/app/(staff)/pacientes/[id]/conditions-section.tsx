@@ -13,7 +13,7 @@ import {
 } from "@/lib/format";
 import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
-import { EmptyState, ErrorAlert } from "@/components/feedback";
+import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import { HealingChart } from "@/components/healing-chart";
 import { ConditionPhotos } from "./condition-photos";
 import {
@@ -33,12 +33,20 @@ import {
 interface ConditionsSectionProps {
   patientId: string;
   conditions: ConditionDto[];
+  error: string | null;
+  isLoading: boolean;
   onChanged: () => void;
 }
 
-export function ConditionsSection({ patientId, conditions, onChanged }: ConditionsSectionProps) {
+export function ConditionsSection({
+  patientId,
+  conditions,
+  error,
+  isLoading,
+  onChanged,
+}: ConditionsSectionProps) {
   const { toast } = useToast();
-  const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [assessing, setAssessing] = useState<ConditionDto | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -66,13 +74,13 @@ export function ConditionsSection({ patientId, conditions, onChanged }: Conditio
       toast({ description: "Condição resolvida", variant: "success" });
       onChanged();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao resolver condição");
+      setActionError(err instanceof Error ? err.message : "Erro ao resolver condição");
     }
   };
 
   return (
     <div className="flex flex-col gap-4">
-      {error && <ErrorAlert message={error} />}
+      {actionError && <ErrorAlert message={actionError} />}
       <div className="flex items-center justify-between">
         <p className="text-sm text-ink-3">
           Estomias e feridas com avaliações seriadas para acompanhar a evolução.
@@ -86,7 +94,11 @@ export function ConditionsSection({ patientId, conditions, onChanged }: Conditio
         </Button>
       </div>
 
-      {conditions.length === 0 ? (
+      {isLoading ? (
+        <LoadingIndicator />
+      ) : error ? (
+        <ErrorAlert message={error} />
+      ) : conditions.length === 0 ? (
         <EmptyState message="Nenhuma condição clínica cadastrada." />
       ) : (
         <ul className="flex flex-col gap-3">

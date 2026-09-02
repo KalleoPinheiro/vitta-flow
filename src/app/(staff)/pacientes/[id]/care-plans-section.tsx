@@ -23,7 +23,7 @@ import {
 } from "@/lib/format";
 import { Modal } from "@/components/modal";
 import { StatusBadge } from "@/components/status-badge";
-import { EmptyState, ErrorAlert } from "@/components/feedback";
+import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import {
   Button,
   Card,
@@ -38,10 +38,19 @@ interface CarePlansSectionProps {
   patientId: string;
   conditions: ConditionDto[];
   plans: CarePlanDto[];
+  error: string | null;
+  isLoading: boolean;
   onChanged: () => void;
 }
 
-export function CarePlansSection({ patientId, conditions, plans, onChanged }: CarePlansSectionProps) {
+export function CarePlansSection({
+  patientId,
+  conditions,
+  plans,
+  error,
+  isLoading,
+  onChanged,
+}: CarePlansSectionProps) {
   const [creating, setCreating] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -60,7 +69,11 @@ export function CarePlansSection({ patientId, conditions, plans, onChanged }: Ca
         </Button>
       </div>
 
-      {plans.length === 0 ? (
+      {isLoading ? (
+        <LoadingIndicator />
+      ) : error ? (
+        <ErrorAlert message={error} />
+      ) : plans.length === 0 ? (
         <EmptyState message="Nenhum plano de cuidados aberto." />
       ) : (
         <ul className="flex flex-col gap-3">

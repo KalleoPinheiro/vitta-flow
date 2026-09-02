@@ -120,18 +120,24 @@ export default function PatientRecordPage({ params }: { params: Promise<{ id: st
   const { data: anamnesis, refresh: refreshAnamnesis } = useApiQuery<AnamnesisDto | null>(
     `/api/patients/${id}/anamnesis`,
   );
-  const { data: conditions, refresh: refreshConditions } = useApiQuery<ConditionDto[]>(
-    `/api/patients/${id}/conditions`,
-  );
+  const {
+    data: conditions,
+    error: conditionsError,
+    isLoading: conditionsLoading,
+    refresh: refreshConditions,
+  } = useApiQuery<ConditionDto[]>(`/api/patients/${id}/conditions`);
   const {
     data: evolutions,
     error: evolutionsError,
     isLoading: evolutionsLoading,
     refresh: refreshEvolutions,
   } = useApiQuery<EvolutionNoteDto[]>(`/api/patients/${id}/evolutions`);
-  const { data: carePlans, refresh: refreshCarePlans } = useApiQuery<CarePlanDto[]>(
-    `/api/patients/${id}/care-plans`,
-  );
+  const {
+    data: carePlans,
+    error: carePlansError,
+    isLoading: carePlansLoading,
+    refresh: refreshCarePlans,
+  } = useApiQuery<CarePlanDto[]>(`/api/patients/${id}/care-plans`);
 
   if (error) return <ErrorAlert message={error} />;
   if (!patient) return <LoadingIndicator />;
@@ -163,10 +169,14 @@ export default function PatientRecordPage({ params }: { params: Promise<{ id: st
           patientId={id}
           anamnesis={anamnesis ?? null}
           conditions={conditions ?? []}
+          conditionsError={conditionsError}
+          conditionsLoading={conditionsLoading}
           evolutions={evolutions ?? []}
           evolutionsError={evolutionsError}
           evolutionsLoading={evolutionsLoading}
           carePlans={carePlans ?? []}
+          carePlansError={carePlansError}
+          carePlansLoading={carePlansLoading}
           refreshAnamnesis={refreshAnamnesis}
           refreshConditions={refreshConditions}
           refreshEvolutions={refreshEvolutions}
@@ -182,10 +192,14 @@ interface RecordTabPanelProps {
   patientId: string;
   anamnesis: AnamnesisDto | null;
   conditions: ConditionDto[];
+  conditionsError: string | null;
+  conditionsLoading: boolean;
   evolutions: EvolutionNoteDto[];
   evolutionsError: string | null;
   evolutionsLoading: boolean;
   carePlans: CarePlanDto[];
+  carePlansError: string | null;
+  carePlansLoading: boolean;
   refreshAnamnesis: () => void;
   refreshConditions: () => void;
   refreshEvolutions: () => void;
@@ -197,10 +211,14 @@ function RecordTabPanel({
   patientId,
   anamnesis,
   conditions,
+  conditionsError,
+  conditionsLoading,
   evolutions,
   evolutionsError,
   evolutionsLoading,
   carePlans,
+  carePlansError,
+  carePlansLoading,
   refreshAnamnesis,
   refreshConditions,
   refreshEvolutions,
@@ -211,6 +229,8 @@ function RecordTabPanel({
       <ConditionsSection
         patientId={patientId}
         conditions={conditions}
+        error={conditionsError}
+        isLoading={conditionsLoading}
         onChanged={refreshConditions}
       />
     );
@@ -235,6 +255,8 @@ function RecordTabPanel({
         patientId={patientId}
         conditions={conditions}
         plans={carePlans}
+        error={carePlansError}
+        isLoading={carePlansLoading}
         onChanged={refreshCarePlans}
       />
     );

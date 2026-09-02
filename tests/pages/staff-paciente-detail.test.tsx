@@ -189,6 +189,7 @@ interface RouterOptions {
   patientError?: string;
   anamnesis?: AnamnesisDto | null;
   conditions?: ConditionDto[];
+  conditionsError?: string;
   evolutions?: EvolutionNoteDto[];
   evolutionsError?: string;
   professionals?: ProfessionalDto[];
@@ -218,6 +219,7 @@ function buildRouter({
   patientError,
   anamnesis = null,
   conditions = [],
+  conditionsError,
   evolutions = [],
   evolutionsError,
   professionals = [],
@@ -229,7 +231,8 @@ function buildRouter({
   const exactRoutes: Record<string, () => MockedResponse> = {
     "/api/patients/pac-1": () => (patientError ? errorResponse(patientError) : jsonResponse(patient)),
     "/api/patients/pac-1/anamnesis": () => jsonResponse(anamnesis),
-    "/api/patients/pac-1/conditions": () => jsonResponse(conditions),
+    "/api/patients/pac-1/conditions": () =>
+      conditionsError ? errorResponse(conditionsError) : jsonResponse(conditions),
     "/api/patients/pac-1/evolutions": () =>
       evolutionsError ? errorResponse(evolutionsError) : jsonResponse(evolutions),
     "/api/professionals": () => jsonResponse(professionals),
@@ -321,7 +324,7 @@ describe("Feature: PatientRecordPage", () => {
       expect(screen.queryByText(/nasc\./)).not.toBeInTheDocument();
     });
 
-    it("Dado condições e evoluções ainda carregando, Quando exibir abas e trocar, Então evoluções mostra indicador de carregamento (não vazio)", async () => {
+    it("Dado condições e evoluções ainda carregando, Quando exibir abas e trocar, Então cada aba mostra indicador de carregamento (não vazio)", async () => {
       mockFetch(
         buildRouter({
           extra: ({ url }) => {
@@ -341,6 +344,10 @@ describe("Feature: PatientRecordPage", () => {
 
       expect(screen.getByText("Estomias e feridas")).toBeInTheDocument();
       expect(screen.getByText("Evoluções (SOAP)")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("Estomias e feridas"));
+      expect(await screen.findAllByText("Carregando…")).not.toHaveLength(0);
+      expect(screen.queryByText("Nenhuma condição clínica cadastrada.")).not.toBeInTheDocument();
 
       fireEvent.click(screen.getByText("Evoluções (SOAP)"));
       expect(await screen.findByText("Carregando…")).toBeInTheDocument();
@@ -423,6 +430,15 @@ describe("Feature: PatientRecordPage", () => {
       await openConditionsTab();
 
       expect(await screen.findByText("Nenhuma condição clínica cadastrada.")).toBeInTheDocument();
+    });
+
+    it("Dado erro 500 ao carregar condições, Quando abrir a aba, Então exibe alerta de erro, não mensagem de vazio", async () => {
+      mockFetch(buildRouter({ conditionsError: "Erro ao carregar condições" }));
+
+      await openConditionsTab();
+
+      expect(await screen.findByText("Erro ao carregar condições")).toBeInTheDocument();
+      expect(screen.queryByText("Nenhuma condição clínica cadastrada.")).not.toBeInTheDocument();
     });
 
     it("Dado condições ativas e resolvidas, Quando listar, Então exibe badges e ações corretas para cada uma", async () => {

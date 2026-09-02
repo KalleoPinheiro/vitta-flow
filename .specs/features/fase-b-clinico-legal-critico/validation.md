@@ -203,9 +203,65 @@ Not performed — this is a backend/RBAC/domain-logic-heavy feature; automated c
 
 ---
 
+## Re-verificação (iteração 1)
+
+**Date**: 2026-09-02
+**Commit sob teste**: `83edac2` ("fix: corrige gaps apontados pelo Verifier na Fase B (#63, #68)"), branch `fix/fase-b-clinico-legal-critico`
+**Verifier**: sub-agente independente, nova sessão (author ≠ verifier)
+
+### Gap 1 — CLIN-08 AC2 (Major): E2E de login paciente/parceiro via cookie forjado
+
+**RESOLVIDO** (via `SPEC_DEVIATION` documentado + downgrade do spec, não via implementação do fluxo real).
+
+- `e2e/auth.spec.ts:80-89` — comentário `SPEC_DEVIATION` acrescentado imediatamente antes dos dois testes de paciente/parceiro, explicando que `POST /api/accounts` não devolve link de convite na resposta (confirmado lendo `src/app/api/accounts/route.ts:71-78` — o retorno é `{ ...toUserAccountDto(account), delivered }`, sem link/token) e que o mesmo precedente já existe em `e2e/portal-paciente.spec.ts:33,82` e `e2e/portal-parceiro.spec.ts:41,57` (confirmado — ambos usam `context.addCookies([sessionCookie(...)])`, nenhum aciona `/login` real para esses papéis).
+- `.specs/features/fase-b-clinico-legal-critico/spec.md` (linha do "Independent Test" de CLIN-08) e `.specs/features/fase-b-clinico-legal-critico/tasks.md` (T16, "What" e "Done when") foram reescritos para declarar a limitação real (cookie assinado para paciente/parceiro) em vez de prometer "formulário real" — confirmado via `git diff 83edac2^..83edac2 -- .specs/.../spec.md .specs/.../tasks.md`.
+- Este é um caminho de resolução legítimo dentro do processo (documentar o `SPEC_DEVIATION` e realinhar spec/tasks com a realidade), não a alternativa "mais forte" que o Fix Plan original sugeria (provisionar conta via convite real e logar pelo formulário). A justificativa técnica (rota de criação de conta não expõe o link de convite fora do bootstrap) é verificável e correta — não há hoje um caminho de teste que exercite o formulário real para esses dois papéis sem violar esse design deliberado.
+- O que o teste efetivamente prova (AC2: sessão válida de paciente/parceiro → redirecionamento a `/portal` sem copy de acesso negado) continua coberto e correto.
+
+**Veredito**: RESOLVIDO — gap fechado por documentação + realinhamento de spec, aceitável dado que a causa raiz (limitação de design da rota de convite) é real e o precedente já era aceito em outros dois specs do mesmo E2E suite.
+
+### Gap 2 — CLIN-03 edge case (Minor): "Consulta não encontrada" durante o loading do agendamento
+
+**RESOLVIDO.**
+
+- `src/app/documentos/atestado/[appointmentId]/page.tsx:16-24` — `useApiQuery<AppointmentDto>` agora desestrutura `isLoading: appointmentLoading`, e a guarda passou a `if (!clinic || appointmentLoading) return <LoadingIndicator />;` antes do `if (!appointment) return <ErrorAlert message="Consulta não encontrada" />;`.
+- Verificado `src/lib/use-api-query.ts:9,23` — `isLoading` é derivado corretamente (`url != null && settledKey !== requestKey`), ou seja, fica `true` enquanto a promise não resolveu nem rejeitou; isso é mais preciso que a sugestão original do Fix Plan (que cogitava uma convenção `undefined` vs `null`), pois usa o `isLoading` que o hook já expõe.
+- Teste novo: `tests/pages/documentos-fail-closed.test.tsx:145-155` — mocka `/api/clinic-info` resolvendo e `/api/appointments/:id` com uma Promise que nunca resolve (`new Promise<never>(() => {})`), depois assere `screen.findByText("Carregando…")` presente e `screen.queryByText("Consulta não encontrada")` ausente. O texto "Carregando…" foi confirmado batendo com `src/components/feedback.tsx:40` (`<span className="sr-only">Carregando…</span>`, dentro de `LoadingIndicator`).
+- Suite de testes subiu de 2559 → 2560 (o novo teste), confirmado rodando `npm run test:coverage`.
+
+**Veredito**: RESOLVIDO — evidência de código e teste dedicado, exercitando exatamente o cenário que faltava.
+
+### Gap 3 — CLIN-02 AC2 spec-precision (Minor): CNPJ/responsável técnico nunca assertado como visível
+
+**RESOLVIDO.**
+
+- `tests/pages/documentos-fail-closed.test.tsx:141-142` (atestado), `:209-210` (relatório), `:240-241` (plano de cuidados) — cada um dos 3 testes "clínica completa → renderiza normalmente" ganhou `expect(screen.getByText(\`CNPJ: ${CLINIC_COMPLETE.cnpj}\`)).toBeInTheDocument()` e `expect(screen.getByText(CLINIC_COMPLETE.professionalName as string)).toBeInTheDocument()`.
+- Confirmado que a string assertada bate exatamente com o output real: `src/components/document-frame.tsx:40` renderiza `CNPJ: {clinic.cnpj}` (mesmo template usado no teste) e linha 54 renderiza `clinic.professionalName`.
+- Fixture `CLINIC_COMPLETE` (linha 55-60) define `cnpj`/`professionalName` com valores não-vazios, então o assert é discriminante (falharia se `DocumentFrame` parasse de renderizar esses campos).
+
+**Veredito**: RESOLVIDO — assert agora cobre exatamente o comportamento que o spec exige (CNPJ/responsável técnico visíveis no documento).
+
+### Gate
+
+- `npm run typecheck` → ✅ exit 0
+- `npm run lint` → ✅ "ESLint: No issues found"
+- `npm run check:sv` → ✅ "OK — adoção do @still-void/ui v2 completa."
+- `npm run test:coverage` → ✅ 166 test files / 2560 tests passed, 0 failed, 0 skipped. Coverage: statements 96.8%, branches 91.31%, functions 96.74%, lines 96.92% (todos ≥90%)
+- `npx playwright test e2e/documentos.spec.ts e2e/auth.spec.ts --reporter=line` → ✅ 16 passed, 0 failed (inclui os testes existentes de login/documentos; o novo teste de loading do atestado é um teste de componente/vitest, não e2e — coberto no gate acima)
+
+### Gaps novos
+
+Nenhum encontrado. Revisão do diff completo do commit `83edac2` (`.specs/LESSONS.md`, `.specs/lessons.json`, `spec.md`, `tasks.md`, `validation.md`, `e2e/auth.spec.ts`, `page.tsx` do atestado, `documentos-fail-closed.test.tsx`) não revelou nenhuma regressão, assert frágil ou escopo indevido. A mudança de tipo em `mockFetch` (`MockedResponse | Promise<never>`) é estritamente aditiva e não afeta os testes existentes.
+
+### Veredito final: PASS ✅
+
+Os 3 gaps da rodada anterior foram resolvidos com evidência verificável em código e teste. Gate 100% verde, cobertura acima do mínimo, E2E alvo passando. Nenhum gap novo introduzido pelas correções.
+
+---
+
 ## Summary
 
-**Overall**: ⚠️ Issues — core legal/clinical-safety mechanisms (fail-closed document blocking, forged-authorship rejection, dirty-tab guard) are solid and empirically verified by a live discrimination sensor (3/3 mutants killed). Gate is fully green (typecheck/lint/check:sv/coverage/build/targeted-e2e all pass). Two grounded, spec-anchored gaps and one precision gap were found, none of them in the security/compliance-critical mechanisms themselves — they're in document-page loading-state ordering and in how thoroughly the login E2E validates the credential path.
+**Overall**: ✅ Ready — core legal/clinical-safety mechanisms (fail-closed document blocking, forged-authorship rejection, dirty-tab guard) são sólidos e empiricamente verificados por discrimination sensor (3/3 mutantes mortos). Os 3 gaps da rodada anterior (CLIN-08 AC2, CLIN-03 edge case, CLIN-02 AC2 spec-precision) foram resolvidos e confirmados nesta re-verificação independente, com gate 100% verde e nenhuma regressão.
 
 **Spec-anchored check**: 19/22 criteria matched spec outcome exactly, 2 gaps (CLIN-03 edge case, CLIN-08 AC2), 1 spec-precision gap (CLIN-02 AC2)
 **Sensor**: 3/3 mutations killed

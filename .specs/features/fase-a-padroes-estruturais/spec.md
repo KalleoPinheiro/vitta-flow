@@ -79,11 +79,11 @@ A auditoria UX 2026-08 (`docs/audits/auditoria-ux-2026-08.md`) aponta 4 padrões
 
 **User Story**: Como usuário do staff ou portal, quero ser avisado da consequência real antes de uma ação irreversível (excluir, resolver, cancelar), para não perder dado clínico ou operacional por engano.
 
-**Why P1**: Ação destrutiva sem confirmação é o padrão estrutural com maior risco (perda de dado clínico), citado em ~15 pontos do app.
+**Why P1**: Ação destrutiva sem confirmação é o padrão estrutural com maior risco (perda de dado clínico). A auditoria estima ~15 ocorrências contando por linha de tabela; o levantamento exaustivo no código (ver tabela "Ações destrutivas levantadas" em `design.md`) confirma **12 call sites distintos** — a diferença é o método de contagem, não ação faltante: "revogar consentimento" e "remover material", citados de forma genérica na auditoria, não correspondem a nenhuma ação existente no código hoje (não há botão de revogação de consentimento nem de remoção de material implementado) e por isso ficam fora do escopo desta fase.
 
 **Acceptance Criteria**:
 
-1. WHEN o usuário aciona qualquer uma das ~15 ações destrutivas/irreversíveis listadas em Design (desativar paciente/profissional/parceiro/procedimento, cancelar fatura, resolver condição, resolver plano de cuidados, excluir foto clínica, cancelar retorno, antecipar retorno, revogar consentimento, remover material, etc.) THEN o sistema SHALL abrir um `AlertDialog` do `@still-void/ui` antes de executar a ação, nomeando a consequência específica daquela ação (ex.: "trava a evolução permanentemente, sem opção de reabrir").
+1. WHEN o usuário aciona qualquer uma das 12 ações destrutivas/irreversíveis listadas na tabela "Ações destrutivas levantadas" de `design.md` (desativar paciente/profissional/parceiro/procedimento/conta, cancelar fatura, cancelar retorno, "ok, manter plano", antecipar retorno, resolver condição, resolver plano de cuidados, excluir foto clínica) THEN o sistema SHALL abrir um `AlertDialog` do `@still-void/ui` antes de executar a ação, nomeando a consequência específica daquela ação (ex.: "trava a evolução permanentemente, sem opção de reabrir").
 2. WHEN o usuário confirma no `AlertDialog` THEN a ação SHALL executar exatamente como hoje (mesma chamada de API).
 3. WHEN o usuário cancela ou fecha o `AlertDialog` (Esc, clique fora, botão cancelar) THEN nenhuma chamada de API SHALL ser disparada.
 4. WHEN uma ação destrutiva nova for adicionada ao produto sem `AlertDialog` THEN isso SHALL exigir justificativa registrada (comentário ou ADR), não silêncio.

@@ -1402,6 +1402,32 @@ describe("Feature: PatientRecordPage", () => {
       expect(await screen.findByText("Erro ao excluir foto")).toBeInTheDocument();
     });
 
+    it("Dado erro ao enviar foto com lista já carregada, Quando falhar, Então exibe erro sem botão 'Tentar novamente' e mantém as fotos existentes", async () => {
+      mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          photosByCondition: { "cond-wound": [photoFixture] },
+          extra: ({ url, init }) => {
+            if (url === "/api/conditions/cond-wound/photos" && init?.method === "POST") {
+              return { ok: false, status: 500, json: async () => ({ error: "Erro ao enviar foto" }) };
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await expandWoundCondition();
+      expect(await screen.findByText("excluir")).toBeInTheDocument();
+
+      const file = new File(["conteudo"], "foto.png", { type: "image/png" });
+      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      fireEvent.change(input, { target: { files: [file] } });
+
+      expect(await screen.findByText("Erro ao enviar foto")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Tentar novamente" })).not.toBeInTheDocument();
+      expect(screen.getByText("excluir")).toBeInTheDocument();
+    });
+
     it("Dado componente de fotos desmontado antes da resposta, Quando a busca falhar depois, Então ignora o erro silenciosamente", async () => {
       let rejectPhotos: (reason: unknown) => void = () => undefined;
       const pendingPhotos = new Promise<MockedResponse>((_, reject) => {

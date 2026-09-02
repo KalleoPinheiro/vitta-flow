@@ -33,13 +33,15 @@ async function expectNoHorizontalScroll(page: Page): Promise<void> {
 }
 
 async function expectTableWrappedInOverflowContainer(page: Page): Promise<void> {
-  const hasWrappedTable = await page.evaluate(
-    () =>
-      Array.from(document.querySelectorAll("table")).some(
-        (table) => table.closest(".overflow-x-auto") !== null,
-      ),
-  );
-  expect(hasWrappedTable).toBe(true);
+  const result = await page.evaluate(() => {
+    const tables = Array.from(document.querySelectorAll("table"));
+    return {
+      count: tables.length,
+      allWrapped: tables.every((table) => table.closest(".overflow-x-auto") !== null),
+    };
+  });
+  expect(result.count).toBeGreaterThan(0);
+  expect(result.allWrapped).toBe(true);
 }
 
 /**

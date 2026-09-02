@@ -277,8 +277,10 @@ describe("Feature: SettingsPage", () => {
 
       fireEvent.click(screen.getByText("Salvar grade"));
 
-      const alert = await screen.findByRole("status");
-      expect(alert).toHaveTextContent(/Grade salva — vale imediatamente para novos agendamentos./);
+      const toastText = await screen.findByText(
+        "Grade salva — vale imediatamente para novos agendamentos.",
+      );
+      expect(toastText.closest(".sv-toast--success")).not.toBeNull();
     });
 
     it("Dado erro ao salvar grade, Quando falha a chamada, Então exibe alerta de erro", async () => {
@@ -390,7 +392,9 @@ describe("Feature: SettingsPage", () => {
 
       fireEvent.click(screen.getByText("Salvar grade"));
 
-      expect(await screen.findByText("Erro ao salvar grade")).toBeInTheDocument();
+      expect(
+        within(await screen.findByRole("alert")).getByText("Erro ao salvar grade"),
+      ).toBeInTheDocument();
     });
   });
 
@@ -834,6 +838,106 @@ describe("Feature: SettingsPage", () => {
       expect(
         screen.getByLabelText(/Profissional vinculado/),
       ).toHaveDisplayValue("— nenhum —");
+    });
+
+    it("Dado clique em reenviar convite, Quando o e-mail é entregue, Então exibe toast de sucesso", async () => {
+      mockFetch(({ url, init }) => {
+        if (url.startsWith("/api/settings/schedule")) {
+          return jsonResponse({
+            config: { weekdays: [], startHour: 8, endHour: 18, minGapMinutes: 30 },
+            isDefault: true,
+          });
+        }
+        if (url.startsWith("/api/accounts/a1/resend-invite") && init?.method === "POST") {
+          return jsonResponse({ delivered: true });
+        }
+        if (url.startsWith("/api/accounts")) {
+          return jsonResponse([
+            { id: "a1", email: "ana@clinica.com", professionalId: null, active: true },
+          ]);
+        }
+        if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<SettingsPage />);
+      await screen.findByText("ana@clinica.com");
+
+      fireEvent.click(screen.getByText("Reenviar convite"));
+
+      await waitFor(() => {
+        expect(screen.getAllByText("Convite reenviado para ana@clinica.com.")).toHaveLength(2);
+      });
+      const toastText = screen
+        .getAllByText("Convite reenviado para ana@clinica.com.")
+        .find((el) => el.className === "sv-toast__description");
+      expect(toastText?.closest(".sv-toast--success")).not.toBeNull();
+    });
+
+    it("Dado clique em reenviar convite, Quando o e-mail não é entregue, Então exibe toast de erro", async () => {
+      mockFetch(({ url, init }) => {
+        if (url.startsWith("/api/settings/schedule")) {
+          return jsonResponse({
+            config: { weekdays: [], startHour: 8, endHour: 18, minGapMinutes: 30 },
+            isDefault: true,
+          });
+        }
+        if (url.startsWith("/api/accounts/a1/resend-invite") && init?.method === "POST") {
+          return jsonResponse({ delivered: false });
+        }
+        if (url.startsWith("/api/accounts")) {
+          return jsonResponse([
+            { id: "a1", email: "ana@clinica.com", professionalId: null, active: true },
+          ]);
+        }
+        if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<SettingsPage />);
+      await screen.findByText("ana@clinica.com");
+
+      fireEvent.click(screen.getByText("Reenviar convite"));
+
+      const message =
+        "Não foi possível enviar o e-mail para ana@clinica.com — tente novamente mais tarde.";
+      await waitFor(() => {
+        expect(screen.getAllByText(message)).toHaveLength(2);
+      });
+      const toastText = screen
+        .getAllByText(message)
+        .find((el) => el.className === "sv-toast__description");
+      expect(toastText?.closest(".sv-toast--danger")).not.toBeNull();
+    });
+
+    it("Dado clique em reenviar convite, Quando a chamada falha, Então exibe toast de erro", async () => {
+      mockFetch(({ url, init }) => {
+        if (url.startsWith("/api/settings/schedule")) {
+          return jsonResponse({
+            config: { weekdays: [], startHour: 8, endHour: 18, minGapMinutes: 30 },
+            isDefault: true,
+          });
+        }
+        if (url.startsWith("/api/accounts/a1/resend-invite") && init?.method === "POST") {
+          return errorResponse("Erro ao reenviar convite");
+        }
+        if (url.startsWith("/api/accounts")) {
+          return jsonResponse([
+            { id: "a1", email: "ana@clinica.com", professionalId: null, active: true },
+          ]);
+        }
+        if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<SettingsPage />);
+      await screen.findByText("ana@clinica.com");
+
+      fireEvent.click(screen.getByText("Reenviar convite"));
+
+      await waitFor(() => {
+        expect(screen.getAllByText("Erro ao reenviar convite").length).toBeGreaterThanOrEqual(2);
+      });
     });
   });
 });

@@ -65,11 +65,11 @@ export default function SettingsPage() {
 }
 
 function ScheduleSection() {
+  const { toast } = useToast();
   const { data, error } = useApiQuery<{ config: ScheduleConfigDto; isDefault: boolean }>(
     "/api/settings/schedule",
   );
   const [edits, setEdits] = useState<ScheduleConfigDto | null>(null);
-  const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   if (error) return <ErrorAlert message={error} />;
@@ -95,12 +95,16 @@ function ScheduleSection() {
 
   const save = async () => {
     setSaveError(null);
-    setSaved(false);
     try {
       await apiFetch("/api/settings/schedule", { method: "PUT", body: JSON.stringify(draft) });
-      setSaved(true);
+      toast({
+        description: "Grade salva — vale imediatamente para novos agendamentos.",
+        variant: "success",
+      });
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Erro ao salvar grade");
+      const message = err instanceof Error ? err.message : "Erro ao salvar grade";
+      setSaveError(message);
+      toast({ description: message, variant: "danger" });
     }
   };
 
@@ -112,11 +116,6 @@ function ScheduleSection() {
         {data.isDefault && " (usando padrão — nada salvo ainda)"}
       </p>
       {saveError && <ErrorAlert message={saveError} />}
-      {saved && (
-        <Alert variant="success" className="mb-3">
-          <AlertDescription>Grade salva — vale imediatamente para novos agendamentos.</AlertDescription>
-        </Alert>
-      )}
 
       <div className="mb-4 flex flex-wrap gap-2">
         {WEEKDAYS.map((day) => (
@@ -247,14 +246,16 @@ function AccountsSection() {
       if (result.delivered && account.email === undelivered) {
         setUndelivered(null);
       }
-      setActionNotice(
-        result.delivered
-          ? `Convite reenviado para ${account.email}.`
-          : `Não foi possível enviar o e-mail para ${account.email} — tente novamente mais tarde.`,
-      );
+      const notice = result.delivered
+        ? `Convite reenviado para ${account.email}.`
+        : `Não foi possível enviar o e-mail para ${account.email} — tente novamente mais tarde.`;
+      setActionNotice(notice);
+      toast({ description: notice, variant: result.delivered ? "success" : "danger" });
     } catch (err) {
+      const message = err instanceof Error ? err.message : "Erro ao reenviar convite";
       setActionNotice(null);
-      setActionError(err instanceof Error ? err.message : "Erro ao reenviar convite");
+      setActionError(message);
+      toast({ description: message, variant: "danger" });
     }
   };
 

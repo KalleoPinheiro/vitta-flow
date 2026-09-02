@@ -921,7 +921,7 @@ describe("Feature: Envio de foto pelo paciente", () => {
       });
       vi.stubGlobal("fetch", fetchMock);
 
-      render(<PatientPhotoUpload conditionId="cond-1" consentPending={false} onSent={onSent} />);
+      renderWithToast(<PatientPhotoUpload conditionId="cond-1" consentPending={false} onSent={onSent} />);
 
       fireEvent.change(screen.getByPlaceholderText("Observação (opcional): dor, vazamento, vermelhidão…"), {
         target: { value: "Está coçando" },
@@ -941,7 +941,13 @@ describe("Feature: Envio de foto pelo paciente", () => {
       await waitFor(() => {
         expect(onSent).toHaveBeenCalledTimes(1);
       });
-      expect(await screen.findByText(/Foto enviada/)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getAllByText(/Foto enviada/)).toHaveLength(2);
+      });
+      const toastText = screen
+        .getAllByText(/Foto enviada/)
+        .find((el) => el.className === "sv-toast__description");
+      expect(toastText?.closest(".sv-toast--success")).not.toBeNull();
       expect(receivedBody).not.toBeNull();
       expect((receivedBody as unknown as FormData).get("conditionId")).toBe("cond-1");
       expect((receivedBody as unknown as FormData).get("note")).toBe("Está coçando");
@@ -951,7 +957,7 @@ describe("Feature: Envio de foto pelo paciente", () => {
 
   describe("Cenário: consentimento pendente", () => {
     it("Dado termo não aceito, Quando renderizar o envio, Então orienta o aceite e não oferece o arquivo (COMP3-01)", () => {
-      render(<PatientPhotoUpload conditionId="cond-1" consentPending onSent={vi.fn()} />);
+      renderWithToast(<PatientPhotoUpload conditionId="cond-1" consentPending onSent={vi.fn()} />);
 
       expect(
         screen.getByText("Aceite o termo de consentimento acima para enviar fotos à equipe."),
@@ -966,12 +972,18 @@ describe("Feature: Envio de foto pelo paciente", () => {
       const fetchMock = vi.fn(async () => rawResponse(false, { error: "Arquivo muito grande" }));
       vi.stubGlobal("fetch", fetchMock);
 
-      render(<PatientPhotoUpload conditionId="cond-1" consentPending={false} onSent={onSent} />);
+      renderWithToast(<PatientPhotoUpload conditionId="cond-1" consentPending={false} onSent={onSent} />);
 
       const input = document.querySelector('input[type="file"]') as HTMLInputElement;
       fireEvent.change(input, { target: { files: [makeFile()] } });
 
-      expect(await screen.findByText("Arquivo muito grande")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getAllByText("Arquivo muito grande")).toHaveLength(2);
+      });
+      const toastText = screen
+        .getAllByText("Arquivo muito grande")
+        .find((el) => el.className === "sv-toast__description");
+      expect(toastText?.closest(".sv-toast--danger")).not.toBeNull();
       expect(onSent).not.toHaveBeenCalled();
     });
   });

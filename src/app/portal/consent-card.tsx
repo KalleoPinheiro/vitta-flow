@@ -98,6 +98,7 @@ export function PatientPhotoUpload({
   consentPending: boolean;
   onSent: () => void;
 }) {
+  const { toast } = useToast();
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -118,9 +119,12 @@ export function PatientPhotoUpload({
       }
       setSent(true);
       setNote("");
+      toast({ description: "Foto enviada", variant: "success" });
       onSent();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao enviar foto");
+      const message = err instanceof Error ? err.message : "Erro ao enviar foto";
+      setError(message);
+      toast({ description: message, variant: "danger" });
     } finally {
       setSending(false);
     }

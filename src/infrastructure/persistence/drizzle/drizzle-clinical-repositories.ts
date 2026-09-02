@@ -39,6 +39,7 @@ import {
   evolutionNotes,
 } from "./schema";
 import { withTenant } from "./tenant-scope";
+import { decryptField, encryptField } from "@/lib/auth/crypto";
 
 export class DrizzleAnamnesisRepository implements AnamnesisRepository {
   constructor(
@@ -82,7 +83,18 @@ export class DrizzleEvolutionNoteRepository implements EvolutionNoteRepository {
   constructor(
     private readonly db: AppDb,
     private readonly clinicId: string | null,
+    private readonly secret: string,
   ) {}
+
+  private toEntity(row: typeof evolutionNotes.$inferSelect): EvolutionNote {
+    return EvolutionNote.restore({
+      ...row,
+      subjective: decryptField(row.subjective, this.secret) ?? "",
+      objective: decryptField(row.objective, this.secret) ?? "",
+      assessment: decryptField(row.assessment, this.secret) ?? "",
+      plan: decryptField(row.plan, this.secret) ?? "",
+    });
+  }
 
   async save(note: EvolutionNote): Promise<void> {
     if (this.clinicId === null) {
@@ -96,10 +108,10 @@ export class DrizzleEvolutionNoteRepository implements EvolutionNoteRepository {
       patientId: note.patientId,
       appointmentId: note.appointmentId,
       professionalId: note.professionalId,
-      subjective: note.subjective,
-      objective: note.objective,
-      assessment: note.assessment,
-      plan: note.plan,
+      subjective: encryptField(note.subjective, this.secret) ?? "",
+      objective: encryptField(note.objective, this.secret) ?? "",
+      assessment: encryptField(note.assessment, this.secret) ?? "",
+      plan: encryptField(note.plan, this.secret) ?? "",
       createdAt: note.createdAt,
     });
   }
@@ -110,7 +122,7 @@ export class DrizzleEvolutionNoteRepository implements EvolutionNoteRepository {
       .from(evolutionNotes)
       .where(withTenant(evolutionNotes, this.clinicId, eq(evolutionNotes.patientId, patientId)))
       .orderBy(desc(evolutionNotes.createdAt), desc(evolutionNotes.id));
-    return rows.map((row) => EvolutionNote.restore(row));
+    return rows.map((row) => this.toEntity(row));
   }
 }
 

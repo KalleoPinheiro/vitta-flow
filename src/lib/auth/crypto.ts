@@ -49,14 +49,19 @@ export function decryptSecret(payload: string, secret: string): string {
   ]).toString("utf8");
 }
 
-/** Wrapper null-safe de `encryptSecret` — usado nos campos clínicos que aceitam `null`. */
+/**
+ * Wrapper null-safe de `encryptSecret` — usado nos campos clínicos que aceitam `null`.
+ * String vazia passa direto também: `decryptSecret` valida `dataPart` com checagem de
+ * falsy, então um ciphertext de texto vazio (`iv.tag.` sem `dataPart`) seria rejeitado
+ * como formato inválido na leitura — e não há conteúdo sensível em "" para proteger.
+ */
 export function encryptField(value: string | null, secret: string): string | null {
-  return value === null ? null : encryptSecret(value, secret);
+  return value === null || value === "" ? value : encryptSecret(value, secret);
 }
 
 /** Wrapper null-safe de `decryptSecret` — usado nos campos clínicos que aceitam `null`. */
 export function decryptField(value: string | null, secret: string): string | null {
-  return value === null ? null : decryptSecret(value, secret);
+  return value === null || value === "" ? value : decryptSecret(value, secret);
 }
 
 /**

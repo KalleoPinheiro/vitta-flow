@@ -222,6 +222,12 @@ export interface TenantContext {
 export async function getRepositories(tenant: TenantContext): Promise<Services> {
   const db = await getDb();
   const calendar = await buildCalendarGateway(db);
+  const auth = getAuthConfig();
+  if (!auth) {
+    throw new Error(
+      "AUTH_SECRET ausente — repositórios clínicos cifrados exigem o segredo de autenticação",
+    );
+  }
   return {
     clinics: new DrizzleClinicRepository(db),
     patients: new DrizzlePatientRepository(db, tenant.clinicId),
@@ -237,7 +243,7 @@ export async function getRepositories(tenant: TenantContext): Promise<Services> 
     appointments: new DrizzleAppointmentRepository(db, tenant.clinicId),
     invoices: new DrizzleInvoiceRepository(db, tenant.clinicId),
     anamneses: new DrizzleAnamnesisRepository(db, tenant.clinicId),
-    evolutions: new DrizzleEvolutionNoteRepository(db, tenant.clinicId),
+    evolutions: new DrizzleEvolutionNoteRepository(db, tenant.clinicId, auth.secret),
     conditions: new DrizzleClinicalConditionRepository(db, tenant.clinicId),
     assessments: new DrizzleConditionAssessmentRepository(db, tenant.clinicId),
     conditionPhotos: new DrizzleConditionPhotoRepository(db, tenant.clinicId),

@@ -38,6 +38,8 @@ import { DrizzlePartnerRepository } from "@/infrastructure/persistence/drizzle/d
 import { DrizzlePatientRepository as PatientRepo } from "@/infrastructure/persistence/drizzle/drizzle-patient-repository";
 import { Partner } from "@/domain/partner/partner";
 
+const TEST_SECRET = "vitest-auth-secret-0000000000000000";
+
 describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e retornos", () => {
   let db: PgliteDatabase<typeof schema>;
   let appDb: AppDb;
@@ -86,7 +88,7 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
   });
 
   it("Dado evoluções salvas, Quando listar por paciente, Então ordem cronológica reversa", async () => {
-    const repo = new DrizzleEvolutionNoteRepository(appDb, "legacy-clinic");
+    const repo = new DrizzleEvolutionNoteRepository(appDb, "legacy-clinic", TEST_SECRET);
     await repo.save(
       EvolutionNote.create({ patientId: patient.id, subjective: "Primeira", objective: "", assessment: "", plan: "" }),
     );

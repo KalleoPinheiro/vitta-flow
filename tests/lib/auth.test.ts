@@ -155,6 +155,11 @@ describe("Feature: Helpers null-safe de cifra e detecção de payload cifrado", 
     expect(decryptField(encrypted, SECRET)).toBe("nota clínica sensível");
   });
 
+  it("Dado string vazia, Quando encryptField/decryptField, Então passa direto sem cifrar (sem conteúdo a proteger)", () => {
+    expect(encryptField("", SECRET)).toBe("");
+    expect(decryptField("", SECRET)).toBe("");
+  });
+
   it("Dado payload cifrado válido, Quando isEncryptedPayload, Então true", () => {
     const encrypted = encryptSecret("valor", SECRET);
 

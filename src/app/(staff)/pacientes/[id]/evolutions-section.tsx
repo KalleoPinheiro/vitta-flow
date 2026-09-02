@@ -6,12 +6,14 @@ import { apiFetch } from "@/lib/client";
 import type { EvolutionNoteDto, ProfessionalDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import { formatDateTime } from "@/lib/format";
-import { EmptyState, ErrorAlert } from "@/components/feedback";
+import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import { Button, Card, NativeSelect, Textarea } from "@still-void/ui/react";
 
 interface EvolutionsSectionProps {
   patientId: string;
   evolutions: EvolutionNoteDto[];
+  error: string | null;
+  isLoading: boolean;
   onSaved: () => void;
 }
 
@@ -26,11 +28,17 @@ type SoapKey = (typeof SOAP_FIELDS)[number]["key"];
 
 const EMPTY: Record<SoapKey, string> = { subjective: "", objective: "", assessment: "", plan: "" };
 
-export function EvolutionsSection({ patientId, evolutions, onSaved }: EvolutionsSectionProps) {
+export function EvolutionsSection({
+  patientId,
+  evolutions,
+  error,
+  isLoading,
+  onSaved,
+}: EvolutionsSectionProps) {
   const { toast } = useToast();
   const [values, setValues] = useState(EMPTY);
   const [professionalId, setProfessionalId] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const { data: professionals } = useApiQuery<ProfessionalDto[]>("/api/professionals");
@@ -41,7 +49,7 @@ export function EvolutionsSection({ patientId, evolutions, onSaved }: Evolutions
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setSaving(true);
-    setError(null);
+    setFormError(null);
     try {
       await apiFetch<EvolutionNoteDto>(`/api/patients/${patientId}/evolutions`, {
         method: "POST",
@@ -52,7 +60,7 @@ export function EvolutionsSection({ patientId, evolutions, onSaved }: Evolutions
       setShowForm(false);
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao registrar evolução");
+      setFormError(err instanceof Error ? err.message : "Erro ao registrar evolução");
     } finally {
       setSaving(false);
     }
@@ -78,7 +86,7 @@ export function EvolutionsSection({ patientId, evolutions, onSaved }: Evolutions
           onSubmit={handleSubmit}
           className="flex flex-col gap-3 rounded-lg border border-accent bg-accent-soft/40 p-4"
         >
-          {error && <ErrorAlert message={error} />}
+          {formError && <ErrorAlert message={formError} />}
           {activeProfessionals.length > 0 && (
             <label className="text-sm font-medium">
               Profissional responsável
@@ -119,7 +127,11 @@ export function EvolutionsSection({ patientId, evolutions, onSaved }: Evolutions
         </form>
       )}
 
-      {evolutions.length === 0 ? (
+      {isLoading ? (
+        <LoadingIndicator />
+      ) : error ? (
+        <ErrorAlert message={error} />
+      ) : evolutions.length === 0 ? (
         <EmptyState message="Nenhuma evolução registrada." />
       ) : (
         <ul className="flex flex-col gap-3">

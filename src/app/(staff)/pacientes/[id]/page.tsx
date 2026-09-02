@@ -123,9 +123,12 @@ export default function PatientRecordPage({ params }: { params: Promise<{ id: st
   const { data: conditions, refresh: refreshConditions } = useApiQuery<ConditionDto[]>(
     `/api/patients/${id}/conditions`,
   );
-  const { data: evolutions, refresh: refreshEvolutions } = useApiQuery<EvolutionNoteDto[]>(
-    `/api/patients/${id}/evolutions`,
-  );
+  const {
+    data: evolutions,
+    error: evolutionsError,
+    isLoading: evolutionsLoading,
+    refresh: refreshEvolutions,
+  } = useApiQuery<EvolutionNoteDto[]>(`/api/patients/${id}/evolutions`);
   const { data: carePlans, refresh: refreshCarePlans } = useApiQuery<CarePlanDto[]>(
     `/api/patients/${id}/care-plans`,
   );
@@ -161,6 +164,8 @@ export default function PatientRecordPage({ params }: { params: Promise<{ id: st
           anamnesis={anamnesis ?? null}
           conditions={conditions ?? []}
           evolutions={evolutions ?? []}
+          evolutionsError={evolutionsError}
+          evolutionsLoading={evolutionsLoading}
           carePlans={carePlans ?? []}
           refreshAnamnesis={refreshAnamnesis}
           refreshConditions={refreshConditions}
@@ -178,6 +183,8 @@ interface RecordTabPanelProps {
   anamnesis: AnamnesisDto | null;
   conditions: ConditionDto[];
   evolutions: EvolutionNoteDto[];
+  evolutionsError: string | null;
+  evolutionsLoading: boolean;
   carePlans: CarePlanDto[];
   refreshAnamnesis: () => void;
   refreshConditions: () => void;
@@ -191,6 +198,8 @@ function RecordTabPanel({
   anamnesis,
   conditions,
   evolutions,
+  evolutionsError,
+  evolutionsLoading,
   carePlans,
   refreshAnamnesis,
   refreshConditions,
@@ -208,7 +217,13 @@ function RecordTabPanel({
   }
   if (tab === "evolucoes") {
     return (
-      <EvolutionsSection patientId={patientId} evolutions={evolutions} onSaved={refreshEvolutions} />
+      <EvolutionsSection
+        patientId={patientId}
+        evolutions={evolutions}
+        error={evolutionsError}
+        isLoading={evolutionsLoading}
+        onSaved={refreshEvolutions}
+      />
     );
   }
   if (tab === "pacotes") {

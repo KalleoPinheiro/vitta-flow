@@ -190,6 +190,7 @@ interface RouterOptions {
   anamnesis?: AnamnesisDto | null;
   conditions?: ConditionDto[];
   evolutions?: EvolutionNoteDto[];
+  evolutionsError?: string;
   professionals?: ProfessionalDto[];
   assessmentsByCondition?: Record<string, AssessmentDto[]>;
   photosByCondition?: Record<string, ConditionPhotoDto[]>;
@@ -218,6 +219,7 @@ function buildRouter({
   anamnesis = null,
   conditions = [],
   evolutions = [],
+  evolutionsError,
   professionals = [],
   assessmentsByCondition = {},
   photosByCondition = {},
@@ -228,7 +230,8 @@ function buildRouter({
     "/api/patients/pac-1": () => (patientError ? errorResponse(patientError) : jsonResponse(patient)),
     "/api/patients/pac-1/anamnesis": () => jsonResponse(anamnesis),
     "/api/patients/pac-1/conditions": () => jsonResponse(conditions),
-    "/api/patients/pac-1/evolutions": () => jsonResponse(evolutions),
+    "/api/patients/pac-1/evolutions": () =>
+      evolutionsError ? errorResponse(evolutionsError) : jsonResponse(evolutions),
     "/api/professionals": () => jsonResponse(professionals),
     "/api/packages?patientId=pac-1": () => jsonResponse(packages),
   };
@@ -318,7 +321,7 @@ describe("Feature: PatientRecordPage", () => {
       expect(screen.queryByText(/nasc\./)).not.toBeInTheDocument();
     });
 
-    it("Dado condições e evoluções ainda carregando, Quando exibir abas e trocar, Então usa fallback de lista vazia", async () => {
+    it("Dado condições e evoluções ainda carregando, Quando exibir abas e trocar, Então evoluções mostra indicador de carregamento (não vazio)", async () => {
       mockFetch(
         buildRouter({
           extra: ({ url }) => {
@@ -339,11 +342,9 @@ describe("Feature: PatientRecordPage", () => {
       expect(screen.getByText("Estomias e feridas")).toBeInTheDocument();
       expect(screen.getByText("Evoluções (SOAP)")).toBeInTheDocument();
 
-      fireEvent.click(screen.getByText("Estomias e feridas"));
-      expect(await screen.findByText("Nenhuma condição clínica cadastrada.")).toBeInTheDocument();
-
       fireEvent.click(screen.getByText("Evoluções (SOAP)"));
-      expect(await screen.findByText("Nenhuma evolução registrada.")).toBeInTheDocument();
+      expect(await screen.findByText("Carregando…")).toBeInTheDocument();
+      expect(screen.queryByText("Nenhuma evolução registrada.")).not.toBeInTheDocument();
     });
   });
 
@@ -1330,6 +1331,15 @@ describe("Feature: PatientRecordPage", () => {
       await openEvolutionsTab();
 
       expect(await screen.findByText("Nenhuma evolução registrada.")).toBeInTheDocument();
+    });
+
+    it("Dado erro 500 ao carregar evoluções, Quando abrir a aba, Então exibe alerta de erro, não mensagem de vazio", async () => {
+      mockFetch(buildRouter({ evolutionsError: "Erro ao carregar evoluções" }));
+
+      await openEvolutionsTab();
+
+      expect(await screen.findByText("Erro ao carregar evoluções")).toBeInTheDocument();
+      expect(screen.queryByText("Nenhuma evolução registrada.")).not.toBeInTheDocument();
     });
 
     it("Dado evolução registrada, Quando listar, Então exibe dados SOAP e profissional responsável", async () => {

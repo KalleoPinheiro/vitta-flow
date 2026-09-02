@@ -15,6 +15,7 @@ interface EvolutionsSectionProps {
   error: string | null;
   isLoading: boolean;
   onSaved: () => void;
+  onRetry: () => void;
 }
 
 const SOAP_FIELDS = [
@@ -34,6 +35,7 @@ export function EvolutionsSection({
   error,
   isLoading,
   onSaved,
+  onRetry,
 }: EvolutionsSectionProps) {
   const { toast } = useToast();
   const [values, setValues] = useState(EMPTY);
@@ -130,7 +132,7 @@ export function EvolutionsSection({
       {isLoading ? (
         <LoadingIndicator />
       ) : error ? (
-        <ErrorAlert message={error} />
+        <ErrorAlert message={error} onRetry={onRetry} />
       ) : evolutions.length === 0 ? (
         <EmptyState message="Nenhuma evolução registrada." />
       ) : (

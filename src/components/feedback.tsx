@@ -1,7 +1,12 @@
-import { Alert, AlertDescription, CardSkeleton } from "@still-void/ui/react";
+import { Alert, AlertDescription, Button, CardSkeleton } from "@still-void/ui/react";
 
 interface ErrorAlertProps {
   message: string;
+  /**
+   * Reexecuta a busca que falhou (tipicamente `refresh()` de `useApiQuery`).
+   * Quando ausente, nenhum botão de retentativa é exibido (FASEA-04).
+   */
+  onRetry?: () => void;
 }
 
 /**
@@ -10,10 +15,15 @@ interface ErrorAlertProps {
  * (danger -ink pra contrast 4.5:1), e ícone padrão (se necessário).
  * O token semântico garante que erros nunca colidem com a cor accent do site.
  */
-export function ErrorAlert({ message }: ErrorAlertProps) {
+export function ErrorAlert({ message, onRetry }: ErrorAlertProps) {
   return (
     <Alert variant="danger" className="mb-4">
       <AlertDescription>{message}</AlertDescription>
+      {onRetry && (
+        <Button type="button" variant="link" className="h-auto p-0 mt-1" onClick={onRetry}>
+          Tentar novamente
+        </Button>
+      )}
     </Alert>
   );
 }

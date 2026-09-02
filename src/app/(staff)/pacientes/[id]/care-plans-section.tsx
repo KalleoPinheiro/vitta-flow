@@ -42,6 +42,7 @@ interface CarePlansSectionProps {
   error: string | null;
   isLoading: boolean;
   onChanged: () => void;
+  onRetry: () => void;
 }
 
 export function CarePlansSection({
@@ -51,6 +52,7 @@ export function CarePlansSection({
   error,
   isLoading,
   onChanged,
+  onRetry,
 }: CarePlansSectionProps) {
   const [creating, setCreating] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -73,7 +75,7 @@ export function CarePlansSection({
       {isLoading ? (
         <LoadingIndicator />
       ) : error ? (
-        <ErrorAlert message={error} />
+        <ErrorAlert message={error} onRetry={onRetry} />
       ) : plans.length === 0 ? (
         <EmptyState message="Nenhum plano de cuidados aberto." />
       ) : (

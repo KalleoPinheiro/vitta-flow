@@ -441,6 +441,29 @@ describe("Feature: PatientRecordPage", () => {
       expect(screen.queryByText("Nenhuma condição clínica cadastrada.")).not.toBeInTheDocument();
     });
 
+    it("Dado erro ao carregar condições, Quando clicar em 'Tentar novamente', Então refaz a busca via refresh", async () => {
+      let conditionsCallCount = 0;
+      mockFetch(
+        buildRouter({
+          extra: ({ url }) => {
+            if (url !== "/api/patients/pac-1/conditions") return undefined;
+            conditionsCallCount += 1;
+            return conditionsCallCount === 1
+              ? errorResponse("Erro ao carregar condições")
+              : jsonResponse([]);
+          },
+        }),
+      );
+
+      await openConditionsTab();
+      await screen.findByText("Erro ao carregar condições");
+
+      fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+
+      expect(await screen.findByText("Nenhuma condição clínica cadastrada.")).toBeInTheDocument();
+      expect(conditionsCallCount).toBe(2);
+    });
+
     it("Dado condições ativas e resolvidas, Quando listar, Então exibe badges e ações corretas para cada uma", async () => {
       mockFetch(
         buildRouter({ conditions: [woundConditionFixture, resolvedConditionFixture] }),
@@ -1132,6 +1155,30 @@ describe("Feature: PatientRecordPage", () => {
       expect(screen.queryByText("Nenhuma foto registrada.")).not.toBeInTheDocument();
     });
 
+    it("Dado erro ao carregar fotos, Quando clicar em 'Tentar novamente', Então refaz a busca", async () => {
+      let photosCallCount = 0;
+      mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          extra: ({ url }) => {
+            if (url === "/api/conditions/cond-wound/photos") {
+              photosCallCount += 1;
+              return photosCallCount === 1 ? errorResponse("Erro ao carregar fotos") : jsonResponse([]);
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await expandWoundCondition();
+      await screen.findByText("Erro ao carregar fotos");
+
+      fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+
+      expect(await screen.findByText("Nenhuma foto registrada.")).toBeInTheDocument();
+      expect(photosCallCount).toBe(2);
+    });
+
     it("Dado duas ou mais fotos, Quando expandir, Então exibe comparação entre a primeira e a última", async () => {
       mockFetch(
         buildRouter({
@@ -1415,6 +1462,29 @@ describe("Feature: PatientRecordPage", () => {
 
       expect(await screen.findByText("Erro ao carregar evoluções")).toBeInTheDocument();
       expect(screen.queryByText("Nenhuma evolução registrada.")).not.toBeInTheDocument();
+    });
+
+    it("Dado erro ao carregar evoluções, Quando clicar em 'Tentar novamente', Então refaz a busca via refresh", async () => {
+      let evolutionsCallCount = 0;
+      mockFetch(
+        buildRouter({
+          extra: ({ url }) => {
+            if (url !== "/api/patients/pac-1/evolutions") return undefined;
+            evolutionsCallCount += 1;
+            return evolutionsCallCount === 1
+              ? errorResponse("Erro ao carregar evoluções")
+              : jsonResponse([]);
+          },
+        }),
+      );
+
+      await openEvolutionsTab();
+      await screen.findByText("Erro ao carregar evoluções");
+
+      fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+
+      expect(await screen.findByText("Nenhuma evolução registrada.")).toBeInTheDocument();
+      expect(evolutionsCallCount).toBe(2);
     });
 
     it("Dado evolução registrada, Quando listar, Então exibe dados SOAP e profissional responsável", async () => {

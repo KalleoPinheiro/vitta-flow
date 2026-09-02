@@ -232,6 +232,7 @@ function RecordTabPanel({
         error={conditionsError}
         isLoading={conditionsLoading}
         onChanged={refreshConditions}
+        onRetry={refreshConditions}
       />
     );
   }
@@ -243,6 +244,7 @@ function RecordTabPanel({
         error={evolutionsError}
         isLoading={evolutionsLoading}
         onSaved={refreshEvolutions}
+        onRetry={refreshEvolutions}
       />
     );
   }
@@ -258,6 +260,7 @@ function RecordTabPanel({
         error={carePlansError}
         isLoading={carePlansLoading}
         onChanged={refreshCarePlans}
+        onRetry={refreshCarePlans}
       />
     );
   }

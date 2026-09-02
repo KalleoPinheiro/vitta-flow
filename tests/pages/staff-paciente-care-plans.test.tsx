@@ -402,6 +402,28 @@ describe("Feature: Plano de Cuidados (SAE) na página do paciente", () => {
     expect(screen.queryByText("Nenhum plano de cuidados aberto.")).not.toBeInTheDocument();
   });
 
+  it("Dado erro ao carregar planos, Quando clicar em 'Tentar novamente', Então refaz a busca via refresh", async () => {
+    let carePlansCallCount = 0;
+    mockFetch(({ url }) => {
+      const staticRoute = handleStaticPatientRoutes(url);
+      if (staticRoute) return staticRoute;
+      if (url === "/api/patients/pac-1/care-plans") {
+        carePlansCallCount += 1;
+        return carePlansCallCount === 1 ? errorResponse("Erro ao carregar planos") : jsonResponse([]);
+      }
+      return errorResponse(`URL não mapeada no mock: ${url}`);
+    });
+    await renderDetail();
+    await screen.findByText("Maria Souza");
+    await openCarePlanTab();
+    await screen.findByText("Erro ao carregar planos");
+
+    fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+
+    expect(await screen.findByText("Nenhum plano de cuidados aberto.")).toBeInTheDocument();
+    expect(carePlansCallCount).toBe(2);
+  });
+
   it("Dado plano geral sem condição, Quando abrir, Então rotula como plano geral do paciente", async () => {
     mockFetch(createCarePlanServer());
     await renderDetail();

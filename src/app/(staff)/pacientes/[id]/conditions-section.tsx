@@ -37,6 +37,7 @@ interface ConditionsSectionProps {
   error: string | null;
   isLoading: boolean;
   onChanged: () => void;
+  onRetry: () => void;
 }
 
 export function ConditionsSection({
@@ -45,6 +46,7 @@ export function ConditionsSection({
   error,
   isLoading,
   onChanged,
+  onRetry,
 }: ConditionsSectionProps) {
   const { toast } = useToast();
   const [actionError, setActionError] = useState<string | null>(null);
@@ -98,7 +100,7 @@ export function ConditionsSection({
       {isLoading ? (
         <LoadingIndicator />
       ) : error ? (
-        <ErrorAlert message={error} />
+        <ErrorAlert message={error} onRetry={onRetry} />
       ) : conditions.length === 0 ? (
         <EmptyState message="Nenhuma condição clínica cadastrada." />
       ) : (

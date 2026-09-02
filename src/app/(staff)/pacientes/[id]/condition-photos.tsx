@@ -107,7 +107,7 @@ export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps
         )}
       </div>
 
-      {error && <ErrorAlert message={error} />}
+      {error && <ErrorAlert message={error} onRetry={load} />}
 
       {photos === null ? null : list.length === 0 ? (
         <p className="text-xs text-ink-3">Nenhuma foto registrada.</p>

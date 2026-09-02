@@ -5,6 +5,7 @@ import { fail, handleRequest } from "@/lib/api-response";
 import { requireStaffSession } from "@/lib/auth/require-session";
 import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 import { toClinicInfoDto } from "@/lib/dto";
+import { recordAudit } from "@/lib/audit";
 
 const infoSchema = z.object({
   name: z.string().min(1).max(200).optional(),
@@ -44,13 +45,18 @@ export async function PUT(request: NextRequest) {
 
   return handleRequest(async () => {
     const body = infoSchema.parse(await request.json());
-    const { clinics } = await getRepositories({ clinicId });
+    const { clinics, auditEvents } = await getRepositories({ clinicId });
     const clinic = await clinics.findById(clinicId);
     if (!clinic) {
       throw new Error("Clínica não encontrada");
     }
     const updated = clinic.updateInfo(body);
     await clinics.update(updated);
+    recordAudit(auditEvents, guard.session, {
+      action: "update",
+      resourceType: "clinic-info",
+      resourceId: clinicId,
+    });
     return { info: toClinicInfoDto(updated) };
   });
 }

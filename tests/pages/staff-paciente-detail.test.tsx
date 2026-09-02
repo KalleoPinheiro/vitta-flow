@@ -188,6 +188,7 @@ interface RouterOptions {
   patient?: PatientDto | null;
   patientError?: string;
   anamnesis?: AnamnesisDto | null;
+  anamnesisError?: string;
   conditions?: ConditionDto[];
   conditionsError?: string;
   evolutions?: EvolutionNoteDto[];
@@ -218,6 +219,7 @@ function buildRouter({
   patient = patientFixture,
   patientError,
   anamnesis = null,
+  anamnesisError,
   conditions = [],
   conditionsError,
   evolutions = [],
@@ -230,7 +232,8 @@ function buildRouter({
 }: RouterOptions = {}) {
   const exactRoutes: Record<string, () => MockedResponse> = {
     "/api/patients/pac-1": () => (patientError ? errorResponse(patientError) : jsonResponse(patient)),
-    "/api/patients/pac-1/anamnesis": () => jsonResponse(anamnesis),
+    "/api/patients/pac-1/anamnesis": () =>
+      anamnesisError ? errorResponse(anamnesisError) : jsonResponse(anamnesis),
     "/api/patients/pac-1/conditions": () =>
       conditionsError ? errorResponse(conditionsError) : jsonResponse(conditions),
     "/api/patients/pac-1/evolutions": () =>
@@ -414,6 +417,33 @@ describe("Feature: PatientRecordPage", () => {
       fireEvent.click(screen.getByText("Salvar anamnese"));
 
       expect(await screen.findByText("Erro ao salvar anamnese")).toBeInTheDocument();
+    });
+
+    it("Dado erro 500 ao carregar anamnese, Quando renderizar, Então exibe alerta de erro, não formulário vazio (#65)", async () => {
+      mockFetch(buildRouter({ anamnesisError: "Erro ao carregar anamnese" }));
+
+      await renderDetail();
+      await screen.findByText("Maria Souza");
+
+      expect(await screen.findByText("Erro ao carregar anamnese")).toBeInTheDocument();
+      expect(screen.queryByLabelText("Comorbidades")).not.toBeInTheDocument();
+    });
+
+    it("Dado anamnese ainda carregando, Quando renderizar, Então exibe indicador de carregamento, não formulário vazio (#65)", async () => {
+      mockFetch(
+        buildRouter({
+          extra: ({ url }) => {
+            if (url === "/api/patients/pac-1/anamnesis") return new Promise<never>(() => {});
+            return undefined;
+          },
+        }),
+      );
+
+      await renderDetail();
+      await screen.findByText("Maria Souza");
+
+      expect(await screen.findByText("Carregando…")).toBeInTheDocument();
+      expect(screen.queryByLabelText("Comorbidades")).not.toBeInTheDocument();
     });
   });
 

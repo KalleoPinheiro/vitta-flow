@@ -17,8 +17,16 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     cache: "no-store",
   });
   const envelope = (await response.json()) as ApiEnvelope<T>;
-  if (!response.ok || !envelope.success || envelope.data === null) {
+  // SPEC_DEVIATION: dropped `envelope.data === null` from the throw condition.
+  // Reason (issue #65): `data: null` is a valid SUCCESS payload for endpoints
+  // whose resource is legitimately optional (ex.: anamnese ainda não
+  // registrada) — `success`/`error` já carregam o sinal real de falha. Antes,
+  // toda primeira leitura de um recurso ainda-inexistente lançava
+  // "Erro desconhecido" e o catch do `useApiQuery` escondia isso atrás de
+  // `data` permanecer `null` — exatamente o padrão "erro confundido com sem
+  // dado" que a #65 pede pra corrigir.
+  if (!response.ok || !envelope.success) {
     throw new ApiError(envelope.error ?? "Erro desconhecido", response.status);
   }
-  return envelope.data;
+  return envelope.data as T;
 }

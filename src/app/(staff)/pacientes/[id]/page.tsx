@@ -117,9 +117,12 @@ export default function PatientRecordPage({ params }: { params: Promise<{ id: st
   const [tab, setTab] = useState<TabKey>("anamnese");
 
   const { data: patient, error } = useApiQuery<PatientDto>(`/api/patients/${id}`);
-  const { data: anamnesis, refresh: refreshAnamnesis } = useApiQuery<AnamnesisDto | null>(
-    `/api/patients/${id}/anamnesis`,
-  );
+  const {
+    data: anamnesis,
+    error: anamnesisError,
+    isLoading: anamnesisLoading,
+    refresh: refreshAnamnesis,
+  } = useApiQuery<AnamnesisDto | null>(`/api/patients/${id}/anamnesis`);
   const {
     data: conditions,
     error: conditionsError,
@@ -168,6 +171,8 @@ export default function PatientRecordPage({ params }: { params: Promise<{ id: st
           tab={tab}
           patientId={id}
           anamnesis={anamnesis ?? null}
+          anamnesisError={anamnesisError}
+          anamnesisLoading={anamnesisLoading}
           conditions={conditions ?? []}
           conditionsError={conditionsError}
           conditionsLoading={conditionsLoading}
@@ -191,6 +196,8 @@ interface RecordTabPanelProps {
   tab: TabKey;
   patientId: string;
   anamnesis: AnamnesisDto | null;
+  anamnesisError: string | null;
+  anamnesisLoading: boolean;
   conditions: ConditionDto[];
   conditionsError: string | null;
   conditionsLoading: boolean;
@@ -210,6 +217,8 @@ function RecordTabPanel({
   tab,
   patientId,
   anamnesis,
+  anamnesisError,
+  anamnesisLoading,
   conditions,
   conditionsError,
   conditionsLoading,
@@ -269,7 +278,10 @@ function RecordTabPanel({
       key={anamnesis ? anamnesis.updatedAt : "empty"}
       patientId={patientId}
       anamnesis={anamnesis}
+      error={anamnesisError}
+      isLoading={anamnesisLoading}
       onSaved={refreshAnamnesis}
+      onRetry={refreshAnamnesis}
     />
   );
 }

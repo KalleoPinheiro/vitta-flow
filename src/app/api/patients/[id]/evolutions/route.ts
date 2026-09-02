@@ -10,6 +10,7 @@ import { recordAudit } from "@/lib/audit";
 import { toEvolutionNoteDto } from "@/lib/dto";
 import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 import { ValidationError } from "@/domain/shared/errors";
+import { ensureLinkBestEffort } from "@/lib/patient-link";
 
 const evolutionSchema = z.object({
   appointmentId: z.string().nullish(),
@@ -79,7 +80,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     // Nota de evolução com profissional concede/renova o vínculo com o
     // paciente (RBAC-19/20).
     if (professionalId) {
-      await professionalPatientLinks.ensureLink(professionalId, id);
+      await ensureLinkBestEffort(professionalPatientLinks, professionalId, id);
     }
     recordAudit(auditEvents, guard.session, {
       action: "create",

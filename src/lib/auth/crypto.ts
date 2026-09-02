@@ -48,3 +48,40 @@ export function decryptSecret(payload: string, secret: string): string {
     decipher.final(),
   ]).toString("utf8");
 }
+
+/** Wrapper null-safe de `encryptSecret` — usado nos campos clínicos que aceitam `null`. */
+export function encryptField(value: string | null, secret: string): string | null {
+  return value === null ? null : encryptSecret(value, secret);
+}
+
+/** Wrapper null-safe de `decryptSecret` — usado nos campos clínicos que aceitam `null`. */
+export function decryptField(value: string | null, secret: string): string | null {
+  return value === null ? null : decryptSecret(value, secret);
+}
+
+/**
+ * Detecta, só pelo formato, se um valor já está no formato `iv.tag.ciphertext` produzido
+ * por `encryptSecret` — usado pelo script de migração de dado pra pular linhas já cifradas
+ * (idempotência) sem precisar do secret pra tentar decifrar cada linha.
+ */
+export function isEncryptedPayload(value: string): boolean {
+  const [ivPart, tagPart, dataPart] = value.split(".");
+  if (!ivPart || !tagPart || !dataPart) {
+    return false;
+  }
+  try {
+    const iv = Buffer.from(ivPart, "base64url");
+    const tag = Buffer.from(tagPart, "base64url");
+    const data = Buffer.from(dataPart, "base64url");
+    return (
+      iv.length === IV_LENGTH &&
+      tag.length === AUTH_TAG_LENGTH &&
+      data.length > 0 &&
+      iv.toString("base64url") === ivPart &&
+      tag.toString("base64url") === tagPart &&
+      data.toString("base64url") === dataPart
+    );
+  } catch {
+    return false;
+  }
+}

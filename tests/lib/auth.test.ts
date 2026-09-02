@@ -5,7 +5,13 @@ import {
   verifySessionToken,
   passwordMatches,
 } from "@/lib/auth/session";
-import { encryptSecret, decryptSecret } from "@/lib/auth/crypto";
+import {
+  encryptSecret,
+  decryptSecret,
+  encryptField,
+  decryptField,
+  isEncryptedPayload,
+} from "@/lib/auth/crypto";
 import { RateLimiter } from "@/lib/auth/rate-limit";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 
@@ -124,6 +130,42 @@ describe("Feature: Criptografia de segredos em repouso (AES-256-GCM)", () => {
 
   it("Dado mesmo texto cifrado duas vezes, Quando comparar, Então saídas diferentes (IV aleatório)", () => {
     expect(encryptSecret("x", SECRET)).not.toBe(encryptSecret("x", SECRET));
+  });
+});
+
+describe("Feature: Helpers null-safe de cifra e detecção de payload cifrado", () => {
+  it("Dado valor null, Quando encryptField, Então retorna null sem cifrar", () => {
+    expect(encryptField(null, SECRET)).toBeNull();
+  });
+
+  it("Dado valor não nulo, Quando encryptField, Então retorna cifrado equivalente a encryptSecret", () => {
+    const encrypted = encryptField("nota clínica sensível", SECRET);
+
+    expect(encrypted).not.toBeNull();
+    expect(encrypted).not.toContain("nota clínica sensível");
+  });
+
+  it("Dado valor null, Quando decryptField, Então retorna null sem decifrar", () => {
+    expect(decryptField(null, SECRET)).toBeNull();
+  });
+
+  it("Dado valor cifrado por encryptField, Quando decryptField, Então retorna texto original (round-trip)", () => {
+    const encrypted = encryptField("nota clínica sensível", SECRET);
+
+    expect(decryptField(encrypted, SECRET)).toBe("nota clínica sensível");
+  });
+
+  it("Dado payload cifrado válido, Quando isEncryptedPayload, Então true", () => {
+    const encrypted = encryptSecret("valor", SECRET);
+
+    expect(isEncryptedPayload(encrypted)).toBe(true);
+  });
+
+  it("Dado texto plano (formato não bate com iv.tag.ciphertext), Quando isEncryptedPayload, Então false", () => {
+    expect(isEncryptedPayload("nota clínica em claro")).toBe(false);
+    expect(isEncryptedPayload("")).toBe(false);
+    expect(isEncryptedPayload("a.b")).toBe(false);
+    expect(isEncryptedPayload("a.b.c")).toBe(false);
   });
 });
 

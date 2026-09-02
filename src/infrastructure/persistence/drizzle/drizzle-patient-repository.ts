@@ -109,16 +109,7 @@ export class DrizzlePatientRepository implements PatientRepository {
       return [];
     }
     const limit = Math.min(page.limit ?? MAX_ROWS, MAX_ROWS);
-    const searchFilter = search
-      ? or(
-          ilike(patients.fullName, `%${search}%`),
-          ilike(patients.email, `%${search}%`),
-          ilike(patients.phone, `%${search}%`),
-        )
-      : undefined;
-    const idsFilter = page.ids ? inArray(patients.id, page.ids) : undefined;
-    const filter =
-      searchFilter && idsFilter ? and(searchFilter, idsFilter) : (searchFilter ?? idsFilter);
+    const filter = buildPatientFilter(search, page.ids);
     const rows = await this.db
       .select()
       .from(patients)
@@ -128,4 +119,24 @@ export class DrizzlePatientRepository implements PatientRepository {
       .offset(page.offset ?? 0);
     return rows.map(toPatient);
   }
+}
+
+/**
+ * Combina o filtro de busca textual (nome/e-mail/telefone) com o filtro de
+ * ids da página, quando ambos existem. Extraída de `findAll` para manter a
+ * complexidade dentro do limite do projeto (issue #48).
+ */
+function buildPatientFilter(search: string | undefined, ids: string[] | undefined) {
+  const searchFilter = search
+    ? or(
+        ilike(patients.fullName, `%${search}%`),
+        ilike(patients.email, `%${search}%`),
+        ilike(patients.phone, `%${search}%`),
+      )
+    : undefined;
+  const idsFilter = ids ? inArray(patients.id, ids) : undefined;
+  if (searchFilter && idsFilter) {
+    return and(searchFilter, idsFilter);
+  }
+  return searchFilter ?? idsFilter;
 }

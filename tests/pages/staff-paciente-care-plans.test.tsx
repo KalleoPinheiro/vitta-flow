@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor, act, within } from "@testing-library/react";
+import { screen, fireEvent, waitFor, act, within } from "@testing-library/react";
 import type {
   CarePlanDetailDto,
   CarePlanDto,

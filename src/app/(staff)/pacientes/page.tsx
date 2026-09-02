@@ -7,6 +7,7 @@ import { useApiQuery } from "@/lib/use-api-query";
 import { usePagedQuery } from "@/lib/use-paged-query";
 import { formatDate } from "@/lib/format";
 import { Modal } from "@/components/modal";
+import { ConfirmAction } from "@/components/confirm-action";
 import { StatusBadge } from "@/components/status-badge";
 import { ErrorAlert } from "@/components/feedback";
 import { LoadMoreButton } from "@/components/load-more-button";
@@ -79,14 +80,29 @@ function PatientsTable({ patients, onEdit, onToggleActive }: PatientsTableProps)
                 >
                   Editar
                 </Button>
-                <Button
-                  type="button"
-                  onClick={() => onToggleActive(patient)}
-                  variant="link"
-                  className="h-auto p-0 text-ink-3"
-                >
-                  {patient.active ? "Desativar" : "Reativar"}
-                </Button>
+                {patient.active ? (
+                  <ConfirmAction
+                    trigger={
+                      <Button type="button" variant="link" className="h-auto p-0 text-ink-3">
+                        Desativar
+                      </Button>
+                    }
+                    title="Desativar paciente?"
+                    description="O paciente para de aparecer nos fluxos ativos."
+                    confirmLabel="Confirmar"
+                    variant="danger"
+                    onConfirm={() => onToggleActive(patient)}
+                  />
+                ) : (
+                  <Button
+                    type="button"
+                    onClick={() => onToggleActive(patient)}
+                    variant="link"
+                    className="h-auto p-0 text-ink-3"
+                  >
+                    Reativar
+                  </Button>
+                )}
               </TableCell>
             </TableRow>
           ))}

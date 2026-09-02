@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import type { PartnerDto, PatientDto } from "@/lib/dto";
 import { formatDate } from "@/lib/format";
 import PatientsPage from "@/app/(staff)/pacientes/page";
@@ -275,8 +275,34 @@ describe("Feature: PatientsPage", () => {
       await screen.findByText("Maria Souza");
 
       fireEvent.click(screen.getByText("Desativar"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       await waitFor(() => expect(calls).toBeGreaterThanOrEqual(2));
+    });
+
+    it("Dado clique em desativar seguido de cancelamento no dialog, Quando acionado, Então não chama a API", async () => {
+      let patchCalls = 0;
+      mockFetch(
+        buildRouter({
+          patients: [patientFixture],
+          extra: ({ url, init }) => {
+            if (url === `/api/patients/${patientFixture.id}` && init?.method === "PATCH") {
+              patchCalls += 1;
+              return jsonResponse({ ...patientFixture, active: false });
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      render(<PatientsPage />);
+      await screen.findByText("Maria Souza");
+
+      fireEvent.click(screen.getByText("Desativar"));
+      const dialog = await screen.findByRole("alertdialog");
+      fireEvent.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+
+      expect(patchCalls).toBe(0);
     });
 
     it("Dado erro ao alternar situação, Quando falha, Então exibe alerta de erro", async () => {
@@ -296,6 +322,7 @@ describe("Feature: PatientsPage", () => {
       await screen.findByText("Maria Souza");
 
       fireEvent.click(screen.getByText("Desativar"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       expect(await screen.findByText("Erro ao atualizar paciente")).toBeInTheDocument();
     });

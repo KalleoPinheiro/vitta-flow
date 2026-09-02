@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { apiFetch } from "@/lib/client";
 import { formatDateTime } from "@/lib/format";
-import { Alert, AlertDescription, Button, Card, FileInput, Icon, Input } from "@still-void/ui/react";
+import { Alert, AlertDescription, Button, Card, FileInput, Icon, Input, Prose } from "@still-void/ui/react";
 import { useToast } from "@still-void/ui/react/client";
 import { ErrorAlert } from "@/components/feedback";
 
@@ -71,9 +71,9 @@ export function ConsentCard({
         Termo de consentimento pendente
       </h2>
       {error && <ErrorAlert message={error} />}
-      <pre className="mb-3 max-h-48 overflow-y-auto whitespace-pre-wrap rounded border border-warning-soft bg-sv-surface p-3 text-xs text-ink">
+      <Prose className="mb-3 max-h-48 overflow-y-auto whitespace-pre-wrap rounded border border-warning-soft bg-sv-surface p-3 text-sm">
         {status.consentText}
-      </pre>
+      </Prose>
       <Button
         type="button"
         disabled={accepting}

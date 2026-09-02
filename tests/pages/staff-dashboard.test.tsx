@@ -382,6 +382,22 @@ describe("Feature: Dashboard do painel interno", () => {
       expect(waiting).toHaveClass("text-danger");
     });
 
+    it("Dado score de triagem, Quando focar o selo via teclado, Então mostra a legenda no tooltip", async () => {
+      mockFetch({
+        triage: [
+          { ...triageFixture, waitingHours: 30, latestScore: { kind: "push", value: 9 } },
+        ],
+      });
+      renderWithToast(<DashboardPage />);
+
+      const badge = await screen.findByText("PUSH 9");
+      badge.focus();
+
+      expect(
+        await screen.findByText(/Pressure Ulcer Scale for Healing/)
+      ).toBeInTheDocument();
+    });
+
     it("Dado pendência recente sem score, Quando renderizar, Então idade sem destaque e sem badge (COMP3-05)", async () => {
       mockFetch({ triage: [triageFixture] });
       renderWithToast(<DashboardPage />);

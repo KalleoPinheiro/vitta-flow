@@ -1250,6 +1250,7 @@ describe("Feature: PatientRecordPage", () => {
       expect(await screen.findByText("excluir")).toBeInTheDocument();
 
       fireEvent.click(screen.getByText("excluir"));
+      fireEvent.click(await screen.findByText("Excluir"));
 
       await waitFor(() => {
         expect(fetchMock).toHaveBeenCalledWith(
@@ -1258,6 +1259,26 @@ describe("Feature: PatientRecordPage", () => {
         );
       });
       expect(await screen.findByText("Foto excluída")).toBeInTheDocument();
+    });
+
+    it("Dado clique em excluir foto seguido de cancelamento no dialog, Quando acionado, Então não chama a API", async () => {
+      const fetchMock = mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          photosByCondition: { "cond-wound": [photoFixture] },
+        }),
+      );
+
+      await expandWoundCondition();
+      expect(await screen.findByText("excluir")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("excluir"));
+      const dialog = await screen.findByRole("alertdialog");
+      fireEvent.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+
+      expect(
+        fetchMock.mock.calls.some(([, init]) => (init as RequestInit | undefined)?.method === "DELETE"),
+      ).toBe(false);
     });
 
     it("Dado resposta de erro sem corpo JSON válido, Quando enviar foto, Então exibe mensagem padrão de erro", async () => {
@@ -1329,6 +1350,7 @@ describe("Feature: PatientRecordPage", () => {
       expect(await screen.findByText("excluir")).toBeInTheDocument();
 
       fireEvent.click(screen.getByText("excluir"));
+      fireEvent.click(await screen.findByText("Excluir"));
 
       expect(await screen.findByText("Erro ao excluir foto")).toBeInTheDocument();
     });

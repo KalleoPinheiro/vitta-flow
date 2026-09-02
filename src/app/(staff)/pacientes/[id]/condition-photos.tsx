@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/client";
 import type { ConditionPhotoDto } from "@/lib/dto";
 import { formatDate } from "@/lib/format";
 import { ErrorAlert } from "@/components/feedback";
+import { ConfirmAction } from "@/components/confirm-action";
 import { Button, FileInput } from "@still-void/ui/react";
 
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
@@ -130,14 +131,18 @@ export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps
                 <figcaption className="mt-0.5 flex items-center justify-between text-[10px] text-ink-3">
                   {formatDate(photo.createdAt)}
                   {canUpload && (
-                    <Button
-                      type="button"
-                      onClick={() => void remove(photo)}
-                      variant="link"
-                      className="h-auto p-0 text-danger"
-                    >
-                      excluir
-                    </Button>
+                    <ConfirmAction
+                      trigger={
+                        <Button type="button" variant="link" className="h-auto p-0 text-danger">
+                          excluir
+                        </Button>
+                      }
+                      title="Excluir esta foto?"
+                      description="A evidência clínica é removida permanentemente."
+                      confirmLabel="Excluir"
+                      variant="danger"
+                      onConfirm={() => remove(photo)}
+                    />
                   )}
                 </figcaption>
               </figure>

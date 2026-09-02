@@ -13,6 +13,7 @@ import type { AuditEvent } from "@/domain/audit/audit-event";
 import type { ConditionPhoto } from "@/domain/clinical/condition-photo";
 import type { Professional } from "@/domain/professional/professional";
 import type { Procedure as CatalogProcedure } from "@/domain/catalog/procedure";
+import type { Clinic } from "@/domain/clinic/clinic";
 import type { UserAccount } from "@/domain/auth/user-account";
 import { UNSET_PASSWORD_HASH } from "@/lib/auth/password";
 import type { NursingDiagnosis } from "@/domain/taxonomy/nursing-diagnosis";
@@ -685,4 +686,23 @@ export const toUserAccountDto = (account: UserAccount): UserAccountDto => ({
   professionalId: account.professionalId,
   active: account.isActive,
   passwordSet: account.passwordHash !== UNSET_PASSWORD_HASH,
+});
+
+/** Dados cadastrais da clínica — cabeçalho/rodapé de documentos emitidos (#61/#62). */
+export interface ClinicInfoDto {
+  name: string;
+  cnpj: string | null;
+  address: string | null;
+  city: string | null;
+  professionalName: string | null;
+  professionalRegistry: string | null;
+}
+
+export const toClinicInfoDto = (clinic: Clinic): ClinicInfoDto => ({
+  name: clinic.name,
+  cnpj: clinic.cnpj,
+  address: clinic.address,
+  city: clinic.city,
+  professionalName: clinic.professionalName,
+  professionalRegistry: clinic.professionalRegistry,
 });

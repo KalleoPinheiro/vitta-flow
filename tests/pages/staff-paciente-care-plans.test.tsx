@@ -329,7 +329,7 @@ function createCarePlanServer() {
 }
 
 async function openCarePlanTab() {
-  fireEvent.click(screen.getByText(/Plano de Cuidados \(SAE\)/));
+  fireEvent.mouseDown(screen.getByText(/Plano de Cuidados \(SAE\)/));
 }
 
 /**

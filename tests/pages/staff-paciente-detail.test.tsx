@@ -313,10 +313,10 @@ describe("Feature: PatientRecordPage", () => {
       expect(screen.getByText("Estomias e feridas (1)")).toBeInTheDocument();
       expect(screen.getByText("Evoluções (SOAP) (1)")).toBeInTheDocument();
 
-      fireEvent.click(screen.getByText("Estomias e feridas (1)"));
+      fireEvent.mouseDown(screen.getByText("Estomias e feridas (1)"));
       expect(await screen.findByText("Úlcera venosa perna E")).toBeInTheDocument();
 
-      fireEvent.click(screen.getByText("Evoluções (SOAP) (1)"));
+      fireEvent.mouseDown(screen.getByText("Evoluções (SOAP) (1)"));
       expect(await screen.findByText(/Dor leve na região/)).toBeInTheDocument();
     });
 
@@ -355,11 +355,11 @@ describe("Feature: PatientRecordPage", () => {
       expect(screen.getByText("Estomias e feridas")).toBeInTheDocument();
       expect(screen.getByText("Evoluções (SOAP)")).toBeInTheDocument();
 
-      fireEvent.click(screen.getByText("Estomias e feridas"));
+      fireEvent.mouseDown(screen.getByText("Estomias e feridas"));
       expect(await screen.findAllByText("Carregando…")).not.toHaveLength(0);
       expect(screen.queryByText("Nenhuma condição clínica cadastrada.")).not.toBeInTheDocument();
 
-      fireEvent.click(screen.getByText("Evoluções (SOAP)"));
+      fireEvent.mouseDown(screen.getByText("Evoluções (SOAP)"));
       expect(await screen.findByText("Carregando…")).toBeInTheDocument();
       expect(screen.queryByText("Nenhuma evolução registrada.")).not.toBeInTheDocument();
     });
@@ -461,13 +461,13 @@ describe("Feature: PatientRecordPage", () => {
       await renderDetail();
       await screen.findByText("Maria Souza");
 
-      fireEvent.click(screen.getByText("Evoluções (SOAP)"));
+      fireEvent.mouseDown(screen.getByText("Evoluções (SOAP)"));
       fireEvent.click(screen.getByText("+ Nova evolução"));
       fireEvent.change(screen.getByLabelText(/S — Subjetivo/), {
         target: { value: "Rascunho não salvo" },
       });
 
-      fireEvent.click(screen.getByText("Anamnese"));
+      fireEvent.mouseDown(screen.getByText("Anamnese"));
 
       expect(await screen.findByText("Descartar alterações?")).toBeInTheDocument();
       // Cancelar mantém a aba e o texto digitado intactos.
@@ -482,19 +482,19 @@ describe("Feature: PatientRecordPage", () => {
       await renderDetail();
       await screen.findByText("Maria Souza");
 
-      fireEvent.click(screen.getByText("Evoluções (SOAP)"));
+      fireEvent.mouseDown(screen.getByText("Evoluções (SOAP)"));
       fireEvent.click(screen.getByText("+ Nova evolução"));
       fireEvent.change(screen.getByLabelText(/S — Subjetivo/), {
         target: { value: "Rascunho descartável" },
       });
 
-      fireEvent.click(screen.getByText("Anamnese"));
+      fireEvent.mouseDown(screen.getByText("Anamnese"));
       fireEvent.click(await screen.findByText("Descartar e trocar"));
 
       expect(screen.queryByText("Descartar alterações?")).not.toBeInTheDocument();
       expect(screen.getByLabelText("Comorbidades")).toBeInTheDocument();
 
-      fireEvent.click(screen.getByText("Evoluções (SOAP)"));
+      fireEvent.mouseDown(screen.getByText("Evoluções (SOAP)"));
       fireEvent.click(screen.getByText("+ Nova evolução"));
       expect(screen.queryByDisplayValue("Rascunho descartável")).not.toBeInTheDocument();
     });
@@ -509,7 +509,7 @@ describe("Feature: PatientRecordPage", () => {
         target: { value: "Hipertensão não salva" },
       });
 
-      fireEvent.click(screen.getByText("Evoluções (SOAP)"));
+      fireEvent.mouseDown(screen.getByText("Evoluções (SOAP)"));
 
       expect(await screen.findByText("Descartar alterações?")).toBeInTheDocument();
     });
@@ -520,7 +520,7 @@ describe("Feature: PatientRecordPage", () => {
       await renderDetail();
       await screen.findByText("Maria Souza");
 
-      fireEvent.click(screen.getByText("Evoluções (SOAP)"));
+      fireEvent.mouseDown(screen.getByText("Evoluções (SOAP)"));
 
       expect(screen.queryByText("Descartar alterações?")).not.toBeInTheDocument();
       expect(await screen.findByText("Nenhuma evolução registrada.")).toBeInTheDocument();
@@ -531,7 +531,7 @@ describe("Feature: PatientRecordPage", () => {
     async function openConditionsTab() {
       await renderDetail();
       await screen.findByText("Maria Souza");
-      fireEvent.click(screen.getByText(/Estomias e feridas/));
+      fireEvent.mouseDown(screen.getByText(/Estomias e feridas/));
     }
 
     it("Dado nenhuma condição, Quando abrir a aba, Então exibe mensagem de vazio", async () => {
@@ -1269,7 +1269,7 @@ describe("Feature: PatientRecordPage", () => {
     async function expandWoundCondition() {
       await renderDetail();
       await screen.findByText("Maria Souza");
-      fireEvent.click(screen.getByText(/Estomias e feridas/));
+      fireEvent.mouseDown(screen.getByText(/Estomias e feridas/));
       await screen.findByText("Úlcera venosa perna E");
       fireEvent.click(screen.getByText("Ver avaliações"));
     }
@@ -1597,7 +1597,7 @@ describe("Feature: PatientRecordPage", () => {
 
       await renderDetail();
       await screen.findByText("Maria Souza");
-      fireEvent.click(screen.getByText(/Estomias e feridas/));
+      fireEvent.mouseDown(screen.getByText(/Estomias e feridas/));
       await screen.findByText("Úlcera venosa perna E");
 
       fireEvent.click(screen.getByText("Ver avaliações"));
@@ -1616,7 +1616,7 @@ describe("Feature: PatientRecordPage", () => {
     async function openEvolutionsTab() {
       await renderDetail();
       await screen.findByText("Maria Souza");
-      fireEvent.click(screen.getByText(/Evoluções \(SOAP\)/));
+      fireEvent.mouseDown(screen.getByText(/Evoluções \(SOAP\)/));
     }
 
     it("Dado nenhuma evolução, Quando abrir a aba, Então exibe mensagem de vazio", async () => {
@@ -1780,7 +1780,7 @@ describe("Feature: Pacotes no prontuário (COMP3-10)", () => {
     await renderDetail();
     await screen.findByText("Maria Souza");
 
-    fireEvent.click(screen.getByText("Pacotes"));
+    fireEvent.mouseDown(screen.getByText("Pacotes"));
 
     expect(await screen.findByText("Curativo especial")).toBeInTheDocument();
     expect(screen.getByText("7 de 10 sessões restantes")).toBeInTheDocument();
@@ -1809,7 +1809,7 @@ describe("Feature: Pacotes no prontuário (COMP3-10)", () => {
     await renderDetail();
     await screen.findByText("Maria Souza");
 
-    fireEvent.click(screen.getByText("Pacotes"));
+    fireEvent.mouseDown(screen.getByText("Pacotes"));
 
     const expired = await screen.findByText(/Expirado em 01\/01\/2020/);
     expect(expired).toHaveClass("text-danger");
@@ -1820,7 +1820,7 @@ describe("Feature: Pacotes no prontuário (COMP3-10)", () => {
     await renderDetail();
     await screen.findByText("Maria Souza");
 
-    fireEvent.click(screen.getByText("Pacotes"));
+    fireEvent.mouseDown(screen.getByText("Pacotes"));
 
     expect(
       await screen.findByText("Nenhum pacote de sessões para este paciente."),

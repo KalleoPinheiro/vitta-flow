@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Button, Card, Hero, Icon } from "@still-void/ui/react";
-import { useToast } from "@still-void/ui/react/client";
+import { Tooltip, TooltipContent, TooltipTrigger, useToast } from "@still-void/ui/react/client";
 import type { AppointmentDto, FollowUpDto, SupplyDto } from "@/lib/dto";
 import type { BillingSummary } from "@/application/billing/get-billing-summary";
 import { apiFetch } from "@/lib/client";
@@ -262,9 +262,18 @@ function TriageQueue() {
               <p className="truncate font-medium">
                 {photo.patientName} — {photo.conditionTitle}
                 {photo.latestScore && (
-                  <span className="ml-2 rounded bg-sv-surface px-1.5 py-0.5 text-xs font-semibold text-accent-ink">
-                    {photo.latestScore.kind === "push" ? "PUSH" : "DET"} {photo.latestScore.value}
-                  </span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="ml-2 rounded bg-sv-surface px-1.5 py-0.5 text-xs font-semibold text-accent-ink">
+                        {photo.latestScore.kind === "push" ? "PUSH" : "DET"} {photo.latestScore.value}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {photo.latestScore.kind === "push"
+                        ? "PUSH — Pressure Ulcer Scale for Healing: escala de cicatrização de lesão por pressão"
+                        : "DET — índice Débito/Exsudato/Tecido da avaliação de estomia"}
+                    </TooltipContent>
+                  </Tooltip>
                 )}
               </p>
               <p className="truncate text-xs text-ink-3">

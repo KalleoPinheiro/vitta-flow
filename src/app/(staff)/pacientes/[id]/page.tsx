@@ -18,7 +18,7 @@ import { ConditionsSection } from "./conditions-section";
 import { EvolutionsSection } from "./evolutions-section";
 import { CarePlansSection } from "./care-plans-section";
 import { PackagesSection } from "./packages-section";
-import { Alert, AlertDescription, Button, Card, Icon } from "@still-void/ui/react";
+import { Alert, AlertDescription, Card, Icon } from "@still-void/ui/react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +28,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
 } from "@still-void/ui/react/client";
 
 const TABS = [
@@ -54,12 +58,6 @@ function tabLabel(
   };
   const count = counts[tab.key] ?? 0;
   return count > 0 ? `${tab.label} (${count})` : tab.label;
-}
-
-interface TabButtonProps {
-  label: string;
-  isActive: boolean;
-  onClick: () => void;
 }
 
 function PatientHeader({ patient }: { patient: PatientDto }) {
@@ -102,23 +100,6 @@ function AllergyBanner({ allergies }: { allergies?: string }) {
         Alergias: {allergies}
       </AlertDescription>
     </Alert>
-  );
-}
-
-function TabButton({ label, isActive, onClick }: TabButtonProps) {
-  return (
-    <Button
-      type="button"
-      onClick={onClick}
-      className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium ${
-        isActive
-          ? "border-accent-ink text-accent-ink"
-          : "border-transparent text-ink-3 hover:text-ink"
-      }`}
-      variant="outline"
-    >
-      {label}
-    </Button>
   );
 }
 
@@ -212,41 +193,45 @@ export default function PatientRecordPage({ params }: { params: Promise<{ id: st
       <PatientHeader patient={patient} />
       <AllergyBanner allergies={anamnesis?.allergies} />
 
-      <div className="mb-4 flex gap-2 border-b border-border">
-        {TABS.map((item) => (
-          <TabButton
-            key={item.key}
-            label={tabLabel(item, conditions ?? [], evolutions ?? [], carePlans ?? [])}
-            isActive={tab === item.key}
-            onClick={() => requestTabChange(item.key, setTab)}
-          />
-        ))}
-      </div>
+      <Tabs
+        value={tab}
+        onValueChange={(next) => requestTabChange(next as TabKey, setTab)}
+      >
+        <TabsList>
+          {TABS.map((item) => (
+            <TabsTrigger key={item.key} value={item.key}>
+              {tabLabel(item, conditions ?? [], evolutions ?? [], carePlans ?? [])}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      <Card className="p-5">
-        <RecordTabPanel
-          tab={tab}
-          patientId={id}
-          anamnesis={anamnesis ?? null}
-          anamnesisError={anamnesisError}
-          anamnesisLoading={anamnesisLoading}
-          onAnamnesisDirtyChange={setAnamnesisDirty}
-          conditions={conditions ?? []}
-          conditionsError={conditionsError}
-          conditionsLoading={conditionsLoading}
-          evolutions={evolutions ?? []}
-          evolutionsError={evolutionsError}
-          evolutionsLoading={evolutionsLoading}
-          onEvolutionsDirtyChange={setEvolutionsDirty}
-          carePlans={carePlans ?? []}
-          carePlansError={carePlansError}
-          carePlansLoading={carePlansLoading}
-          refreshAnamnesis={refreshAnamnesis}
-          refreshConditions={refreshConditions}
-          refreshEvolutions={refreshEvolutions}
-          refreshCarePlans={refreshCarePlans}
-        />
-      </Card>
+        <TabsContent value={tab}>
+          <Card className="p-5">
+            <RecordTabPanel
+              tab={tab}
+              patientId={id}
+              anamnesis={anamnesis ?? null}
+              anamnesisError={anamnesisError}
+              anamnesisLoading={anamnesisLoading}
+              onAnamnesisDirtyChange={setAnamnesisDirty}
+              conditions={conditions ?? []}
+              conditionsError={conditionsError}
+              conditionsLoading={conditionsLoading}
+              evolutions={evolutions ?? []}
+              evolutionsError={evolutionsError}
+              evolutionsLoading={evolutionsLoading}
+              onEvolutionsDirtyChange={setEvolutionsDirty}
+              carePlans={carePlans ?? []}
+              carePlansError={carePlansError}
+              carePlansLoading={carePlansLoading}
+              refreshAnamnesis={refreshAnamnesis}
+              refreshConditions={refreshConditions}
+              refreshEvolutions={refreshEvolutions}
+              refreshCarePlans={refreshCarePlans}
+            />
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <AlertDialog open={pendingTab !== null} onOpenChange={(open) => !open && cancelPendingTab()}>
         <AlertDialogContent>

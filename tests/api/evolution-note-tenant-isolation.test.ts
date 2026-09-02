@@ -126,4 +126,24 @@ describe("Feature: Isolamento de Nota de Evolução por empresa (MT-19)", () => 
 
     expect(body.data.some((n) => n.subjective === plainText)).toBe(true);
   });
+
+  it("Dado AUTH_SECRET ausente, Quando getRepositories tenta construir os repositórios clínicos cifrados, Então lança erro explícito (fail-closed, sem fallback em claro)", async () => {
+    const original = process.env.AUTH_SECRET;
+    delete process.env.AUTH_SECRET;
+    try {
+      const { getRepositories } = await import("@/infrastructure/container");
+      await expect(getRepositories({ clinicId: CLINIC_A_ID })).rejects.toThrow();
+    } finally {
+      process.env.AUTH_SECRET = original;
+    }
+  });
+
+  it("Dado AUTH_SECRET configurado, Quando getRepositories constrói os repositórios clínicos cifrados, Então funcionam normalmente (regressão zero)", async () => {
+    const { getRepositories } = await import("@/infrastructure/container");
+    const repos = await getRepositories({ clinicId: CLINIC_A_ID });
+
+    expect(repos.evolutions).toBeDefined();
+    expect(repos.conditions).toBeDefined();
+    expect(repos.assessments).toBeDefined();
+  });
 });

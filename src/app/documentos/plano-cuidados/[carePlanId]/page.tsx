@@ -89,30 +89,32 @@ function CarePlanDocumentContent({
         // border-black/text-black em vez de tokens --sv-*, para a folha
         // continuar em preto-sobre-branco na impressora P&B. O utilitário
         // vence layer(components), então o override é determinístico.
-        <Table className="mb-4 w-full border-collapse text-xs text-black">
-          <TableHeader>
-            <TableRow className="border-b border-black text-left">
-              <TableHead className="py-1 pr-2 text-black">Resultado</TableHead>
-              <TableHead className="py-1 pr-2 text-black">Basal</TableHead>
-              <TableHead className="py-1 pr-2 text-black">Atual</TableHead>
-              <TableHead className="py-1 pr-2 text-black">Meta</TableHead>
-              <TableHead className="py-1 text-black">Situação</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {detail.outcomes.map((outcome) => (
-              <TableRow key={outcome.id} className="border-b border-black/30">
-                <TableCell className="py-1 pr-2">
-                  {outcome.outcomeCode} — {outcome.outcomeLabel}
-                </TableCell>
-                <TableCell className="py-1 pr-2">{outcome.baselineScore}</TableCell>
-                <TableCell className="py-1 pr-2">{outcome.currentScore ?? "—"}</TableCell>
-                <TableCell className="py-1 pr-2">{outcome.targetScore}</TableCell>
-                <TableCell className="py-1">{outcomeStatusLabel(outcome)}</TableCell>
+        <div className="mb-4 overflow-x-auto">
+          <Table className="w-full border-collapse text-xs text-black">
+            <TableHeader>
+              <TableRow className="border-b border-black text-left">
+                <TableHead className="py-1 pr-2 text-black">Resultado</TableHead>
+                <TableHead className="py-1 pr-2 text-black">Basal</TableHead>
+                <TableHead className="py-1 pr-2 text-black">Atual</TableHead>
+                <TableHead className="py-1 pr-2 text-black">Meta</TableHead>
+                <TableHead className="py-1 text-black">Situação</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {detail.outcomes.map((outcome) => (
+                <TableRow key={outcome.id} className="border-b border-black/30">
+                  <TableCell className="py-1 pr-2">
+                    {outcome.outcomeCode} — {outcome.outcomeLabel}
+                  </TableCell>
+                  <TableCell className="py-1 pr-2">{outcome.baselineScore}</TableCell>
+                  <TableCell className="py-1 pr-2">{outcome.currentScore ?? "—"}</TableCell>
+                  <TableCell className="py-1 pr-2">{outcome.targetScore}</TableCell>
+                  <TableCell className="py-1">{outcomeStatusLabel(outcome)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
 
       <h3 className="mb-2 font-semibold">Intervenções de enfermagem (NIC)</h3>
@@ -121,28 +123,30 @@ function CarePlanDocumentContent({
       ) : (
         // SPEC_DEVIATION: override neutro de impressão (AD-006) — ver
         // comentário na tabela de resultados esperados (NOC) acima.
-        <Table className="w-full border-collapse text-xs text-black">
-          <TableHeader>
-            <TableRow className="border-b border-black text-left">
-              <TableHead className="py-1 pr-2 text-black">Intervenção</TableHead>
-              <TableHead className="py-1 pr-2 text-black">Frequência</TableHead>
-              <TableHead className="py-1 pr-2 text-black">Prioridade</TableHead>
-              <TableHead className="py-1 text-black">Execuções</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {detail.interventions.map((intervention) => (
-              <TableRow key={intervention.id} className="border-b border-black/30">
-                <TableCell className="py-1 pr-2">
-                  {intervention.interventionCode} — {intervention.interventionLabel}
-                </TableCell>
-                <TableCell className="py-1 pr-2">{intervention.frequency}</TableCell>
-                <TableCell className="py-1 pr-2">{INTERVENTION_PRIORITY_LABELS[intervention.priority]}</TableCell>
-                <TableCell className="py-1">{intervention.records.length}</TableCell>
+        <div className="overflow-x-auto">
+          <Table className="w-full border-collapse text-xs text-black">
+            <TableHeader>
+              <TableRow className="border-b border-black text-left">
+                <TableHead className="py-1 pr-2 text-black">Intervenção</TableHead>
+                <TableHead className="py-1 pr-2 text-black">Frequência</TableHead>
+                <TableHead className="py-1 pr-2 text-black">Prioridade</TableHead>
+                <TableHead className="py-1 text-black">Execuções</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {detail.interventions.map((intervention) => (
+                <TableRow key={intervention.id} className="border-b border-black/30">
+                  <TableCell className="py-1 pr-2">
+                    {intervention.interventionCode} — {intervention.interventionLabel}
+                  </TableCell>
+                  <TableCell className="py-1 pr-2">{intervention.frequency}</TableCell>
+                  <TableCell className="py-1 pr-2">{INTERVENTION_PRIORITY_LABELS[intervention.priority]}</TableCell>
+                  <TableCell className="py-1">{intervention.records.length}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </DocumentFrame>
   );

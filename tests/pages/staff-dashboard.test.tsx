@@ -401,6 +401,7 @@ describe("Feature: Dashboard do painel interno", () => {
         expect(screen.getByText("Ok, manter plano")).toBeInTheDocument();
       });
       fireEvent.click(screen.getByText("Ok, manter plano"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       await waitFor(() => {
         expect(fetch).toHaveBeenCalledWith(
@@ -422,6 +423,7 @@ describe("Feature: Dashboard do painel interno", () => {
         expect(screen.getByText("Antecipar retorno")).toBeInTheDocument();
       });
       fireEvent.click(screen.getByText("Antecipar retorno"));
+      fireEvent.click(await screen.findByText("Confirmar antecipação"));
 
       await waitFor(() => {
         expect(fetch).toHaveBeenCalledWith(
@@ -433,6 +435,44 @@ describe("Feature: Dashboard do painel interno", () => {
         );
       });
       expect(await screen.findByText("Foto escalada")).toBeInTheDocument();
+    });
+
+    it("Dado clique em 'Ok, manter plano' seguido de cancelamento, Quando acionado, Então não chama a API", async () => {
+      mockFetch({ triage: [triageFixture] });
+      renderWithToast(<DashboardPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Ok, manter plano")).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByText("Ok, manter plano"));
+      const dialog = await screen.findByRole("alertdialog");
+      fireEvent.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+
+      const fetchMock = fetch as ReturnType<typeof vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<unknown>>>;
+      expect(
+        fetchMock.mock.calls.some(
+          ([url, init]) => String(url).startsWith("/api/photos/") && init?.method === "PATCH",
+        ),
+      ).toBe(false);
+    });
+
+    it("Dado clique em 'Antecipar retorno' seguido de cancelamento, Quando acionado, Então não chama a API", async () => {
+      mockFetch({ triage: [triageFixture] });
+      renderWithToast(<DashboardPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Antecipar retorno")).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByText("Antecipar retorno"));
+      const dialog = await screen.findByRole("alertdialog");
+      fireEvent.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+
+      const fetchMock = fetch as ReturnType<typeof vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<unknown>>>;
+      expect(
+        fetchMock.mock.calls.some(
+          ([url, init]) => String(url).startsWith("/api/photos/") && init?.method === "PATCH",
+        ),
+      ).toBe(false);
     });
 
     it("Dado foto sem observação do paciente, Quando renderizar, Então exibe 'sem observação'", async () => {
@@ -468,6 +508,7 @@ describe("Feature: Dashboard do painel interno", () => {
         expect(screen.getByText("Ok, manter plano")).toBeInTheDocument();
       });
       fireEvent.click(screen.getByText("Ok, manter plano"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       await waitFor(() => {
         expect(screen.getByText("Erro na triagem")).toBeInTheDocument();
@@ -496,6 +537,7 @@ describe("Feature: Dashboard do painel interno", () => {
         expect(screen.getByText("Ok, manter plano")).toBeInTheDocument();
       });
       fireEvent.click(screen.getByText("Ok, manter plano"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       await waitFor(() => {
         expect(screen.getByText("Erro na triagem")).toBeInTheDocument();

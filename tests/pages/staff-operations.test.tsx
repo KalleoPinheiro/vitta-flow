@@ -1317,6 +1317,7 @@ describe("Feature: ProfessionalsPage", () => {
       await screen.findByText("Dra. Ana");
 
       fireEvent.click(screen.getByText("Desativar"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       await waitFor(() => expect(calls).toBeGreaterThanOrEqual(2));
       expect(await screen.findByText("Profissional desativado")).toBeInTheDocument();
@@ -1363,6 +1364,7 @@ describe("Feature: ProfessionalsPage", () => {
       await screen.findByText("Dra. Ana");
 
       fireEvent.click(screen.getByText("Desativar"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       expect(await screen.findByText("Erro ao atualizar profissional")).toBeInTheDocument();
     });
@@ -1384,8 +1386,34 @@ describe("Feature: ProfessionalsPage", () => {
       await screen.findByText("Dra. Ana");
 
       fireEvent.click(screen.getByText("Desativar"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       expect(await screen.findByText("Erro ao atualizar profissional")).toBeInTheDocument();
+    });
+
+    it("Dado clique em desativar seguido de cancelamento no dialog, Quando acionado, Então não chama a API", async () => {
+      let patchCalls = 0;
+      mockFetch(({ url, init }) => {
+        if (url === "/api/professionals/pr1" && init?.method === "PATCH") {
+          patchCalls += 1;
+          return jsonResponse({ id: "pr1", active: false });
+        }
+        if (url.startsWith("/api/professionals")) {
+          return jsonResponse([
+            { id: "pr1", fullName: "Dra. Ana", registry: null, commissionPct: null, active: true },
+          ]);
+        }
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<ProfessionalsPage />);
+      await screen.findByText("Dra. Ana");
+
+      fireEvent.click(screen.getByText("Desativar"));
+      const dialog = await screen.findByRole("alertdialog");
+      fireEvent.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+
+      expect(patchCalls).toBe(0);
     });
   });
 

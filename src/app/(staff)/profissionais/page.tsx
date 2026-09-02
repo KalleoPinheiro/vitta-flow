@@ -6,6 +6,7 @@ import { useToast } from "@still-void/ui/react/client";
 import type { ProfessionalDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import { Modal } from "@/components/modal";
+import { ConfirmAction } from "@/components/confirm-action";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import {
@@ -96,14 +97,29 @@ export default function ProfessionalsPage() {
                       >
                         Editar
                       </Button>
-                      <Button
-                        type="button"
-                        onClick={() => void toggleActive(professional)}
-                        variant="link"
-                        className="h-auto p-0 text-ink-3"
-                      >
-                        {professional.active ? "Desativar" : "Reativar"}
-                      </Button>
+                      {professional.active ? (
+                        <ConfirmAction
+                          trigger={
+                            <Button type="button" variant="link" className="h-auto p-0 text-ink-3">
+                              Desativar
+                            </Button>
+                          }
+                          title="Desativar profissional?"
+                          description="O profissional para de estar disponível pra agendar."
+                          confirmLabel="Confirmar"
+                          variant="danger"
+                          onConfirm={() => toggleActive(professional)}
+                        />
+                      ) : (
+                        <Button
+                          type="button"
+                          onClick={() => void toggleActive(professional)}
+                          variant="link"
+                          className="h-auto p-0 text-ink-3"
+                        >
+                          Reativar
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

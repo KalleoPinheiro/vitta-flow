@@ -236,6 +236,33 @@ export const toConditionDto = (condition: ClinicalCondition): ConditionDto => ({
   createdAt: condition.createdAt.toISOString(),
 });
 
+/**
+ * DTO allowlist do portal (#69) — sem `notes` (nota interna da equipe).
+ * Tipo próprio (não `Omit<ConditionDto, "notes">`) para que um campo novo no
+ * domínio não vaze automaticamente: cada campo exposto é citado aqui.
+ */
+export interface PortalConditionDto {
+  id: string;
+  patientId: string;
+  kind: string;
+  title: string;
+  stomaType: string | null;
+  startedAt: string | null;
+  status: string;
+  createdAt: string;
+}
+
+export const toPortalConditionDto = (condition: ClinicalCondition): PortalConditionDto => ({
+  id: condition.id,
+  patientId: condition.patientId,
+  kind: condition.kind,
+  title: condition.title,
+  stomaType: condition.stomaType,
+  startedAt: condition.startedAt?.toISOString() ?? null,
+  status: condition.status,
+  createdAt: condition.createdAt.toISOString(),
+});
+
 export interface AssessmentDto {
   id: string;
   conditionId: string;
@@ -271,6 +298,46 @@ export const toAssessmentDto = (assessment: ConditionAssessment): AssessmentDto 
   detScore: assessment.detScore,
   pushScore: assessment.pushScore,
   notes: assessment.notes,
+  createdAt: assessment.createdAt.toISOString(),
+});
+
+/**
+ * DTO allowlist do portal (#69) — sem `notes` (nota interna da equipe).
+ * Tipo próprio para que um campo novo no domínio não vaze automaticamente.
+ */
+export interface PortalAssessmentDto {
+  id: string;
+  conditionId: string;
+  lengthMm: number | null;
+  widthMm: number | null;
+  depthMm: number | null;
+  areaMm2: number | null;
+  tissueType: string | null;
+  exudate: string | null;
+  painScale: number | null;
+  skinCondition: string | null;
+  complications: string | null;
+  complicationCodes: string[];
+  detScore: number | null;
+  pushScore: number | null;
+  createdAt: string;
+}
+
+export const toPortalAssessmentDto = (assessment: ConditionAssessment): PortalAssessmentDto => ({
+  id: assessment.id,
+  conditionId: assessment.conditionId,
+  lengthMm: assessment.lengthMm,
+  widthMm: assessment.widthMm,
+  depthMm: assessment.depthMm,
+  areaMm2: assessment.areaMm2,
+  tissueType: assessment.tissueType,
+  exudate: assessment.exudate,
+  painScale: assessment.painScale,
+  skinCondition: assessment.skinCondition,
+  complications: assessment.complications,
+  complicationCodes: assessment.complicationCodes,
+  detScore: assessment.detScore,
+  pushScore: assessment.pushScore,
   createdAt: assessment.createdAt.toISOString(),
 });
 

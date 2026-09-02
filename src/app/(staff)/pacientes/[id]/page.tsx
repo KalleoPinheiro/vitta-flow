@@ -197,7 +197,7 @@ export default function PatientRecordPage({ params }: { params: Promise<{ id: st
         value={tab}
         onValueChange={(next) => requestTabChange(next as TabKey, setTab)}
       >
-        <TabsList>
+        <TabsList aria-label="Seções do prontuário">
           {TABS.map((item) => (
             <TabsTrigger key={item.key} value={item.key}>
               {tabLabel(item, conditions ?? [], evolutions ?? [], carePlans ?? [])}

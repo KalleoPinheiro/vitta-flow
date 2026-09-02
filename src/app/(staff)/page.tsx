@@ -264,7 +264,10 @@ function TriageQueue() {
                 {photo.latestScore && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="ml-2 rounded bg-sv-surface px-1.5 py-0.5 text-xs font-semibold text-accent-ink">
+                      <span
+                        tabIndex={0}
+                        className="ml-2 rounded bg-sv-surface px-1.5 py-0.5 text-xs font-semibold text-accent-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink"
+                      >
                         {photo.latestScore.kind === "push" ? "PUSH" : "DET"} {photo.latestScore.value}
                       </span>
                     </TooltipTrigger>

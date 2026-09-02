@@ -28,10 +28,10 @@ descartado (`Tabs`/`Tooltip`/`DropdownMenu`/`Prose`/`ThemeToggle`, todos em
   com o texto explicando a escala (PUSH = Pressure Ulcer Scale for Healing; DET = índice
   Débito/Exsudato/Tecido). `TooltipProvider` fica montado uma vez em `src/app/providers.tsx`
   (raiz), não por página.
-- **AC4**: `ConsentCard` troca o `<pre>` monoespaçado 12px pelo componente `Prose` (com o texto em
-  `<Lead>`/parágrafo dentro, preservando `whitespace-pre-wrap` pro texto vindo do backend sem
-  markdown) — mantém a caixa rolável de altura máxima, mas com tipografia de leitura em vez de
-  código.
+- **AC4**: `ConsentCard` troca o `<pre>` monoespaçado 12px pelo componente `Prose`, passando
+  `status.consentText` direto como filho (texto plano vindo do backend, sem markdown — não precisa
+  de `<Lead>`/parágrafo intermediário) e preservando `whitespace-pre-wrap` — mantém a caixa rolável
+  de altura máxima, mas com tipografia de leitura em vez de código.
 - **AC5**: `npm run check:sv` continua verde (nenhuma classe crua nova).
 - **AC6**: Gate completo verde: `typecheck`, `lint`, `test:coverage` ≥ 90%, `build`.
 

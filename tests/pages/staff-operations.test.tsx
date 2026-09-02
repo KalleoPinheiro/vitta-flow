@@ -195,7 +195,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
 
       const link = await screen.findByRole("link", { name: "Conectar Google Agenda" });
       expect(link).toHaveAttribute("href", "/api/integrations/google-calendar");
@@ -216,7 +216,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
 
       expect(
         await screen.findByText(/usando padrão — nada salvo ainda/),
@@ -239,7 +239,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText("Grade de horários");
 
       const domButton = screen.getByRole("button", { name: "Dom" });
@@ -272,7 +272,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText("Grade de horários");
 
       fireEvent.click(screen.getByText("Salvar grade"));
@@ -297,7 +297,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText("Grade de horários");
 
       fireEvent.click(screen.getByText("Salvar grade"));
@@ -313,7 +313,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
 
       expect(await screen.findByRole("alert")).toBeInTheDocument();
     });
@@ -331,7 +331,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText("Grade de horários");
 
       const segButton = screen.getByRole("button", { name: "Seg" });
@@ -357,7 +357,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText("Grade de horários");
 
       fireEvent.change(screen.getByLabelText(/Abre \(h\)/), { target: { value: "7" } });
@@ -385,7 +385,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText("Grade de horários");
 
       fireEvent.click(screen.getByText("Salvar grade"));
@@ -408,7 +408,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
 
       expect(
         await screen.findByText(/Nenhuma conta cadastrada nesta empresa/),
@@ -435,7 +435,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
 
       expect(await screen.findByText("ana@clinica.com")).toBeInTheDocument();
       expect(screen.getByText("bob@clinica.com")).toBeInTheDocument();
@@ -466,7 +466,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText("ana@clinica.com");
 
       fireEvent.click(screen.getByText("Desativar"));
@@ -475,6 +475,7 @@ describe("Feature: SettingsPage", () => {
       await waitFor(() => {
         expect(accountsCallCount).toBeGreaterThanOrEqual(2);
       });
+      expect(await screen.findByText("Conta desativada")).toBeInTheDocument();
     });
 
     it("Dado erro ao desativar conta, Quando falha, Então exibe alerta de erro", async () => {
@@ -497,7 +498,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText("ana@clinica.com");
 
       fireEvent.click(screen.getByText("Desativar"));
@@ -506,7 +507,7 @@ describe("Feature: SettingsPage", () => {
       expect(await screen.findByRole("alert")).toBeInTheDocument();
     });
 
-    it("Dado erro não padronizado ao desativar conta, Quando a chamada rejeita com valor que não é Error, Então exibe mensagem padrão", async () => {
+    it("Dado erro não padronizado ao desativar conta, Quando a chamada rejeita com valor que não é Error, Então exibe mensagem padrão e toast de erro", async () => {
       mockFetch(({ url, init }) => {
         if (url.startsWith("/api/settings/schedule")) {
           return jsonResponse({
@@ -526,13 +527,15 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText("ana@clinica.com");
 
       fireEvent.click(screen.getByText("Desativar"));
       fireEvent.click(await screen.findByText("Confirmar"));
 
-      expect(await screen.findByText("Erro ao atualizar conta")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getAllByText("Erro ao atualizar conta").length).toBeGreaterThanOrEqual(2);
+      });
     });
 
     it("Dado clique em desativar conta seguido de cancelamento no dialog, Quando acionado, Então não chama a API", async () => {
@@ -557,7 +560,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText("ana@clinica.com");
 
       fireEvent.click(screen.getByText("Desativar"));
@@ -580,7 +583,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText("Grade de horários");
 
       expect(await screen.findByRole("alert")).toBeInTheDocument();
@@ -606,7 +609,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
@@ -616,6 +619,7 @@ describe("Feature: SettingsPage", () => {
       fireEvent.click(screen.getByText("Criar conta"));
 
       await waitFor(() => expect(created).toBe(true));
+      expect(await screen.findByText("Conta criada")).toBeInTheDocument();
     });
 
     it("Dado seleção de profissional vinculado, Quando escolhido, Então envia o profissional selecionado ao criar a conta", async () => {
@@ -638,7 +642,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
@@ -671,7 +675,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
@@ -705,7 +709,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
@@ -734,7 +738,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
@@ -747,7 +751,7 @@ describe("Feature: SettingsPage", () => {
       });
     });
 
-    it("Dado erro padronizado ao criar conta, Quando a chamada falha, Então exibe a mensagem de erro no formulário", async () => {
+    it("Dado erro padronizado ao criar conta, Quando a chamada falha, Então exibe a mensagem de erro no formulário e toast de erro", async () => {
       mockFetch(({ url, init }) => {
         if (url.startsWith("/api/settings/schedule")) {
           return jsonResponse({
@@ -763,17 +767,19 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
       fireEvent.change(screen.getByLabelText(/Email/), { target: { value: "nova@clinica.com" } });
       fireEvent.click(screen.getByText("Criar conta"));
 
-      expect(await screen.findByText("Email já cadastrado")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getAllByText("Email já cadastrado").length).toBeGreaterThanOrEqual(2);
+      });
     });
 
-    it("Dado erro não padronizado ao criar conta, Quando a chamada rejeita com valor que não é Error, Então exibe mensagem padrão", async () => {
+    it("Dado erro não padronizado ao criar conta, Quando a chamada rejeita com valor que não é Error, Então exibe mensagem padrão e toast de erro", async () => {
       mockFetch(({ url, init }) => {
         if (url.startsWith("/api/settings/schedule")) {
           return jsonResponse({
@@ -789,14 +795,16 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
       fireEvent.change(screen.getByLabelText(/Email/), { target: { value: "nova@clinica.com" } });
       fireEvent.click(screen.getByText("Criar conta"));
 
-      expect(await screen.findByText("Erro ao criar conta")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getAllByText("Erro ao criar conta").length).toBeGreaterThanOrEqual(2);
+      });
     });
 
     it("Dado falha ao carregar profissionais, Quando a página exibe contas e o modal de nova conta, Então usa lista vazia como padrão", async () => {
@@ -816,7 +824,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText("ana@clinica.com");
 
       expect(screen.getByText("—")).toBeInTheDocument();

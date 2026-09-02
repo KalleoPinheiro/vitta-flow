@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from "@still-void/ui/react/client";
 import { apiFetch } from "@/lib/client";
 import type { ProfessionalDto, UserAccountDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
@@ -206,6 +207,7 @@ function CalendarIntegrationSection() {
 }
 
 function AccountsSection() {
+  const { toast } = useToast();
   const { data: accounts, error, refresh } = useApiQuery<UserAccountDto[]>("/api/accounts");
   const { data: professionals } = useApiQuery<ProfessionalDto[]>("/api/professionals");
   const [creating, setCreating] = useState(false);
@@ -223,9 +225,15 @@ function AccountsSection() {
         body: JSON.stringify({ active: !account.active }),
       });
       setActionError(null);
+      toast({
+        description: account.active ? "Conta desativada" : "Conta reativada",
+        variant: "success",
+      });
       refresh();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Erro ao atualizar conta");
+      const message = err instanceof Error ? err.message : "Erro ao atualizar conta";
+      setActionError(message);
+      toast({ description: message, variant: "danger" });
     }
   };
 
@@ -288,6 +296,7 @@ function AccountsSection() {
               setCreating(false);
               setUndelivered(delivered ? null : email);
               setActionNotice(null);
+              toast({ description: "Conta criada", variant: "success" });
               refresh();
             }}
           />
@@ -432,6 +441,7 @@ function AccountForm({
   professionals: ProfessionalDto[];
   onSaved: (created: { email: string; delivered: boolean }) => void;
 }) {
+  const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<AccountRole>("company_admin");
   const [professionalId, setProfessionalId] = useState("");
@@ -459,7 +469,9 @@ function AccountForm({
       });
       onSaved({ email: created.email, delivered: created.delivered });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao criar conta");
+      const message = err instanceof Error ? err.message : "Erro ao criar conta";
+      setError(message);
+      toast({ description: message, variant: "danger" });
     } finally {
       setSaving(false);
     }

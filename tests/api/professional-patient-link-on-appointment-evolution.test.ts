@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { jsonRequest } from "../support/request";
-import { adminCookieHeader } from "../support/session";
+import { adminCookieHeader, cookieHeaderFor } from "../support/session";
 import { ensureTestClinics, CLINIC_A_ID } from "../support/clinics";
 import { getRepositories } from "@/infrastructure/container";
 import { DrizzleProfessionalPatientLinkRepository } from "@/infrastructure/persistence/drizzle/professional-patient-link-repository";
@@ -64,22 +64,45 @@ describe("Feature: Agendamento e evolução com profissional criam vínculo (RBA
     expect(await professionalPatientLinks.hasLink(professionalId, patientId)).toBe(true);
   });
 
-  it("Dado nota de evolução com professionalId, Quando POST evolutions, Então grava o vínculo", async () => {
+  it("Dado profissional autenticado com nota de evolução, Quando POST evolutions, Então renova o vínculo (#64: autoria sempre da sessão)", async () => {
     await ensureTestClinics();
     const professionalId = await createProfessional("Dr. Vínculo Evolução");
     const patientId = await createPatient("vinculo-evolucao@x.com");
+
+    // Vínculo inicial via agendamento (fluxo legítimo de atribuição, distinto
+    // de autoria de nota clínica) — evolução sozinha não cria vínculo do zero
+    // para um profissional sem nenhum vínculo prévio (R4/#64).
+    const appointmentsRoute = await import("@/app/api/appointments/route");
+    await appointmentsRoute.POST(
+      jsonRequest(
+        "/api/appointments",
+        "POST",
+        {
+          patientId,
+          startsAt: "2026-09-02T09:00:00.000Z",
+          endsAt: "2026-09-02T09:30:00.000Z",
+          procedure: "Troca de bolsa",
+          priceCents: 10000,
+          professionalId,
+        },
+        adminCookieHeader(CLINIC_A_ID),
+      ),
+    );
 
     const route = await import("@/app/api/patients/[id]/evolutions/route");
     const response = await route.POST(
       jsonRequest(
         `/api/patients/${patientId}/evolutions`,
         "POST",
-        { subjective: "Relato", professionalId },
-        adminCookieHeader(CLINIC_A_ID),
+        { subjective: "Relato" },
+        cookieHeaderFor("profissional", undefined, CLINIC_A_ID, professionalId),
       ),
       { params: Promise.resolve({ id: patientId }) },
     );
+    const body = (await response.json()) as Envelope<{ professionalId: string | null }>;
+
     expect(response.status).toBe(200);
+    expect(body.data.professionalId).toBe(professionalId);
 
     const { professionalPatientLinks } = await getRepositories({ clinicId: CLINIC_A_ID });
     expect(await professionalPatientLinks.hasLink(professionalId, patientId)).toBe(true);

@@ -40,6 +40,10 @@ const ADMINISTRATIVE_PREFIXES = [
   "/api/audit",
   "/api/admin",
   "/api/clinic-info",
+  // Edição dos dados cadastrais da clínica (#61) — mesma família administrativa
+  // de /api/clinic-info; camada 2 (route.ts) ainda restringe o PUT a
+  // company_admin/super_admin como defesa em profundidade (ADR-002).
+  "/api/settings/clinic-info",
   "/api/taxonomy",
   // Conectar a agenda do Google é ato administrativo da empresa, não operação
   // de atendimento — mesma família de /api/clinic-info.

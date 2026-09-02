@@ -137,6 +137,14 @@ Exige escolhas do negócio antes de executar:
 
 ---
 
+## Correção de achados de auditoria (setembro 2026)
+
+Triagem técnica de todos os docs do projeto (ADRs, auditorias de UX/design-system/segurança,
+`.specs/STATE.md`, `.specs/LESSONS.md`) cruzada com o rastreador de issues — não é uma "Fase N"
+nova (nenhum item envolve decisão de produto/negócio), por isso não ganha PRD, só o plano faseado
+próprio: [`plano-correcao-achados-auditoria-2026-09.md`](./plano-correcao-achados-auditoria-2026-09.md),
+issues [#57](https://github.com/KalleoPinheiro/vitta-flow/issues/57)–[#77](https://github.com/KalleoPinheiro/vitta-flow/issues/77).
+
 ## Rastreabilidade análise → fase
 
 Todos os pontos da análise estão cobertos: cada item de segurança/performance/UX-DX mapeia para

@@ -6,6 +6,7 @@ import {
   type AuthTokenPurpose,
   type AuthTokenRepository,
 } from "@/domain/auth/auth-token";
+import { isUniqueViolation } from "@/lib/db-errors";
 
 export class DrizzleAuthTokenRepository implements AuthTokenRepository {
   constructor(private readonly db: AppDb) {}
@@ -117,12 +118,7 @@ export class DrizzleAuthTokenRepository implements AuthTokenRepository {
         });
       });
     } catch (error) {
-      const isUniqueViolation =
-        typeof error === "object" &&
-        error !== null &&
-        "code" in error &&
-        (error as { code: unknown }).code === "23505";
-      if (isUniqueViolation && attempt < 5) {
+      if (isUniqueViolation(error) && attempt < 5) {
         await this.replaceUnused(token, usedAt, attempt + 1);
         return;
       }

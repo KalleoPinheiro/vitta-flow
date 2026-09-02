@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "uq_user_accounts_single_system_account" ON "user_accounts" USING btree ("role") WHERE "user_accounts"."clinic_id" IS NULL;

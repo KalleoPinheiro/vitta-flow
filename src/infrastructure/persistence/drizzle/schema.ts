@@ -112,6 +112,14 @@ export const userAccounts = pgTable(
     uniqueIndex("uq_user_accounts_super_admin_email")
       .on(table.email)
       .where(sql`${table.clinicId} IS NULL`),
+    // No máximo UMA conta com clinic_id nulo pode existir (hoje só o Super
+    // Admin de bootstrap nasce assim) — fecha a corrida de dois POST
+    // concorrentes em /api/auth/bootstrap numa instalação vazia (issue #51).
+    // `role` é sempre "super_admin" nessas linhas; o índice só precisa de uma
+    // coluna para expressar "no máximo uma linha bate neste predicado".
+    uniqueIndex("uq_user_accounts_single_system_account")
+      .on(table.role)
+      .where(sql`${table.clinicId} IS NULL`),
     index("idx_user_accounts_clinic").on(table.clinicId),
   ],
 );

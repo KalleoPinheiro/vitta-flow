@@ -9,6 +9,8 @@ import { appUrlFromEnv } from "@/application/auth/send-invite";
 import { RateLimiter } from "@/lib/auth/rate-limit";
 import { clientIp } from "@/lib/auth/client-ip";
 import { fail, handleRequest } from "@/lib/api-response";
+import { ProvisioningDeniedError } from "@/domain/shared/errors";
+import { isUniqueViolation } from "@/lib/db-errors";
 
 const BOOTSTRAP_RATE_LIMIT = new RateLimiter(5, 60_000);
 
@@ -67,7 +69,19 @@ export async function POST(request: NextRequest) {
     // produção, falhar aqui evita gravar a conta que trava o bootstrap para
     // sempre sem que ninguém consiga o link dela.
     const appUrl = appUrlFromEnv();
-    await services.userAccounts.save(account);
+    // Corrida: hasAnyAccount() acima é só um atalho — a guarda de verdade é o
+    // índice único parcial `uq_user_accounts_single_system_account`
+    // (issue #51). Duas requisições concorrentes numa instalação vazia
+    // passam as duas pela checagem; só uma consegue gravar, a outra esbarra
+    // no índice e recebe a mesma mensagem genérica.
+    try {
+      await services.userAccounts.save(account);
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        throw new ProvisioningDeniedError(BOOTSTRAP_UNAVAILABLE_MESSAGE);
+      }
+      throw error;
+    }
 
     // Uma falha de envio não pode derrubar o bootstrap: a conta já existe e a
     // rota é de uso único, então um 500 aqui deixaria a instalação sem nenhum

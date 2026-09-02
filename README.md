@@ -214,10 +214,20 @@ src/
 │   └── billing/       # emitir, pagar, cancelar, listar, resumo financeiro
 ├── infrastructure/    # Repositórios Drizzle/Postgres e in-memory, Google Calendar, container
 ├── app/               # Next.js: páginas (dashboard, agenda, pacientes, faturamento)
-│   └── api/           # Route handlers REST com envelope {success, data, error}
+│   └── api/           # Route handlers REST com envelope {success, data, error, meta?}
 ├── components/        # UI compartilhada (modal, badges, feedback)
-└── lib/               # DTOs, fetch client, formatação pt-BR, hook useApiQuery
+└── lib/               # DTOs, fetch client, formatação pt-BR, hooks useApiQuery/useCursorPagedQuery
 ```
+
+**Paginação por cursor** (pacientes, faturas): `meta.nextCursor` no envelope acima
+de uma listagem é um cursor opaco (não `offset`) — degrada bem em volume alto,
+porque não precisa varrer/descartar linhas a cada página. Ver
+[`.specs/features/paginacao-cursor-csp-nonce/spec.md`](.specs/features/paginacao-cursor-csp-nonce/spec.md).
+
+**CSP estrita com nonce**: `src/proxy.ts` gera um nonce novo por request e monta o
+header `Content-Security-Policy` (sem `unsafe-inline`); por isso o app roda com
+`export const dynamic = "force-dynamic"` no layout raiz — só é possível carregar o
+nonce no HTML se a página for renderizada por request.
 
 ## Testes (BDD + TDD)
 

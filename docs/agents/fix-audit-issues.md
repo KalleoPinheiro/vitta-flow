@@ -1,0 +1,69 @@
+# Corrigir um subconjunto de issues de auditoria (fim a fim)
+
+Fluxo padrão quando o pedido é "especifique e corrija só as issues N e M [de
+uma fase/lote de auditoria]" — usado nas Fases A–E de
+`docs/plano-correcao-achados-auditoria-2026-09.md`. Serve tanto para um lote
+inteiro quanto para um subconjunto dele (ex.: só 2 das 4 issues de uma fase).
+
+## Quando usar
+
+O pedido nomeia issues específicas (por número) que vêm de um audit doc
+(`docs/audits/*.md`) ou do plano de correção, e pede o ciclo completo:
+especificar → implementar → documentar → PR → merge → fechar issue.
+
+## Passo a passo
+
+1. **Ler as issues** (`gh issue view <n>`) e a seção do audit doc/plano que
+   cada uma cita — o "Origem" na tabela do plano de correção aponta o
+   parágrafo exato.
+2. **Especificar com o skill `tlc-spec-driven`** (`/specify`): um
+   `.specs/features/<slug>/spec.md` cobrindo só as issues pedidas. Se o
+   escopo do audit doc for mais amplo que o da issue (ex.: "várias
+   listagens" mas só 2 têm consumidor de UI real), **restrinja e documente a
+   decisão no próprio spec.md** — não implemente superfície sem consumidor
+   (YAGNI). Não edite o audit doc de origem: `docs/audits/` é snapshot
+   congelado (ver `docs/agents/planning.md`); a decisão de escopo mora no
+   spec da feature, não lá.
+3. **Branch a partir da `main` atualizada**: `git fetch origin && git status`
+   (nada pendente) antes de `git checkout -b fix/<slug>`.
+4. **Implementar** com o `tlc-spec-driven` (`/implement`) — gate local
+   (`typecheck`, `lint`, `check:sv`, `test:coverage` ≥ 90%, `test:e2e`) verde
+   antes de cada commit.
+5. **Um commit semântico por issue** (`fix: <resumo> (#N)`), não um commit
+   só pro PR inteiro — cada issue fecha via `Closes #N` no corpo do commit
+   final que a resolve, ou no squash do PR (ver passo 8).
+6. **Atualizar a documentação viva** antes de abrir o PR:
+   - `docs/plano-evolucao-faseado.md` — risque o item de backlog citado e
+     marque `**entregue**`, linkando a issue e o spec novo.
+   - `README.md`/`AGENTS.md` — só se a mudança afeta setup, env vars, ou
+     contrato de API visível a quem desenvolve no repo.
+   - **Não** edite `docs/audits/*.md` (frozen) nem a tabela geral de fases em
+     `docs/plano-correcao-achados-auditoria-2026-09.md` — precedente das
+     Fases A–C é deixar essa tabela como está; o rastro de "feito" vive nas
+     issues fechadas + `.specs/STATE.md`.
+7. **Push + PR**: `git push -u origin <branch>`, `gh pr create` com
+   descrição assertiva (o que mudou, por quê, o que ficou fora e por quê,
+   plano de teste). PR a partir da `main` já atualizada no passo 3.
+8. **Acompanhar CodeRabbit**: esperar a primeira revisão automática
+   (`gh pr view <n> --comments` ou `gh api .../pulls/<n>/comments`), corrigir
+   achados reais em commit novo (nunca amend), registrar recusas com
+   justificativa se algum apontamento não proceder.
+9. **Squash merge**: `gh pr merge <n> --squash`. O corpo do squash deve
+   conter `Closes #<issue>` para cada issue resolvida — GitHub fecha sozinho
+   ao mergear. Confirme depois (`gh issue view <n>`) que fechou; se alguma
+   issue não tinha `Closes` no squash, feche manualmente com
+   `gh issue close <n> --comment "..."` linkando o commit/PR.
+10. **Registrar em `.specs/STATE.md` → Handoff**: uma entrada no formato já
+    usado pelas Fases A/B/C (feature, o que mudou, gate final, branch/PR,
+    next step) — é o rastreador vivo de "o que já foi feito", não a tabela
+    do plano de correção.
+
+## O que NÃO fazer
+
+- Não implemente issues fora do pedido, mesmo que estejam na mesma fase do
+  plano de correção — só as citadas.
+- Não crie paginação/feature nova sem consumidor real só porque um audit doc
+  menciona a superfície em geral — restrinja e documente por quê.
+- Não edite `docs/audits/*.md` (histórico congelado) nem tente "atualizar a
+  auditoria" — o rastro de conclusão vive nas issues, no `STATE.md` e no
+  spec da feature.

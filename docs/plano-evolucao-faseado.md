@@ -132,8 +132,11 @@ Exige escolhas do negócio antes de executar:
   Issue [#21](https://github.com/KalleoPinheiro/vitta-flow/issues/21) e tickets #32–#35.
 - **TISS/convênios:** operadora no paciente, guia por atendimento, relatório por operadora com
   série de scores como evidência. Ainda backlog, sem spec.
-- **Paginação por cursor** nas listagens (necessária só em escala de plataforma). Ainda backlog,
-  sem spec.
+- **Paginação por cursor** nas listagens: ~~ainda backlog, sem spec~~ **entregue** para pacientes
+  e faturas (API + UI) — issue [#75](https://github.com/KalleoPinheiro/vitta-flow/issues/75), spec
+  em [`.specs/features/paginacao-cursor-csp-nonce/`](../.specs/features/paginacao-cursor-csp-nonce/spec.md).
+  Retornos (`follow-ups`) ficaram fora por não terem hoje uma listagem paginada na UI — só um
+  widget de dashboard com teto fixo; aplicar o mesmo padrão quando essa tela existir.
 
 ---
 

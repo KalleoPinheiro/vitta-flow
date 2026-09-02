@@ -14,12 +14,20 @@ class InMemoryAuthTokenRepository implements AuthTokenRepository {
     return null;
   }
   async markAllUnusedAsUsed(
-    _accountId: string,
-    _purpose: AuthTokenPurpose,
-    _usedAt: Date = new Date(),
-  ): Promise<void> {}
-  async replaceUnused(token: AuthToken, _usedAt: Date = new Date()): Promise<void> {
-    this.items.set(token.id, token);
+    accountId: string,
+    purpose: AuthTokenPurpose,
+    usedAt: Date = new Date(),
+  ): Promise<void> {
+    for (const [id, item] of this.items) {
+      if (item.accountId === accountId && item.purpose === purpose && item.usedAt === null) {
+        this.items.set(id, item.markUsed(usedAt));
+      }
+    }
+  }
+  /** Espelha o contrato real (issue #50): invalida os irmãos, depois salva. */
+  async replaceUnused(token: AuthToken, usedAt: Date = new Date()): Promise<void> {
+    await this.markAllUnusedAsUsed(token.accountId, token.purpose, usedAt);
+    await this.save(token);
   }
 }
 

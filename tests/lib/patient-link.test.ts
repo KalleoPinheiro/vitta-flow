@@ -18,8 +18,11 @@ describe("Feature: ensureLinkBestEffort (issue #42)", () => {
       ensureLink: vi.fn().mockRejectedValue(new Error("banco indisponível")),
     } as unknown as ProfessionalPatientLinkRepository;
 
-    await expect(ensureLinkBestEffort(links, "prof-1", "patient-1")).resolves.toBeUndefined();
-    expect(errorLog).toHaveBeenCalled();
-    errorLog.mockRestore();
+    try {
+      await expect(ensureLinkBestEffort(links, "prof-1", "patient-1")).resolves.toBeUndefined();
+      expect(errorLog).toHaveBeenCalled();
+    } finally {
+      errorLog.mockRestore();
+    }
   });
 });

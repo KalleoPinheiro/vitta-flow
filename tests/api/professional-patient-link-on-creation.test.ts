@@ -85,20 +85,23 @@ describe("Feature: Profissional que cadastra paciente ganha vínculo imediato (R
       .spyOn(DrizzleProfessionalPatientLinkRepository.prototype, "ensureLink")
       .mockRejectedValueOnce(new Error("banco indisponível"));
 
-    const response = await patientsRoute.POST(
-      jsonRequest(
-        "/api/patients",
-        "POST",
-        { fullName: "Paciente Resiliente", email: "resiliente@x.com", phone: "11977776666" },
-        headers,
-      ),
-    );
-    const body = (await response.json()) as Envelope<{ id: string }>;
-    ensureLinkSpy.mockRestore();
-    errorLog.mockRestore();
+    try {
+      const response = await patientsRoute.POST(
+        jsonRequest(
+          "/api/patients",
+          "POST",
+          { fullName: "Paciente Resiliente", email: "resiliente@x.com", phone: "11977776666" },
+          headers,
+        ),
+      );
+      const body = (await response.json()) as Envelope<{ id: string }>;
 
-    expect(response.status).toBe(200);
-    const { patients } = await getRepositories({ clinicId: CLINIC_A_ID });
-    expect(await patients.findById(body.data.id)).not.toBeNull();
+      expect(response.status).toBe(200);
+      const { patients } = await getRepositories({ clinicId: CLINIC_A_ID });
+      expect(await patients.findById(body.data.id)).not.toBeNull();
+    } finally {
+      ensureLinkSpy.mockRestore();
+      errorLog.mockRestore();
+    }
   });
 });

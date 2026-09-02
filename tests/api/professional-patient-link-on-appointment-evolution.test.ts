@@ -95,29 +95,32 @@ describe("Feature: Agendamento e evolução com profissional criam vínculo (RBA
       .spyOn(DrizzleProfessionalPatientLinkRepository.prototype, "ensureLink")
       .mockRejectedValueOnce(new Error("banco indisponível"));
 
-    const route = await import("@/app/api/appointments/route");
-    const response = await route.POST(
-      jsonRequest(
-        "/api/appointments",
-        "POST",
-        {
-          patientId,
-          startsAt: "2026-09-04T09:00:00.000Z",
-          endsAt: "2026-09-04T09:30:00.000Z",
-          procedure: "Troca de bolsa",
-          priceCents: 10000,
-          professionalId,
-        },
-        adminCookieHeader(CLINIC_A_ID),
-      ),
-    );
-    const body = (await response.json()) as Envelope<{ id: string }>;
-    ensureLinkSpy.mockRestore();
-    errorLog.mockRestore();
+    try {
+      const route = await import("@/app/api/appointments/route");
+      const response = await route.POST(
+        jsonRequest(
+          "/api/appointments",
+          "POST",
+          {
+            patientId,
+            startsAt: "2026-09-04T09:00:00.000Z",
+            endsAt: "2026-09-04T09:30:00.000Z",
+            procedure: "Troca de bolsa",
+            priceCents: 10000,
+            professionalId,
+          },
+          adminCookieHeader(CLINIC_A_ID),
+        ),
+      );
+      const body = (await response.json()) as Envelope<{ id: string }>;
 
-    expect(response.status).toBe(200);
-    const { appointments } = await getRepositories({ clinicId: CLINIC_A_ID });
-    expect(await appointments.findById(body.data.id)).not.toBeNull();
+      expect(response.status).toBe(200);
+      const { appointments } = await getRepositories({ clinicId: CLINIC_A_ID });
+      expect(await appointments.findById(body.data.id)).not.toBeNull();
+    } finally {
+      ensureLinkSpy.mockRestore();
+      errorLog.mockRestore();
+    }
   });
 
   it("Dado ensureLink falhando, Quando POST evolutions, Então ainda cria a nota e responde 200 (issue #42)", async () => {
@@ -130,20 +133,27 @@ describe("Feature: Agendamento e evolução com profissional criam vínculo (RBA
       .spyOn(DrizzleProfessionalPatientLinkRepository.prototype, "ensureLink")
       .mockRejectedValueOnce(new Error("banco indisponível"));
 
-    const route = await import("@/app/api/patients/[id]/evolutions/route");
-    const response = await route.POST(
-      jsonRequest(
-        `/api/patients/${patientId}/evolutions`,
-        "POST",
-        { subjective: "Relato", professionalId },
-        adminCookieHeader(CLINIC_A_ID),
-      ),
-      { params: Promise.resolve({ id: patientId }) },
-    );
-    ensureLinkSpy.mockRestore();
-    errorLog.mockRestore();
+    try {
+      const route = await import("@/app/api/patients/[id]/evolutions/route");
+      const response = await route.POST(
+        jsonRequest(
+          `/api/patients/${patientId}/evolutions`,
+          "POST",
+          { subjective: "Relato", professionalId },
+          adminCookieHeader(CLINIC_A_ID),
+        ),
+        { params: Promise.resolve({ id: patientId }) },
+      );
+      const body = (await response.json()) as Envelope<{ id: string }>;
 
-    expect(response.status).toBe(200);
+      expect(response.status).toBe(200);
+      const { evolutions } = await getRepositories({ clinicId: CLINIC_A_ID });
+      const notes = await evolutions.findByPatientId(patientId);
+      expect(notes.some((note) => note.id === body.data.id)).toBe(true);
+    } finally {
+      ensureLinkSpy.mockRestore();
+      errorLog.mockRestore();
+    }
   });
 
   describe("Cenário: transferência de caso entre profissionais", () => {

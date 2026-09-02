@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useToast } from "@still-void/ui/react/client";
 import { apiFetch } from "@/lib/client";
 import type { PartnerDto, PatientDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
@@ -113,6 +114,7 @@ function PatientsTable({ patients, onEdit, onToggleActive }: PatientsTableProps)
 }
 
 export default function PatientsPage() {
+  const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
@@ -145,16 +147,28 @@ export default function PatientsPage() {
       notes: values.notes || null,
       referredByPartnerId: values.referredByPartnerId || null,
     };
-    if (editing === "new") {
-      await apiFetch<PatientDto>("/api/patients", {
-        method: "POST",
-        body: JSON.stringify(payload),
+    try {
+      if (editing === "new") {
+        await apiFetch<PatientDto>("/api/patients", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+      } else if (editing) {
+        await apiFetch<PatientDto>(`/api/patients/${editing.id}`, {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        });
+      }
+      toast({
+        description: editing === "new" ? "Paciente criado" : "Paciente atualizado",
+        variant: "success",
       });
-    } else if (editing) {
-      await apiFetch<PatientDto>(`/api/patients/${editing.id}`, {
-        method: "PUT",
-        body: JSON.stringify(payload),
+    } catch (err) {
+      toast({
+        description: err instanceof Error ? err.message : "Erro ao salvar paciente",
+        variant: "danger",
       });
+      throw err;
     }
     setEditing(null);
     refresh();
@@ -167,9 +181,15 @@ export default function PatientsPage() {
         body: JSON.stringify({ active: !patient.active }),
       });
       setActionError(null);
+      toast({
+        description: patient.active ? "Paciente desativado" : "Paciente reativado",
+        variant: "success",
+      });
       refresh();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Erro ao atualizar paciente");
+      const message = err instanceof Error ? err.message : "Erro ao atualizar paciente";
+      setActionError(message);
+      toast({ description: message, variant: "danger" });
     }
   };
 

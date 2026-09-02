@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
+import { screen, fireEvent, waitFor, within } from "@testing-library/react";
 import type { PartnerDto, PatientDto } from "@/lib/dto";
 import { formatDate } from "@/lib/format";
 import PatientsPage from "@/app/(staff)/pacientes/page";
+import { renderWithToast } from "@/../tests/support/render-with-toast";
 
 interface FetchCall {
   url: string;
@@ -92,7 +93,7 @@ describe("Feature: PatientsPage", () => {
     it("Dado nenhum paciente, Quando a página carrega, Então exibe mensagem de vazio", async () => {
       mockFetch(buildRouter({ patients: [] }));
 
-      render(<PatientsPage />);
+      renderWithToast(<PatientsPage />);
 
       expect(await screen.findByText("Nenhum paciente encontrado.")).toBeInTheDocument();
     });
@@ -100,7 +101,7 @@ describe("Feature: PatientsPage", () => {
     it("Dado pacientes cadastrados, Quando a página carrega, Então lista nome, contato, nascimento e situação", async () => {
       mockFetch(buildRouter({ patients: [patientFixture, inactivePatientFixture] }));
 
-      render(<PatientsPage />);
+      renderWithToast(<PatientsPage />);
 
       expect(await screen.findByText("Maria Souza")).toBeInTheDocument();
       expect(screen.getByText("maria@example.com")).toBeInTheDocument();
@@ -116,7 +117,7 @@ describe("Feature: PatientsPage", () => {
     it("Dado texto digitado na busca, Quando o debounce expira, Então refaz a busca com o parâmetro search", async () => {
       const fetchMock = mockFetch(buildRouter({ patients: [patientFixture] }));
 
-      render(<PatientsPage />);
+      renderWithToast(<PatientsPage />);
       await screen.findByText("Maria Souza");
 
       fireEvent.change(screen.getByPlaceholderText("Buscar por nome, email ou telefone…"), {
@@ -146,7 +147,7 @@ describe("Feature: PatientsPage", () => {
         }),
       );
 
-      render(<PatientsPage />);
+      renderWithToast(<PatientsPage />);
       await screen.findByText("Nenhum paciente encontrado.");
 
       fireEvent.click(screen.getByText("+ Novo paciente"));
@@ -182,6 +183,7 @@ describe("Feature: PatientsPage", () => {
       await waitFor(() => {
         expect(screen.queryByText("Novo paciente")).not.toBeInTheDocument();
       });
+      expect(await screen.findByText("Paciente criado")).toBeInTheDocument();
     });
   });
 
@@ -189,7 +191,7 @@ describe("Feature: PatientsPage", () => {
     it("Dado clique em editar paciente existente, Quando o modal abre, Então preenche os campos com os dados atuais", async () => {
       mockFetch(buildRouter({ patients: [patientFixture] }));
 
-      render(<PatientsPage />);
+      renderWithToast(<PatientsPage />);
       await screen.findByText("Maria Souza");
 
       fireEvent.click(screen.getByText("Editar"));
@@ -214,7 +216,7 @@ describe("Feature: PatientsPage", () => {
         }),
       );
 
-      render(<PatientsPage />);
+      renderWithToast(<PatientsPage />);
       await screen.findByText("Maria Souza");
       fireEvent.click(screen.getByText("Editar"));
 
@@ -229,9 +231,10 @@ describe("Feature: PatientsPage", () => {
           expect.objectContaining({ method: "PUT" }),
         );
       });
+      expect(await screen.findByText("Paciente atualizado")).toBeInTheDocument();
     });
 
-    it("Dado erro ao salvar, Quando a chamada falha, Então exibe alerta no formulário", async () => {
+    it("Dado erro ao salvar, Quando a chamada falha, Então exibe alerta no formulário e toast de erro", async () => {
       mockFetch(
         buildRouter({
           patients: [patientFixture],
@@ -244,12 +247,14 @@ describe("Feature: PatientsPage", () => {
         }),
       );
 
-      render(<PatientsPage />);
+      renderWithToast(<PatientsPage />);
       await screen.findByText("Maria Souza");
       fireEvent.click(screen.getByText("Editar"));
       fireEvent.click(screen.getByText("Salvar"));
 
-      expect(await screen.findByText("Erro ao salvar paciente")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getAllByText("Erro ao salvar paciente").length).toBeGreaterThanOrEqual(2);
+      });
     });
   });
 
@@ -271,13 +276,14 @@ describe("Feature: PatientsPage", () => {
         }),
       );
 
-      render(<PatientsPage />);
+      renderWithToast(<PatientsPage />);
       await screen.findByText("Maria Souza");
 
       fireEvent.click(screen.getByText("Desativar"));
       fireEvent.click(await screen.findByText("Confirmar"));
 
       await waitFor(() => expect(calls).toBeGreaterThanOrEqual(2));
+      expect(await screen.findByText("Paciente desativado")).toBeInTheDocument();
     });
 
     it("Dado clique em desativar seguido de cancelamento no dialog, Quando acionado, Então não chama a API", async () => {
@@ -295,7 +301,7 @@ describe("Feature: PatientsPage", () => {
         }),
       );
 
-      render(<PatientsPage />);
+      renderWithToast(<PatientsPage />);
       await screen.findByText("Maria Souza");
 
       fireEvent.click(screen.getByText("Desativar"));
@@ -305,7 +311,7 @@ describe("Feature: PatientsPage", () => {
       expect(patchCalls).toBe(0);
     });
 
-    it("Dado erro ao alternar situação, Quando falha, Então exibe alerta de erro", async () => {
+    it("Dado erro ao alternar situação, Quando falha, Então exibe alerta de erro e toast de erro", async () => {
       mockFetch(
         buildRouter({
           patients: [patientFixture],
@@ -318,19 +324,21 @@ describe("Feature: PatientsPage", () => {
         }),
       );
 
-      render(<PatientsPage />);
+      renderWithToast(<PatientsPage />);
       await screen.findByText("Maria Souza");
 
       fireEvent.click(screen.getByText("Desativar"));
       fireEvent.click(await screen.findByText("Confirmar"));
 
-      expect(await screen.findByText("Erro ao atualizar paciente")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getAllByText("Erro ao atualizar paciente").length).toBeGreaterThanOrEqual(2);
+      });
     });
 
     it("Dado paciente inativo, Quando renderizado, Então exibe ação de reativar", async () => {
       mockFetch(buildRouter({ patients: [inactivePatientFixture] }));
 
-      render(<PatientsPage />);
+      renderWithToast(<PatientsPage />);
 
       expect(await screen.findByText("Reativar")).toBeInTheDocument();
     });

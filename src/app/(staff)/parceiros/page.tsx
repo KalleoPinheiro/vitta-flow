@@ -6,6 +6,7 @@ import { useToast } from "@still-void/ui/react/client";
 import type { PartnerDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import { Modal } from "@/components/modal";
+import { ConfirmAction } from "@/components/confirm-action";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import {
@@ -105,14 +106,29 @@ export default function PartnersPage() {
                       >
                         Editar
                       </Button>
-                      <Button
-                        type="button"
-                        onClick={() => void toggleActive(partner)}
-                        variant="link"
-                        className="h-auto p-0 text-ink-3"
-                      >
-                        {partner.active ? "Desativar" : "Reativar"}
-                      </Button>
+                      {partner.active ? (
+                        <ConfirmAction
+                          trigger={
+                            <Button type="button" variant="link" className="h-auto p-0 text-ink-3">
+                              Desativar
+                            </Button>
+                          }
+                          title="Desativar parceiro?"
+                          description="O parceiro para de aparecer nos fluxos ativos."
+                          confirmLabel="Confirmar"
+                          variant="danger"
+                          onConfirm={() => toggleActive(partner)}
+                        />
+                      ) : (
+                        <Button
+                          type="button"
+                          onClick={() => void toggleActive(partner)}
+                          variant="link"
+                          className="h-auto p-0 text-ink-3"
+                        >
+                          Reativar
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

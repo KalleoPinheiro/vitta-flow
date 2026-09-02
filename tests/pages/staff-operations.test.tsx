@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import AuditPage from "@/app/(staff)/auditoria/page";
 import SettingsPage from "@/app/(staff)/configuracoes/page";
 import PartnersPage from "@/app/(staff)/parceiros/page";
@@ -874,6 +874,7 @@ describe("Feature: PartnersPage", () => {
       await screen.findByText("Dr. João");
 
       fireEvent.click(screen.getByText("Desativar"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       await waitFor(() => expect(calls).toBeGreaterThanOrEqual(2));
       expect(await screen.findByText("Parceiro desativado")).toBeInTheDocument();
@@ -904,6 +905,7 @@ describe("Feature: PartnersPage", () => {
       await screen.findByText("Dr. João");
 
       fireEvent.click(screen.getByText("Desativar"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       expect(await screen.findByText("Erro ao atualizar parceiro")).toBeInTheDocument();
     });
@@ -933,8 +935,42 @@ describe("Feature: PartnersPage", () => {
       await screen.findByText("Dr. João");
 
       fireEvent.click(screen.getByText("Desativar"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       expect(await screen.findByText("Erro ao atualizar parceiro")).toBeInTheDocument();
+    });
+
+    it("Dado clique em desativar seguido de cancelamento no dialog, Quando acionado, Então não chama a API", async () => {
+      let putCalls = 0;
+      mockFetch(({ url, init }) => {
+        if (url === "/api/partners/pt1" && init?.method === "PUT") {
+          putCalls += 1;
+          return jsonResponse({ id: "pt1", active: false });
+        }
+        if (url.startsWith("/api/partners")) {
+          return jsonResponse([
+            {
+              id: "pt1",
+              fullName: "Dr. João",
+              email: "joao@parceiro.com",
+              phone: "11999999999",
+              crm: null,
+              specialty: null,
+              active: true,
+            },
+          ]);
+        }
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<PartnersPage />);
+      await screen.findByText("Dr. João");
+
+      fireEvent.click(screen.getByText("Desativar"));
+      const dialog = await screen.findByRole("alertdialog");
+      fireEvent.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+
+      expect(putCalls).toBe(0);
     });
   });
 

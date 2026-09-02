@@ -58,6 +58,60 @@ describe("Feature: useApiQuery", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     expect(fetchMock).toHaveBeenLastCalledWith("/api/y", expect.anything());
   });
+
+  it("Dado fetch pendente, Quando monta, Então isLoading é true até resolver", async () => {
+    let resolveFetch!: (value: unknown) => void;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        () =>
+          new Promise((resolve) => {
+            resolveFetch = resolve;
+          }),
+      ),
+    );
+
+    const { result } = renderHook(() => useApiQuery<{ id: string }>("/api/x"));
+
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.data).toBeNull();
+    expect(result.current.error).toBeNull();
+
+    act(() => {
+      resolveFetch(jsonResponse({ id: "1" }));
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.data).toEqual({ id: "1" });
+  });
+
+  it("Dado fetch bem-sucedido, Quando resolve, Então isLoading fica false", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({ id: "1" })));
+
+    const { result } = renderHook(() => useApiQuery<{ id: string }>("/api/x"));
+
+    await waitFor(() => expect(result.current.data).toEqual({ id: "1" }));
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it("Dado fetch com erro, Quando resolve, Então isLoading fica false", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(null, false)));
+
+    const { result } = renderHook(() => useApiQuery<unknown>("/api/x"));
+
+    await waitFor(() => expect(result.current.error).toBe("Erro simulado"));
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it("Dado url null, Quando monta, Então isLoading é false (query condicional)", () => {
+    vi.stubGlobal("fetch", vi.fn());
+
+    const { result } = renderHook(() => useApiQuery<unknown>(null));
+
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.data).toBeNull();
+    expect(result.current.error).toBeNull();
+  });
 });
 
 describe("Feature: usePagedQuery", () => {

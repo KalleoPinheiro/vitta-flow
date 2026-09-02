@@ -183,7 +183,8 @@ describe("Feature: PatientsPage", () => {
       await waitFor(() => {
         expect(screen.queryByText("Novo paciente")).not.toBeInTheDocument();
       });
-      expect(await screen.findByText("Paciente criado")).toBeInTheDocument();
+      const toastText = await screen.findByText("Paciente criado");
+      expect(toastText.closest(".sv-toast--success")).not.toBeNull();
     });
   });
 
@@ -231,7 +232,8 @@ describe("Feature: PatientsPage", () => {
           expect.objectContaining({ method: "PUT" }),
         );
       });
-      expect(await screen.findByText("Paciente atualizado")).toBeInTheDocument();
+      const toastText = await screen.findByText("Paciente atualizado");
+      expect(toastText.closest(".sv-toast--success")).not.toBeNull();
     });
 
     it("Dado erro ao salvar, Quando a chamada falha, Então exibe alerta no formulário e toast de erro", async () => {

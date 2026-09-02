@@ -27,11 +27,11 @@ docker compose up -d --build
 # primeira conta (instalação vazia): cria o Super Admin e envia o convite.
 # o compose devolve o controle antes de o Next aceitar conexões — espere subir:
 until curl -sf http://localhost:3000/api/auth/providers >/dev/null; do sleep 2; done
-set -a; . ./.env; set +a
+set -a; . ./.env; set +a   # valor com espaço (ex.: CLINIC_NAME) precisa aspas no .env, senão o shell quebra o source
 curl -sX POST http://localhost:3000/api/auth/bootstrap \
   -H "Content-Type: application/json" \
   -H "x-bootstrap-token: $VITTA_BOOTSTRAP_TOKEN" \
-  -d '{"email":"voce@suaclinica.com"}'
+  -d '{"email":"delivered@resend.dev"}'
 # o link de convite chega por e-mail; se o envio falhar (ex.: chave de teste),
 # a resposta traz `delivered: false` e `inviteUrl` para você abrir e definir a senha —
 # confira sempre esses dois campos antes de assumir que o convite chegou

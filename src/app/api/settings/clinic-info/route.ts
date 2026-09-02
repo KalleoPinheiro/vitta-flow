@@ -1,0 +1,55 @@
+import type { NextRequest } from "next/server";
+import { z } from "zod";
+import { getRepositories } from "@/infrastructure/container";
+import { fail, handleRequest } from "@/lib/api-response";
+import { requireStaffSession } from "@/lib/auth/require-session";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import { toClinicInfoDto } from "@/lib/dto";
+
+const infoSchema = z.object({
+  cnpj: z.string().max(30).nullish(),
+  address: z.string().max(300).nullish(),
+  city: z.string().max(120).nullish(),
+  professionalName: z.string().max(200).nullish(),
+  professionalRegistry: z.string().max(60).nullish(),
+});
+
+/** Só quem administra a empresa edita os dados cadastrais da clínica (#61). */
+const canEditClinicInfo = (role: string | undefined): boolean =>
+  role === "company_admin" || role === "super_admin";
+
+export async function GET(request: NextRequest) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+  const clinicId = guard.session?.clinicId ?? LEGACY_CLINIC_ID;
+
+  return handleRequest(async () => {
+    const { clinics } = await getRepositories({ clinicId });
+    const clinic = await clinics.findById(clinicId);
+    if (!clinic) {
+      throw new Error("Clínica não encontrada");
+    }
+    return { info: toClinicInfoDto(clinic) };
+  });
+}
+
+export async function PUT(request: NextRequest) {
+  const guard = requireStaffSession(request);
+  if (!guard.ok) return guard.response;
+  if (!canEditClinicInfo(guard.session?.role)) {
+    return fail("Apenas Admin de Empresa pode editar os dados da clínica", 403);
+  }
+  const clinicId = guard.session?.clinicId ?? LEGACY_CLINIC_ID;
+
+  return handleRequest(async () => {
+    const body = infoSchema.parse(await request.json());
+    const { clinics } = await getRepositories({ clinicId });
+    const clinic = await clinics.findById(clinicId);
+    if (!clinic) {
+      throw new Error("Clínica não encontrada");
+    }
+    const updated = clinic.updateInfo(body);
+    await clinics.update(updated);
+    return { info: toClinicInfoDto(updated) };
+  });
+}

@@ -50,6 +50,7 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
   let partnersRoute: typeof import("@/app/api/partners/route");
   let appointmentsRoute: typeof import("@/app/api/appointments/route");
   let conditionsRoute: typeof import("@/app/api/patients/[id]/conditions/route");
+  let assessmentsRoute: typeof import("@/app/api/conditions/[id]/assessments/route");
 
   let patientId: string;
   let patientEmail: string;
@@ -57,8 +58,10 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
   let otherPatientEmail: string;
   let partnerId: string;
   let partnerEmail: string;
+  let referredPatientId: string;
   let appointmentId: string;
   let conditionId: string;
+  const INTERNAL_NOTE = "nota interna teste";
 
   let patientCookieToken: string;
   let otherPatientCookieToken: string;
@@ -83,6 +86,7 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
     partnersRoute = await import("@/app/api/partners/route");
     appointmentsRoute = await import("@/app/api/appointments/route");
     conditionsRoute = await import("@/app/api/patients/[id]/conditions/route");
+    assessmentsRoute = await import("@/app/api/conditions/[id]/assessments/route");
 
     const { createSessionToken } = await import("@/lib/auth/session");
 
@@ -135,16 +139,48 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
     const appointmentBody = (await appointmentResponse.json()) as Envelope<{ id: string }>;
     appointmentId = appointmentBody.data.id;
 
-    // Condição clínica ativa para o paciente principal (para testes de foto)
+    // Condição clínica ativa para o paciente principal (para testes de foto e allowlist do portal, #69)
     const conditionResponse = await conditionsRoute.POST(
       staffRequest(`/api/patients/${patientId}/conditions`, "POST", {
         kind: "wound",
         title: "Ferida abdominal",
+        notes: INTERNAL_NOTE,
       }),
       context(patientId),
     );
     const conditionBody = (await conditionResponse.json()) as Envelope<{ id: string }>;
     conditionId = conditionBody.data.id;
+
+    // Avaliação com nota interna, para o mesmo teste de allowlist do portal (#69)
+    await assessmentsRoute.POST(
+      staffRequest(`/api/conditions/${conditionId}/assessments`, "POST", {
+        notes: INTERNAL_NOTE,
+      }),
+      context(conditionId),
+    );
+
+    // Paciente indicado pelo parceiro, com condição contendo nota interna (allowlist #69, portal do parceiro)
+    const referredPatientResponse = await patientsRoute.POST(
+      staffRequest("/api/patients", "POST", {
+        fullName: "Referida Portal",
+        email: "portal.indicado@example.com",
+        phone: "11922221111",
+        referredByPartnerId: partnerId,
+      }),
+    );
+    const referredPatientBody = (await referredPatientResponse.json()) as Envelope<{
+      id: string;
+    }>;
+    referredPatientId = referredPatientBody.data.id;
+
+    await conditionsRoute.POST(
+      staffRequest(`/api/patients/${referredPatientId}/conditions`, "POST", {
+        kind: "wound",
+        title: "Ferida indicada",
+        notes: INTERNAL_NOTE,
+      }),
+      context(referredPatientId),
+    );
 
     const expiresAtMs = Date.now() + 3_600_000;
     patientCookieToken = createSessionToken(
@@ -228,6 +264,22 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
       expect(body.data.patient.email).toBe(patientEmail);
       expect(body.data.appointments.some((a) => a.id === appointmentId)).toBe(true);
     });
+
+    it("Dado condição e avaliação com nota interna preenchida, Quando GET portal do paciente, Então resposta não contém a nota interna (#69)", async () => {
+      const response = await patientPortalRoute.GET(
+        jsonRequest("/api/portal/patient", "GET", undefined, cookieHeader(patientCookieToken)),
+      );
+      const body = (await response.json()) as Envelope<{
+        conditions: Array<{ condition: Record<string, unknown> }>;
+      }>;
+
+      expect(response.status).toBe(200);
+      expect(JSON.stringify(body)).not.toContain(INTERNAL_NOTE);
+      const conditionDto = body.data.conditions.find(
+        (entry) => entry.condition.id === conditionId,
+      )?.condition;
+      expect(conditionDto).not.toHaveProperty("notes");
+    });
   });
 
   describe("GET /api/portal/partner", () => {
@@ -253,6 +305,26 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
 
       expect(response.status).toBe(200);
       expect(body.data.partner.id).toBe(partnerId);
+    });
+
+    it("Dado paciente indicado com condição contendo nota interna, Quando GET portal do parceiro, Então resposta não contém a nota interna (#69)", async () => {
+      const response = await partnerPortalRoute.GET(
+        jsonRequest("/api/portal/partner", "GET", undefined, cookieHeader(partnerCookieToken)),
+      );
+      const body = (await response.json()) as Envelope<{
+        referredPatients: Array<{
+          patient: { id: string };
+          conditions: Array<{ condition: Record<string, unknown> }>;
+        }>;
+      }>;
+
+      expect(response.status).toBe(200);
+      expect(JSON.stringify(body)).not.toContain(INTERNAL_NOTE);
+      const referred = body.data.referredPatients.find(
+        (entry) => entry.patient.id === referredPatientId,
+      );
+      expect(referred).toBeDefined();
+      expect(referred?.conditions[0]?.condition).not.toHaveProperty("notes");
     });
   });
 

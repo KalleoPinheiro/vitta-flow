@@ -130,11 +130,13 @@ export class DrizzleClinicalConditionRepository implements ClinicalConditionRepo
   constructor(
     private readonly db: AppDb,
     private readonly clinicId: string | null,
+    private readonly secret: string,
   ) {}
 
   private toEntity(row: typeof clinicalConditions.$inferSelect): ClinicalCondition {
     return ClinicalCondition.restore({
       ...row,
+      notes: decryptField(row.notes, this.secret),
       kind: row.kind as ConditionKind,
       stomaType: row.stomaType as StomaType | null,
       status: row.status as ConditionStatus,
@@ -155,7 +157,7 @@ export class DrizzleClinicalConditionRepository implements ClinicalConditionRepo
       title: condition.title,
       stomaType: condition.stomaType,
       startedAt: condition.startedAt,
-      notes: condition.notes,
+      notes: encryptField(condition.notes, this.secret),
       status: condition.status,
       createdAt: condition.createdAt,
     };

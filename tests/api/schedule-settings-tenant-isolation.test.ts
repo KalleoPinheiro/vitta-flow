@@ -79,4 +79,27 @@ describe("Feature: Configuração de horário por empresa (MT-17/MT-18)", () => 
 
     expect(body.data.isDefault).toBe(true);
   });
+
+  it("Dado PUT bem-sucedido, Quando salvar configuração de agenda, Então registra evento de auditoria (#71)", async () => {
+    await ensureTestClinics();
+    const scheduleRoute = await import("@/app/api/settings/schedule/route");
+    const { getRepositories } = await import("@/infrastructure/container");
+    const { auditEvents } = await getRepositories({ clinicId: CLINIC_A_ID });
+
+    await scheduleRoute.PUT(
+      jsonRequest(
+        "/api/settings/schedule",
+        "PUT",
+        { weekdays: [1, 2, 3, 4, 5], startHour: 7, endHour: 19, minGapMinutes: 20 },
+        adminCookieHeader(CLINIC_A_ID),
+      ),
+    );
+
+    const events = await auditEvents.findAll();
+    const event = events.find(
+      (e) => e.resourceType === "clinic-schedule" && e.resourceId === CLINIC_A_ID,
+    );
+    expect(event).toBeDefined();
+    expect(event?.action).toBe("update");
+  });
 });

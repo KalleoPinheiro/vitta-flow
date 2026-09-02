@@ -26,6 +26,12 @@ export const metadata: Metadata = {
   description: "Gestão de pacientes, agenda e faturamento para clínica de estomaterapia",
 };
 
+// CSP estrita com nonce (issue #76) exige um nonce novo por request — só existe
+// se a renderização for dinâmica (docs/01-app/02-guides/content-security-policy.md).
+// App já é 100% autenticado (proxy.ts barra tudo sem sessão), sem página pública
+// cacheável hoje, então o custo de desativar a otimização estática é aceitável.
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({
   children,
 }: Readonly<{

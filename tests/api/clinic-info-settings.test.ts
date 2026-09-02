@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { jsonRequest } from "../support/request";
 import { adminCookieHeader, cookieHeaderFor } from "../support/session";
 import { ensureTestClinics, CLINIC_A_ID, CLINIC_B_ID } from "../support/clinics";
+import type { ClinicInfoDto } from "@/lib/dto";
 
 process.env.VITTA_DB_DRIVER = "pglite";
 
@@ -10,15 +11,6 @@ interface Envelope<T> {
   success: boolean;
   data: T | null;
   error: string | null;
-}
-
-interface ClinicInfoDto {
-  name: string;
-  cnpj: string | null;
-  address: string | null;
-  city: string | null;
-  professionalName: string | null;
-  professionalRegistry: string | null;
 }
 
 describe("Feature: Dados cadastrais da clínica (issue #61)", () => {
@@ -62,6 +54,37 @@ describe("Feature: Dados cadastrais da clínica (issue #61)", () => {
     expect(body.data?.info.cnpj).toBe("12.345.678/0001-90");
     expect(body.data?.info.professionalName).toBe("Enf. Ana");
     expect(body.data?.info.professionalRegistry).toBe("COREN-SP 123456");
+  });
+
+  it("Dado Admin de Empresa, Quando salvar a razão social, Então GET subsequente reflete o novo nome", async () => {
+    await ensureTestClinics();
+    const route = await import("@/app/api/settings/clinic-info/route");
+
+    await route.PUT(
+      jsonRequest(
+        "/api/settings/clinic-info",
+        "PUT",
+        { name: "Clínica VittaFlow Ltda" },
+        adminCookieHeader(CLINIC_A_ID),
+      ),
+    );
+    const response = await route.GET(
+      jsonRequest("/api/settings/clinic-info", "GET", undefined, adminCookieHeader(CLINIC_A_ID)),
+    );
+    const body = (await response.json()) as Envelope<{ info: ClinicInfoDto }>;
+
+    expect(body.data?.info.name).toBe("Clínica VittaFlow Ltda");
+  });
+
+  it("Dado Admin de Empresa, Quando enviar nome vazio, Então retorna 400", async () => {
+    await ensureTestClinics();
+    const route = await import("@/app/api/settings/clinic-info/route");
+
+    const response = await route.PUT(
+      jsonRequest("/api/settings/clinic-info", "PUT", { name: "" }, adminCookieHeader(CLINIC_A_ID)),
+    );
+
+    expect(response.status).toBe(400);
   });
 
   it("Dados salvos em uma clínica, Quando outra clínica busca, Então não vaza entre empresas (MT-06)", async () => {

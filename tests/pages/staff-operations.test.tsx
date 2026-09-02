@@ -233,6 +233,9 @@ describe("Feature: SettingsPage", () => {
       renderWithToast(<SettingsPage />);
       await screen.findByText("Dados da clínica");
 
+      fireEvent.change(screen.getByPlaceholderText("Nome da clínica"), {
+        target: { value: "Clínica VittaFlow Ltda" },
+      });
       fireEvent.change(screen.getByPlaceholderText("00.000.000/0001-00"), {
         target: { value: "12.345.678/0001-90" },
       });
@@ -244,7 +247,10 @@ describe("Feature: SettingsPage", () => {
       await waitFor(() => {
         expect(fetchMock).toHaveBeenCalledWith(
           "/api/settings/clinic-info",
-          expect.objectContaining({ method: "PUT" }),
+          expect.objectContaining({
+            method: "PUT",
+            body: expect.stringContaining('"name":"Clínica VittaFlow Ltda"'),
+          }),
         );
       });
       expect(await screen.findByText("Dados da clínica salvos")).toBeInTheDocument();

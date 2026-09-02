@@ -65,10 +65,10 @@ export default function SettingsPage() {
   );
 }
 
-/** Campos editáveis de dados cadastrais — `name` fica de fora (somente leitura, definido no cadastro da empresa). */
-type ClinicInfoDraft = Omit<ClinicInfoDto, "name">;
+type ClinicInfoDraft = ClinicInfoDto;
 
 const CLINIC_INFO_FIELDS: { key: keyof ClinicInfoDraft; label: string; placeholder: string }[] = [
+  { key: "name", label: "Razão social", placeholder: "Nome da clínica" },
   { key: "cnpj", label: "CNPJ", placeholder: "00.000.000/0001-00" },
   { key: "professionalName", label: "Responsável técnico", placeholder: "Nome completo" },
   { key: "professionalRegistry", label: "Registro profissional", placeholder: "COREN-SP 000000" },
@@ -108,8 +108,8 @@ function ClinicInfoSection() {
     <Card as="section" className="p-5">
       <h2 className="mb-1 text-lg font-semibold">Dados da clínica</h2>
       <p className="mb-4 text-sm text-ink-3">
-        {data.info.name} — CNPJ e responsável técnico aparecem em todo documento clínico
-        emitido (atestado, relatório, plano de cuidados).
+        Razão social, CNPJ e responsável técnico aparecem em todo documento clínico emitido
+        (atestado, relatório, plano de cuidados).
       </p>
       {saveError && <ErrorAlert message={saveError} />}
 

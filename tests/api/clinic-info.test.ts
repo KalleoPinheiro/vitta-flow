@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { jsonRequest } from "../support/request";
 import { adminCookieHeader } from "../support/session";
 import { ensureTestClinics, CLINIC_A_ID, CLINIC_B_ID } from "../support/clinics";
+import type { ClinicInfoDto } from "@/lib/dto";
 
 process.env.VITTA_DB_DRIVER = "pglite";
 
@@ -9,15 +10,6 @@ interface Envelope<T> {
   success: boolean;
   data: T | null;
   error: string | null;
-}
-
-interface ClinicInfoDto {
-  name: string;
-  cnpj: string | null;
-  address: string | null;
-  city: string | null;
-  professionalName: string | null;
-  professionalRegistry: string | null;
 }
 
 describe("Feature: /api/clinic-info lê dados cadastrais do banco (issue #61)", () => {

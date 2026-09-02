@@ -40,6 +40,7 @@ export class DrizzleClinicRepository implements ClinicRepository {
     await this.db
       .update(clinics)
       .set({
+        name: clinic.name,
         cnpj: clinic.cnpj,
         address: clinic.address,
         city: clinic.city,

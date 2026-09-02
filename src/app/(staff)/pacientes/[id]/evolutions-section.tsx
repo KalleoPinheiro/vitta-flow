@@ -49,7 +49,7 @@ export function EvolutionsSection({
   const professionalName = (id: string | null) =>
     (professionals ?? []).find((p) => p.id === id)?.fullName ?? null;
 
-  const isDirty = showForm && Object.values(values).some((value) => value.trim() !== "");
+  const isDirty = Object.values(values).some((value) => value.trim() !== "");
   useEffect(() => {
     onDirtyChange(isDirty);
   }, [isDirty, onDirtyChange]);

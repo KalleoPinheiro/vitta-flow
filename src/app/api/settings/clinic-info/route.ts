@@ -7,6 +7,7 @@ import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-cl
 import { toClinicInfoDto } from "@/lib/dto";
 
 const infoSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
   cnpj: z.string().max(30).nullish(),
   address: z.string().max(300).nullish(),
   city: z.string().max(120).nullish(),

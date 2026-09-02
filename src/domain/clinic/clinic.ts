@@ -35,6 +35,20 @@ const normalizeField = (value: string | null | undefined): string | null => {
   return trimmed ? trimmed : null;
 };
 
+const INFO_KEYS = ["cnpj", "address", "city", "professionalName", "professionalRegistry"] as const;
+
+/** Aplica só os campos presentes em `fields` (chave `in` do objeto) — os demais preservam o valor atual. */
+function resolveInfoFields(
+  state: ClinicInfoFields,
+  fields: ClinicInfoFields,
+): Required<ClinicInfoFields> {
+  const resolved = {} as Required<ClinicInfoFields>;
+  for (const key of INFO_KEYS) {
+    resolved[key] = key in fields ? normalizeField(fields[key]) : (state[key] ?? null);
+  }
+  return resolved;
+}
+
 /** Empresa/clínica — unidade de isolamento de dados (multi-tenancy). */
 export class Clinic {
   private constructor(private readonly state: ClinicState) {}
@@ -107,20 +121,14 @@ export class Clinic {
   }
 
   /** Retorna uma nova instância com os campos cadastrais atualizados (imutável). */
-  updateInfo(fields: ClinicInfoFields): Clinic {
+  updateInfo(fields: ClinicInfoFields & { name?: string }): Clinic {
+    if ("name" in fields && !fields.name?.trim()) {
+      throw new ValidationError("Nome da clínica é obrigatório");
+    }
     return new Clinic({
       ...this.state,
-      cnpj: "cnpj" in fields ? normalizeField(fields.cnpj) : this.state.cnpj,
-      address: "address" in fields ? normalizeField(fields.address) : this.state.address,
-      city: "city" in fields ? normalizeField(fields.city) : this.state.city,
-      professionalName:
-        "professionalName" in fields
-          ? normalizeField(fields.professionalName)
-          : this.state.professionalName,
-      professionalRegistry:
-        "professionalRegistry" in fields
-          ? normalizeField(fields.professionalRegistry)
-          : this.state.professionalRegistry,
+      name: fields.name?.trim() ? fields.name.trim() : this.state.name,
+      ...resolveInfoFields(this.state, fields),
     });
   }
 

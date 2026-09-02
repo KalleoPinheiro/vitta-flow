@@ -147,7 +147,7 @@ const detAssessmentFixture: AssessmentDto = {
 };
 
 const complicationsAssessmentFixture: AssessmentDto = {
-  ...pushAssessmentFixture,
+  ...detAssessmentFixture,
   id: "assess-complications",
   complications: "Observação livre adicional",
   complicationCodes: ["dermatitis", "bleeding"],
@@ -927,13 +927,13 @@ describe("Feature: PatientRecordPage", () => {
     it("Dado avaliação com complicações de estomia registradas, Quando expandir a condição, Então exibe os labels na leitura (#67)", async () => {
       mockFetch(
         buildRouter({
-          conditions: [woundConditionFixture],
-          assessmentsByCondition: { "cond-wound": [complicationsAssessmentFixture] },
+          conditions: [stomaConditionFixture],
+          assessmentsByCondition: { "cond-stoma": [complicationsAssessmentFixture] },
         }),
       );
 
       await openConditionsTab();
-      await screen.findByText("Úlcera venosa perna E");
+      await screen.findByText("Colostomia terminal QIE");
 
       fireEvent.click(screen.getByText("Ver avaliações"));
 

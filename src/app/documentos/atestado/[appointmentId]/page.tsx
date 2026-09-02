@@ -1,26 +1,21 @@
 "use client";
 
-import { use } from "react";
+import { use, type ReactNode } from "react";
 import type { AppointmentDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import { ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import { DocumentFrame, type ClinicInfoDto } from "@/components/document-frame";
 import { isClinicInfoComplete } from "@/domain/clinic/clinic";
 
-export default function AttendanceDocumentPage({
-  params,
-}: {
-  params: Promise<{ appointmentId: string }>;
-}) {
-  const { appointmentId } = use(params);
-  const { data: clinic } = useApiQuery<ClinicInfoDto>("/api/clinic-info");
-  const {
-    data: appointment,
-    error,
-    isLoading: appointmentLoading,
-  } = useApiQuery<AppointmentDto>(`/api/appointments/${appointmentId}`);
-
-  if (error) return <ErrorAlert message={error} />;
+/** Guardas de bloqueio/carregamento — extraída para manter a complexidade da página no limite. */
+function guardBlock(
+  clinic: ClinicInfoDto | null,
+  clinicError: string | null,
+  appointment: AppointmentDto | null,
+  appointmentError: string | null,
+  appointmentLoading: boolean,
+): ReactNode | null {
+  if (appointmentError || clinicError) return <ErrorAlert message={appointmentError ?? clinicError ?? ""} />;
   if (!clinic || appointmentLoading) return <LoadingIndicator />;
   if (!appointment) return <ErrorAlert message="Consulta não encontrada" />;
   if (!isClinicInfoComplete(clinic)) {
@@ -33,6 +28,25 @@ export default function AttendanceDocumentPage({
       <ErrorAlert message={`Não é possível emitir declaração de comparecimento: consulta com status "${appointment.status}", não "realizada".`} />
     );
   }
+  return null;
+}
+
+export default function AttendanceDocumentPage({
+  params,
+}: {
+  params: Promise<{ appointmentId: string }>;
+}) {
+  const { appointmentId } = use(params);
+  const { data: clinic, error: clinicError } = useApiQuery<ClinicInfoDto>("/api/clinic-info");
+  const {
+    data: appointment,
+    error,
+    isLoading: appointmentLoading,
+  } = useApiQuery<AppointmentDto>(`/api/appointments/${appointmentId}`);
+
+  const guard = guardBlock(clinic, clinicError, appointment, error, appointmentLoading);
+  if (guard) return guard;
+  if (!clinic || !appointment) return null;
 
   const start = new Date(appointment.startsAt);
   const end = new Date(appointment.endsAt);

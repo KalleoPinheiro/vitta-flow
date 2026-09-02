@@ -71,6 +71,16 @@ describe("Feature: Persistência de Clinic (Drizzle)", () => {
       expect(stored?.createdBy).toBe("admin@vitta.com");
     });
 
+    it("Dada uma clínica criada, Quando atualizar a razão social, Então findById reflete o novo nome", async () => {
+      const clinic = Clinic.create({ name: "Clínica Delta", createdBy: "admin3@vitta.com" });
+      await clinicRepo.create(clinic);
+
+      await clinicRepo.update(clinic.updateInfo({ name: "Clínica Delta Ltda" }));
+      const stored = await clinicRepo.findById(clinic.id);
+
+      expect(stored?.name).toBe("Clínica Delta Ltda");
+    });
+
     it("Dado update parcial, Quando buscar por id, Então name/createdBy/createdAt permanecem intactos", async () => {
       const clinic = Clinic.create({ name: "Clínica Gama", createdBy: "admin2@vitta.com" });
       await clinicRepo.create(clinic);
@@ -78,6 +88,11 @@ describe("Feature: Persistência de Clinic (Drizzle)", () => {
       await clinicRepo.update(clinic.updateInfo({ cnpj: "99.999.999/0001-00" }));
       const stored = await clinicRepo.findById(clinic.id);
 
+      expect(stored?.cnpj).toBe("99.999.999/0001-00");
+      expect(stored?.address).toBeNull();
+      expect(stored?.city).toBeNull();
+      expect(stored?.professionalName).toBeNull();
+      expect(stored?.professionalRegistry).toBeNull();
       expect(stored?.name).toBe("Clínica Gama");
       expect(stored?.createdBy).toBe("admin2@vitta.com");
       expect(stored?.createdAt).toEqual(clinic.createdAt);

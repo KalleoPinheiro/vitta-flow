@@ -39,6 +39,29 @@ describe("Feature: Dados cadastrais da clínica (issue #61/#62)", () => {
       expect(updated.city).toBe("São Paulo");
     });
 
+    it("Dada uma clínica, Quando atualizar o nome, Então persiste a nova razão social", () => {
+      const clinic = Clinic.create({ name: "Clínica Alfa", createdBy: "admin@vitta.com" });
+
+      const updated = clinic.updateInfo({ name: "Clínica Alfa Ltda" });
+
+      expect(updated.name).toBe("Clínica Alfa Ltda");
+      expect(clinic.name).toBe("Clínica Alfa");
+    });
+
+    it("Dado nome vazio, Quando atualizar, Então lança ValidationError", () => {
+      const clinic = Clinic.create({ name: "Clínica Alfa", createdBy: "admin@vitta.com" });
+
+      expect(() => clinic.updateInfo({ name: "   " })).toThrow("Nome da clínica é obrigatório");
+    });
+
+    it("Dado nenhum campo name no update, Quando atualizar outro campo, Então o nome permanece intacto", () => {
+      const clinic = Clinic.create({ name: "Clínica Alfa", createdBy: "admin@vitta.com" });
+
+      const updated = clinic.updateInfo({ cnpj: "12.345.678/0001-90" });
+
+      expect(updated.name).toBe("Clínica Alfa");
+    });
+
     it("Dado um campo com espaços em branco, Quando atualizar, Então normaliza para null", () => {
       const clinic = Clinic.create({ name: "Clínica Alfa", createdBy: "admin@vitta.com" }).updateInfo({
         cnpj: "12.345.678/0001-90",

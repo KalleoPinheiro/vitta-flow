@@ -23,11 +23,13 @@ export async function GET(request: NextRequest) {
       throw new NotFoundError("Paciente", auth.session.subject);
     }
     const records = await consentRecords.findByPatientId(patient.id);
-    const current = records.find((record) => record.covers(CONSENT_TEXT)) ?? null;
+    const status = ConsentRecord.resolveStatus(records, CONSENT_TEXT);
     return {
       consentText: CONSENT_TEXT,
-      accepted: current !== null,
-      acceptedAt: current?.acceptedAt.toISOString() ?? null,
+      accepted: status.accepted,
+      revoked: status.current?.kind === "revoke",
+      acceptedAt: status.current?.acceptedAt.toISOString() ?? null,
+      textVersion: status.current?.textVersion ?? null,
     };
   });
 }
@@ -47,9 +49,9 @@ export async function POST(request: NextRequest) {
     }
 
     const existing = await consentRecords.findByPatientId(patient.id);
-    const already = existing.find((record) => record.covers(CONSENT_TEXT));
-    if (already) {
-      return { accepted: true, acceptedAt: already.acceptedAt.toISOString() };
+    const status = ConsentRecord.resolveStatus(existing, CONSENT_TEXT);
+    if (status.accepted && status.current) {
+      return { accepted: true, acceptedAt: status.current.acceptedAt.toISOString() };
     }
 
     const record = ConsentRecord.create({

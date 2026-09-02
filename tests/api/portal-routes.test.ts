@@ -37,6 +37,7 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
   let partnerPortalRoute: typeof import("@/app/api/portal/partner/route");
   let confirmRoute: typeof import("@/app/api/portal/patient/appointments/[id]/confirm/route");
   let consentRoute: typeof import("@/app/api/portal/patient/consent/route");
+  let consentRevokeRoute: typeof import("@/app/api/portal/patient/consent/revoke/route");
   let photosRoute: typeof import("@/app/api/portal/patient/photos/route");
   let photoByIdRoute: typeof import("@/app/api/portal/patient/photos/[id]/route");
   let slotsRoute: typeof import("@/app/api/portal/patient/slots/route");
@@ -73,6 +74,7 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
     partnerPortalRoute = await import("@/app/api/portal/partner/route");
     confirmRoute = await import("@/app/api/portal/patient/appointments/[id]/confirm/route");
     consentRoute = await import("@/app/api/portal/patient/consent/route");
+    consentRevokeRoute = await import("@/app/api/portal/patient/consent/revoke/route");
     photosRoute = await import("@/app/api/portal/patient/photos/route");
     photoByIdRoute = await import("@/app/api/portal/patient/photos/[id]/route");
     slotsRoute = await import("@/app/api/portal/patient/slots/route");
@@ -445,6 +447,96 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
 
       expect(response.status).toBe(200);
       expect(body.data.accepted).toBe(true);
+    });
+
+    it("Dado paciente sem nenhum aceite, Quando GET consent, Então retorna revoked false (distinto de revogado)", async () => {
+      const response = await consentRoute.GET(
+        jsonRequest(
+          "/api/portal/patient/consent",
+          "GET",
+          undefined,
+          cookieHeader(otherPatientCookieToken),
+        ),
+      );
+      const body = (await response.json()) as Envelope<{ accepted: boolean; revoked: boolean }>;
+
+      expect(response.status).toBe(200);
+      expect(body.data.accepted).toBe(false);
+      expect(body.data.revoked).toBe(false);
+    });
+
+    it("Dado sem sessão, Quando POST revoke, Então retorna 401", async () => {
+      const response = await consentRevokeRoute.POST(
+        jsonRequest("/api/portal/patient/consent/revoke", "POST"),
+      );
+
+      expect(response.status).toBe(401);
+    });
+
+    it("Dado aceite vigente, Quando revogar, Então GET consent passa a refletir revoked true e accepted false", async () => {
+      const revokeResponse = await consentRevokeRoute.POST(
+        jsonRequest(
+          "/api/portal/patient/consent/revoke",
+          "POST",
+          undefined,
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      const revokeBody = (await revokeResponse.json()) as Envelope<{
+        accepted: boolean;
+        revoked: boolean;
+      }>;
+
+      expect(revokeResponse.status).toBe(200);
+      expect(revokeBody.data.accepted).toBe(false);
+      expect(revokeBody.data.revoked).toBe(true);
+
+      const getResponse = await consentRoute.GET(
+        jsonRequest(
+          "/api/portal/patient/consent",
+          "GET",
+          undefined,
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      const getBody = (await getResponse.json()) as Envelope<{
+        accepted: boolean;
+        revoked: boolean;
+      }>;
+
+      expect(getBody.data.accepted).toBe(false);
+      expect(getBody.data.revoked).toBe(true);
+    });
+
+    it("Dado revogação recente, Quando aceitar de novo, Então GET consent volta a accepted true (revogação não é terminal)", async () => {
+      const postResponse = await consentRoute.POST(
+        jsonRequest(
+          "/api/portal/patient/consent",
+          "POST",
+          undefined,
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      const postBody = (await postResponse.json()) as Envelope<{ accepted: boolean }>;
+
+      expect(postResponse.status).toBe(200);
+      expect(postBody.data.accepted).toBe(true);
+
+      const getResponse = await consentRoute.GET(
+        jsonRequest(
+          "/api/portal/patient/consent",
+          "GET",
+          undefined,
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      const getBody = (await getResponse.json()) as Envelope<{
+        accepted: boolean;
+        revoked: boolean;
+      }>;
+
+      expect(getBody.data.accepted).toBe(true);
+      expect(getBody.data.revoked).toBe(false);
     });
   });
 

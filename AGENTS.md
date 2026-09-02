@@ -71,3 +71,7 @@ Single-context layout: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/ag
 ### Planning docs
 
 Where phase/product/audit planning lives in `docs/`, and how it relates to `.specs/features/` and the two decision logs (`docs/adr/` vs `.specs/STATE.md`). See `docs/agents/planning.md`.
+
+### Fixing a subset of audit issues end-to-end
+
+Repeatable pipeline for "specify and fix only issues N and M [from an audit/plan phase]": spec → branch from updated main → implement → update living docs → PR → track CodeRabbit → squash merge → close issues linking the fix → record in `.specs/STATE.md`. See `docs/agents/fix-audit-issues.md`.

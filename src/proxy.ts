@@ -49,6 +49,38 @@ function authNotConfiguredResponse(): NextResponse {
   return fail(AUTH_NOT_CONFIGURED_MESSAGE, 503);
 }
 
+/**
+ * CSP estrita com nonce por request (issue #76). Nenhum script/style inline é
+ * usado hoje no app (grep confirmado); `strict-dynamic` + nonce bloqueiam
+ * injeção de script mesmo assim. O nonce só existe porque a página é
+ * dinamicamente renderizada por request — Next injeta o valor automaticamente
+ * nos scripts do próprio framework (ver `layout.tsx`: `dynamic = "force-dynamic"`).
+ */
+function nextWithCsp(request: NextRequest): NextResponse {
+  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  const isDev = process.env.NODE_ENV === "development";
+  const csp = [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
+    // unsafe-inline só em dev: HMR/overlay do Next injeta estilo inline sem nonce.
+    `style-src 'self' ${isDev ? "'unsafe-inline'" : `'nonce-${nonce}'`}`,
+    "img-src 'self' data:",
+    "font-src 'self'",
+    "connect-src 'self'",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join("; ");
+
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set("Content-Security-Policy", csp);
+
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  response.headers.set("Content-Security-Policy", csp);
+  return response;
+}
+
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
 
@@ -57,7 +89,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   }
 
   if (isPublicPath(pathname)) {
-    return NextResponse.next();
+    return nextWithCsp(request);
   }
 
   const mode = resolveAuthMode();
@@ -65,7 +97,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return authNotConfiguredResponse();
   }
   if (mode === "open") {
-    return NextResponse.next();
+    return nextWithCsp(request);
   }
 
   const session = getRequestSession(request);
@@ -80,7 +112,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return forbidden(request);
   }
 
-  return NextResponse.next();
+  return nextWithCsp(request);
 }
 
 export const config = {

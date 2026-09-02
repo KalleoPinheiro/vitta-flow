@@ -13,10 +13,16 @@ export interface ApiEnvelope<T> {
   success: boolean;
   data: T | null;
   error: string | null;
+  /** Paginação por cursor (issue #75): presente só nas listagens paginadas. */
+  meta?: { nextCursor: string | null };
 }
 
-export function ok<T>(data: T, status = 200): NextResponse<ApiEnvelope<T>> {
-  return NextResponse.json({ success: true, data, error: null }, { status });
+export function ok<T>(
+  data: T,
+  status = 200,
+  meta?: { nextCursor: string | null },
+): NextResponse<ApiEnvelope<T>> {
+  return NextResponse.json({ success: true, data, error: null, meta }, { status });
 }
 
 export function fail(message: string, status: number): NextResponse<ApiEnvelope<never>> {
@@ -34,9 +40,11 @@ function statusForDomainError(error: DomainError): number {
 
 export async function handleRequest<T>(
   action: () => Promise<T>,
+  buildMeta?: (result: T) => { nextCursor: string | null },
 ): Promise<NextResponse<ApiEnvelope<T>>> {
   try {
-    return ok(await action());
+    const result = await action();
+    return ok(result, 200, buildMeta?.(result));
   } catch (error) {
     if (error instanceof ZodError) {
       const detail = error.issues

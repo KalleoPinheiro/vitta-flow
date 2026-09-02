@@ -5,7 +5,7 @@ import { useToast } from "@still-void/ui/react/client";
 import { apiFetch } from "@/lib/client";
 import type { PartnerDto, PatientDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
-import { usePagedQuery } from "@/lib/use-paged-query";
+import { useCursorPagedQuery } from "@/lib/use-cursor-paged-query";
 import { formatDate } from "@/lib/format";
 import { Modal } from "@/components/modal";
 import { ConfirmAction } from "@/components/confirm-action";
@@ -132,7 +132,7 @@ export default function PatientsPage() {
     error: loadError,
     refresh,
     loadMore,
-  } = usePagedQuery<PatientDto>(
+  } = useCursorPagedQuery<PatientDto>(
     `/api/patients${debouncedSearch ? `?search=${encodeURIComponent(debouncedSearch)}` : ""}`,
     PAGE_SIZE,
   );

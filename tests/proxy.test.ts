@@ -230,4 +230,29 @@ describe("Feature: Proxy (camada 1 de autorização, antigo middleware)", () => 
       },
     );
   });
+
+  describe("Cenário: CSP estrita com nonce (issue #76)", () => {
+    it("Dada requisição autenticada, Quando passa pelo proxy, Então gera CSP com nonce único e sem unsafe-inline", async () => {
+      const proxy = await loadProxy();
+      const cookie = sessionCookie("company_admin");
+
+      const first = await proxy(request("/agenda", cookie));
+      const second = await proxy(request("/agenda", cookie));
+
+      const cspFirst = first.headers.get("Content-Security-Policy");
+      const cspSecond = second.headers.get("Content-Security-Policy");
+
+      expect(cspFirst).toMatch(/script-src 'self' 'nonce-[^']+' 'strict-dynamic'/);
+      expect(cspFirst).not.toContain("unsafe-inline");
+      expect(cspFirst).not.toEqual(cspSecond);
+    });
+
+    it("Dado caminho público, Quando passa pelo proxy, Então também recebe CSP com nonce", async () => {
+      const proxy = await loadProxy();
+
+      const response = await proxy(request("/login"));
+
+      expect(response.headers.get("Content-Security-Policy")).toMatch(/nonce-/);
+    });
+  });
 });

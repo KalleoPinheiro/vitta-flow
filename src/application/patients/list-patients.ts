@@ -4,7 +4,7 @@ import type { PatientRepository } from "@/domain/patient/patient-repository";
 export interface ListPatientsInput {
   search?: string;
   limit?: number;
-  offset?: number;
+  cursor?: string;
   /** Escopo dinâmico do Profissional (R4): restringe a lista a estes IDs. */
   allowedPatientIds?: string[];
 }
@@ -15,7 +15,7 @@ export class ListPatients {
   async execute(input: ListPatientsInput = {}): Promise<Patient[]> {
     return this.patients.findAll(input.search, {
       limit: input.limit,
-      offset: input.offset,
+      cursor: input.cursor,
       ids: input.allowedPatientIds,
     });
   }

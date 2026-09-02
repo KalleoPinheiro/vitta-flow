@@ -1,5 +1,6 @@
 import type { Patient } from "@/domain/patient/patient";
 import type { PatientPage, PatientRepository } from "@/domain/patient/patient-repository";
+import { decodeCursor } from "@/lib/pagination";
 
 export class InMemoryPatientRepository implements PatientRepository {
   private readonly patients = new Map<string, Patient>();
@@ -43,8 +44,8 @@ export class InMemoryPatientRepository implements PatientRepository {
     if (page.ids && page.ids.length === 0) {
       return [];
     }
-    const all = [...this.patients.values()].sort((a, b) =>
-      a.fullName.localeCompare(b.fullName),
+    const all = [...this.patients.values()].sort(
+      (a, b) => a.fullName.localeCompare(b.fullName) || a.id.localeCompare(b.id),
     );
     const term = search?.toLowerCase();
     const byTerm = term
@@ -56,9 +57,16 @@ export class InMemoryPatientRepository implements PatientRepository {
         )
       : all;
     const filtered = page.ids ? byTerm.filter((p) => page.ids!.includes(p.id)) : byTerm;
-    const offset = page.offset ?? 0;
-    return page.limit != null
-      ? filtered.slice(offset, offset + page.limit)
-      : filtered.slice(offset);
+    const decoded = decodeCursor<{ fullName: string; id: string }>(page.cursor);
+    // Mesmo comparador do sort acima (localeCompare) — comparação por `>` usaria
+    // ordem UTF-16 e poderia excluir/repetir itens quando os dois divergem
+    // (ex.: acentos), pulando a página seguinte.
+    const afterCursor = decoded
+      ? filtered.filter((p) => {
+          const cmp = p.fullName.localeCompare(decoded.fullName) || p.id.localeCompare(decoded.id);
+          return cmp > 0;
+        })
+      : filtered;
+    return page.limit != null ? afterCursor.slice(0, page.limit) : afterCursor;
   }
 }

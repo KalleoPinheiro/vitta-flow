@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lt, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, gte, lt, or, sql, type SQL } from "drizzle-orm";
 import { Invoice, type InvoiceStatus, type PaymentMethod } from "@/domain/billing/invoice";
 import type {
   InvoiceFilter,
@@ -7,6 +7,7 @@ import type {
   InvoiceSummary,
 } from "@/domain/billing/invoice-repository";
 import { Money } from "@/domain/shared/money";
+import { decodeCursor } from "@/lib/pagination";
 import { MAX_ROWS, type AppDb } from "./db";
 import { invoices } from "./schema";
 import { withTenant } from "./tenant-scope";
@@ -88,10 +89,9 @@ export class DrizzleInvoiceRepository implements InvoiceRepository {
     const rows = await this.db
       .select()
       .from(invoices)
-      .where(this.buildConditions(filter))
+      .where(and(this.buildConditions(filter), buildInvoiceCursorFilter(page.cursor)))
       .orderBy(desc(invoices.issuedAt), desc(invoices.id))
-      .limit(limit)
-      .offset(page.offset ?? 0);
+      .limit(limit);
     return rows.map(toInvoice);
   }
 
@@ -119,4 +119,15 @@ export class DrizzleInvoiceRepository implements InvoiceRepository {
       cancelledCount: Number(row.cancelledCount),
     };
   }
+}
+
+/** Predicado de keyset: retoma estritamente depois de (issuedAt, id) do cursor, ordem desc. */
+function buildInvoiceCursorFilter(cursor?: string) {
+  const decoded = decodeCursor<{ issuedAt: string; id: string }>(cursor);
+  if (!decoded) return undefined;
+  const issuedAt = new Date(decoded.issuedAt);
+  return or(
+    lt(invoices.issuedAt, issuedAt),
+    and(eq(invoices.issuedAt, issuedAt), lt(invoices.id, decoded.id)),
+  );
 }

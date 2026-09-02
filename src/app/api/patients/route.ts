@@ -9,11 +9,20 @@ import { requireStaffSession } from "@/lib/auth/require-session";
 import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 import { ensureLinkBestEffort } from "@/lib/patient-link";
 import { recordAudit } from "@/lib/audit";
+import { encodeCursor } from "@/lib/pagination";
+import type { PatientDto } from "@/lib/dto";
 
 const paginationSchema = z.object({
   limit: z.coerce.number().int().min(1).max(500).default(100),
-  offset: z.coerce.number().int().min(0).default(0),
+  cursor: z.string().optional(),
 });
+
+/** Cursor opaco pela mesma ordenação da query (fullName, id) — issue #75. */
+function nextPatientCursor(page: PatientDto[], limit: number): string | null {
+  if (page.length < limit) return null;
+  const last = page[page.length - 1];
+  return encodeCursor({ fullName: last.fullName, id: last.id });
+}
 
 const createPatientSchema = z.object({
   fullName: z.string().min(1).max(200),
@@ -28,32 +37,42 @@ export async function GET(request: NextRequest) {
   const guard = requireStaffSession(request);
   if (!guard.ok) return guard.response;
 
-  return handleRequest(async () => {
-    const params = request.nextUrl.searchParams;
-    const search = params.get("search") ?? undefined;
-    const { limit, offset } = paginationSchema.parse({
-      limit: params.get("limit") ?? undefined,
-      offset: params.get("offset") ?? undefined,
-    });
-    const { patients, professionalPatientLinks } = await getRepositories({
-      clinicId: guard.session?.clinicId ?? null,
-    });
-    // Escopo dinâmico do Profissional (R4/RBAC-17): a listagem só mostra
-    // pacientes com quem o profissional tem vínculo registrado.
-    let allowedPatientIds: string[] | undefined;
-    if (guard.session?.role === "profissional") {
-      allowedPatientIds = guard.session.professionalId
-        ? await professionalPatientLinks.findLinkedPatientIds(guard.session.professionalId)
-        : [];
-    }
-    const result = await new ListPatients(patients).execute({
-      search,
-      limit,
-      offset,
-      allowedPatientIds,
-    });
-    return result.map((p) => toPatientDto(p));
-  });
+  // `limit` sai fora do try/catch do handleRequest (usado no buildMeta, que só
+  // roda depois do action resolver) — por isso fica numa variável de fora,
+  // atribuída dentro do action para que erros de zod ainda virem 400.
+  let limit = 0;
+
+  return handleRequest(
+    async () => {
+      const params = request.nextUrl.searchParams;
+      const search = params.get("search") ?? undefined;
+      const parsedPage = paginationSchema.parse({
+        limit: params.get("limit") ?? undefined,
+        cursor: params.get("cursor") ?? undefined,
+      });
+      limit = parsedPage.limit;
+
+      const { patients, professionalPatientLinks } = await getRepositories({
+        clinicId: guard.session?.clinicId ?? null,
+      });
+      // Escopo dinâmico do Profissional (R4/RBAC-17): a listagem só mostra
+      // pacientes com quem o profissional tem vínculo registrado.
+      let allowedPatientIds: string[] | undefined;
+      if (guard.session?.role === "profissional") {
+        allowedPatientIds = guard.session.professionalId
+          ? await professionalPatientLinks.findLinkedPatientIds(guard.session.professionalId)
+          : [];
+      }
+      const result = await new ListPatients(patients).execute({
+        search,
+        limit,
+        cursor: parsedPage.cursor,
+        allowedPatientIds,
+      });
+      return result.map((p) => toPatientDto(p));
+    },
+    (result) => ({ nextCursor: nextPatientCursor(result, limit) }),
+  );
 }
 
 export async function POST(request: NextRequest) {

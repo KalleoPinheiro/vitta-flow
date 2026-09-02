@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { encodeCursor } from "@/lib/pagination";
 
 import { InMemoryProfessionalRepository } from "@/infrastructure/persistence/in-memory/in-memory-professional-repository";
 import {
@@ -930,14 +931,20 @@ describe("Feature: Doubles em memória de infraestrutura", () => {
       expect((await repo.findAll({ to: new Date("2026-02-01T00:00:00Z") })).map((i) => i.id)).toEqual(["inv-1"]);
     });
 
-    it("Dado várias faturas, Quando paginar (limit/offset), Então retorna a página correta", async () => {
+    it("Dado várias faturas, Quando paginar (limit/cursor), Então retorna a página correta", async () => {
       const repo = new InMemoryInvoiceRepository();
       await repo.save(Invoice.restore(invoiceState({ id: "inv-1", issuedAt: new Date("2026-01-01T00:00:00Z") })));
       await repo.save(Invoice.restore(invoiceState({ id: "inv-2", issuedAt: new Date("2026-02-01T00:00:00Z") })));
       await repo.save(Invoice.restore(invoiceState({ id: "inv-3", issuedAt: new Date("2026-03-01T00:00:00Z") })));
 
-      expect((await repo.findAll(undefined, { limit: 2 })).map((i) => i.id)).toEqual(["inv-3", "inv-2"]);
-      expect((await repo.findAll(undefined, { offset: 2 })).map((i) => i.id)).toEqual(["inv-1"]);
+      const firstPage = await repo.findAll(undefined, { limit: 2 });
+      expect(firstPage.map((i) => i.id)).toEqual(["inv-3", "inv-2"]);
+
+      const cursor = encodeCursor({
+        issuedAt: firstPage[1].issuedAt.toISOString(),
+        id: firstPage[1].id,
+      });
+      expect((await repo.findAll(undefined, { cursor })).map((i) => i.id)).toEqual(["inv-1"]);
     });
 
     it("Dado faturas pagas, pendentes e canceladas, Quando summarize, Então soma centavos e contagens corretamente", async () => {
@@ -1178,14 +1185,17 @@ describe("Feature: Doubles em memória de infraestrutura", () => {
       expect(await repo.findAll("inexistente")).toHaveLength(0);
     });
 
-    it("Dado vários pacientes, Quando paginar (limit/offset), Então retorna a página correta", async () => {
+    it("Dado vários pacientes, Quando paginar (limit/cursor), Então retorna a página correta", async () => {
       const repo = new InMemoryPatientRepository();
       await repo.save(makePatient("Ana", "ana@example.com"));
       await repo.save(makePatient("Bruno", "bruno@example.com"));
       await repo.save(makePatient("Carla", "carla@example.com"));
 
-      expect((await repo.findAll(undefined, { limit: 2 })).map((p) => p.fullName)).toEqual(["Ana", "Bruno"]);
-      expect((await repo.findAll(undefined, { offset: 2 })).map((p) => p.fullName)).toEqual(["Carla"]);
+      const firstPage = await repo.findAll(undefined, { limit: 2 });
+      expect(firstPage.map((p) => p.fullName)).toEqual(["Ana", "Bruno"]);
+
+      const cursor = encodeCursor({ fullName: firstPage[1].fullName, id: firstPage[1].id });
+      expect((await repo.findAll(undefined, { cursor })).map((p) => p.fullName)).toEqual(["Carla"]);
     });
   });
 });

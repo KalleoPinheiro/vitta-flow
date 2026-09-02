@@ -18,6 +18,15 @@ interface InvoiceResponse {
   status: string;
 }
 
+interface InvoiceSummaryResponse {
+  paidCents: number;
+  pendingCents: number;
+  totalInvoices: number;
+  paidCount: number;
+  pendingCount: number;
+  cancelledCount: number;
+}
+
 interface PackageResponse {
   id: string;
   patientId: string;
@@ -55,6 +64,8 @@ interface SupplyResponse {
 describe("Feature: Faturamento e catálogo de procedimentos (API)", () => {
   let patientsRoute: typeof import("@/app/api/patients/route");
   let invoicesRoute: typeof import("@/app/api/invoices/route");
+  let invoiceByIdRoute: typeof import("@/app/api/invoices/[id]/route");
+  let invoicesSummaryRoute: typeof import("@/app/api/invoices/summary/route");
   let packagesRoute: typeof import("@/app/api/packages/route");
   let proceduresRoute: typeof import("@/app/api/procedures/route");
   let procedureByIdRoute: typeof import("@/app/api/procedures/[id]/route");
@@ -64,6 +75,8 @@ describe("Feature: Faturamento e catálogo de procedimentos (API)", () => {
   beforeAll(async () => {
     patientsRoute = await import("@/app/api/patients/route");
     invoicesRoute = await import("@/app/api/invoices/route");
+    invoiceByIdRoute = await import("@/app/api/invoices/[id]/route");
+    invoicesSummaryRoute = await import("@/app/api/invoices/summary/route");
     packagesRoute = await import("@/app/api/packages/route");
     proceduresRoute = await import("@/app/api/procedures/route");
     procedureByIdRoute = await import("@/app/api/procedures/[id]/route");
@@ -204,6 +217,66 @@ describe("Feature: Faturamento e catálogo de procedimentos (API)", () => {
       const response = await invoicesRoute.GET(jsonRequest("/api/invoices?limit=501", "GET"));
 
       expect(response.status).toBe(400);
+    });
+  });
+
+  describe("Rota: /api/invoices/summary", () => {
+    it("Dado mais faturas que uma página, Quando GET /api/invoices/summary, Então soma todas — não só a página", async () => {
+      const patientResponse = await patientsRoute.POST(
+        jsonRequest("/api/patients", "POST", {
+          fullName: "Paciente Volume",
+          email: "paciente.volume@example.com",
+          phone: "11944440000",
+        }),
+      );
+      const patientBody = (await patientResponse.json()) as Envelope<PatientResponse>;
+      const volumePatientId = patientBody.data.id;
+
+      const baselineResponse = await invoicesSummaryRoute.GET(
+        jsonRequest("/api/invoices/summary", "GET"),
+      );
+      const baseline = (
+        (await baselineResponse.json()) as Envelope<InvoiceSummaryResponse>
+      ).data;
+
+      // PAGE_SIZE da tela de faturamento é 100 — cria mais que isso para
+      // provar que o total não fica preso a uma única página.
+      const INVOICE_COUNT = 105;
+      const PAID_COUNT = 60;
+      const AMOUNT_CENTS = 100;
+      const createdIds: string[] = [];
+      for (let i = 0; i < INVOICE_COUNT; i++) {
+        const response = await invoicesRoute.POST(
+          jsonRequest("/api/invoices", "POST", {
+            patientId: volumePatientId,
+            description: `Fatura volume ${i}`,
+            amountCents: AMOUNT_CENTS,
+          }),
+        );
+        const body = (await response.json()) as Envelope<InvoiceResponse>;
+        createdIds.push(body.data.id);
+      }
+      for (let i = 0; i < PAID_COUNT; i++) {
+        await invoiceByIdRoute.PATCH(
+          jsonRequest(`/api/invoices/${createdIds[i]}`, "PATCH", {
+            action: "pay",
+            method: "pix",
+          }),
+          context(createdIds[i]),
+        );
+      }
+
+      const response = await invoicesSummaryRoute.GET(
+        jsonRequest("/api/invoices/summary", "GET"),
+      );
+      const body = (await response.json()) as Envelope<InvoiceSummaryResponse>;
+
+      expect(response.status).toBe(200);
+      expect(body.data.paidCents).toBe(baseline.paidCents + PAID_COUNT * AMOUNT_CENTS);
+      expect(body.data.pendingCents).toBe(
+        baseline.pendingCents + (INVOICE_COUNT - PAID_COUNT) * AMOUNT_CENTS,
+      );
+      expect(body.data.totalInvoices).toBe(baseline.totalInvoices + INVOICE_COUNT);
     });
   });
 

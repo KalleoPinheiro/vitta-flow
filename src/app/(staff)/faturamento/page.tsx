@@ -4,6 +4,7 @@ import { useState } from "react";
 import { apiFetch } from "@/lib/client";
 import { useToast } from "@still-void/ui/react/client";
 import type { InvoiceDto, PatientDto, ProcedureDto } from "@/lib/dto";
+import type { InvoiceSummary } from "@/domain/billing/invoice-repository";
 import { useApiQuery } from "@/lib/use-api-query";
 import { usePagedQuery } from "@/lib/use-paged-query";
 import {
@@ -122,6 +123,24 @@ function InvoicesTable({ invoices, onPay, onCancel }: InvoicesTableProps) {
   );
 }
 
+function BillingSummaryCards({ summary }: { summary: InvoiceSummary | null }) {
+  const paidCents = summary ? summary.paidCents : 0;
+  const pendingCents = summary ? summary.pendingCents : 0;
+
+  return (
+    <>
+      <Card className="p-5">
+        <p className="text-sm text-ink-3">Total recebido</p>
+        <p className="mt-1 text-2xl font-bold text-success">{formatCurrency(paidCents)}</p>
+      </Card>
+      <Card className="p-5">
+        <p className="text-sm text-ink-3">Total a receber</p>
+        <p className="mt-1 text-2xl font-bold text-warning">{formatCurrency(pendingCents)}</p>
+      </Card>
+    </>
+  );
+}
+
 export default function BillingPage() {
   const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState("");
@@ -142,6 +161,9 @@ export default function BillingPage() {
   );
 
   const { data: patients } = useApiQuery<PatientDto[]>("/api/patients");
+  const { data: summary, refresh: refreshSummary } = useApiQuery<InvoiceSummary>(
+    "/api/invoices/summary",
+  );
   const error = actionError ?? loadError;
 
   const handleCreate = async (values: InvoiceFormValues) => {
@@ -163,6 +185,7 @@ export default function BillingPage() {
     });
     setCreating(false);
     refresh();
+    refreshSummary();
   };
 
   const handlePay = async (invoice: InvoiceDto, method: string) => {
@@ -178,6 +201,7 @@ export default function BillingPage() {
       setPaying(null);
       setActionError(null);
       refresh();
+      refreshSummary();
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Erro ao registrar pagamento");
     }
@@ -195,18 +219,11 @@ export default function BillingPage() {
       });
       setActionError(null);
       refresh();
+      refreshSummary();
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Erro ao cancelar fatura");
     }
   };
-
-  const totals = (invoices ?? []).reduce(
-    (acc, invoice) => ({
-      paid: acc.paid + (invoice.status === "paid" ? invoice.amountCents : 0),
-      pending: acc.pending + (invoice.status === "pending" ? invoice.amountCents : 0),
-    }),
-    { paid: 0, pending: 0 },
-  );
 
   return (
     <div>
@@ -234,14 +251,7 @@ export default function BillingPage() {
       {error && <ErrorAlert message={error} />}
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:max-w-xl">
-        <Card className="p-5">
-          <p className="text-sm text-ink-3">Total recebido (lista atual)</p>
-          <p className="mt-1 text-2xl font-bold text-success">{formatCurrency(totals.paid)}</p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-sm text-ink-3">Total a receber (lista atual)</p>
-          <p className="mt-1 text-2xl font-bold text-warning">{formatCurrency(totals.pending)}</p>
-        </Card>
+        <BillingSummaryCards summary={summary} />
       </div>
 
       <div className="mb-4 flex gap-2">
@@ -284,6 +294,7 @@ export default function BillingPage() {
         onSaved={() => {
           setSellingPackage(false);
           refresh();
+          refreshSummary();
         }}
       />
 

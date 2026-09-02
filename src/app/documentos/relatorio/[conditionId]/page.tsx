@@ -94,32 +94,34 @@ function ReportContent({
         // border-black/text-black em vez de tokens --sv-*, para a folha
         // continuar em preto-sobre-branco na impressora P&B. O utilitário
         // vence layer(components), então o override é determinístico.
-        <Table className="w-full border-collapse text-xs text-black">
-          <TableHeader>
-            <TableRow className="border-b border-black text-left">
-              <TableHead className="py-1 pr-2 text-black">Data</TableHead>
-              <TableHead className="py-1 pr-2 text-black">C×L×P (mm)</TableHead>
-              <TableHead className="py-1 pr-2 text-black">Área (mm²)</TableHead>
-              <TableHead className="py-1 pr-2 text-black">Tecido</TableHead>
-              <TableHead className="py-1 pr-2 text-black">Exsudato</TableHead>
-              <TableHead className="py-1 text-black">Dor</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {chronological.map((a) => (
-              <TableRow key={a.id} className="border-b border-black/30">
-                <TableCell className="py-1 pr-2">{formatDate(a.createdAt)}</TableCell>
-                <TableCell className="py-1 pr-2">
-                  {a.lengthMm != null ? `${a.lengthMm}×${a.widthMm ?? "—"}×${a.depthMm ?? "—"}` : "—"}
-                </TableCell>
-                <TableCell className="py-1 pr-2">{a.areaMm2 ?? "—"}</TableCell>
-                <TableCell className="py-1 pr-2">{a.tissueType ?? "—"}</TableCell>
-                <TableCell className="py-1 pr-2">{a.exudate ? (EXUDATE_LABELS[a.exudate] ?? a.exudate) : "—"}</TableCell>
-                <TableCell className="py-1">{a.painScale != null ? `${a.painScale}/10` : "—"}</TableCell>
+        <div className="overflow-x-auto">
+          <Table className="w-full border-collapse text-xs text-black">
+            <TableHeader>
+              <TableRow className="border-b border-black text-left">
+                <TableHead className="py-1 pr-2 text-black">Data</TableHead>
+                <TableHead className="py-1 pr-2 text-black">C×L×P (mm)</TableHead>
+                <TableHead className="py-1 pr-2 text-black">Área (mm²)</TableHead>
+                <TableHead className="py-1 pr-2 text-black">Tecido</TableHead>
+                <TableHead className="py-1 pr-2 text-black">Exsudato</TableHead>
+                <TableHead className="py-1 text-black">Dor</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {chronological.map((a) => (
+                <TableRow key={a.id} className="border-b border-black/30">
+                  <TableCell className="py-1 pr-2">{formatDate(a.createdAt)}</TableCell>
+                  <TableCell className="py-1 pr-2">
+                    {a.lengthMm != null ? `${a.lengthMm}×${a.widthMm ?? "—"}×${a.depthMm ?? "—"}` : "—"}
+                  </TableCell>
+                  <TableCell className="py-1 pr-2">{a.areaMm2 ?? "—"}</TableCell>
+                  <TableCell className="py-1 pr-2">{a.tissueType ?? "—"}</TableCell>
+                  <TableCell className="py-1 pr-2">{a.exudate ? (EXUDATE_LABELS[a.exudate] ?? a.exudate) : "—"}</TableCell>
+                  <TableCell className="py-1">{a.painScale != null ? `${a.painScale}/10` : "—"}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </DocumentFrame>
   );

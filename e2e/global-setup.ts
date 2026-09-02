@@ -214,10 +214,26 @@ async function seedBaseData(cookie: string): Promise<SeedIds> {
   };
 }
 
+/**
+ * Sem isso, todo documento clínico da suíte (atestado/relatório/plano de
+ * cuidados) bateria no bloqueio fail-closed do #62 — a clínica nasce sem
+ * CNPJ/responsável técnico cadastrados.
+ */
+async function seedClinicInfo(cookie: string): Promise<void> {
+  await put(cookie, "/api/settings/clinic-info", {
+    cnpj: "12.345.678/0001-90",
+    address: "Rua Semente E2E, 100",
+    city: "São Paulo",
+    professionalName: "Enf. Semente E2E",
+    professionalRegistry: "COREN-SP 000001",
+  });
+}
+
 export default async function globalSetup(): Promise<void> {
   await consumeInvite(await bootstrapSuperAdmin());
   const cookie = await loginAsAdmin();
   await writeStorageState(cookie);
+  await seedClinicInfo(cookie);
   const seed = await seedBaseData(cookie);
   await mkdir(path.dirname(SEED_DATA_PATH), { recursive: true });
   await writeFile(SEED_DATA_PATH, JSON.stringify(seed, null, 2));

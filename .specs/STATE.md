@@ -207,6 +207,21 @@
 - **Blockers**: nenhum.
 - **Branch**: `main` (checkout principal, sem worktree). 26 commits deste épico: `f9ca946`..`144fc28`.
 
+### AD-021
+- **Decision**: `eslint.config.mjs` usa `**/` na frente de todo padrão de `globalIgnores` (`**/.next/**`, `**/.next-open-mode/**`, etc.) e ignora `.claude/worktrees/**` explicitamente.
+- **Reason**: sem `**/`, o glob só bate na raiz do projeto. Checkouts de worktree aninhados em `.claude/worktrees/*/` (usados por sessões de agente em paralelo, ver `docs/agents/*`) escapavam do ignore, e o build Turbopack deles inundava `npx eslint .` com milhares de "erros" em bundles compilados do Next/React — isso, não um bug do ESLint ou de `npm run lint`, era a causa do ruído investigado nas issues #48/#49. `npm run lint`/`npx eslint .` sempre propagaram o exit code real; a suspeita registrada em AD anterior (ver handoff de `autenticacao-nativa`, linha ~171) de que um "wrapper `rtk`" mascarava o exit code não reproduziu nesta sessão — não teve como confirmar a causa raiz daquela observação, mas o sintoma descrito (`npm run lint` "sempre" exit 0 mesmo com erro) não bate com o comportamento atual, testado com erro proposital introduzido e revertido.
+- **Trade-off**: nenhum — só corrige o glob para o comportamento que o comentário original já pretendia.
+- **Scope**: eslint.config.mjs
+- **Date**: 2026-09-02
+- **Status**: active
+
+- **Batch de correção de issues abertas (#38, #39, #42, #46, #48, #49, #50, #51)** — branch única `fix/resolve-open-issues-batch-1`, executado inline sem sub-agentes de batch. 8 commits semânticos, um por issue (mais 1 de doc leftover). #43 pulada por pedido explícito do usuário (é decisão de design, não bug). #45 (E2E real do Google Calendar) comentada e deixada aberta — exige decisão de infraestrutura de teste (conta/sandbox dedicada do Google) fora do alcance de um agente automatizado. #47 já estava corrigida por commit anterior (`d2ef69e`) — fechada sem código novo.
+- **O que mudou**: isolamento por clínica no export LGPD (#38); `ConsumeAuthToken` valida `purpose` (#46); emissão de `auth_token` e bootstrap do Super Admin atômicos contra corrida via índice único parcial + retry em `23505` (#50, #51) — `src/lib/db-errors.ts` novo, compartilhado; `ensureLink` em melhor esforço não derruba mais o registro clínico principal se falhar (#42) — `src/lib/patient-link.ts` novo; dívida de lint real corrigida (2 `complexity` + 6 `no-unused-vars`) e causa raiz do ruído do `eslint.config.mjs` corrigida (AD-021) — ver #48/#49.
+- **Gate completo rodado nesta sessão e verde**: `npm run typecheck` (limpo), `npx eslint .` / `npm run lint` (exit 0, zero achados), `npm run check:sv` (OK), `npx vitest run tests/` (2476/2476), `npm run test:coverage --no-file-parallelism` (96.63% stmts / 91.13% branches / 96.6% funcs / 96.7% lines — acima do piso de 90%), `npm run build` (OK), `npm run test:e2e` (70/70, sem flake).
+- **Next step**: push da branch, abrir PR, acompanhar revisão do CodeRabbit, mergear, fechar as issues resolvidas com `Closes #N` (já nos commits).
+- **Blockers**: nenhum.
+- **Branch**: `fix/resolve-open-issues-batch-1` (checkout principal, sem worktree dedicado).
+
 ### Baseline de segurança medido em `fcd6110`
 
 Reproduza pelo procedimento do README (seção "Varredura de segurança").

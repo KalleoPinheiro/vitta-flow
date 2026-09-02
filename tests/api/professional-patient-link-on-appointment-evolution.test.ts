@@ -1,8 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { jsonRequest } from "../support/request";
 import { adminCookieHeader } from "../support/session";
 import { ensureTestClinics, CLINIC_A_ID } from "../support/clinics";
 import { getRepositories } from "@/infrastructure/container";
+import { DrizzleProfessionalPatientLinkRepository } from "@/infrastructure/persistence/drizzle/professional-patient-link-repository";
 
 process.env.VITTA_DB_DRIVER = "pglite";
 
@@ -82,6 +83,77 @@ describe("Feature: Agendamento e evolução com profissional criam vínculo (RBA
 
     const { professionalPatientLinks } = await getRepositories({ clinicId: CLINIC_A_ID });
     expect(await professionalPatientLinks.hasLink(professionalId, patientId)).toBe(true);
+  });
+
+  it("Dado ensureLink falhando, Quando POST /api/appointments, Então ainda cria a consulta e responde 200 (issue #42)", async () => {
+    await ensureTestClinics();
+    const professionalId = await createProfessional("Dr. Resiliente Agenda");
+    const patientId = await createPatient("resiliente-agenda@x.com");
+
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const ensureLinkSpy = vi
+      .spyOn(DrizzleProfessionalPatientLinkRepository.prototype, "ensureLink")
+      .mockRejectedValueOnce(new Error("banco indisponível"));
+
+    try {
+      const route = await import("@/app/api/appointments/route");
+      const response = await route.POST(
+        jsonRequest(
+          "/api/appointments",
+          "POST",
+          {
+            patientId,
+            startsAt: "2026-09-04T09:00:00.000Z",
+            endsAt: "2026-09-04T09:30:00.000Z",
+            procedure: "Troca de bolsa",
+            priceCents: 10000,
+            professionalId,
+          },
+          adminCookieHeader(CLINIC_A_ID),
+        ),
+      );
+      const body = (await response.json()) as Envelope<{ id: string }>;
+
+      expect(response.status).toBe(200);
+      const { appointments } = await getRepositories({ clinicId: CLINIC_A_ID });
+      expect(await appointments.findById(body.data.id)).not.toBeNull();
+    } finally {
+      ensureLinkSpy.mockRestore();
+      errorLog.mockRestore();
+    }
+  });
+
+  it("Dado ensureLink falhando, Quando POST evolutions, Então ainda cria a nota e responde 200 (issue #42)", async () => {
+    await ensureTestClinics();
+    const professionalId = await createProfessional("Dr. Resiliente Evolução");
+    const patientId = await createPatient("resiliente-evolucao@x.com");
+
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const ensureLinkSpy = vi
+      .spyOn(DrizzleProfessionalPatientLinkRepository.prototype, "ensureLink")
+      .mockRejectedValueOnce(new Error("banco indisponível"));
+
+    try {
+      const route = await import("@/app/api/patients/[id]/evolutions/route");
+      const response = await route.POST(
+        jsonRequest(
+          `/api/patients/${patientId}/evolutions`,
+          "POST",
+          { subjective: "Relato", professionalId },
+          adminCookieHeader(CLINIC_A_ID),
+        ),
+        { params: Promise.resolve({ id: patientId }) },
+      );
+      const body = (await response.json()) as Envelope<{ id: string }>;
+
+      expect(response.status).toBe(200);
+      const { evolutions } = await getRepositories({ clinicId: CLINIC_A_ID });
+      const notes = await evolutions.findByPatientId(patientId);
+      expect(notes.some((note) => note.id === body.data.id)).toBe(true);
+    } finally {
+      ensureLinkSpy.mockRestore();
+      errorLog.mockRestore();
+    }
   });
 
   describe("Cenário: transferência de caso entre profissionais", () => {

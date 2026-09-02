@@ -169,6 +169,20 @@
       "when": 1788228477690,
       "tag": "0023_auth-tokens",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1788313105402,
+      "tag": "0024_auth-tokens-unused-unique",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1788313322010,
+      "tag": "0025_user-accounts-single-system-account",
+      "breakpoints": true
     }
   ]
 }

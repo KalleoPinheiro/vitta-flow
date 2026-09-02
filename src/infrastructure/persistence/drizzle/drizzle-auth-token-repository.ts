@@ -6,6 +6,7 @@ import {
   type AuthTokenPurpose,
   type AuthTokenRepository,
 } from "@/domain/auth/auth-token";
+import { isUniqueViolation } from "@/lib/db-errors";
 
 export class DrizzleAuthTokenRepository implements AuthTokenRepository {
   constructor(private readonly db: AppDb) {}
@@ -79,5 +80,49 @@ export class DrizzleAuthTokenRepository implements AuthTokenRepository {
           isNull(authTokens.usedAt),
         ),
       );
+  }
+
+  /**
+   * Invalidar os irmãos e inserir o novo token sob o mesmo commit, mais o
+   * índice único parcial `uq_auth_tokens_account_purpose_unused` (no máximo um
+   * token não-usado por conta+propósito): quando duas emissões concorrem, a
+   * segunda transação a chegar ao INSERT esbarra no índice e recebe violação
+   * de unicidade — recomeça (reinvalida, agora vendo a linha que a outra já
+   * commitou) até o próprio índice garantir que só uma sobrevive (issue #50).
+   */
+  async replaceUnused(token: AuthToken, usedAt: Date = new Date(), attempt = 0): Promise<void> {
+    try {
+      await this.db.transaction(async (tx) => {
+        await tx
+          .update(authTokens)
+          .set({ usedAt })
+          .where(
+            and(
+              eq(authTokens.accountId, token.accountId),
+              eq(authTokens.purpose, token.purpose),
+              isNull(authTokens.usedAt),
+            ),
+          );
+        const row = {
+          id: token.id,
+          accountId: token.accountId,
+          purpose: token.purpose,
+          secretHash: token.secretHash,
+          expiresAt: token.expiresAt,
+          usedAt: token.usedAt,
+          createdAt: token.createdAt,
+        };
+        await tx.insert(authTokens).values(row).onConflictDoUpdate({
+          target: authTokens.id,
+          set: row,
+        });
+      });
+    } catch (error) {
+      if (isUniqueViolation(error) && attempt < 5) {
+        await this.replaceUnused(token, usedAt, attempt + 1);
+        return;
+      }
+      throw error;
+    }
   }
 }

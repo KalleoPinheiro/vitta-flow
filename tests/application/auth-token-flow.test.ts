@@ -60,6 +60,12 @@ class InMemoryAuthTokenRepository implements AuthTokenRepository {
       }
     }
   }
+
+  /** Espelha a semântica atômica do repositório real (issue #50). */
+  async replaceUnused(token: AuthToken, usedAt: Date = new Date()): Promise<void> {
+    await this.markAllUnusedAsUsed(token.accountId, token.purpose, usedAt);
+    await this.save(token);
+  }
 }
 
 class SpyEmailGateway implements EmailGateway {
@@ -201,6 +207,7 @@ describe("Feature: Emissão e consumo de token de convite/reset", () => {
       await new ConsumeAuthToken(tokens, accounts).execute({
         secret,
         newPassword: "senha-nova-1",
+        expectedPurposes: ["invite", "reset"],
         nowMs: NOW + 1000,
       });
 
@@ -211,10 +218,20 @@ describe("Feature: Emissão e consumo de token de convite/reset", () => {
     it("Dado token consumido, Quando consumir de novo, Então lança a mensagem única de link inválido", async () => {
       const secret = await issueInvite();
       const consume = new ConsumeAuthToken(tokens, accounts);
-      await consume.execute({ secret, newPassword: "senha-nova-1", nowMs: NOW + 1000 });
+      await consume.execute({
+        secret,
+        newPassword: "senha-nova-1",
+        expectedPurposes: ["invite", "reset"],
+        nowMs: NOW + 1000,
+      });
 
       await expect(
-        consume.execute({ secret, newPassword: "outra-senha-9", nowMs: NOW + 2000 }),
+        consume.execute({
+          secret,
+          newPassword: "outra-senha-9",
+          expectedPurposes: ["invite", "reset"],
+          nowMs: NOW + 2000,
+        }),
       ).rejects.toThrow(INVALID_TOKEN_MESSAGE);
     });
 
@@ -225,6 +242,7 @@ describe("Feature: Emissão e consumo de token de convite/reset", () => {
         new ConsumeAuthToken(tokens, accounts).execute({
           secret,
           newPassword: "senha-nova-1",
+          expectedPurposes: ["invite", "reset"],
           nowMs: NOW + 24 * 60 * 60 * 1000 + 1,
         }),
       ).rejects.toThrow(INVALID_TOKEN_MESSAGE);
@@ -235,6 +253,7 @@ describe("Feature: Emissão e consumo de token de convite/reset", () => {
         new ConsumeAuthToken(tokens, accounts).execute({
           secret: "token-que-nunca-existiu",
           newPassword: "senha-nova-1",
+          expectedPurposes: ["invite", "reset"],
           nowMs: NOW,
         }),
       ).rejects.toThrow(INVALID_TOKEN_MESSAGE);
@@ -248,6 +267,7 @@ describe("Feature: Emissão e consumo de token de convite/reset", () => {
         new ConsumeAuthToken(tokens, accounts).execute({
           secret,
           newPassword: "senha-nova-1",
+          expectedPurposes: ["invite", "reset"],
           nowMs: NOW + 1000,
         }),
       ).rejects.toThrow(INVALID_TOKEN_MESSAGE);
@@ -263,6 +283,7 @@ describe("Feature: Emissão e consumo de token de convite/reset", () => {
         new ConsumeAuthToken(tokens, accounts).execute({
           secret,
           newPassword: "senha-nova-1",
+          expectedPurposes: ["invite", "reset"],
           nowMs: NOW + 1000,
         }),
       ).rejects.toThrow(INVALID_TOKEN_MESSAGE);
@@ -281,6 +302,7 @@ describe("Feature: Emissão e consumo de token de convite/reset", () => {
       await new ConsumeAuthToken(tokens, accounts).execute({
         secret: first.secret,
         newPassword: "senha-nova-1",
+        expectedPurposes: ["invite", "reset"],
         nowMs: NOW + 1000,
       });
 
@@ -298,6 +320,7 @@ describe("Feature: Emissão e consumo de token de convite/reset", () => {
       await new ConsumeAuthToken(tokens, accounts).execute({
         secret: invite.secret,
         newPassword: "senha-nova-1",
+        expectedPurposes: ["invite", "reset"],
         nowMs: NOW + 1000,
       });
 
@@ -313,12 +336,28 @@ describe("Feature: Emissão e consumo de token de convite/reset", () => {
         new ConsumeAuthToken(tokens, accounts).execute({
           secret,
           newPassword: "curta7",
+          expectedPurposes: ["invite", "reset"],
           nowMs: NOW + 1000,
         }),
       ).rejects.toThrow("ao menos 8 caracteres");
       expect(
         await tokens.findUsableBySecretHash(hashAuthTokenSecret(secret), NOW + 2000),
       ).not.toBeNull();
+    });
+
+    it("Dado token de propósito 'invite', Quando consumir esperando só 'reset', Então recusa com a mensagem única e não troca a senha (issue #46)", async () => {
+      const secret = await issueInvite();
+
+      await expect(
+        new ConsumeAuthToken(tokens, accounts).execute({
+          secret,
+          newPassword: "senha-nova-1",
+          expectedPurposes: ["reset"],
+          nowMs: NOW + 1000,
+        }),
+      ).rejects.toThrow(INVALID_TOKEN_MESSAGE);
+      const account2 = await accounts.findById(account.id);
+      expect(await verifyPassword("senha-nova-1", account2!.passwordHash)).toBe(false);
     });
   });
 

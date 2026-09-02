@@ -10,6 +10,9 @@ import { recordAudit } from "@/lib/audit";
 import { toEvolutionNoteDto } from "@/lib/dto";
 import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 import { ValidationError } from "@/domain/shared/errors";
+import { ensureLinkBestEffort } from "@/lib/patient-link";
+import type { Session } from "@/lib/auth/session";
+import type { UserAccountRepository } from "@/domain/auth/user-account";
 
 const evolutionSchema = z.object({
   appointmentId: z.string().nullish(),
@@ -21,6 +24,37 @@ const evolutionSchema = z.object({
 });
 
 type RouteContext = { params: Promise<{ id: string }> };
+
+/**
+ * Autoria automática: conta individual logada define o profissional autor.
+ * Extraída do handler POST para manter a complexidade dentro do limite do
+ * projeto (issue #48).
+ */
+async function resolveProfessionalId(
+  session: Session | null | undefined,
+  bodyProfessionalId: string | null,
+  userAccounts: UserAccountRepository,
+): Promise<string | null> {
+  if (session?.role === "profissional") {
+    // Profissional não pode atribuir a nota a outro profissional.
+    if (bodyProfessionalId && bodyProfessionalId !== session.professionalId) {
+      throw new ValidationError("Profissional só pode registrar evolução em seu próprio nome");
+    }
+    return session.professionalId;
+  }
+  if (bodyProfessionalId) {
+    return bodyProfessionalId;
+  }
+  const subject = session?.subject;
+  if (!subject || subject === "local") {
+    return null;
+  }
+  const account = await userAccounts.findByEmail(subject);
+  if (!account) {
+    return null;
+  }
+  return account.professionalId;
+}
 
 export async function GET(request: NextRequest, context: RouteContext) {
   const guard = requireStaffSession(request);
@@ -55,18 +89,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
       await getRepositories({ clinicId });
     const { session } = guard;
     await assertPatientAccessibleToProfessional(session, id, professionalPatientLinks);
-    // Autoria automática: conta individual logada define o profissional autor.
-    let professionalId = body.professionalId ?? null;
-    if (session?.role === "profissional") {
-      // Profissional não pode atribuir a nota a outro profissional.
-      if (professionalId && professionalId !== session.professionalId) {
-        throw new ValidationError("Profissional só pode registrar evolução em seu próprio nome");
-      }
-      professionalId = session.professionalId;
-    } else if (!professionalId && session?.subject && session.subject !== "local") {
-      const account = await userAccounts.findByEmail(session.subject);
-      professionalId = account?.professionalId ?? null;
-    }
+    const professionalId = await resolveProfessionalId(
+      session,
+      body.professionalId ?? null,
+      userAccounts,
+    );
     const note = await new AddEvolutionNote(evolutions, patients).execute({
       patientId: id,
       appointmentId: body.appointmentId ?? null,
@@ -79,7 +106,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     // Nota de evolução com profissional concede/renova o vínculo com o
     // paciente (RBAC-19/20).
     if (professionalId) {
-      await professionalPatientLinks.ensureLink(professionalId, id);
+      await ensureLinkBestEffort(professionalPatientLinks, professionalId, id);
     }
     recordAudit(auditEvents, guard.session, {
       action: "create",

@@ -8,6 +8,7 @@ import { scheduleCalendarSync } from "@/lib/calendar-sync";
 import { toAppointmentDto } from "@/lib/dto";
 import { requireStaffSession } from "@/lib/auth/require-session";
 import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import { ensureLinkBestEffort } from "@/lib/patient-link";
 
 const scheduleSchema = z.object({
   patientId: z.string().min(1),
@@ -76,7 +77,7 @@ async function linkProfessionalToPatient(
   patientId: string,
 ): Promise<void> {
   if (!professionalId) return;
-  await services.professionalPatientLinks.ensureLink(professionalId, patientId);
+  await ensureLinkBestEffort(services.professionalPatientLinks, professionalId, patientId);
 }
 
 export async function POST(request: NextRequest) {

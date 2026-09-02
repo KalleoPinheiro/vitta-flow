@@ -146,4 +146,36 @@ describe("Feature: Persistência de tokens de ativação (Drizzle)", () => {
       await tokens.claimBySecretHash(hashAuthTokenSecret(theirs.secret), NOW + 10),
     ).not.toBeNull();
   });
+
+  it("Dado um token não usado, Quando replaceUnused, Então invalida o anterior e insere o novo atomicamente", async () => {
+    const first = AuthToken.issue({ accountId, purpose: "reset", nowMs: NOW });
+    await tokens.save(first.token);
+
+    const second = AuthToken.issue({ accountId, purpose: "reset", nowMs: NOW + 1000 });
+    await tokens.replaceUnused(second.token, new Date(NOW + 1000));
+
+    expect(
+      await tokens.claimBySecretHash(hashAuthTokenSecret(first.secret), NOW + 2000),
+    ).toBeNull();
+    expect(
+      await tokens.claimBySecretHash(hashAuthTokenSecret(second.secret), NOW + 2000),
+    ).not.toBeNull();
+  });
+
+  it("Dado duas emissões concorrentes da mesma conta+propósito, Quando replaceUnused em Promise.all, Então só um token não-usado sobrevive (issue #50)", async () => {
+    const a = AuthToken.issue({ accountId, purpose: "invite", nowMs: NOW });
+    const b = AuthToken.issue({ accountId, purpose: "invite", nowMs: NOW });
+
+    await Promise.all([
+      tokens.replaceUnused(a.token, new Date(NOW)),
+      tokens.replaceUnused(b.token, new Date(NOW)),
+    ]);
+
+    const claims = await Promise.all([
+      tokens.claimBySecretHash(hashAuthTokenSecret(a.secret), NOW + 1000),
+      tokens.claimBySecretHash(hashAuthTokenSecret(b.secret), NOW + 1000),
+    ]);
+
+    expect(claims.filter((claim) => claim !== null)).toHaveLength(1);
+  });
 });

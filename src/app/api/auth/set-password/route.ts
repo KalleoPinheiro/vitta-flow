@@ -31,6 +31,9 @@ export async function POST(request: NextRequest) {
     await new ConsumeAuthToken(authTokens, userAccounts).execute({
       secret: body.token,
       newPassword: body.password,
+      // Esta rota é o único consumidor hoje e aceita convite e reset —
+      // ambos têm o mesmo poder de efeito (definir/redefinir senha).
+      expectedPurposes: ["invite", "reset"],
     });
     return { ok: true };
   });

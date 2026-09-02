@@ -7,6 +7,7 @@ import { handleRequest } from "@/lib/api-response";
 import { toPatientDto } from "@/lib/dto";
 import { requireStaffSession } from "@/lib/auth/require-session";
 import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import { ensureLinkBestEffort } from "@/lib/patient-link";
 
 const paginationSchema = z.object({
   limit: z.coerce.number().int().min(1).max(500).default(100),
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
     // Profissional que cadastra um paciente ganha acesso imediato a ele,
     // mesmo antes de qualquer agendamento (RBAC-17/18).
     if (guard.session?.role === "profissional" && guard.session.professionalId) {
-      await professionalPatientLinks.ensureLink(guard.session.professionalId, patient.id);
+      await ensureLinkBestEffort(professionalPatientLinks, guard.session.professionalId, patient.id);
     }
     return toPatientDto(patient);
   });

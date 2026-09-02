@@ -173,6 +173,28 @@ describe("Feature: POST /api/auth/bootstrap (primeiro Super Admin)", () => {
     expect(await userAccounts.findByEmail("segundo@clinica.com")).toBeNull();
   });
 
+  it("Dado uma instalação vazia, Quando dois POST concorrem com o segredo correto, Então só um cria a conta super_admin (issue #51)", async () => {
+    const route = await import("@/app/api/auth/bootstrap/route");
+    const emails = spyOnSentEmails();
+
+    const [first, second] = await Promise.all([
+      route.POST(bootstrapRequest({ email: "concorrente-a@clinica.com" }, withToken())),
+      route.POST(bootstrapRequest({ email: "concorrente-b@clinica.com" }, withToken())),
+    ]);
+    emails.restore();
+
+    const statuses = [first.status, second.status].sort();
+    expect(statuses).toEqual([200, 403]);
+
+    const { getRepositories } = await import("@/infrastructure/container");
+    const { userAccounts } = await getRepositories({ clinicId: null });
+    const [accountA, accountB] = await Promise.all([
+      userAccounts.findByEmail("concorrente-a@clinica.com"),
+      userAccounts.findByEmail("concorrente-b@clinica.com"),
+    ]);
+    expect([accountA, accountB].filter((account) => account !== null)).toHaveLength(1);
+  });
+
   it("Dado o header do segredo ausente, Quando POST, Então responde 403 e não cria conta", async () => {
     const route = await import("@/app/api/auth/bootstrap/route");
 

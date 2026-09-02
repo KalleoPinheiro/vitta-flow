@@ -25,9 +25,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
   const guard = requireStaffSession(request);
   if (!guard.ok) return guard.response;
 
-  return handleRequest(async () => {
+  const response = await handleRequest(async () => {
     const { id } = await context.params;
-    const repos = await getRepositories({ clinicId: null });
+    const repos = await getRepositories({ clinicId: guard.session?.clinicId ?? null });
 
     const patient = await repos.patients.findById(id);
     if (!patient) {
@@ -83,4 +83,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
       })),
     };
   });
+  // Dados clínicos completos do titular (LGPD): o navegador não pode
+  // reaproveitar a resposta depois de uma troca de clínica no mesmo perfil.
+  response.headers.set("Cache-Control", "no-store");
+  return response;
 }

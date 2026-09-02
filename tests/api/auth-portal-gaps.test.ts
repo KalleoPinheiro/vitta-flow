@@ -285,6 +285,7 @@ describe("Feature: Fechamento de branches — login e rotas do portal", () => {
         ConsentRecord.create({
           patientId: consentPatientId,
           consentText: "Versão anterior do termo de consentimento da clínica.",
+          textVersion: "v1",
         }),
       );
 

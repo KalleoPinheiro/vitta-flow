@@ -547,9 +547,17 @@ describe("Feature: Doubles em memória de infraestrutura", () => {
   describe("Cenário: InMemoryConsentRecordRepository", () => {
     it("Dado registros de consentimento salvos, Quando findByPatientId, Então ordena mais recente primeiro", async () => {
       const repo = new InMemoryConsentRecordRepository();
-      const first = ConsentRecord.create({ patientId: "patient-1", consentText: "Termo v1" });
+      const first = ConsentRecord.create({
+        patientId: "patient-1",
+        consentText: "Termo v1",
+        textVersion: "v1",
+      });
       await repo.save(first);
-      const second = ConsentRecord.create({ patientId: "patient-1", consentText: "Termo v2" });
+      const second = ConsentRecord.create({
+        patientId: "patient-1",
+        consentText: "Termo v2",
+        textVersion: "v1",
+      });
       await repo.save(second);
 
       const found = await repo.findByPatientId("patient-1");

@@ -41,7 +41,12 @@ describe("Feature: Isolamento de Consentimento por empresa (MT-27)", () => {
 
     const consentRepoA = new DrizzleConsentRecordRepository(appDb, "legacy-clinic");
     await consentRepoA.save(
-      ConsentRecord.create({ patientId, consentText: "termo v1", ipAddress: "127.0.0.1" }),
+      ConsentRecord.create({
+        patientId,
+        consentText: "termo v1",
+        textVersion: "v1",
+        ipAddress: "127.0.0.1",
+      }),
     );
   });
 
@@ -66,7 +71,12 @@ describe("Feature: Isolamento de Consentimento por empresa (MT-27)", () => {
 
     await expect(
       systemRepo.save(
-        ConsentRecord.create({ patientId, consentText: "termo v2", ipAddress: null }),
+        ConsentRecord.create({
+          patientId,
+          consentText: "termo v2",
+          textVersion: "v1",
+          ipAddress: null,
+        }),
       ),
     ).rejects.toThrow("Papel de sistema não pode salvar consentimento");
   });

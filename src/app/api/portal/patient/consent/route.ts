@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { getRepositories } from "@/infrastructure/container";
 import { ConsentRecord } from "@/domain/consent/consent-record";
-import { CONSENT_TEXT } from "@/lib/consent-text";
+import { CONSENT_TEXT, CONSENT_TEXT_VERSION } from "@/lib/consent-text";
 import { requirePortalSession } from "@/lib/auth/require-session";
 import { clientIp } from "@/lib/auth/client-ip";
 import { handleRequest } from "@/lib/api-response";
@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
     const record = ConsentRecord.create({
       patientId: patient.id,
       consentText: CONSENT_TEXT,
+      textVersion: CONSENT_TEXT_VERSION,
       // Evidência do aceite: mesma derivação confiável usada no rate limit (SEC1-10..13).
       ipAddress: clientIp(request),
     });

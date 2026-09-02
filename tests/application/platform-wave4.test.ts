@@ -18,6 +18,7 @@ describe("O4.1: Consentimento digital", () => {
     const record = ConsentRecord.create({
       patientId: "p1",
       consentText: "TERMO v1",
+      textVersion: "v1",
       ipAddress: "10.0.0.1",
     });
     await repo.save(record);
@@ -29,17 +30,21 @@ describe("O4.1: Consentimento digital", () => {
   });
 
   it("Dado texto do termo alterado, Quando verificar cobertura, Então aceite antigo não vale", () => {
-    const record = ConsentRecord.create({ patientId: "p1", consentText: "TERMO v1" });
+    const record = ConsentRecord.create({
+      patientId: "p1",
+      consentText: "TERMO v1",
+      textVersion: "v1",
+    });
     expect(record.covers("TERMO v2 — texto atualizado")).toBe(false);
   });
 
   it("Dado paciente ou texto vazio, Quando criar, Então ValidationError", () => {
-    expect(() => ConsentRecord.create({ patientId: " ", consentText: "x" })).toThrow(
-      ValidationError,
-    );
-    expect(() => ConsentRecord.create({ patientId: "p1", consentText: "  " })).toThrow(
-      ValidationError,
-    );
+    expect(() =>
+      ConsentRecord.create({ patientId: " ", consentText: "x", textVersion: "v1" }),
+    ).toThrow(ValidationError);
+    expect(() =>
+      ConsentRecord.create({ patientId: "p1", consentText: "  ", textVersion: "v1" }),
+    ).toThrow(ValidationError);
   });
 });
 

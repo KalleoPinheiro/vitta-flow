@@ -312,11 +312,13 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
     const first = ConsentRecord.create({
       patientId: patient.id,
       consentText: "Termo v1",
+      textVersion: "v1",
       ipAddress: "10.0.0.1",
     });
     const second = ConsentRecord.create({
       patientId: patient.id,
       consentText: "Termo v2",
+      textVersion: "v1",
     });
     await repo.save(first);
     await repo.save(second);

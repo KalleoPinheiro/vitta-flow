@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import { SidebarAutoClose } from "@/app/(staff)/sidebar-auto-close";
 
 // Mock de usePathname

@@ -662,6 +662,56 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
 
       expect(response.status).toBe(404);
     });
+
+    it("Dado consentimento revogado (mesmo com aceite antigo do mesmo texto no histórico), Quando POST photos, Então bloqueia com ConsentRequiredError", async () => {
+      const revokeResponse = await consentRevokeRoute.POST(
+        jsonRequest(
+          "/api/portal/patient/consent/revoke",
+          "POST",
+          undefined,
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      expect(revokeResponse.status).toBe(200);
+
+      const file = new File([pngBytes], "foto.png", { type: "image/png" });
+      const response = await photosRoute.POST(
+        multipartRequest(
+          "/api/portal/patient/photos",
+          { file, conditionId, note: "pós-revogação" },
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      const body = (await response.json()) as Envelope<null> & { error: string };
+
+      expect(response.status).toBe(403);
+      expect(body.error).toMatch(/[Cc]onsentimento/);
+    });
+
+    it("Dado aceite vigente após novo aceite pós-revogação, Quando POST photos, Então volta a subir normalmente", async () => {
+      const acceptResponse = await consentRoute.POST(
+        jsonRequest(
+          "/api/portal/patient/consent",
+          "POST",
+          undefined,
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      expect(acceptResponse.status).toBe(200);
+
+      const file = new File([pngBytes], "foto.png", { type: "image/png" });
+      const response = await photosRoute.POST(
+        multipartRequest(
+          "/api/portal/patient/photos",
+          { file, conditionId, note: "pós-reaceite" },
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      const body = (await response.json()) as Envelope<{ triageStatus: string }>;
+
+      expect(response.status).toBe(200);
+      expect(body.data.triageStatus).toBe("pending");
+    });
   });
 
   describe("GET /api/portal/patient/procedures e /slots", () => {

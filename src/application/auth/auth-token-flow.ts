@@ -110,6 +110,8 @@ export interface ConsumeAuthTokenInput {
   /** Segredo vindo do link (`?token=`) — nunca o hash. */
   secret: string;
   newPassword: string;
+  /** Propósitos aceitos por este fluxo — token fora da lista é recusado. */
+  expectedPurposes: AuthTokenPurpose[];
   nowMs?: number;
 }
 
@@ -130,6 +132,10 @@ export class ConsumeAuthToken {
     // não conseguem as duas trocar a senha (TOCTOU).
     const token = await this.tokens.claimBySecretHash(hashAuthTokenSecret(input.secret), nowMs);
     if (!token) {
+      throw new ValidationError(INVALID_TOKEN_MESSAGE);
+    }
+    if (!input.expectedPurposes.includes(token.purpose)) {
+      // Mensagem genérica: não revela que o token existe mas era de outro propósito.
       throw new ValidationError(INVALID_TOKEN_MESSAGE);
     }
 

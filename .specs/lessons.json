@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 36,
+  "next_id": 38,
   "lessons": [
     {
       "id": "L-001",
@@ -636,6 +636,42 @@
       ],
       "created": "2026-09-02T10:28:04Z",
       "last_seen": "2026-09-02T10:28:04Z"
+    },
+    {
+      "id": "L-036",
+      "key": "spec_precision_gap::when a spec s when then criterion for an audit or state transition action doesn t pin the exact enum action value choose one document the choice inline at the call site and flag it explicitly in the validation report do not let an event exists stand in for the precise value",
+      "text": "When a spec's WHEN/THEN criterion for an audit or state-transition action doesn't pin the exact enum/action value, choose one, document the choice inline at the call site, and flag it explicitly in the validation report — do not let 'an event exists' stand in for the precise value.",
+      "signal": "spec_precision_gap",
+      "scope": "audit",
+      "status": "candidate",
+      "features": [
+        "fase-c-lgpd-seguranca-dado"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "AUDIT-03 / src/app/api/auth/logout/route.ts:13-19 (audit)"
+      ],
+      "created": "2026-09-02T16:06:55Z",
+      "last_seen": "2026-09-02T16:06:55Z"
+    },
+    {
+      "id": "L-037",
+      "key": "ac_gap::when a spec edge case describes a repeated duplicate action double click retry being idempotent add a test that actually calls the action twice in sequence and asserts the final state do not rely on the operation s construction being idempotent by inspection alone",
+      "text": "When a spec edge case describes a repeated/duplicate action (double-click, retry) being idempotent, add a test that actually calls the action twice in sequence and asserts the final state — do not rely on the operation's construction being idempotent by inspection alone.",
+      "signal": "ac_gap",
+      "scope": "consent",
+      "status": "candidate",
+      "features": [
+        "fase-c-lgpd-seguranca-dado"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "spec.md Edge Cases — dupla revogação idempotente / tests/api/portal-routes.test.ts (consent)"
+      ],
+      "created": "2026-09-02T16:07:00Z",
+      "last_seen": "2026-09-02T16:07:00Z"
     }
   ]
 }

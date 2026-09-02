@@ -183,6 +183,13 @@
       "when": 1788313322010,
       "tag": "0025_user-accounts-single-system-account",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1788340277246,
+      "tag": "0026_clinic-info-fields",
+      "breakpoints": true
     }
   ]
 }

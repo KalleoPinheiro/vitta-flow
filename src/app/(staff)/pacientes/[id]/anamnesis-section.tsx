@@ -1,16 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "@still-void/ui/react/client";
 import { apiFetch } from "@/lib/client";
 import type { AnamnesisDto } from "@/lib/dto";
-import { ErrorAlert } from "@/components/feedback";
+import { ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import { Button, Textarea } from "@still-void/ui/react";
 
 interface AnamnesisSectionProps {
   patientId: string;
   anamnesis: AnamnesisDto | null;
+  /** Erro ao *carregar* a anamnese — distinto de "sem histórico" (issue #65). */
+  error: string | null;
+  isLoading: boolean;
   onSaved: () => void;
+  onRetry: () => void;
+  /** Reporta se há alteração não salva — troca de aba pede confirmação (issue #66). */
+  onDirtyChange: (dirty: boolean) => void;
 }
 
 const FIELDS = [
@@ -28,16 +34,30 @@ const toFormValues = (anamnesis: AnamnesisDto | null): Record<FieldKey, string> 
   return Object.fromEntries(entries) as Record<FieldKey, string>;
 };
 
-export function AnamnesisSection({ patientId, anamnesis, onSaved }: AnamnesisSectionProps) {
+export function AnamnesisSection({
+  patientId,
+  anamnesis,
+  error,
+  isLoading,
+  onSaved,
+  onRetry,
+  onDirtyChange,
+}: AnamnesisSectionProps) {
   const { toast } = useToast();
   const [values, setValues] = useState<Record<FieldKey, string>>(() => toFormValues(anamnesis));
-  const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const baseline = toFormValues(anamnesis);
+  const isDirty = FIELDS.some((field) => values[field.key] !== baseline[field.key]);
+  useEffect(() => {
+    onDirtyChange(isDirty);
+  }, [isDirty, onDirtyChange]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setSaving(true);
-    setError(null);
+    setFormError(null);
     try {
       await apiFetch<AnamnesisDto>(`/api/patients/${patientId}/anamnesis`, {
         method: "PUT",
@@ -46,15 +66,18 @@ export function AnamnesisSection({ patientId, anamnesis, onSaved }: AnamnesisSec
       toast({ description: "Anamnese salva", variant: "success" });
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao salvar anamnese");
+      setFormError(err instanceof Error ? err.message : "Erro ao salvar anamnese");
     } finally {
       setSaving(false);
     }
   };
 
+  if (isLoading) return <LoadingIndicator />;
+  if (error) return <ErrorAlert message={error} onRetry={onRetry} />;
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-      {error && <ErrorAlert message={error} />}
+      {formError && <ErrorAlert message={formError} />}
       {FIELDS.map((field) => (
         <label key={field.key} className="text-sm font-medium">
           {field.label}

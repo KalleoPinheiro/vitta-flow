@@ -13,6 +13,7 @@ import {
 } from "@/lib/format";
 import { ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import { DocumentFrame, type ClinicInfoDto } from "@/components/document-frame";
+import { isClinicInfoComplete } from "@/domain/clinic/clinic";
 import {
   Table,
   TableBody,
@@ -37,6 +38,11 @@ export default function CarePlanDocumentPage({
 
   if (error) return <ErrorAlert message={error} />;
   if (!clinic || !detail) return <LoadingIndicator />;
+  if (!isClinicInfoComplete(clinic)) {
+    return (
+      <ErrorAlert message="Clínica sem CNPJ ou responsável técnico cadastrados — cadastre em Configurações antes de emitir este documento." />
+    );
+  }
 
   return <CarePlanDocumentContent clinic={clinic} detail={detail} />;
 }

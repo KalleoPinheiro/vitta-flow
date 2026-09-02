@@ -9,14 +9,12 @@ import { assertPatientAccessibleToProfessional } from "@/lib/auth/professional-p
 import { recordAudit } from "@/lib/audit";
 import { toEvolutionNoteDto } from "@/lib/dto";
 import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
-import { ValidationError } from "@/domain/shared/errors";
 import { ensureLinkBestEffort } from "@/lib/patient-link";
 import type { Session } from "@/lib/auth/session";
 import type { UserAccountRepository } from "@/domain/auth/user-account";
 
 const evolutionSchema = z.object({
   appointmentId: z.string().nullish(),
-  professionalId: z.string().max(100).nullish(),
   subjective: z.string().max(5000).default(""),
   objective: z.string().max(5000).default(""),
   assessment: z.string().max(5000).default(""),
@@ -26,24 +24,18 @@ const evolutionSchema = z.object({
 type RouteContext = { params: Promise<{ id: string }> };
 
 /**
- * Autoria automática: conta individual logada define o profissional autor.
- * Extraída do handler POST para manter a complexidade dentro do limite do
- * projeto (issue #48).
+ * Autoria automática: sempre a conta autenticada na sessão, nunca o corpo da
+ * requisição (issue #64) — sem isso, qualquer papel podia atribuir a nota a
+ * outro profissional (autoria forjada), risco de compliance com conselhos
+ * profissionais (COFEN). Extraída do handler POST para manter a complexidade
+ * dentro do limite do projeto (issue #48).
  */
 async function resolveProfessionalId(
   session: Session | null | undefined,
-  bodyProfessionalId: string | null,
   userAccounts: UserAccountRepository,
 ): Promise<string | null> {
   if (session?.role === "profissional") {
-    // Profissional não pode atribuir a nota a outro profissional.
-    if (bodyProfessionalId && bodyProfessionalId !== session.professionalId) {
-      throw new ValidationError("Profissional só pode registrar evolução em seu próprio nome");
-    }
     return session.professionalId;
-  }
-  if (bodyProfessionalId) {
-    return bodyProfessionalId;
   }
   const subject = session?.subject;
   if (!subject || subject === "local") {
@@ -89,11 +81,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       await getRepositories({ clinicId });
     const { session } = guard;
     await assertPatientAccessibleToProfessional(session, id, professionalPatientLinks);
-    const professionalId = await resolveProfessionalId(
-      session,
-      body.professionalId ?? null,
-      userAccounts,
-    );
+    const professionalId = await resolveProfessionalId(session, userAccounts);
     const note = await new AddEvolutionNote(evolutions, patients).execute({
       patientId: id,
       appointmentId: body.appointmentId ?? null,

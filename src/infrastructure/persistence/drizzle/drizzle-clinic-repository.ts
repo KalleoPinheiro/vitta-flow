@@ -12,6 +12,11 @@ const toClinic = (row: ClinicRow): Clinic =>
     name: row.name,
     createdBy: row.createdBy,
     createdAt: row.createdAt,
+    cnpj: row.cnpj,
+    address: row.address,
+    city: row.city,
+    professionalName: row.professionalName,
+    professionalRegistry: row.professionalRegistry,
   });
 
 export class DrizzleClinicRepository implements ClinicRepository {
@@ -29,5 +34,19 @@ export class DrizzleClinicRepository implements ClinicRepository {
   async findById(id: string): Promise<Clinic | null> {
     const rows = await this.db.select().from(clinics).where(eq(clinics.id, id)).limit(1);
     return rows[0] ? toClinic(rows[0]) : null;
+  }
+
+  async update(clinic: Clinic): Promise<void> {
+    await this.db
+      .update(clinics)
+      .set({
+        name: clinic.name,
+        cnpj: clinic.cnpj,
+        address: clinic.address,
+        city: clinic.city,
+        professionalName: clinic.professionalName,
+        professionalRegistry: clinic.professionalRegistry,
+      })
+      .where(eq(clinics.id, clinic.id));
   }
 }

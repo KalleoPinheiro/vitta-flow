@@ -6,9 +6,47 @@ export interface ClinicProps {
   createdBy: string;
 }
 
-export interface ClinicState extends ClinicProps {
+/** Dados cadastrais (issue #61) — usados em documentos clínicos emitidos (issue #62). */
+export interface ClinicInfoFields {
+  cnpj?: string | null;
+  address?: string | null;
+  city?: string | null;
+  professionalName?: string | null;
+  professionalRegistry?: string | null;
+}
+
+export interface ClinicState extends ClinicProps, ClinicInfoFields {
   id: string;
   createdAt: Date;
+}
+
+/**
+ * `true` só quando os 3 campos com relevância jurídica direta na assinatura de
+ * um documento estão presentes — `address`/`city` continuam opcionais (#62).
+ */
+export function isClinicInfoComplete(
+  info: Pick<ClinicInfoFields, "cnpj" | "professionalName" | "professionalRegistry"> | null,
+): boolean {
+  return Boolean(info?.cnpj?.trim() && info?.professionalName?.trim() && info?.professionalRegistry?.trim());
+}
+
+const normalizeField = (value: string | null | undefined): string | null => {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+};
+
+const INFO_KEYS = ["cnpj", "address", "city", "professionalName", "professionalRegistry"] as const;
+
+/** Aplica só os campos presentes em `fields` (chave `in` do objeto) — os demais preservam o valor atual. */
+function resolveInfoFields(
+  state: ClinicInfoFields,
+  fields: ClinicInfoFields,
+): Required<ClinicInfoFields> {
+  const resolved = {} as Required<ClinicInfoFields>;
+  for (const key of INFO_KEYS) {
+    resolved[key] = key in fields ? normalizeField(fields[key]) : (state[key] ?? null);
+  }
+  return resolved;
 }
 
 /** Empresa/clínica — unidade de isolamento de dados (multi-tenancy). */
@@ -27,11 +65,23 @@ export class Clinic {
       createdBy: props.createdBy,
       id: newId(),
       createdAt: new Date(),
+      cnpj: null,
+      address: null,
+      city: null,
+      professionalName: null,
+      professionalRegistry: null,
     });
   }
 
   static restore(state: ClinicState): Clinic {
-    return new Clinic({ ...state });
+    return new Clinic({
+      ...state,
+      cnpj: state.cnpj ?? null,
+      address: state.address ?? null,
+      city: state.city ?? null,
+      professionalName: state.professionalName ?? null,
+      professionalRegistry: state.professionalRegistry ?? null,
+    });
   }
 
   get id(): string {
@@ -48,5 +98,41 @@ export class Clinic {
 
   get createdAt(): Date {
     return this.state.createdAt;
+  }
+
+  get cnpj(): string | null {
+    return this.state.cnpj ?? null;
+  }
+
+  get address(): string | null {
+    return this.state.address ?? null;
+  }
+
+  get city(): string | null {
+    return this.state.city ?? null;
+  }
+
+  get professionalName(): string | null {
+    return this.state.professionalName ?? null;
+  }
+
+  get professionalRegistry(): string | null {
+    return this.state.professionalRegistry ?? null;
+  }
+
+  /** Retorna uma nova instância com os campos cadastrais atualizados (imutável). */
+  updateInfo(fields: ClinicInfoFields & { name?: string }): Clinic {
+    if ("name" in fields && !fields.name?.trim()) {
+      throw new ValidationError("Nome da clínica é obrigatório");
+    }
+    return new Clinic({
+      ...this.state,
+      name: fields.name?.trim() ? fields.name.trim() : this.state.name,
+      ...resolveInfoFields(this.state, fields),
+    });
+  }
+
+  isCompleteForDocumentEmission(): boolean {
+    return isClinicInfoComplete(this.state);
   }
 }

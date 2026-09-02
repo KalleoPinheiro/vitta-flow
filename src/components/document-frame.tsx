@@ -2,15 +2,9 @@
 
 import type { ReactNode } from "react";
 import { Button, Icon } from "@still-void/ui/react";
+import type { ClinicInfoDto } from "@/lib/dto";
 
-export interface ClinicInfoDto {
-  name: string;
-  cnpj: string | null;
-  address: string | null;
-  professionalName: string | null;
-  professionalRegistry: string | null;
-  city: string | null;
-}
+export type { ClinicInfoDto };
 
 interface DocumentFrameProps {
   clinic: ClinicInfoDto;

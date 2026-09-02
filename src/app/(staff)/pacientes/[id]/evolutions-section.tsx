@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "@still-void/ui/react/client";
 import { apiFetch } from "@/lib/client";
 import type { EvolutionNoteDto, ProfessionalDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import { formatDateTime } from "@/lib/format";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
-import { Button, Card, NativeSelect, Textarea } from "@still-void/ui/react";
+import { Button, Card, Textarea } from "@still-void/ui/react";
 
 interface EvolutionsSectionProps {
   patientId: string;
@@ -16,6 +16,8 @@ interface EvolutionsSectionProps {
   isLoading: boolean;
   onSaved: () => void;
   onRetry: () => void;
+  /** Reporta se há SOAP não salvo — troca de aba pede confirmação (issue #66). */
+  onDirtyChange: (dirty: boolean) => void;
 }
 
 const SOAP_FIELDS = [
@@ -36,26 +38,33 @@ export function EvolutionsSection({
   isLoading,
   onSaved,
   onRetry,
+  onDirtyChange,
 }: EvolutionsSectionProps) {
   const { toast } = useToast();
   const [values, setValues] = useState(EMPTY);
-  const [professionalId, setProfessionalId] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const { data: professionals } = useApiQuery<ProfessionalDto[]>("/api/professionals");
-  const activeProfessionals = (professionals ?? []).filter((p) => p.active);
   const professionalName = (id: string | null) =>
     (professionals ?? []).find((p) => p.id === id)?.fullName ?? null;
+
+  const isDirty = Object.values(values).some((value) => value.trim() !== "");
+  useEffect(() => {
+    onDirtyChange(isDirty);
+  }, [isDirty, onDirtyChange]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setSaving(true);
     setFormError(null);
     try {
+      // Autoria vem sempre da sessão autenticada no servidor (#64) — o corpo
+      // nunca carrega professionalId, então não há como um papel forjar a
+      // atribuição de uma nota clínica a outro profissional.
       await apiFetch<EvolutionNoteDto>(`/api/patients/${patientId}/evolutions`, {
         method: "POST",
-        body: JSON.stringify({ ...values, professionalId: professionalId || null }),
+        body: JSON.stringify(values),
       });
       toast({ description: "Evolução registrada", variant: "success" });
       setValues(EMPTY);
@@ -89,23 +98,6 @@ export function EvolutionsSection({
           className="flex flex-col gap-3 rounded-lg border border-accent bg-accent-soft/40 p-4"
         >
           {formError && <ErrorAlert message={formError} />}
-          {activeProfessionals.length > 0 && (
-            <label className="text-sm font-medium">
-              Profissional responsável
-              <NativeSelect
-                value={professionalId}
-                onChange={(e) => setProfessionalId(e.target.value)}
-                className="mt-1 w-full"
-              >
-                <option value="">— sem atribuição —</option>
-                {activeProfessionals.map((professional) => (
-                  <option key={professional.id} value={professional.id}>
-                    {professional.fullName}
-                  </option>
-                ))}
-              </NativeSelect>
-            </label>
-          )}
           {SOAP_FIELDS.map((field) => (
             <label key={field.key} className="text-sm font-medium">
               {field.label}

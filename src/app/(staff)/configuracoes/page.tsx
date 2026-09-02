@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useToast } from "@still-void/ui/react/client";
 import { apiFetch } from "@/lib/client";
-import type { ProfessionalDto, UserAccountDto } from "@/lib/dto";
+import type { ClinicInfoDto, ProfessionalDto, UserAccountDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import { Modal } from "@/components/modal";
 import { ConfirmAction } from "@/components/confirm-action";
@@ -57,10 +57,80 @@ export default function SettingsPage() {
   return (
     <div className="flex flex-col gap-8">
       <h1 className="sv-display text-2xl font-bold">Configurações</h1>
+      <ClinicInfoSection />
       <ScheduleSection />
       <CalendarIntegrationSection />
       <AccountsSection />
     </div>
+  );
+}
+
+type ClinicInfoDraft = ClinicInfoDto;
+
+const CLINIC_INFO_FIELDS: { key: keyof ClinicInfoDraft; label: string; placeholder: string }[] = [
+  { key: "name", label: "Razão social", placeholder: "Nome da clínica" },
+  { key: "cnpj", label: "CNPJ", placeholder: "00.000.000/0001-00" },
+  { key: "professionalName", label: "Responsável técnico", placeholder: "Nome completo" },
+  { key: "professionalRegistry", label: "Registro profissional", placeholder: "COREN-SP 000000" },
+  { key: "address", label: "Endereço", placeholder: "Rua, número, bairro" },
+  { key: "city", label: "Cidade", placeholder: "Cidade/UF" },
+];
+
+/**
+ * Dados cadastrais da clínica (issue #61) — CNPJ e responsável técnico
+ * alimentam o cabeçalho/rodapé dos documentos emitidos (#62); sem eles, a
+ * emissão é bloqueada (fail-closed) nas páginas de documento.
+ */
+function ClinicInfoSection() {
+  const { toast } = useToast();
+  const { data, error } = useApiQuery<{ info: ClinicInfoDto }>("/api/settings/clinic-info");
+  const [edits, setEdits] = useState<ClinicInfoDraft | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  if (error) return <ErrorAlert message={error} />;
+  if (!data) return <LoadingIndicator />;
+
+  const draft = edits ?? data.info;
+
+  const save = async () => {
+    setSaveError(null);
+    try {
+      await apiFetch("/api/settings/clinic-info", { method: "PUT", body: JSON.stringify(draft) });
+      toast({ description: "Dados da clínica salvos", variant: "success" });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erro ao salvar dados da clínica";
+      setSaveError(message);
+      toast({ description: message, variant: "danger" });
+    }
+  };
+
+  return (
+    <Card as="section" className="p-5">
+      <h2 className="mb-1 text-lg font-semibold">Dados da clínica</h2>
+      <p className="mb-4 text-sm text-ink-3">
+        Razão social, CNPJ e responsável técnico aparecem em todo documento clínico emitido
+        (atestado, relatório, plano de cuidados).
+      </p>
+      {saveError && <ErrorAlert message={saveError} />}
+
+      <div className="grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-2">
+        {CLINIC_INFO_FIELDS.map((field) => (
+          <label key={field.key} className="text-sm font-medium">
+            {field.label}
+            <Input
+              value={draft[field.key] ?? ""}
+              placeholder={field.placeholder}
+              onChange={(e) => setEdits({ ...draft, [field.key]: e.target.value })}
+              className="mt-1"
+            />
+          </label>
+        ))}
+      </div>
+
+      <Button type="button" onClick={() => void save()} variant="accent" className="mt-4">
+        Salvar dados da clínica
+      </Button>
+    </Card>
   );
 }
 

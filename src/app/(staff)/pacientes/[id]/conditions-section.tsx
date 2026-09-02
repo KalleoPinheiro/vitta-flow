@@ -211,7 +211,9 @@ export function ConditionsSection({
                                 </TableCell>
                                 <TableCell className="py-1.5 pr-3 font-medium">{scoreLabel(a)}</TableCell>
                                 <TableCell className="py-1.5 pr-3">{a.skinCondition ?? "—"}</TableCell>
-                                <TableCell className="py-1.5">{a.complications ?? "—"}</TableCell>
+                                <TableCell className="py-1.5">
+                                  {complicationsCellText(a)}
+                                </TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
@@ -390,6 +392,17 @@ const COMPLICATION_OPTIONS = [
   { value: "stenosis", label: "Estenose" },
   { value: "other", label: "Outra" },
 ];
+
+/** Labels canônicas + texto livre lado a lado (issue #67 — dado gravado, antes nunca exibido). */
+function complicationsCellText(assessment: AssessmentDto): string {
+  const labels = assessment.complicationCodes.map(
+    (code) => COMPLICATION_OPTIONS.find((option) => option.value === code)?.label ?? code,
+  );
+  const parts = [...labels, assessment.complications].filter(
+    (part): part is string => Boolean(part),
+  );
+  return parts.length > 0 ? parts.join("; ") : "—";
+}
 
 const toNumberOrNull = (value: string): number | null => (value ? Number(value) : null);
 const toTextOrNull = (value: string): string | null => value || null;

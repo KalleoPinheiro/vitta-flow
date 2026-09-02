@@ -16,6 +16,13 @@ export const clinics = pgTable("clinics", {
   name: text("name").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
   createdBy: text("created_by").notNull(),
+  // Dados cadastrais (issue #61) — usados no cabeçalho/rodapé de documentos
+  // clínicos emitidos (issue #62). Nullable: nem toda instalação os preencheu ainda.
+  cnpj: text("cnpj"),
+  address: text("address"),
+  city: text("city"),
+  professionalName: text("professional_name"),
+  professionalRegistry: text("professional_registry"),
 });
 
 export const partners = pgTable(

@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { jsonRequest, multipartRequest } from "../support/request";
+import { cookieHeaderFor } from "../support/session";
+import { getRepositories } from "@/infrastructure/container";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
 process.env.VITTA_DB_DRIVER = "pglite";
 
@@ -499,6 +502,66 @@ describe("Feature: Rotas clínicas (condições, avaliações, fotos, anamnese, 
       );
 
       expect(response.status).toBe(404);
+    });
+
+    it("Dado company_admin, Quando POST com professionalId forjado no corpo, Então autoria ignora o corpo (#64)", async () => {
+      const forgedPatientResponse = await patientsRoute.POST(
+        jsonRequest("/api/patients", "POST", {
+          fullName: "Paciente Autoria Forjada Admin",
+          email: "autoria-forjada-admin@example.com",
+          phone: "11966665555",
+        }),
+      );
+      const forgedPatientId = ((await forgedPatientResponse.json()) as Envelope<{ id: string }>)
+        .data.id;
+
+      const response = await evolutionsRoute.POST(
+        jsonRequest(`/api/patients/${forgedPatientId}/evolutions`, "POST", {
+          subjective: "Nota com autoria forjada por admin",
+          professionalId: "prof-outro-forjado-2",
+        }),
+        context(forgedPatientId),
+      );
+      const body = (await response.json()) as Envelope<{ professionalId: string | null }>;
+
+      expect(response.status).toBe(200);
+      expect(body.data.professionalId).not.toBe("prof-outro-forjado-2");
+    });
+
+    it("Dado profissional, Quando POST com professionalId de outro profissional no corpo, Então autoria continua sendo a da sessão (#64)", async () => {
+      const professionalsRoute = await import("@/app/api/professionals/route");
+      const professionalResponse = await professionalsRoute.POST(
+        jsonRequest("/api/professionals", "POST", { fullName: "Enf. Autoria Legítima" }),
+      );
+      const professionalId = ((await professionalResponse.json()) as Envelope<{ id: string }>)
+        .data.id;
+
+      const forgedPatientResponse = await patientsRoute.POST(
+        jsonRequest("/api/patients", "POST", {
+          fullName: "Paciente Autoria Forjada Profissional",
+          email: "autoria-forjada-prof@example.com",
+          phone: "11955554444",
+        }),
+      );
+      const forgedPatientId = ((await forgedPatientResponse.json()) as Envelope<{ id: string }>)
+        .data.id;
+
+      const { professionalPatientLinks } = await getRepositories({ clinicId: LEGACY_CLINIC_ID });
+      await professionalPatientLinks.ensureLink(professionalId, forgedPatientId);
+
+      const response = await evolutionsRoute.POST(
+        jsonRequest(
+          `/api/patients/${forgedPatientId}/evolutions`,
+          "POST",
+          { subjective: "Nota assinada", professionalId: "prof-outro-forjado-3" },
+          cookieHeaderFor("profissional", undefined, undefined, professionalId),
+        ),
+        context(forgedPatientId),
+      );
+      const body = (await response.json()) as Envelope<{ professionalId: string | null }>;
+
+      expect(response.status).toBe(200);
+      expect(body.data.professionalId).toBe(professionalId);
     });
 
     it("Dado paciente com notas, Quando GET /api/patients/:id/evolutions, Então lista as notas criadas", async () => {

@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 34,
+  "next_id": 36,
   "lessons": [
     {
       "id": "L-001",
@@ -600,6 +600,42 @@
       ],
       "created": "2026-09-02T06:15:14Z",
       "last_seen": "2026-09-02T06:15:14Z"
+    },
+    {
+      "id": "L-034",
+      "key": "ac_gap::when a page combines multiple useapiquery results guard resource as not found only after confirming the query actually settled isloading false or error set otherwise a still loading resource is misread as not found as happened in the atestado page while clinic info had already resolved",
+      "text": "When a page combines multiple useApiQuery results, guard '!resource' as not-found only after confirming the query actually settled (isLoading false or error set) — otherwise a still-loading resource is misread as not-found, as happened in the atestado page while clinic-info had already resolved.",
+      "signal": "ac_gap",
+      "scope": "src/app/documentos",
+      "status": "candidate",
+      "features": [
+        "fase-b-clinico-legal-critico"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "CLIN-03 / spec.md:178 (src/app/documentos)"
+      ],
+      "created": "2026-09-02T10:28:04Z",
+      "last_seen": "2026-09-02T10:28:04Z"
+    },
+    {
+      "id": "L-035",
+      "key": "ac_gap::when a task explicitly says to exercise a real credential login flow not a forged session token for an e2e test verify the diff actually does that a session cookie minted directly proves route guard redirect behavior but not that the underlying login form credentials path works and no spec deviation was left to flag the shortcut",
+      "text": "When a task explicitly says to exercise a real credential/login flow (not a forged session token) for an E2E test, verify the diff actually does that — a session cookie minted directly proves route-guard/redirect behavior but not that the underlying login form/credentials path works, and no SPEC_DEVIATION was left to flag the shortcut.",
+      "signal": "ac_gap",
+      "scope": "e2e",
+      "status": "candidate",
+      "features": [
+        "fase-b-clinico-legal-critico"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "CLIN-08 T16 tasks.md Done-when (e2e)"
+      ],
+      "created": "2026-09-02T10:28:04Z",
+      "last_seen": "2026-09-02T10:28:04Z"
     }
   ]
 }

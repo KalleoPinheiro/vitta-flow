@@ -146,6 +146,13 @@ const detAssessmentFixture: AssessmentDto = {
   createdAt: "2026-01-02T09:00:00.000Z",
 };
 
+const complicationsAssessmentFixture: AssessmentDto = {
+  ...detAssessmentFixture,
+  id: "assess-complications",
+  complications: "Observação livre adicional",
+  complicationCodes: ["dermatitis", "bleeding"],
+};
+
 const evolutionFixture: EvolutionNoteDto = {
   id: "evo-1",
   patientId: "pac-1",
@@ -188,6 +195,7 @@ interface RouterOptions {
   patient?: PatientDto | null;
   patientError?: string;
   anamnesis?: AnamnesisDto | null;
+  anamnesisError?: string;
   conditions?: ConditionDto[];
   conditionsError?: string;
   evolutions?: EvolutionNoteDto[];
@@ -218,6 +226,7 @@ function buildRouter({
   patient = patientFixture,
   patientError,
   anamnesis = null,
+  anamnesisError,
   conditions = [],
   conditionsError,
   evolutions = [],
@@ -230,7 +239,8 @@ function buildRouter({
 }: RouterOptions = {}) {
   const exactRoutes: Record<string, () => MockedResponse> = {
     "/api/patients/pac-1": () => (patientError ? errorResponse(patientError) : jsonResponse(patient)),
-    "/api/patients/pac-1/anamnesis": () => jsonResponse(anamnesis),
+    "/api/patients/pac-1/anamnesis": () =>
+      anamnesisError ? errorResponse(anamnesisError) : jsonResponse(anamnesis),
     "/api/patients/pac-1/conditions": () =>
       conditionsError ? errorResponse(conditionsError) : jsonResponse(conditions),
     "/api/patients/pac-1/evolutions": () =>
@@ -414,6 +424,106 @@ describe("Feature: PatientRecordPage", () => {
       fireEvent.click(screen.getByText("Salvar anamnese"));
 
       expect(await screen.findByText("Erro ao salvar anamnese")).toBeInTheDocument();
+    });
+
+    it("Dado erro 500 ao carregar anamnese, Quando renderizar, Então exibe alerta de erro, não formulário vazio (#65)", async () => {
+      mockFetch(buildRouter({ anamnesisError: "Erro ao carregar anamnese" }));
+
+      await renderDetail();
+      await screen.findByText("Maria Souza");
+
+      expect(await screen.findByText("Erro ao carregar anamnese")).toBeInTheDocument();
+      expect(screen.queryByLabelText("Comorbidades")).not.toBeInTheDocument();
+    });
+
+    it("Dado anamnese ainda carregando, Quando renderizar, Então exibe indicador de carregamento, não formulário vazio (#65)", async () => {
+      mockFetch(
+        buildRouter({
+          extra: ({ url }) => {
+            if (url === "/api/patients/pac-1/anamnesis") return new Promise<never>(() => {});
+            return undefined;
+          },
+        }),
+      );
+
+      await renderDetail();
+      await screen.findByText("Maria Souza");
+
+      expect(await screen.findByText("Carregando…")).toBeInTheDocument();
+      expect(screen.queryByLabelText("Comorbidades")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("Cenário: guarda de troca de aba com formulário sujo (#66)", () => {
+    it("Dado SOAP com campo preenchido, Quando trocar de aba, Então pede confirmação antes de descartar", async () => {
+      mockFetch(buildRouter());
+
+      await renderDetail();
+      await screen.findByText("Maria Souza");
+
+      fireEvent.click(screen.getByText("Evoluções (SOAP)"));
+      fireEvent.click(screen.getByText("+ Nova evolução"));
+      fireEvent.change(screen.getByLabelText(/S — Subjetivo/), {
+        target: { value: "Rascunho não salvo" },
+      });
+
+      fireEvent.click(screen.getByText("Anamnese"));
+
+      expect(await screen.findByText("Descartar alterações?")).toBeInTheDocument();
+      // Cancelar mantém a aba e o texto digitado intactos.
+      fireEvent.click(screen.getByText("Cancelar"));
+      expect(screen.queryByText("Descartar alterações?")).not.toBeInTheDocument();
+      expect(screen.getByDisplayValue("Rascunho não salvo")).toBeInTheDocument();
+    });
+
+    it("Dado SOAP sujo, Quando confirmar o descarte, Então troca de aba e limpa o rascunho", async () => {
+      mockFetch(buildRouter());
+
+      await renderDetail();
+      await screen.findByText("Maria Souza");
+
+      fireEvent.click(screen.getByText("Evoluções (SOAP)"));
+      fireEvent.click(screen.getByText("+ Nova evolução"));
+      fireEvent.change(screen.getByLabelText(/S — Subjetivo/), {
+        target: { value: "Rascunho descartável" },
+      });
+
+      fireEvent.click(screen.getByText("Anamnese"));
+      fireEvent.click(await screen.findByText("Descartar e trocar"));
+
+      expect(screen.queryByText("Descartar alterações?")).not.toBeInTheDocument();
+      expect(screen.getByLabelText("Comorbidades")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("Evoluções (SOAP)"));
+      fireEvent.click(screen.getByText("+ Nova evolução"));
+      expect(screen.queryByDisplayValue("Rascunho descartável")).not.toBeInTheDocument();
+    });
+
+    it("Dado anamnese alterada e não salva, Quando trocar de aba, Então pede confirmação", async () => {
+      mockFetch(buildRouter({ anamnesis: anamnesisFixture }));
+
+      await renderDetail();
+      await screen.findByText("Maria Souza");
+
+      fireEvent.change(screen.getByLabelText("Comorbidades"), {
+        target: { value: "Hipertensão não salva" },
+      });
+
+      fireEvent.click(screen.getByText("Evoluções (SOAP)"));
+
+      expect(await screen.findByText("Descartar alterações?")).toBeInTheDocument();
+    });
+
+    it("Dado nenhuma alteração pendente, Quando trocar de aba, Então troca direto sem diálogo", async () => {
+      mockFetch(buildRouter());
+
+      await renderDetail();
+      await screen.findByText("Maria Souza");
+
+      fireEvent.click(screen.getByText("Evoluções (SOAP)"));
+
+      expect(screen.queryByText("Descartar alterações?")).not.toBeInTheDocument();
+      expect(await screen.findByText("Nenhuma evolução registrada.")).toBeInTheDocument();
     });
   });
 
@@ -812,6 +922,42 @@ describe("Feature: PatientRecordPage", () => {
       fireEvent.click(screen.getByText("Ocultar avaliações"));
       expect(screen.queryByText("PUSH 7")).not.toBeInTheDocument();
       expect(screen.getByText("Ver avaliações")).toBeInTheDocument();
+    });
+
+    it("Dado avaliação com complicações de estomia registradas, Quando expandir a condição, Então exibe os labels na leitura (#67)", async () => {
+      mockFetch(
+        buildRouter({
+          conditions: [stomaConditionFixture],
+          assessmentsByCondition: { "cond-stoma": [complicationsAssessmentFixture] },
+        }),
+      );
+
+      await openConditionsTab();
+      await screen.findByText("Colostomia terminal QIE");
+
+      fireEvent.click(screen.getByText("Ver avaliações"));
+
+      expect(await screen.findByText(/Dermatite/)).toBeInTheDocument();
+      expect(screen.getByText(/Sangramento/)).toBeInTheDocument();
+      expect(screen.getByText(/Observação livre adicional/)).toBeInTheDocument();
+    });
+
+    it("Dado avaliação sem complicações registradas, Quando expandir a condição, Então exibe travessão", async () => {
+      mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          assessmentsByCondition: { "cond-wound": [pushAssessmentFixture] },
+        }),
+      );
+
+      await openConditionsTab();
+      await screen.findByText("Úlcera venosa perna E");
+
+      fireEvent.click(screen.getByText("Ver avaliações"));
+      await screen.findByText("PUSH 7");
+
+      const cells = screen.getAllByRole("cell");
+      expect(cells[cells.length - 1]).toHaveTextContent("—");
     });
 
     it("Dado erro ao carregar avaliações, Quando expandir a condição, Então mantém a lista vazia sem quebrar", async () => {
@@ -1566,7 +1712,6 @@ describe("Feature: PatientRecordPage", () => {
               objective: "",
               assessment: "",
               plan: "Trocar curativo",
-              professionalId: null,
             }),
           }),
         );
@@ -1575,6 +1720,18 @@ describe("Feature: PatientRecordPage", () => {
         expect(screen.queryByText("Registrar evolução")).not.toBeInTheDocument();
       });
       expect(await screen.findByText("Evolução registrada")).toBeInTheDocument();
+    });
+
+    it("Dado formulário de nova evolução aberto, Quando renderizar, Então não exibe seletor de profissional (#64)", async () => {
+      mockFetch(buildRouter({ professionals: [professionalFixture] }));
+
+      await openEvolutionsTab();
+      await screen.findByText("Nenhuma evolução registrada.");
+
+      fireEvent.click(screen.getByText("+ Nova evolução"));
+
+      expect(screen.queryByText("Profissional responsável")).not.toBeInTheDocument();
+      expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
     });
 
     it("Dado erro ao registrar evolução, Quando a chamada falha, Então exibe alerta de erro", async () => {

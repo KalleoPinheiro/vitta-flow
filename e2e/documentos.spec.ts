@@ -1,5 +1,13 @@
 import { test, expect } from "@playwright/test";
-import { addAssessment, createAppointment, createCondition, createPatient, unique } from "./support/api";
+import {
+  addAssessment,
+  changeAppointmentStatus,
+  completeAppointment,
+  createAppointment,
+  createCondition,
+  createPatient,
+  unique,
+} from "./support/api";
 import { slotForAttempt } from "./support/dates";
 import { toApiDatetime } from "./support/iso-datetime";
 
@@ -15,12 +23,34 @@ test.describe("documentos imprimíveis", () => {
       procedure,
       priceCents: 10000,
     });
+    // Atestado só é emitido para consulta com status "completed" (#63).
+    await completeAppointment(request, appointment.id);
 
     const response = await page.goto(`/documentos/atestado/${appointment.id}`);
     expect(response?.status()).toBe(200);
     await expect(page.getByRole("heading", { name: "Declaração de Comparecimento" })).toBeVisible();
     await expect(page.getByText(patient.fullName)).toBeVisible();
     await expect(page.getByText(procedure)).toBeVisible();
+  });
+
+  test("declaração de comparecimento bloqueia consulta cancelada (#63)", async ({ page, request }) => {
+    const patient = await createPatient(request, { fullName: `Paciente Atestado Cancelado ${unique()}` });
+    const slot = slotForAttempt("documentos-atestado-2");
+    const appointment = await createAppointment(request, {
+      patientId: patient.id,
+      startsAt: toApiDatetime(slot.startsAt),
+      endsAt: toApiDatetime(slot.endsAt),
+      procedure: `Troca de bolsa (cancelada) E2E ${unique()}`,
+      priceCents: 10000,
+    });
+    await changeAppointmentStatus(request, appointment.id, "cancel");
+
+    const response = await page.goto(`/documentos/atestado/${appointment.id}`);
+    expect(response?.status()).toBe(200);
+    await expect(
+      page.getByRole("heading", { name: "Declaração de Comparecimento" }),
+    ).not.toBeVisible();
+    await expect(page.getByText(/não é possível emitir declaração/i)).toBeVisible();
   });
 
   test("termo de consentimento mostra os dados do paciente", async ({ page, request }) => {

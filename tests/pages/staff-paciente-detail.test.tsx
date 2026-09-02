@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { screen, fireEvent, waitFor, act } from "@testing-library/react";
+import { screen, fireEvent, waitFor, act, within } from "@testing-library/react";
 import type {
   AnamnesisDto,
   AssessmentDto,
@@ -688,6 +688,7 @@ describe("Feature: PatientRecordPage", () => {
       await screen.findByText("Úlcera venosa perna E");
 
       fireEvent.click(screen.getByText("Marcar resolvida"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       await waitFor(() => {
         expect(fetchMock).toHaveBeenCalledWith(
@@ -699,6 +700,21 @@ describe("Feature: PatientRecordPage", () => {
         );
       });
       expect(await screen.findByText("Condição resolvida")).toBeInTheDocument();
+    });
+
+    it("Dado clique em marcar resolvida seguido de cancelamento no dialog, Quando acionado, Então não chama a API", async () => {
+      const fetchMock = mockFetch(buildRouter({ conditions: [woundConditionFixture] }));
+
+      await openConditionsTab();
+      await screen.findByText("Úlcera venosa perna E");
+
+      fireEvent.click(screen.getByText("Marcar resolvida"));
+      const dialog = await screen.findByRole("alertdialog");
+      fireEvent.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+
+      expect(
+        fetchMock.mock.calls.some(([, init]) => (init as RequestInit | undefined)?.method === "PATCH"),
+      ).toBe(false);
     });
 
     it("Dado erro ao resolver condição, Quando a chamada falha, Então exibe alerta de erro", async () => {
@@ -718,6 +734,7 @@ describe("Feature: PatientRecordPage", () => {
       await screen.findByText("Úlcera venosa perna E");
 
       fireEvent.click(screen.getByText("Marcar resolvida"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       expect(await screen.findByText("Erro ao resolver condição")).toBeInTheDocument();
     });
@@ -739,6 +756,7 @@ describe("Feature: PatientRecordPage", () => {
       await screen.findByText("Úlcera venosa perna E");
 
       fireEvent.click(screen.getByText("Marcar resolvida"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       expect(await screen.findByText("Erro ao resolver condição")).toBeInTheDocument();
     });

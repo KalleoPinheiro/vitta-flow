@@ -12,6 +12,7 @@ import {
   formatDateTime,
 } from "@/lib/format";
 import { Modal } from "@/components/modal";
+import { ConfirmAction } from "@/components/confirm-action";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import { HealingChart } from "@/components/healing-chart";
@@ -139,14 +140,18 @@ export function ConditionsSection({
                         >
                           + Avaliação
                         </Button>
-                        <Button
-                          type="button"
-                          onClick={() => void resolveCondition(condition)}
-                          variant="link"
-                          className="h-auto p-0 text-ink-3"
-                        >
-                          Marcar resolvida
-                        </Button>
+                        <ConfirmAction
+                          trigger={
+                            <Button type="button" variant="link" className="h-auto p-0 text-ink-3">
+                              Marcar resolvida
+                            </Button>
+                          }
+                          title="Resolver esta condição clínica?"
+                          description="A condição é travada permanentemente. Não existe ação de reabrir depois."
+                          confirmLabel="Confirmar"
+                          variant="danger"
+                          onConfirm={() => resolveCondition(condition)}
+                        />
                       </>
                     )}
                     <a

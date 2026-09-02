@@ -390,6 +390,16 @@ describe("Feature: Rotas clínicas (condições, avaliações, fotos, anamnese, 
         .where(eq(conditionAssessments.id, createBody.data.id));
 
       expect(rows[0]?.notes).toBeNull();
+
+      const getResponse = await assessmentsRoute.GET(
+        jsonRequest(`/api/conditions/${conditionBId}/assessments`, "GET"),
+        context(conditionBId),
+      );
+      const getBody = (await getResponse.json()) as Envelope<
+        Array<{ id: string; notes: string | null }>
+      >;
+
+      expect(getBody.data.find((a) => a.id === createBody.data.id)?.notes).toBeNull();
     });
   });
 

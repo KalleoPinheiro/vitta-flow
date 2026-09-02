@@ -483,3 +483,18 @@ Nenhuma violação — todas as tasks com código testável incluem teste na pr�
 ## Tools per Task
 
 Nenhuma task precisa de MCP externo ou skill adicional além do `tlc-spec-driven` já ativo — tudo é código local (React/TS) usando componentes já no bundle `@still-void/ui@3.3.1` e o padrão de teste já estabelecido no repo (vitest + RTL + Playwright).
+
+---
+
+## Fix round 1 (pós-Verifier)
+
+Verifier independente (`validation.md`) encontrou 1 blocker + 3 major. Todos corrigidos em commits atômicos separados na mesma branch:
+
+| Gap | Achado | Correção | Commit |
+| --- | --- | --- | --- |
+| 1 (Blocker) | 8 specs e2e pré-existentes (`equipe`, `pacientes`, `clinico`, `followup`, `plano-cuidados`, `triagem`×2) clicavam o trigger e não confirmavam o `AlertDialog` da Fase 3 — `npm run test:e2e` falhava | Cada spec passou a clicar no botão de confirmação (`alertdialog` role) antes de assertar o resultado | `fix(e2e): clica confirmação do AlertDialog nos 8 specs pré-existentes` |
+| 2 (Major) | FASEA-04 exigia retry via `refresh()` no erro do Prontuário; `ErrorAlert` não tinha essa affordance | `ErrorAlert` ganhou `onRetry?` opcional (botão "Tentar novamente"), conectado nos 4 componentes migrados na Fase 1 | `feat(feedback): adiciona retry via refresh no ErrorAlert do Prontuário` |
+| 3 (Major) | 3 handlers (`ScheduleSection.save`, `resendInvite`, `PatientPhotoUpload.upload`) usavam UI ad-hoc em vez de `toast()` central | Toast de sucesso/erro adicionado nos 3, mantendo a UI local existente como reforço | `feat(toast): cobre os 3 handlers órfãos com toast central de sucesso/erro` |
+| 4 (Major) | Discrimination sensor: nenhum teste checava `variant` do toast — swap success/danger passaria despercebido | Reforçada asserção de `variant` (via `.sv-toast--success`) em 2 testes de `pacientes/page.tsx`; mutação simulada localmente e confirmada como morta antes de reverter | `test(pacientes): reforça asserção de variant nos toasts de sucesso` |
+
+Gate completo (`npm run typecheck && npm run lint && npm run check:sv && npm run test:coverage && npm run test:e2e`) roda verde após os 4 fixes — cobertura 96.8% statements / 91.35% branches (acima do mínimo de 90% do AGENTS.md). `test:e2e` tem 2 flakes pré-existentes e já documentados (colisão de horário em `relatorios`, condição resolvida em `clinico.spec.ts:110`), ambos absorvidos pelo retry padrão da suíte.

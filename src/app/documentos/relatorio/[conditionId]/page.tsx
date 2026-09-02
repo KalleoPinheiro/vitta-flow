@@ -11,6 +11,7 @@ import {
 } from "@/lib/format";
 import { ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import { DocumentFrame, type ClinicInfoDto } from "@/components/document-frame";
+import { isClinicInfoComplete } from "@/domain/clinic/clinic";
 import { HealingChart } from "@/components/healing-chart";
 import {
   Table,
@@ -41,6 +42,11 @@ export default function PartnerReportPage({
 
   if (error) return <ErrorAlert message={error} />;
   if (!clinic || condition === undefined || !assessments) return <LoadingIndicator />;
+  if (!isClinicInfoComplete(clinic)) {
+    return (
+      <ErrorAlert message="Clínica sem CNPJ ou responsável técnico cadastrados — cadastre em Configurações antes de emitir este documento." />
+    );
+  }
   if (condition === null) return <ErrorAlert message="Condição não encontrada" />;
 
   return <ReportContent clinic={clinic} condition={condition} assessments={assessments} />;

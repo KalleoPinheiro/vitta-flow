@@ -5,6 +5,7 @@ import type { AppointmentDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import { ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import { DocumentFrame, type ClinicInfoDto } from "@/components/document-frame";
+import { isClinicInfoComplete } from "@/domain/clinic/clinic";
 
 export default function AttendanceDocumentPage({
   params,
@@ -20,6 +21,16 @@ export default function AttendanceDocumentPage({
   if (error) return <ErrorAlert message={error} />;
   if (!clinic) return <LoadingIndicator />;
   if (!appointment) return <ErrorAlert message="Consulta não encontrada" />;
+  if (!isClinicInfoComplete(clinic)) {
+    return (
+      <ErrorAlert message="Clínica sem CNPJ ou responsável técnico cadastrados — cadastre em Configurações antes de emitir este documento." />
+    );
+  }
+  if (appointment.status !== "completed") {
+    return (
+      <ErrorAlert message={`Não é possível emitir declaração de comparecimento: consulta com status "${appointment.status}", não "realizada".`} />
+    );
+  }
 
   const start = new Date(appointment.startsAt);
   const end = new Date(appointment.endsAt);

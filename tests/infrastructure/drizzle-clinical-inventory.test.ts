@@ -103,7 +103,7 @@ describe("Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
 
   it("Dado condição com avaliações, Quando salvar e buscar, Então roundtrip completo", async () => {
     const conditionRepo = new DrizzleClinicalConditionRepository(appDb, "legacy-clinic", TEST_SECRET);
-    const assessmentRepo = new DrizzleConditionAssessmentRepository(appDb, "legacy-clinic");
+    const assessmentRepo = new DrizzleConditionAssessmentRepository(appDb, "legacy-clinic", TEST_SECRET);
 
     const condition = ClinicalCondition.create({
       patientId: patient.id,

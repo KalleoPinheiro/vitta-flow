@@ -245,7 +245,7 @@ export async function getRepositories(tenant: TenantContext): Promise<Services> 
     anamneses: new DrizzleAnamnesisRepository(db, tenant.clinicId),
     evolutions: new DrizzleEvolutionNoteRepository(db, tenant.clinicId, auth.secret),
     conditions: new DrizzleClinicalConditionRepository(db, tenant.clinicId, auth.secret),
-    assessments: new DrizzleConditionAssessmentRepository(db, tenant.clinicId),
+    assessments: new DrizzleConditionAssessmentRepository(db, tenant.clinicId, auth.secret),
     conditionPhotos: new DrizzleConditionPhotoRepository(db, tenant.clinicId),
     consentRecords: new DrizzleConsentRecordRepository(db, tenant.clinicId),
     nursingDiagnoses: new DrizzleNursingDiagnosisRepository(db),

@@ -223,7 +223,16 @@ export class DrizzleConditionAssessmentRepository implements ConditionAssessment
   constructor(
     private readonly db: AppDb,
     private readonly clinicId: string | null,
+    private readonly secret: string,
   ) {}
+
+  private toEntity(row: typeof conditionAssessments.$inferSelect): ConditionAssessment {
+    return ConditionAssessment.restore({
+      ...row,
+      notes: decryptField(row.notes, this.secret),
+      exudate: row.exudate as ExudateLevel | null,
+    });
+  }
 
   async save(assessment: ConditionAssessment): Promise<void> {
     if (this.clinicId === null) {
@@ -253,7 +262,7 @@ export class DrizzleConditionAssessmentRepository implements ConditionAssessment
       detErosionSeverity: assessment.detErosionSeverity,
       detOvergrowthArea: assessment.detOvergrowthArea,
       detOvergrowthSeverity: assessment.detOvergrowthSeverity,
-      notes: assessment.notes,
+      notes: encryptField(assessment.notes, this.secret),
       createdAt: assessment.createdAt,
     });
   }
@@ -270,9 +279,7 @@ export class DrizzleConditionAssessmentRepository implements ConditionAssessment
         ),
       )
       .orderBy(desc(conditionAssessments.createdAt), desc(conditionAssessments.id));
-    return rows.map((row) =>
-      ConditionAssessment.restore({ ...row, exudate: row.exudate as ExudateLevel | null }),
-    );
+    return rows.map((row) => this.toEntity(row));
   }
 
   async findByConditionIds(conditionIds: string[]): Promise<ConditionAssessment[]> {
@@ -291,9 +298,7 @@ export class DrizzleConditionAssessmentRepository implements ConditionAssessment
         ),
       )
       .orderBy(desc(conditionAssessments.createdAt), desc(conditionAssessments.id));
-    return rows.map((row) =>
-      ConditionAssessment.restore({ ...row, exudate: row.exudate as ExudateLevel | null }),
-    );
+    return rows.map((row) => this.toEntity(row));
   }
 }
 

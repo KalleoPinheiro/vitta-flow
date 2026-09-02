@@ -347,7 +347,9 @@ describe("Feature: Rotas de autenticação (login, logout, provedores)", () => {
 
   describe("POST /api/auth/logout", () => {
     it("Dado sessão ativa, Quando POST logout, Então limpa o cookie de sessão", async () => {
-      const response = await logoutRoute.POST();
+      const response = await logoutRoute.POST(
+        jsonRequest("/api/auth/logout", "POST", undefined, { "x-forwarded-for": "10.0.0.70" }),
+      );
       const body = (await response.json()) as Envelope<{ ok: boolean }>;
 
       expect(response.status).toBe(200);
@@ -355,6 +357,62 @@ describe("Feature: Rotas de autenticação (login, logout, provedores)", () => {
       const cookie = response.headers.get("set-cookie") ?? "";
       expect(cookie).toContain("vitta_session=");
       expect(cookie).toMatch(/max-age=0/i);
+    });
+
+    it("Dado sessão válida, Quando POST logout, Então registra evento de auditoria com ator da sessão antes de limpar o cookie (#71)", async () => {
+      resetAuthEnv();
+      process.env.AUTH_SECRET = "test-secret-logout-audit";
+
+      const { getRepositories } = await import("@/infrastructure/container");
+      const { hashPassword } = await import("@/lib/auth/password");
+      const { UserAccount } = await import("@/domain/auth/user-account");
+      const { userAccounts, auditEvents } = await getRepositories({ clinicId: "legacy-clinic" });
+      await userAccounts.save(
+        UserAccount.create({
+          email: "logout-audit@clinica.com",
+          passwordHash: await hashPassword("s3nh@logout"),
+          role: "company_admin",
+          clinicId: "legacy-clinic",
+        }),
+      );
+      const loginResponse = await loginRoute.POST(
+        jsonRequest(
+          "/api/auth/login",
+          "POST",
+          { password: "s3nh@logout", email: "logout-audit@clinica.com" },
+          { "x-forwarded-for": "10.0.0.71" },
+        ),
+      );
+      const cookie = loginResponse.headers.get("set-cookie") ?? "";
+      const sessionCookie = cookie.match(/vitta_session=[^;]+/)?.[0] ?? "";
+
+      const response = await logoutRoute.POST(
+        jsonRequest("/api/auth/logout", "POST", undefined, { cookie: sessionCookie }),
+      );
+
+      expect(response.status).toBe(200);
+      const events = await auditEvents.findAll();
+      const logoutEvent = events.find(
+        (event) =>
+          event.resourceType === "session" &&
+          event.actorId === "logout-audit@clinica.com" &&
+          event.action === "delete",
+      );
+      expect(logoutEvent).toBeDefined();
+      expect(logoutEvent?.actorRole).toBe("company_admin");
+    });
+
+    it("Dado sem sessão (cookie ausente), Quando POST logout, Então não lança erro e apenas não audita (#71)", async () => {
+      resetAuthEnv();
+      process.env.AUTH_SECRET = "test-secret-logout-sem-sessao";
+
+      const response = await logoutRoute.POST(
+        jsonRequest("/api/auth/logout", "POST", undefined, { "x-forwarded-for": "10.0.0.72" }),
+      );
+      const body = (await response.json()) as Envelope<{ ok: boolean }>;
+
+      expect(response.status).toBe(200);
+      expect(body.data.ok).toBe(true);
     });
   });
 

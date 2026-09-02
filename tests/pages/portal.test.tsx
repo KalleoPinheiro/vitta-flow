@@ -199,7 +199,7 @@ describe("Feature: Página do portal", () => {
         { path: "/api/portal/patient", respond: () => jsonResponse(true, emptyPatientBundle) },
       ]);
 
-      render(<PortalPage />);
+      renderWithToast(<PortalPage />);
 
       expect(await screen.findByRole("heading", { name: "Olá, Ana!" })).toBeInTheDocument();
     });
@@ -292,9 +292,10 @@ describe("Feature: Visão do paciente no portal", () => {
         expect(screen.queryByText("Confirmar presença")).not.toBeInTheDocument();
       });
       expect(screen.getByText("Confirmada")).toBeInTheDocument();
+      expect(await screen.findByText("Presença confirmada")).toBeInTheDocument();
     });
 
-    it("Dado falha ao confirmar presença, Quando confirmar, Então exibe alerta de erro", async () => {
+    it("Dado falha ao confirmar presença, Quando confirmar, Então exibe alerta de erro e toast de erro", async () => {
       mockFetch([
         { path: "/api/portal/patient/consent", respond: () => jsonResponse(true, { consentText: "Termo", accepted: true, acceptedAt: null }) },
         {
@@ -317,7 +318,9 @@ describe("Feature: Visão do paciente no portal", () => {
       const confirmButton = await screen.findByText("Confirmar presença");
       fireEvent.click(confirmButton);
 
-      expect(await screen.findByText("Consulta já foi cancelada")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getAllByText("Consulta já foi cancelada").length).toBeGreaterThanOrEqual(2);
+      });
     });
   });
 

@@ -470,6 +470,7 @@ describe("Feature: SettingsPage", () => {
       await screen.findByText("ana@clinica.com");
 
       fireEvent.click(screen.getByText("Desativar"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       await waitFor(() => {
         expect(accountsCallCount).toBeGreaterThanOrEqual(2);
@@ -500,6 +501,7 @@ describe("Feature: SettingsPage", () => {
       await screen.findByText("ana@clinica.com");
 
       fireEvent.click(screen.getByText("Desativar"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       expect(await screen.findByRole("alert")).toBeInTheDocument();
     });
@@ -528,8 +530,41 @@ describe("Feature: SettingsPage", () => {
       await screen.findByText("ana@clinica.com");
 
       fireEvent.click(screen.getByText("Desativar"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       expect(await screen.findByText("Erro ao atualizar conta")).toBeInTheDocument();
+    });
+
+    it("Dado clique em desativar conta seguido de cancelamento no dialog, Quando acionado, Então não chama a API", async () => {
+      let patchCalls = 0;
+      mockFetch(({ url, init }) => {
+        if (url.startsWith("/api/settings/schedule")) {
+          return jsonResponse({
+            config: { weekdays: [], startHour: 8, endHour: 18, minGapMinutes: 30 },
+            isDefault: true,
+          });
+        }
+        if (url.startsWith("/api/accounts/a1") && init?.method === "PATCH") {
+          patchCalls += 1;
+          return jsonResponse({ id: "a1", email: "ana@clinica.com", professionalId: null, active: false });
+        }
+        if (url.startsWith("/api/accounts")) {
+          return jsonResponse([
+            { id: "a1", email: "ana@clinica.com", professionalId: null, active: true },
+          ]);
+        }
+        if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        return jsonResponse(null, false);
+      });
+
+      render(<SettingsPage />);
+      await screen.findByText("ana@clinica.com");
+
+      fireEvent.click(screen.getByText("Desativar"));
+      const dialog = await screen.findByRole("alertdialog");
+      fireEvent.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+
+      expect(patchCalls).toBe(0);
     });
 
     it("Dado erro ao carregar contas, Quando a página carrega, Então exibe alerta de erro", async () => {

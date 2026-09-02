@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/client";
 import type { ProfessionalDto, UserAccountDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import { Modal } from "@/components/modal";
+import { ConfirmAction } from "@/components/confirm-action";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import {
@@ -401,9 +402,24 @@ function AccountRow({
             Reenviar convite
           </Button>
         )}
-        <Button type="button" onClick={onToggleActive} variant="link" className="h-auto p-0 text-ink-3">
-          {account.active ? "Desativar" : "Reativar"}
-        </Button>
+        {account.active ? (
+          <ConfirmAction
+            trigger={
+              <Button type="button" variant="link" className="h-auto p-0 text-ink-3">
+                Desativar
+              </Button>
+            }
+            title="Desativar conta?"
+            description="A conta perde acesso ao sistema imediatamente."
+            confirmLabel="Confirmar"
+            variant="danger"
+            onConfirm={onToggleActive}
+          />
+        ) : (
+          <Button type="button" onClick={onToggleActive} variant="link" className="h-auto p-0 text-ink-3">
+            Reativar
+          </Button>
+        )}
       </TableCell>
     </TableRow>
   );

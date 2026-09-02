@@ -67,12 +67,12 @@ async function persistAuditEvent(
   session: Session | null,
   input: AuditInput,
 ): Promise<void> {
-  const actor = input.actorOverride;
+  const resolved = resolveActor(input.actorOverride, session);
   await auditEvents.save(
     AuditEvent.create({
-      clinicId: input.clinicId ?? actor?.clinicId ?? session?.clinicId ?? LEGACY_CLINIC_ID,
-      actorRole: actor?.role ?? session?.role ?? "anonymous",
-      actorId: actor?.id ?? session?.subject ?? "anonymous",
+      clinicId: input.clinicId ?? resolved.clinicId,
+      actorRole: resolved.role,
+      actorId: resolved.id,
       action: input.action,
       resourceType: input.resourceType,
       resourceId: input.resourceId,
@@ -80,4 +80,22 @@ async function persistAuditEvent(
       detail: input.detail ?? null,
     }),
   );
+}
+
+function resolveActor(
+  actorOverride: AuditActorOverride | undefined,
+  session: Session | null,
+): { role: string; id: string; clinicId: string } {
+  if (actorOverride) {
+    return {
+      role: actorOverride.role,
+      id: actorOverride.id,
+      clinicId: actorOverride.clinicId ?? LEGACY_CLINIC_ID,
+    };
+  }
+  return {
+    role: session?.role ?? "anonymous",
+    id: session?.subject ?? "anonymous",
+    clinicId: session?.clinicId ?? LEGACY_CLINIC_ID,
+  };
 }

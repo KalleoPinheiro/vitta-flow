@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { describe, it, expect, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { ErrorAlert, LoadingIndicator, EmptyState } from "@/components/feedback";
 
 afterEach(() => {
@@ -40,6 +40,22 @@ describe("Feature: Componentes de feedback", () => {
       render(<ErrorAlert message="" />);
 
       expect(screen.getByRole("alert")).toBeInTheDocument();
+    });
+
+    it("Dado nenhum onRetry, Quando renderizar ErrorAlert, Então não exibe botão de tentar novamente", () => {
+      render(<ErrorAlert message="Falha ao salvar paciente" />);
+
+      expect(screen.queryByRole("button", { name: "Tentar novamente" })).not.toBeInTheDocument();
+    });
+
+    it("Dado onRetry, Quando renderizar ErrorAlert, Então exibe botão 'Tentar novamente' que o invoca ao clicar", () => {
+      const onRetry = vi.fn();
+      render(<ErrorAlert message="Falha ao salvar paciente" onRetry={onRetry} />);
+
+      const retryButton = screen.getByRole("button", { name: "Tentar novamente" });
+      fireEvent.click(retryButton);
+
+      expect(onRetry).toHaveBeenCalledTimes(1);
     });
   });
 

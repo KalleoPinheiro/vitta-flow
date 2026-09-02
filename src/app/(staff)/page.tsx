@@ -15,6 +15,7 @@ import {
   formatTime,
 } from "@/lib/format";
 import { StatusBadge } from "@/components/status-badge";
+import { ConfirmAction } from "@/components/confirm-action";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
 
 interface SummaryData {
@@ -153,14 +154,22 @@ export default function DashboardPage() {
                     >
                       Concluir
                     </Button>
-                    <Button
-                      type="button"
-                      onClick={() => void resolveFollowUp(followUp.id, "cancelled")}
-                      variant="link"
-                      className="h-auto p-0 shrink-0 text-ink-3"
-                    >
-                      Cancelar
-                    </Button>
+                    <ConfirmAction
+                      trigger={
+                        <Button
+                          type="button"
+                          variant="link"
+                          className="h-auto p-0 shrink-0 text-ink-3"
+                        >
+                          Cancelar
+                        </Button>
+                      }
+                      title="Cancelar retorno?"
+                      description="O retorno agendado será cancelado e o paciente não será mais lembrado."
+                      confirmLabel="Cancelar retorno"
+                      variant="danger"
+                      onConfirm={() => resolveFollowUp(followUp.id, "cancelled")}
+                    />
                   </li>
                 ))}
               </ul>
@@ -271,22 +280,29 @@ function TriageQueue() {
                 </span>
               </p>
             </div>
-            <Button
-              type="button"
-              onClick={() => void triage(photo, "reviewed")}
-              variant="link"
-              className="h-auto p-0 text-success"
-            >
-              Ok, manter plano
-            </Button>
-            <Button
-              type="button"
-              onClick={() => void triage(photo, "escalated")}
-              variant="link"
-              className="h-auto p-0 text-danger"
-            >
-              Antecipar retorno
-            </Button>
+            <ConfirmAction
+              trigger={
+                <Button type="button" variant="link" className="h-auto p-0 text-success">
+                  Ok, manter plano
+                </Button>
+              }
+              title="Manter o plano de cuidados?"
+              description="A foto é marcada como revisada sem intervenção. Não há ação de reabrir depois."
+              confirmLabel="Confirmar"
+              onConfirm={() => triage(photo, "reviewed")}
+            />
+            <ConfirmAction
+              trigger={
+                <Button type="button" variant="link" className="h-auto p-0 text-danger">
+                  Antecipar retorno
+                </Button>
+              }
+              title="Antecipar o retorno do paciente?"
+              description="O retorno do paciente é antecipado com base nesta foto."
+              confirmLabel="Confirmar antecipação"
+              variant="danger"
+              onConfirm={() => triage(photo, "escalated")}
+            />
           </li>
         ))}
       </ul>

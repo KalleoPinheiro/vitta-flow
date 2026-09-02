@@ -22,8 +22,9 @@ import {
   pesSentence,
 } from "@/lib/format";
 import { Modal } from "@/components/modal";
+import { ConfirmAction } from "@/components/confirm-action";
 import { StatusBadge } from "@/components/status-badge";
-import { EmptyState, ErrorAlert } from "@/components/feedback";
+import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import {
   Button,
   Card,
@@ -38,10 +39,21 @@ interface CarePlansSectionProps {
   patientId: string;
   conditions: ConditionDto[];
   plans: CarePlanDto[];
+  error: string | null;
+  isLoading: boolean;
   onChanged: () => void;
+  onRetry: () => void;
 }
 
-export function CarePlansSection({ patientId, conditions, plans, onChanged }: CarePlansSectionProps) {
+export function CarePlansSection({
+  patientId,
+  conditions,
+  plans,
+  error,
+  isLoading,
+  onChanged,
+  onRetry,
+}: CarePlansSectionProps) {
   const [creating, setCreating] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -60,7 +72,11 @@ export function CarePlansSection({ patientId, conditions, plans, onChanged }: Ca
         </Button>
       </div>
 
-      {plans.length === 0 ? (
+      {isLoading ? (
+        <LoadingIndicator />
+      ) : error ? (
+        <ErrorAlert message={error} onRetry={onRetry} />
+      ) : plans.length === 0 ? (
         <EmptyState message="Nenhum plano de cuidados aberto." />
       ) : (
         <ul className="flex flex-col gap-3">
@@ -229,14 +245,18 @@ function CarePlanPanel({ planId, onChanged }: { planId: string; onChanged: () =>
       />
 
       {isActive && (
-        <Button
-          type="button"
-          onClick={() => void resolvePlan()}
-          variant="link"
-          className="h-auto p-0 self-start text-ink-3"
-        >
-          Resolver plano
-        </Button>
+        <ConfirmAction
+          trigger={
+            <Button type="button" variant="link" className="h-auto p-0 self-start text-ink-3">
+              Resolver plano
+            </Button>
+          }
+          title="Resolver o plano de cuidados?"
+          description="O plano é travado permanentemente. Não existe ação de reabrir depois."
+          confirmLabel="Confirmar"
+          variant="danger"
+          onConfirm={() => resolvePlan()}
+        />
       )}
 
       {addingDiagnosis && (

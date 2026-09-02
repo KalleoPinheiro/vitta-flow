@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import AuditPage from "@/app/(staff)/auditoria/page";
 import SettingsPage from "@/app/(staff)/configuracoes/page";
 import PartnersPage from "@/app/(staff)/parceiros/page";
@@ -195,7 +195,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
 
       const link = await screen.findByRole("link", { name: "Conectar Google Agenda" });
       expect(link).toHaveAttribute("href", "/api/integrations/google-calendar");
@@ -216,7 +216,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
 
       expect(
         await screen.findByText(/usando padrão — nada salvo ainda/),
@@ -239,7 +239,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText("Grade de horários");
 
       const domButton = screen.getByRole("button", { name: "Dom" });
@@ -272,13 +272,15 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText("Grade de horários");
 
       fireEvent.click(screen.getByText("Salvar grade"));
 
-      const alert = await screen.findByRole("status");
-      expect(alert).toHaveTextContent(/Grade salva — vale imediatamente para novos agendamentos./);
+      const toastText = await screen.findByText(
+        "Grade salva — vale imediatamente para novos agendamentos.",
+      );
+      expect(toastText.closest(".sv-toast--success")).not.toBeNull();
     });
 
     it("Dado erro ao salvar grade, Quando falha a chamada, Então exibe alerta de erro", async () => {
@@ -297,7 +299,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText("Grade de horários");
 
       fireEvent.click(screen.getByText("Salvar grade"));
@@ -313,7 +315,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
 
       expect(await screen.findByRole("alert")).toBeInTheDocument();
     });
@@ -331,7 +333,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText("Grade de horários");
 
       const segButton = screen.getByRole("button", { name: "Seg" });
@@ -357,7 +359,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText("Grade de horários");
 
       fireEvent.change(screen.getByLabelText(/Abre \(h\)/), { target: { value: "7" } });
@@ -385,12 +387,14 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText("Grade de horários");
 
       fireEvent.click(screen.getByText("Salvar grade"));
 
-      expect(await screen.findByText("Erro ao salvar grade")).toBeInTheDocument();
+      expect(
+        within(await screen.findByRole("alert")).getByText("Erro ao salvar grade"),
+      ).toBeInTheDocument();
     });
   });
 
@@ -408,7 +412,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
 
       expect(
         await screen.findByText(/Nenhuma conta cadastrada nesta empresa/),
@@ -435,7 +439,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
 
       expect(await screen.findByText("ana@clinica.com")).toBeInTheDocument();
       expect(screen.getByText("bob@clinica.com")).toBeInTheDocument();
@@ -466,14 +470,16 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText("ana@clinica.com");
 
       fireEvent.click(screen.getByText("Desativar"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       await waitFor(() => {
         expect(accountsCallCount).toBeGreaterThanOrEqual(2);
       });
+      expect(await screen.findByText("Conta desativada")).toBeInTheDocument();
     });
 
     it("Dado erro ao desativar conta, Quando falha, Então exibe alerta de erro", async () => {
@@ -496,15 +502,16 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText("ana@clinica.com");
 
       fireEvent.click(screen.getByText("Desativar"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       expect(await screen.findByRole("alert")).toBeInTheDocument();
     });
 
-    it("Dado erro não padronizado ao desativar conta, Quando a chamada rejeita com valor que não é Error, Então exibe mensagem padrão", async () => {
+    it("Dado erro não padronizado ao desativar conta, Quando a chamada rejeita com valor que não é Error, Então exibe mensagem padrão e toast de erro", async () => {
       mockFetch(({ url, init }) => {
         if (url.startsWith("/api/settings/schedule")) {
           return jsonResponse({
@@ -524,12 +531,47 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText("ana@clinica.com");
 
       fireEvent.click(screen.getByText("Desativar"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
-      expect(await screen.findByText("Erro ao atualizar conta")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getAllByText("Erro ao atualizar conta").length).toBeGreaterThanOrEqual(2);
+      });
+    });
+
+    it("Dado clique em desativar conta seguido de cancelamento no dialog, Quando acionado, Então não chama a API", async () => {
+      let patchCalls = 0;
+      mockFetch(({ url, init }) => {
+        if (url.startsWith("/api/settings/schedule")) {
+          return jsonResponse({
+            config: { weekdays: [], startHour: 8, endHour: 18, minGapMinutes: 30 },
+            isDefault: true,
+          });
+        }
+        if (url.startsWith("/api/accounts/a1") && init?.method === "PATCH") {
+          patchCalls += 1;
+          return jsonResponse({ id: "a1", email: "ana@clinica.com", professionalId: null, active: false });
+        }
+        if (url.startsWith("/api/accounts")) {
+          return jsonResponse([
+            { id: "a1", email: "ana@clinica.com", professionalId: null, active: true },
+          ]);
+        }
+        if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<SettingsPage />);
+      await screen.findByText("ana@clinica.com");
+
+      fireEvent.click(screen.getByText("Desativar"));
+      const dialog = await screen.findByRole("alertdialog");
+      fireEvent.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+
+      expect(patchCalls).toBe(0);
     });
 
     it("Dado erro ao carregar contas, Quando a página carrega, Então exibe alerta de erro", async () => {
@@ -545,7 +587,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText("Grade de horários");
 
       expect(await screen.findByRole("alert")).toBeInTheDocument();
@@ -571,7 +613,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
@@ -581,6 +623,7 @@ describe("Feature: SettingsPage", () => {
       fireEvent.click(screen.getByText("Criar conta"));
 
       await waitFor(() => expect(created).toBe(true));
+      expect(await screen.findByText("Conta criada")).toBeInTheDocument();
     });
 
     it("Dado seleção de profissional vinculado, Quando escolhido, Então envia o profissional selecionado ao criar a conta", async () => {
@@ -603,7 +646,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
@@ -636,7 +679,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
@@ -670,7 +713,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
@@ -699,7 +742,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
@@ -712,7 +755,7 @@ describe("Feature: SettingsPage", () => {
       });
     });
 
-    it("Dado erro padronizado ao criar conta, Quando a chamada falha, Então exibe a mensagem de erro no formulário", async () => {
+    it("Dado erro padronizado ao criar conta, Quando a chamada falha, Então exibe a mensagem de erro no formulário e toast de erro", async () => {
       mockFetch(({ url, init }) => {
         if (url.startsWith("/api/settings/schedule")) {
           return jsonResponse({
@@ -728,17 +771,19 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
       fireEvent.change(screen.getByLabelText(/Email/), { target: { value: "nova@clinica.com" } });
       fireEvent.click(screen.getByText("Criar conta"));
 
-      expect(await screen.findByText("Email já cadastrado")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getAllByText("Email já cadastrado").length).toBeGreaterThanOrEqual(2);
+      });
     });
 
-    it("Dado erro não padronizado ao criar conta, Quando a chamada rejeita com valor que não é Error, Então exibe mensagem padrão", async () => {
+    it("Dado erro não padronizado ao criar conta, Quando a chamada rejeita com valor que não é Error, Então exibe mensagem padrão e toast de erro", async () => {
       mockFetch(({ url, init }) => {
         if (url.startsWith("/api/settings/schedule")) {
           return jsonResponse({
@@ -754,14 +799,16 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText(/Nenhuma conta cadastrada nesta empresa/);
 
       fireEvent.click(screen.getByText("+ Nova conta"));
       fireEvent.change(screen.getByLabelText(/Email/), { target: { value: "nova@clinica.com" } });
       fireEvent.click(screen.getByText("Criar conta"));
 
-      expect(await screen.findByText("Erro ao criar conta")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getAllByText("Erro ao criar conta").length).toBeGreaterThanOrEqual(2);
+      });
     });
 
     it("Dado falha ao carregar profissionais, Quando a página exibe contas e o modal de nova conta, Então usa lista vazia como padrão", async () => {
@@ -781,7 +828,7 @@ describe("Feature: SettingsPage", () => {
         return jsonResponse(null, false);
       });
 
-      render(<SettingsPage />);
+      renderWithToast(<SettingsPage />);
       await screen.findByText("ana@clinica.com");
 
       expect(screen.getByText("—")).toBeInTheDocument();
@@ -791,6 +838,106 @@ describe("Feature: SettingsPage", () => {
       expect(
         screen.getByLabelText(/Profissional vinculado/),
       ).toHaveDisplayValue("— nenhum —");
+    });
+
+    it("Dado clique em reenviar convite, Quando o e-mail é entregue, Então exibe toast de sucesso", async () => {
+      mockFetch(({ url, init }) => {
+        if (url.startsWith("/api/settings/schedule")) {
+          return jsonResponse({
+            config: { weekdays: [], startHour: 8, endHour: 18, minGapMinutes: 30 },
+            isDefault: true,
+          });
+        }
+        if (url.startsWith("/api/accounts/a1/resend-invite") && init?.method === "POST") {
+          return jsonResponse({ delivered: true });
+        }
+        if (url.startsWith("/api/accounts")) {
+          return jsonResponse([
+            { id: "a1", email: "ana@clinica.com", professionalId: null, active: true },
+          ]);
+        }
+        if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<SettingsPage />);
+      await screen.findByText("ana@clinica.com");
+
+      fireEvent.click(screen.getByText("Reenviar convite"));
+
+      await waitFor(() => {
+        expect(screen.getAllByText("Convite reenviado para ana@clinica.com.")).toHaveLength(2);
+      });
+      const toastText = screen
+        .getAllByText("Convite reenviado para ana@clinica.com.")
+        .find((el) => el.className === "sv-toast__description");
+      expect(toastText?.closest(".sv-toast--success")).not.toBeNull();
+    });
+
+    it("Dado clique em reenviar convite, Quando o e-mail não é entregue, Então exibe toast de erro", async () => {
+      mockFetch(({ url, init }) => {
+        if (url.startsWith("/api/settings/schedule")) {
+          return jsonResponse({
+            config: { weekdays: [], startHour: 8, endHour: 18, minGapMinutes: 30 },
+            isDefault: true,
+          });
+        }
+        if (url.startsWith("/api/accounts/a1/resend-invite") && init?.method === "POST") {
+          return jsonResponse({ delivered: false });
+        }
+        if (url.startsWith("/api/accounts")) {
+          return jsonResponse([
+            { id: "a1", email: "ana@clinica.com", professionalId: null, active: true },
+          ]);
+        }
+        if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<SettingsPage />);
+      await screen.findByText("ana@clinica.com");
+
+      fireEvent.click(screen.getByText("Reenviar convite"));
+
+      const message =
+        "Não foi possível enviar o e-mail para ana@clinica.com — tente novamente mais tarde.";
+      await waitFor(() => {
+        expect(screen.getAllByText(message)).toHaveLength(2);
+      });
+      const toastText = screen
+        .getAllByText(message)
+        .find((el) => el.className === "sv-toast__description");
+      expect(toastText?.closest(".sv-toast--danger")).not.toBeNull();
+    });
+
+    it("Dado clique em reenviar convite, Quando a chamada falha, Então exibe toast de erro", async () => {
+      mockFetch(({ url, init }) => {
+        if (url.startsWith("/api/settings/schedule")) {
+          return jsonResponse({
+            config: { weekdays: [], startHour: 8, endHour: 18, minGapMinutes: 30 },
+            isDefault: true,
+          });
+        }
+        if (url.startsWith("/api/accounts/a1/resend-invite") && init?.method === "POST") {
+          return errorResponse("Erro ao reenviar convite");
+        }
+        if (url.startsWith("/api/accounts")) {
+          return jsonResponse([
+            { id: "a1", email: "ana@clinica.com", professionalId: null, active: true },
+          ]);
+        }
+        if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<SettingsPage />);
+      await screen.findByText("ana@clinica.com");
+
+      fireEvent.click(screen.getByText("Reenviar convite"));
+
+      await waitFor(() => {
+        expect(screen.getAllByText("Erro ao reenviar convite").length).toBeGreaterThanOrEqual(2);
+      });
     });
   });
 });
@@ -874,6 +1021,7 @@ describe("Feature: PartnersPage", () => {
       await screen.findByText("Dr. João");
 
       fireEvent.click(screen.getByText("Desativar"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       await waitFor(() => expect(calls).toBeGreaterThanOrEqual(2));
       expect(await screen.findByText("Parceiro desativado")).toBeInTheDocument();
@@ -904,6 +1052,7 @@ describe("Feature: PartnersPage", () => {
       await screen.findByText("Dr. João");
 
       fireEvent.click(screen.getByText("Desativar"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       expect(await screen.findByText("Erro ao atualizar parceiro")).toBeInTheDocument();
     });
@@ -933,8 +1082,42 @@ describe("Feature: PartnersPage", () => {
       await screen.findByText("Dr. João");
 
       fireEvent.click(screen.getByText("Desativar"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       expect(await screen.findByText("Erro ao atualizar parceiro")).toBeInTheDocument();
+    });
+
+    it("Dado clique em desativar seguido de cancelamento no dialog, Quando acionado, Então não chama a API", async () => {
+      let putCalls = 0;
+      mockFetch(({ url, init }) => {
+        if (url === "/api/partners/pt1" && init?.method === "PUT") {
+          putCalls += 1;
+          return jsonResponse({ id: "pt1", active: false });
+        }
+        if (url.startsWith("/api/partners")) {
+          return jsonResponse([
+            {
+              id: "pt1",
+              fullName: "Dr. João",
+              email: "joao@parceiro.com",
+              phone: "11999999999",
+              crm: null,
+              specialty: null,
+              active: true,
+            },
+          ]);
+        }
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<PartnersPage />);
+      await screen.findByText("Dr. João");
+
+      fireEvent.click(screen.getByText("Desativar"));
+      const dialog = await screen.findByRole("alertdialog");
+      fireEvent.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+
+      expect(putCalls).toBe(0);
     });
   });
 
@@ -1281,6 +1464,7 @@ describe("Feature: ProfessionalsPage", () => {
       await screen.findByText("Dra. Ana");
 
       fireEvent.click(screen.getByText("Desativar"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       await waitFor(() => expect(calls).toBeGreaterThanOrEqual(2));
       expect(await screen.findByText("Profissional desativado")).toBeInTheDocument();
@@ -1327,6 +1511,7 @@ describe("Feature: ProfessionalsPage", () => {
       await screen.findByText("Dra. Ana");
 
       fireEvent.click(screen.getByText("Desativar"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       expect(await screen.findByText("Erro ao atualizar profissional")).toBeInTheDocument();
     });
@@ -1348,8 +1533,34 @@ describe("Feature: ProfessionalsPage", () => {
       await screen.findByText("Dra. Ana");
 
       fireEvent.click(screen.getByText("Desativar"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       expect(await screen.findByText("Erro ao atualizar profissional")).toBeInTheDocument();
+    });
+
+    it("Dado clique em desativar seguido de cancelamento no dialog, Quando acionado, Então não chama a API", async () => {
+      let patchCalls = 0;
+      mockFetch(({ url, init }) => {
+        if (url === "/api/professionals/pr1" && init?.method === "PATCH") {
+          patchCalls += 1;
+          return jsonResponse({ id: "pr1", active: false });
+        }
+        if (url.startsWith("/api/professionals")) {
+          return jsonResponse([
+            { id: "pr1", fullName: "Dra. Ana", registry: null, commissionPct: null, active: true },
+          ]);
+        }
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<ProfessionalsPage />);
+      await screen.findByText("Dra. Ana");
+
+      fireEvent.click(screen.getByText("Desativar"));
+      const dialog = await screen.findByRole("alertdialog");
+      fireEvent.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+
+      expect(patchCalls).toBe(0);
     });
   });
 

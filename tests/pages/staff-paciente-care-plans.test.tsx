@@ -361,6 +361,69 @@ describe("Feature: Plano de Cuidados (SAE) na página do paciente", () => {
     expect(within(planCard).getByText("Ativo")).toBeInTheDocument();
   });
 
+  it("Dado clique em Resolver plano seguido de cancelamento no dialog, Quando acionado, Então não chama a API e o plano continua ativo", async () => {
+    const fetchMock = mockFetch(createCarePlanServer());
+    await renderDetail();
+    await screen.findByText("Maria Souza");
+    await openCarePlanTab();
+
+    fireEvent.click(screen.getByText("+ Novo plano"));
+    fireEvent.change(screen.getByLabelText("Condição associada"), { target: { value: "cond-1" } });
+    fireEvent.click(screen.getByText("Abrir plano"));
+    await waitForOpenPlanModalToClose();
+    await screen.findByText("Úlcera venosa perna E");
+
+    fireEvent.click(screen.getByText("Ver plano"));
+    fireEvent.click(await screen.findByText("Resolver plano"));
+    const dialog = await screen.findByRole("alertdialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+
+    expect(
+      fetchMock.mock.calls.some(
+        ([url, init]) => String(url).startsWith("/api/care-plans/") && (init as RequestInit | undefined)?.method === "PATCH",
+      ),
+    ).toBe(false);
+    expect(screen.getByText("Resolver plano")).toBeInTheDocument();
+  });
+
+  it("Dado erro 500 ao carregar planos, Quando abrir a aba, Então exibe alerta de erro, não estado vazio", async () => {
+    mockFetch(({ url }) => {
+      const staticRoute = handleStaticPatientRoutes(url);
+      if (staticRoute) return staticRoute;
+      if (url === "/api/patients/pac-1/care-plans") return errorResponse("Erro ao carregar planos");
+      return errorResponse(`URL não mapeada no mock: ${url}`);
+    });
+    await renderDetail();
+    await screen.findByText("Maria Souza");
+
+    await openCarePlanTab();
+
+    expect(await screen.findByText("Erro ao carregar planos")).toBeInTheDocument();
+    expect(screen.queryByText("Nenhum plano de cuidados aberto.")).not.toBeInTheDocument();
+  });
+
+  it("Dado erro ao carregar planos, Quando clicar em 'Tentar novamente', Então refaz a busca via refresh", async () => {
+    let carePlansCallCount = 0;
+    mockFetch(({ url }) => {
+      const staticRoute = handleStaticPatientRoutes(url);
+      if (staticRoute) return staticRoute;
+      if (url === "/api/patients/pac-1/care-plans") {
+        carePlansCallCount += 1;
+        return carePlansCallCount === 1 ? errorResponse("Erro ao carregar planos") : jsonResponse([]);
+      }
+      return errorResponse(`URL não mapeada no mock: ${url}`);
+    });
+    await renderDetail();
+    await screen.findByText("Maria Souza");
+    await openCarePlanTab();
+    await screen.findByText("Erro ao carregar planos");
+
+    fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+
+    expect(await screen.findByText("Nenhum plano de cuidados aberto.")).toBeInTheDocument();
+    expect(carePlansCallCount).toBe(2);
+  });
+
   it("Dado plano geral sem condição, Quando abrir, Então rotula como plano geral do paciente", async () => {
     mockFetch(createCarePlanServer());
     await renderDetail();
@@ -444,6 +507,7 @@ describe("Feature: Plano de Cuidados (SAE) na página do paciente", () => {
 
     // Resolver plano — some as ações de prescrição
     fireEvent.click(screen.getByText("Resolver plano"));
+    fireEvent.click(await screen.findByText("Confirmar"));
     expect(await screen.findByText("Plano de cuidados encerrado")).toBeInTheDocument();
     await waitFor(() => expect(screen.getAllByText("Resolvido").length).toBeGreaterThan(0));
     expect(screen.queryByText("+ Diagnóstico")).not.toBeInTheDocument();

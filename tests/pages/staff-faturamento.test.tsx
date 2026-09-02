@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
+import { screen, fireEvent, waitFor, cleanup, within } from "@testing-library/react";
 import type { InvoiceDto, PatientDto, ProcedureDto } from "@/lib/dto";
 import BillingPage from "@/app/(staff)/faturamento/page";
 import { renderWithToast } from "@/../tests/support/render-with-toast";
@@ -328,6 +328,7 @@ describe("Feature: Faturamento", () => {
       await screen.findByText("Maria Souza");
 
       fireEvent.click(screen.getByText("Cancelar"));
+      fireEvent.click(await screen.findByText("Cancelar fatura"));
 
       await waitFor(() => {
         expect(fetchMock.mock.calls).toContainEqual([
@@ -357,6 +358,7 @@ describe("Feature: Faturamento", () => {
       await screen.findByText("Maria Souza");
 
       fireEvent.click(screen.getByText("Cancelar"));
+      fireEvent.click(await screen.findByText("Cancelar fatura"));
 
       expect(await screen.findByText("Erro ao cancelar fatura")).toBeInTheDocument();
     });
@@ -378,10 +380,26 @@ describe("Feature: Faturamento", () => {
       await screen.findByText("Maria Souza");
 
       fireEvent.click(screen.getByText("Cancelar"));
+      fireEvent.click(await screen.findByText("Cancelar fatura"));
 
       await waitFor(() => {
         expect(screen.getByText("Fatura cancelada")).toBeInTheDocument();
       });
+    });
+
+    it("Dado clique em Cancelar seguido de cancelamento no dialog, Quando acionado, Então não chama a API", async () => {
+      const fetchMock = mockFetch(defaultRouter({ invoices: [invoicePending] }));
+
+      renderWithToast(<BillingPage />);
+      await screen.findByText("Maria Souza");
+
+      fireEvent.click(screen.getByText("Cancelar"));
+      const dialog = await screen.findByRole("alertdialog");
+      fireEvent.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+
+      expect(
+        fetchMock.mock.calls.some(([, init]) => (init as RequestInit | undefined)?.method === "PATCH"),
+      ).toBe(false);
     });
   });
 

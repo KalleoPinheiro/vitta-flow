@@ -25,7 +25,12 @@ export function StaffLayoutClient({ children }: StaffLayoutClientProps) {
     // renderiza incondicionalmente, sem olhar pra `open`.
     <SidebarProvider defaultOpen={false}>
       <SidebarAutoClose />
-      <div className="flex min-h-screen">
+      {/* min-w-0: `SidebarProvider` já embrulha isto num `.sv-app-shell` flex
+          (ver node_modules/@still-void/ui/dist/style.css) — sem `min-w-0`, este
+          div (item flex único dessa linha) herda `min-width: auto` e cresce até
+          caber o conteúdo do `<main>`, empurrando a página inteira além do
+          viewport em mobile mesmo com a tabela já contida em overflow-x-auto. */}
+      <div className="flex min-h-screen min-w-0">
         {/* O <main> não usa o <Layout> do pacote de propósito: `.sv-layout` limita
             a 1120px e as telas do staff são tabelas largas. */}
         <SidebarPanel className="w-56 shrink-0 justify-between border-r border-border p-5">
@@ -42,9 +47,12 @@ export function StaffLayoutClient({ children }: StaffLayoutClientProps) {
           </div>
           <LogoutButton />
         </SidebarPanel>
-        <SidebarInset className="flex-1 p-6 lg:p-8">
+        <SidebarInset className="min-w-0 flex-1 p-6 lg:p-8">
           <div className="mb-4 flex items-center gap-3 lg:hidden">
-            <SidebarTrigger />
+            {/* min-h-11/min-w-11 (44px): o padding padrão do still-void
+                (--sv-space-2 = 8px) rende um alvo de toque de ~38px — abaixo do
+                mínimo de acessibilidade para mobile (WCAG 2.5.5 / P1 FASEA-06..09). */}
+            <SidebarTrigger className="min-h-11 min-w-11" />
             <BrandLogo />
           </div>
           {children}

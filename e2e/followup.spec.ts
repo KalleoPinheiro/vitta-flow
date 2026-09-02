@@ -31,6 +31,7 @@ test.describe("retornos (follow-ups)", () => {
     await expect(item.getByText(/Atrasado —/)).toBeVisible();
 
     await item.getByRole("button", { name: "Cancelar" }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Cancelar retorno" }).click();
     await expect(page.locator("li", { hasText: reason })).toHaveCount(0);
   });
 

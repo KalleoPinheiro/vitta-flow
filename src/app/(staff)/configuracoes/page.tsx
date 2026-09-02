@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from "@still-void/ui/react/client";
 import { apiFetch } from "@/lib/client";
 import type { ProfessionalDto, UserAccountDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import { Modal } from "@/components/modal";
+import { ConfirmAction } from "@/components/confirm-action";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import {
@@ -63,11 +65,11 @@ export default function SettingsPage() {
 }
 
 function ScheduleSection() {
+  const { toast } = useToast();
   const { data, error } = useApiQuery<{ config: ScheduleConfigDto; isDefault: boolean }>(
     "/api/settings/schedule",
   );
   const [edits, setEdits] = useState<ScheduleConfigDto | null>(null);
-  const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   if (error) return <ErrorAlert message={error} />;
@@ -93,12 +95,16 @@ function ScheduleSection() {
 
   const save = async () => {
     setSaveError(null);
-    setSaved(false);
     try {
       await apiFetch("/api/settings/schedule", { method: "PUT", body: JSON.stringify(draft) });
-      setSaved(true);
+      toast({
+        description: "Grade salva — vale imediatamente para novos agendamentos.",
+        variant: "success",
+      });
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Erro ao salvar grade");
+      const message = err instanceof Error ? err.message : "Erro ao salvar grade";
+      setSaveError(message);
+      toast({ description: message, variant: "danger" });
     }
   };
 
@@ -110,11 +116,6 @@ function ScheduleSection() {
         {data.isDefault && " (usando padrão — nada salvo ainda)"}
       </p>
       {saveError && <ErrorAlert message={saveError} />}
-      {saved && (
-        <Alert variant="success" className="mb-3">
-          <AlertDescription>Grade salva — vale imediatamente para novos agendamentos.</AlertDescription>
-        </Alert>
-      )}
 
       <div className="mb-4 flex flex-wrap gap-2">
         {WEEKDAYS.map((day) => (
@@ -205,6 +206,7 @@ function CalendarIntegrationSection() {
 }
 
 function AccountsSection() {
+  const { toast } = useToast();
   const { data: accounts, error, refresh } = useApiQuery<UserAccountDto[]>("/api/accounts");
   const { data: professionals } = useApiQuery<ProfessionalDto[]>("/api/professionals");
   const [creating, setCreating] = useState(false);
@@ -222,9 +224,15 @@ function AccountsSection() {
         body: JSON.stringify({ active: !account.active }),
       });
       setActionError(null);
+      toast({
+        description: account.active ? "Conta desativada" : "Conta reativada",
+        variant: "success",
+      });
       refresh();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Erro ao atualizar conta");
+      const message = err instanceof Error ? err.message : "Erro ao atualizar conta";
+      setActionError(message);
+      toast({ description: message, variant: "danger" });
     }
   };
 
@@ -238,14 +246,16 @@ function AccountsSection() {
       if (result.delivered && account.email === undelivered) {
         setUndelivered(null);
       }
-      setActionNotice(
-        result.delivered
-          ? `Convite reenviado para ${account.email}.`
-          : `Não foi possível enviar o e-mail para ${account.email} — tente novamente mais tarde.`,
-      );
+      const notice = result.delivered
+        ? `Convite reenviado para ${account.email}.`
+        : `Não foi possível enviar o e-mail para ${account.email} — tente novamente mais tarde.`;
+      setActionNotice(notice);
+      toast({ description: notice, variant: result.delivered ? "success" : "danger" });
     } catch (err) {
+      const message = err instanceof Error ? err.message : "Erro ao reenviar convite";
       setActionNotice(null);
-      setActionError(err instanceof Error ? err.message : "Erro ao reenviar convite");
+      setActionError(message);
+      toast({ description: message, variant: "danger" });
     }
   };
 
@@ -287,6 +297,7 @@ function AccountsSection() {
               setCreating(false);
               setUndelivered(delivered ? null : email);
               setActionNotice(null);
+              toast({ description: "Conta criada", variant: "success" });
               refresh();
             }}
           />
@@ -343,27 +354,29 @@ function AccountsTable({
   if (accounts.length === 0) return <EmptyState message="Nenhuma conta cadastrada nesta empresa." />;
 
   return (
-    <Table className="w-full text-left text-sm">
-      <TableHeader>
-        <TableRow>
-          <TableHead className="py-2 pr-3">Email</TableHead>
-          <TableHead className="py-2 pr-3">Profissional vinculado</TableHead>
-          <TableHead className="py-2 pr-3">Situação</TableHead>
-          <TableHead className="py-2 text-right">Ações</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {accounts.map((account) => (
-          <AccountRow
-            key={account.id}
-            account={account}
-            professionalName={professionalName(account.professionalId)}
-            onToggleActive={() => onToggleActive(account)}
-            onResendInvite={() => onResendInvite(account)}
-          />
-        ))}
-      </TableBody>
-    </Table>
+    <div className="overflow-x-auto">
+      <Table className="w-full text-left text-sm">
+        <TableHeader>
+          <TableRow>
+            <TableHead className="py-2 pr-3">Email</TableHead>
+            <TableHead className="py-2 pr-3">Profissional vinculado</TableHead>
+            <TableHead className="py-2 pr-3">Situação</TableHead>
+            <TableHead className="py-2 text-right">Ações</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {accounts.map((account) => (
+            <AccountRow
+              key={account.id}
+              account={account}
+              professionalName={professionalName(account.professionalId)}
+              onToggleActive={() => onToggleActive(account)}
+              onResendInvite={() => onResendInvite(account)}
+            />
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 
@@ -399,9 +412,24 @@ function AccountRow({
             Reenviar convite
           </Button>
         )}
-        <Button type="button" onClick={onToggleActive} variant="link" className="h-auto p-0 text-ink-3">
-          {account.active ? "Desativar" : "Reativar"}
-        </Button>
+        {account.active ? (
+          <ConfirmAction
+            trigger={
+              <Button type="button" variant="link" className="h-auto p-0 text-ink-3">
+                Desativar
+              </Button>
+            }
+            title="Desativar conta?"
+            description="A conta perde acesso ao sistema imediatamente."
+            confirmLabel="Confirmar"
+            variant="danger"
+            onConfirm={onToggleActive}
+          />
+        ) : (
+          <Button type="button" onClick={onToggleActive} variant="link" className="h-auto p-0 text-ink-3">
+            Reativar
+          </Button>
+        )}
       </TableCell>
     </TableRow>
   );
@@ -414,6 +442,7 @@ function AccountForm({
   professionals: ProfessionalDto[];
   onSaved: (created: { email: string; delivered: boolean }) => void;
 }) {
+  const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<AccountRole>("company_admin");
   const [professionalId, setProfessionalId] = useState("");
@@ -441,7 +470,9 @@ function AccountForm({
       });
       onSaved({ email: created.email, delivered: created.delivered });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao criar conta");
+      const message = err instanceof Error ? err.message : "Erro ao criar conta";
+      setError(message);
+      toast({ description: message, variant: "danger" });
     } finally {
       setSaving(false);
     }

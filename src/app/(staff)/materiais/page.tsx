@@ -196,31 +196,33 @@ function SuppliesTable({ supplies, insights, onMove, onHistory, onEdit }: Suppli
       ) : supplies.length === 0 ? (
         <EmptyState message="Nenhum insumo cadastrado." />
       ) : (
-        <Table className="w-full text-left text-sm">
-          <TableHeader>
-            <TableRow>
-              <TableHead className="px-4 py-3">Insumo</TableHead>
-              <TableHead className="px-4 py-3">Estoque</TableHead>
-              <TableHead className="px-4 py-3">Mínimo</TableHead>
-              <TableHead className="px-4 py-3">Previsão</TableHead>
-              <TableHead className="px-4 py-3">Preço</TableHead>
-              <TableHead className="px-4 py-3">Situação</TableHead>
-              <TableHead className="px-4 py-3 text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {supplies.map((supply) => (
-              <SupplyRow
-                key={supply.id}
-                supply={supply}
-                insight={insightBySupply.get(supply.id)}
-                onMove={() => onMove(supply)}
-                onHistory={() => onHistory(supply)}
-                onEdit={() => onEdit(supply)}
-              />
-            ))}
-          </TableBody>
-        </Table>
+        <div className="overflow-x-auto">
+          <Table className="w-full text-left text-sm">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="px-4 py-3">Insumo</TableHead>
+                <TableHead className="px-4 py-3">Estoque</TableHead>
+                <TableHead className="px-4 py-3">Mínimo</TableHead>
+                <TableHead className="px-4 py-3">Previsão</TableHead>
+                <TableHead className="px-4 py-3">Preço</TableHead>
+                <TableHead className="px-4 py-3">Situação</TableHead>
+                <TableHead className="px-4 py-3 text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {supplies.map((supply) => (
+                <SupplyRow
+                  key={supply.id}
+                  supply={supply}
+                  insight={insightBySupply.get(supply.id)}
+                  onMove={() => onMove(supply)}
+                  onHistory={() => onHistory(supply)}
+                  onEdit={() => onEdit(supply)}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </Card>
   );

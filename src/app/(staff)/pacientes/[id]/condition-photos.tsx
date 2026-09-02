@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/client";
 import type { ConditionPhotoDto } from "@/lib/dto";
 import { formatDate } from "@/lib/format";
 import { ErrorAlert } from "@/components/feedback";
+import { ConfirmAction } from "@/components/confirm-action";
 import { Button, FileInput } from "@still-void/ui/react";
 
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
@@ -19,7 +20,8 @@ interface ConditionPhotosProps {
 export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps) {
   const { toast } = useToast();
   const [photos, setPhotos] = useState<ConditionPhotoDto[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [listError, setListError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [version, setVersion] = useState(0);
 
@@ -29,12 +31,12 @@ export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps
       .then((result) => {
         if (!cancelled) {
           setPhotos(result);
-          setError(null);
+          setListError(null);
         }
       })
       .catch((err: unknown) => {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Erro ao carregar fotos");
+          setListError(err instanceof Error ? err.message : "Erro ao carregar fotos");
         }
       });
     return () => {
@@ -46,7 +48,7 @@ export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps
 
   const upload = async (file: File) => {
     if (file.size > MAX_UPLOAD_BYTES) {
-      setError("Imagem excede o limite de 5 MB");
+      setActionError("Imagem excede o limite de 5 MB");
       return;
     }
     setUploading(true);
@@ -62,10 +64,10 @@ export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps
         throw new Error(payload?.error ?? "Erro ao enviar foto");
       }
       toast({ description: "Foto enviada", variant: "success" });
-      setError(null);
+      setActionError(null);
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao enviar foto");
+      setActionError(err instanceof Error ? err.message : "Erro ao enviar foto");
     } finally {
       setUploading(false);
     }
@@ -75,9 +77,10 @@ export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps
     try {
       await apiFetch(`/api/photos/${photo.id}`, { method: "DELETE" });
       toast({ description: "Foto excluída", variant: "success" });
+      setActionError(null);
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao excluir foto");
+      setActionError(err instanceof Error ? err.message : "Erro ao excluir foto");
     }
   };
 
@@ -106,9 +109,14 @@ export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps
         )}
       </div>
 
-      {error && <ErrorAlert message={error} />}
+      {listError && <ErrorAlert message={listError} onRetry={load} />}
+      {actionError && <ErrorAlert message={actionError} />}
 
-      {list.length === 0 ? (
+      {photos === null ? (
+        listError ? null : (
+          <p className="text-xs text-ink-3">Carregando fotos…</p>
+        )
+      ) : list.length === 0 ? (
         <p className="text-xs text-ink-3">Nenhuma foto registrada.</p>
       ) : (
         <>
@@ -130,14 +138,18 @@ export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps
                 <figcaption className="mt-0.5 flex items-center justify-between text-[10px] text-ink-3">
                   {formatDate(photo.createdAt)}
                   {canUpload && (
-                    <Button
-                      type="button"
-                      onClick={() => void remove(photo)}
-                      variant="link"
-                      className="h-auto p-0 text-danger"
-                    >
-                      excluir
-                    </Button>
+                    <ConfirmAction
+                      trigger={
+                        <Button type="button" variant="link" className="h-auto p-0 text-danger">
+                          excluir
+                        </Button>
+                      }
+                      title="Excluir esta foto?"
+                      description="A evidência clínica é removida permanentemente."
+                      confirmLabel="Excluir"
+                      variant="danger"
+                      onConfirm={() => remove(photo)}
+                    />
                   )}
                 </figcaption>
               </figure>

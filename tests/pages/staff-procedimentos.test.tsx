@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
+import { screen, fireEvent, waitFor, cleanup, within } from "@testing-library/react";
 import type { ProcedureDto, SupplyDto } from "@/lib/dto";
 import ProceduresPage from "@/app/(staff)/procedimentos/page";
 import { renderWithToast } from "@/../tests/support/render-with-toast";
@@ -176,6 +176,7 @@ describe("Feature: Catálogo de procedimentos", () => {
       await screen.findByText("Troca de bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Desativar"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       await waitFor(() => {
         expect(fetchMock.mock.calls).toContainEqual([
@@ -187,6 +188,21 @@ describe("Feature: Catálogo de procedimentos", () => {
         ]);
       });
       expect(await screen.findByText("Procedimento desativado")).toBeInTheDocument();
+    });
+
+    it("Dado clique em Desativar seguido de cancelamento no dialog, Quando acionado, Então não chama a API", async () => {
+      const fetchMock = mockFetch(buildRouter({ procedures: [activeProcedure] }));
+
+      renderWithToast(<ProceduresPage />);
+      await screen.findByText("Troca de bolsa de colostomia");
+
+      fireEvent.click(screen.getByText("Desativar"));
+      const dialog = await screen.findByRole("alertdialog");
+      fireEvent.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+
+      expect(
+        fetchMock.mock.calls.some(([, init]) => (init as RequestInit | undefined)?.method === "PATCH"),
+      ).toBe(false);
     });
 
     it("Dado clique em Reativar em um procedimento inativo, Quando acionado, Então envia PATCH com active true", async () => {
@@ -236,6 +252,7 @@ describe("Feature: Catálogo de procedimentos", () => {
       await screen.findByText("Troca de bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Desativar"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       expect(await screen.findByText("Erro ao atualizar procedimento")).toBeInTheDocument();
     });
@@ -257,6 +274,7 @@ describe("Feature: Catálogo de procedimentos", () => {
       await screen.findByText("Troca de bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Desativar"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       expect(await screen.findByText("Erro ao atualizar procedimento")).toBeInTheDocument();
     });

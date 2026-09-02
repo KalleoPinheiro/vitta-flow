@@ -133,6 +133,7 @@ test.describe("plano de cuidados (SAE)", () => {
     await expect(page.getByRole("button", { name: "Resolver plano" })).toBeVisible();
 
     await page.getByRole("button", { name: "Resolver plano" }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Confirmar" }).click();
     await expect(page.getByText("Resolvido")).toBeVisible();
     await expect(page.getByRole("button", { name: "+ Diagnóstico" })).not.toBeVisible();
     await expect(page.getByRole("button", { name: "+ Resultado" })).not.toBeVisible();

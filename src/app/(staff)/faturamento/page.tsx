@@ -13,6 +13,7 @@ import {
   formatDate,
 } from "@/lib/format";
 import { Modal } from "@/components/modal";
+import { ConfirmAction } from "@/components/confirm-action";
 import { StatusBadge } from "@/components/status-badge";
 import { ErrorAlert } from "@/components/feedback";
 import { LoadMoreButton } from "@/components/load-more-button";
@@ -48,66 +49,76 @@ interface InvoicesTableProps {
 
 function InvoicesTable({ invoices, onPay, onCancel }: InvoicesTableProps) {
   return (
-    <Table className="w-full text-left text-sm">
-      <TableHeader>
-        <TableRow>
-          <TableHead className="px-4 py-3">Emissão</TableHead>
-          <TableHead className="px-4 py-3">Paciente</TableHead>
-          <TableHead className="px-4 py-3">Descrição</TableHead>
-          <TableHead className="px-4 py-3">Valor</TableHead>
-          <TableHead className="px-4 py-3">Status</TableHead>
-          <TableHead className="px-4 py-3">Pagamento</TableHead>
-          <TableHead className="px-4 py-3 text-right">Ações</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {invoices.map((invoice) => (
-          <TableRow key={invoice.id}>
-            <TableCell className="px-4 py-3 text-ink-2">{formatDate(invoice.issuedAt)}</TableCell>
-            <TableCell className="px-4 py-3 font-medium">{invoice.patientName}</TableCell>
-            <TableCell className="max-w-56 truncate px-4 py-3 text-ink-2">
-              {invoice.description}
-            </TableCell>
-            <TableCell className="px-4 py-3 font-medium">{formatCurrency(invoice.amountCents)}</TableCell>
-            <TableCell className="px-4 py-3">
-              <StatusBadge
-                status={invoice.status}
-                label={INVOICE_STATUS_LABELS[invoice.status] ?? invoice.status}
-              />
-            </TableCell>
-            <TableCell className="px-4 py-3 text-ink-2">
-              {invoice.paymentMethod
-                ? `${PAYMENT_METHOD_LABELS[invoice.paymentMethod] ?? invoice.paymentMethod}${
-                    invoice.paidAt ? ` em ${formatDate(invoice.paidAt)}` : ""
-                  }`
-                : "—"}
-            </TableCell>
-            <TableCell className="px-4 py-3 text-right">
-              {invoice.status === "pending" && (
-                <>
-                  <Button
-                    type="button"
-                    onClick={() => onPay(invoice)}
-                    variant="link"
-                    className="h-auto p-0 mr-2 text-success"
-                  >
-                    Receber
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={() => onCancel(invoice)}
-                    variant="link"
-                    className="h-auto p-0 text-danger"
-                  >
-                    Cancelar
-                  </Button>
-                </>
-              )}
-            </TableCell>
+    <div className="overflow-x-auto">
+      <Table className="w-full text-left text-sm">
+        <TableHeader>
+          <TableRow>
+            <TableHead className="px-4 py-3">Emissão</TableHead>
+            <TableHead className="px-4 py-3">Paciente</TableHead>
+            <TableHead className="px-4 py-3">Descrição</TableHead>
+            <TableHead className="px-4 py-3">Valor</TableHead>
+            <TableHead className="px-4 py-3">Status</TableHead>
+            <TableHead className="px-4 py-3">Pagamento</TableHead>
+            <TableHead className="px-4 py-3 text-right">Ações</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {invoices.map((invoice) => (
+            <TableRow key={invoice.id}>
+              <TableCell className="px-4 py-3 text-ink-2">{formatDate(invoice.issuedAt)}</TableCell>
+              <TableCell className="px-4 py-3 font-medium">{invoice.patientName}</TableCell>
+              <TableCell className="max-w-56 truncate px-4 py-3 text-ink-2">
+                {invoice.description}
+              </TableCell>
+              <TableCell className="px-4 py-3 font-medium">{formatCurrency(invoice.amountCents)}</TableCell>
+              <TableCell className="px-4 py-3">
+                <StatusBadge
+                  status={invoice.status}
+                  label={INVOICE_STATUS_LABELS[invoice.status] ?? invoice.status}
+                />
+              </TableCell>
+              <TableCell className="px-4 py-3 text-ink-2">
+                {invoice.paymentMethod
+                  ? `${PAYMENT_METHOD_LABELS[invoice.paymentMethod] ?? invoice.paymentMethod}${
+                      invoice.paidAt ? ` em ${formatDate(invoice.paidAt)}` : ""
+                    }`
+                  : "—"}
+              </TableCell>
+              <TableCell className="px-4 py-3 text-right">
+                {invoice.status === "pending" && (
+                  <>
+                    <Button
+                      type="button"
+                      onClick={() => onPay(invoice)}
+                      variant="link"
+                      className="h-auto p-0 mr-2 text-success"
+                    >
+                      Receber
+                    </Button>
+                    <ConfirmAction
+                      trigger={
+                        <Button
+                          type="button"
+                          variant="link"
+                          className="h-auto p-0 text-danger"
+                        >
+                          Cancelar
+                        </Button>
+                      }
+                      title="Cancelar fatura?"
+                      description="A fatura é cancelada permanentemente."
+                      confirmLabel="Cancelar fatura"
+                      variant="danger"
+                      onConfirm={() => onCancel(invoice)}
+                    />
+                  </>
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 

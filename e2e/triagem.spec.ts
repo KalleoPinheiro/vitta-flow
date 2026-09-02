@@ -53,6 +53,7 @@ test.describe("triagem de fotos", () => {
     await expect(queueItem.getByText(condition.title)).toBeVisible();
 
     await queueItem.getByRole("button", { name: "Ok, manter plano" }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Confirmar" }).click();
     await expect(page.locator("li", { hasText: patient.fullName })).toHaveCount(0);
 
     // Manter o plano não deve criar um retorno antecipado para essa condição.
@@ -78,6 +79,10 @@ test.describe("triagem de fotos", () => {
     await expect(queueItem).toBeVisible();
 
     await queueItem.getByRole("button", { name: "Antecipar retorno" }).click();
+    await page
+      .getByRole("alertdialog")
+      .getByRole("button", { name: "Confirmar antecipação" })
+      .click();
     // Checa só o item desta foto — a fila é global e compartilhada com outros
     // specs (ex.: fotos enviadas em clinico.spec.ts/portal-paciente.spec.ts
     // ficam pendentes de triagem), então o card pode continuar visível com

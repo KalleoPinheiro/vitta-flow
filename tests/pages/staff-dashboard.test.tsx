@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
+import { screen, fireEvent, waitFor, cleanup, within } from "@testing-library/react";
 import type { AppointmentDto, FollowUpDto, SupplyDto } from "@/lib/dto";
 import { formatDate } from "@/lib/format";
 import DashboardPage from "@/app/(staff)/page";
@@ -253,6 +253,7 @@ describe("Feature: Dashboard do painel interno", () => {
         expect(screen.getByText("Cancelar")).toBeInTheDocument();
       });
       fireEvent.click(screen.getByText("Cancelar"));
+      fireEvent.click(await screen.findByText("Cancelar retorno"));
 
       await waitFor(() => {
         expect(fetch).toHaveBeenCalledWith(
@@ -263,6 +264,23 @@ describe("Feature: Dashboard do painel interno", () => {
           }),
         );
       });
+    });
+
+    it("Dado clique em Cancelar seguido de cancelamento no dialog, Quando acionado, Então não chama a API", async () => {
+      mockFetch({ followUps: [followUpFixture] });
+      renderWithToast(<DashboardPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Cancelar")).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByText("Cancelar"));
+      const dialog = await screen.findByRole("alertdialog");
+      fireEvent.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+
+      const fetchMock = fetch as ReturnType<typeof vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<unknown>>>;
+      expect(
+        fetchMock.mock.calls.some(([, init]) => init?.method === "PATCH"),
+      ).toBe(false);
     });
 
     it("Dado clique em Concluir com sucesso, Quando executado, Então exibe toast de sucesso 'Retorno concluído'", async () => {
@@ -287,6 +305,7 @@ describe("Feature: Dashboard do painel interno", () => {
         expect(screen.getByText("Cancelar")).toBeInTheDocument();
       });
       fireEvent.click(screen.getByText("Cancelar"));
+      fireEvent.click(await screen.findByText("Cancelar retorno"));
 
       await waitFor(() => {
         expect(screen.getByText("Retorno cancelado")).toBeInTheDocument();
@@ -382,6 +401,7 @@ describe("Feature: Dashboard do painel interno", () => {
         expect(screen.getByText("Ok, manter plano")).toBeInTheDocument();
       });
       fireEvent.click(screen.getByText("Ok, manter plano"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       await waitFor(() => {
         expect(fetch).toHaveBeenCalledWith(
@@ -403,6 +423,7 @@ describe("Feature: Dashboard do painel interno", () => {
         expect(screen.getByText("Antecipar retorno")).toBeInTheDocument();
       });
       fireEvent.click(screen.getByText("Antecipar retorno"));
+      fireEvent.click(await screen.findByText("Confirmar antecipação"));
 
       await waitFor(() => {
         expect(fetch).toHaveBeenCalledWith(
@@ -414,6 +435,44 @@ describe("Feature: Dashboard do painel interno", () => {
         );
       });
       expect(await screen.findByText("Foto escalada")).toBeInTheDocument();
+    });
+
+    it("Dado clique em 'Ok, manter plano' seguido de cancelamento, Quando acionado, Então não chama a API", async () => {
+      mockFetch({ triage: [triageFixture] });
+      renderWithToast(<DashboardPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Ok, manter plano")).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByText("Ok, manter plano"));
+      const dialog = await screen.findByRole("alertdialog");
+      fireEvent.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+
+      const fetchMock = fetch as ReturnType<typeof vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<unknown>>>;
+      expect(
+        fetchMock.mock.calls.some(
+          ([url, init]) => String(url).startsWith("/api/photos/") && init?.method === "PATCH",
+        ),
+      ).toBe(false);
+    });
+
+    it("Dado clique em 'Antecipar retorno' seguido de cancelamento, Quando acionado, Então não chama a API", async () => {
+      mockFetch({ triage: [triageFixture] });
+      renderWithToast(<DashboardPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Antecipar retorno")).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByText("Antecipar retorno"));
+      const dialog = await screen.findByRole("alertdialog");
+      fireEvent.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+
+      const fetchMock = fetch as ReturnType<typeof vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<unknown>>>;
+      expect(
+        fetchMock.mock.calls.some(
+          ([url, init]) => String(url).startsWith("/api/photos/") && init?.method === "PATCH",
+        ),
+      ).toBe(false);
     });
 
     it("Dado foto sem observação do paciente, Quando renderizar, Então exibe 'sem observação'", async () => {
@@ -449,6 +508,7 @@ describe("Feature: Dashboard do painel interno", () => {
         expect(screen.getByText("Ok, manter plano")).toBeInTheDocument();
       });
       fireEvent.click(screen.getByText("Ok, manter plano"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       await waitFor(() => {
         expect(screen.getByText("Erro na triagem")).toBeInTheDocument();
@@ -477,6 +537,7 @@ describe("Feature: Dashboard do painel interno", () => {
         expect(screen.getByText("Ok, manter plano")).toBeInTheDocument();
       });
       fireEvent.click(screen.getByText("Ok, manter plano"));
+      fireEvent.click(await screen.findByText("Confirmar"));
 
       await waitFor(() => {
         expect(screen.getByText("Erro na triagem")).toBeInTheDocument();

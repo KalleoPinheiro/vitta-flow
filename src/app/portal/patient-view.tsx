@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button, Card, Hero } from "@still-void/ui/react";
+import { useToast } from "@still-void/ui/react/client";
 import { apiFetch } from "@/lib/client";
 import type {
   FollowUpDto,
@@ -35,6 +36,7 @@ interface PatientPortalDto {
 const PAGE_LOAD_MS = Date.now();
 
 export function PatientPortalView() {
+  const { toast } = useToast();
   const { data, error, refresh } = useApiQuery<PatientPortalDto>("/api/portal/patient");
   // Fonte única do consentimento na tela: o card de aceite e o envio de foto
   // (COMP3-01) leem o mesmo status — cópias separadas divergiam após o aceite,
@@ -52,9 +54,12 @@ export function PatientPortalView() {
         method: "POST",
       });
       setConfirmError(null);
+      toast({ description: "Presença confirmada", variant: "success" });
       refresh();
     } catch (err) {
-      setConfirmError(err instanceof Error ? err.message : "Erro ao confirmar presença");
+      const message = err instanceof Error ? err.message : "Erro ao confirmar presença";
+      setConfirmError(message);
+      toast({ description: message, variant: "danger" });
     }
   };
 

@@ -45,6 +45,7 @@ test.describe("pacientes", () => {
       .getByRole("row", { name: literal(patient.fullName) })
       .getByRole("button", { name: "Desativar" })
       .click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Confirmar" }).click();
     await expect(
       page.getByRole("row", { name: literal(patient.fullName) }).getByText("Inativo"),
     ).toBeVisible();

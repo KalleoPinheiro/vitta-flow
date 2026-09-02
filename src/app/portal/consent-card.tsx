@@ -4,6 +4,7 @@ import { useState } from "react";
 import { apiFetch } from "@/lib/client";
 import { formatDateTime } from "@/lib/format";
 import { Alert, AlertDescription, Button, Card, FileInput, Icon, Input } from "@still-void/ui/react";
+import { useToast } from "@still-void/ui/react/client";
 import { ErrorAlert } from "@/components/feedback";
 
 export interface ConsentStatusDto {
@@ -24,6 +25,7 @@ export function ConsentCard({
   status: ConsentStatusDto | null;
   onAccepted: () => void;
 }) {
+  const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
   const [accepting, setAccepting] = useState(false);
 
@@ -45,9 +47,12 @@ export function ConsentCard({
     setError(null);
     try {
       await apiFetch("/api/portal/patient/consent", { method: "POST" });
+      toast({ description: "Termo de consentimento aceito", variant: "success" });
       onAccepted();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao registrar aceite");
+      const message = err instanceof Error ? err.message : "Erro ao registrar aceite";
+      setError(message);
+      toast({ description: message, variant: "danger" });
     } finally {
       // Sai de "Registrando…" mesmo no sucesso: quem confirma o aceite na tela é
       // o status recarregado pelo pai, e essa recarga pode falhar. Se o estado
@@ -93,6 +98,7 @@ export function PatientPhotoUpload({
   consentPending: boolean;
   onSent: () => void;
 }) {
+  const { toast } = useToast();
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -113,9 +119,12 @@ export function PatientPhotoUpload({
       }
       setSent(true);
       setNote("");
+      toast({ description: "Foto enviada", variant: "success" });
       onSent();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao enviar foto");
+      const message = err instanceof Error ? err.message : "Erro ao enviar foto";
+      setError(message);
+      toast({ description: message, variant: "danger" });
     } finally {
       setSending(false);
     }

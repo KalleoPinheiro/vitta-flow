@@ -199,7 +199,7 @@ describe("Feature: Página do portal", () => {
         { path: "/api/portal/patient", respond: () => jsonResponse(true, emptyPatientBundle) },
       ]);
 
-      render(<PortalPage />);
+      renderWithToast(<PortalPage />);
 
       expect(await screen.findByRole("heading", { name: "Olá, Ana!" })).toBeInTheDocument();
     });
@@ -292,9 +292,10 @@ describe("Feature: Visão do paciente no portal", () => {
         expect(screen.queryByText("Confirmar presença")).not.toBeInTheDocument();
       });
       expect(screen.getByText("Confirmada")).toBeInTheDocument();
+      expect(await screen.findByText("Presença confirmada")).toBeInTheDocument();
     });
 
-    it("Dado falha ao confirmar presença, Quando confirmar, Então exibe alerta de erro", async () => {
+    it("Dado falha ao confirmar presença, Quando confirmar, Então exibe alerta de erro e toast de erro", async () => {
       mockFetch([
         { path: "/api/portal/patient/consent", respond: () => jsonResponse(true, { consentText: "Termo", accepted: true, acceptedAt: null }) },
         {
@@ -317,7 +318,9 @@ describe("Feature: Visão do paciente no portal", () => {
       const confirmButton = await screen.findByText("Confirmar presença");
       fireEvent.click(confirmButton);
 
-      expect(await screen.findByText("Consulta já foi cancelada")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getAllByText("Consulta já foi cancelada").length).toBeGreaterThanOrEqual(2);
+      });
     });
   });
 
@@ -823,15 +826,17 @@ describe("Feature: Cartão de consentimento", () => {
 
   describe("Cenário: carregando", () => {
     it("Dado que o status ainda não chegou, Quando renderizar, Então não exibe nada", () => {
-      const { container } = render(<ConsentCard status={null} onAccepted={vi.fn()} />);
+      renderWithToast(<ConsentCard status={null} onAccepted={vi.fn()} />);
 
-      expect(container).toBeEmptyDOMElement();
+      expect(screen.queryByText(TERMO)).not.toBeInTheDocument();
+      expect(screen.queryByText("Li e aceito o termo")).not.toBeInTheDocument();
+      expect(screen.queryByText(/Termo de consentimento/)).not.toBeInTheDocument();
     });
   });
 
   describe("Cenário: termo já aceito", () => {
     it("Dado consentimento aceito, Quando renderizar, Então exibe confirmação com data", () => {
-      render(
+      renderWithToast(
         <ConsentCard
           status={{ consentText: TERMO, accepted: true, acceptedAt: "2026-01-10T14:30:00.000Z" }}
           onAccepted={vi.fn()}
@@ -854,7 +859,7 @@ describe("Feature: Cartão de consentimento", () => {
         },
       ]);
 
-      render(
+      renderWithToast(
         <ConsentCard
           status={{ consentText: TERMO, accepted: false, acceptedAt: null }}
           onAccepted={onAccepted}
@@ -869,9 +874,10 @@ describe("Feature: Cartão de consentimento", () => {
       await waitFor(() => {
         expect(onAccepted).toHaveBeenCalledTimes(1);
       });
+      expect(await screen.findByText("Termo de consentimento aceito")).toBeInTheDocument();
     });
 
-    it("Dado falha ao registrar aceite, Quando aceitar, Então exibe alerta de erro e reabilita o botão", async () => {
+    it("Dado falha ao registrar aceite, Quando aceitar, Então exibe alerta de erro e toast de erro, e reabilita o botão", async () => {
       const onAccepted = vi.fn();
       mockFetch([
         {
@@ -881,7 +887,7 @@ describe("Feature: Cartão de consentimento", () => {
         },
       ]);
 
-      render(
+      renderWithToast(
         <ConsentCard
           status={{ consentText: TERMO, accepted: false, acceptedAt: null }}
           onAccepted={onAccepted}
@@ -890,7 +896,9 @@ describe("Feature: Cartão de consentimento", () => {
 
       fireEvent.click(screen.getByText("Li e aceito o termo"));
 
-      expect(await screen.findByText("Erro ao registrar aceite do termo")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getAllByText("Erro ao registrar aceite do termo").length).toBeGreaterThanOrEqual(2);
+      });
       const enabledButton = screen.getByText("Li e aceito o termo") as HTMLButtonElement;
       expect(enabledButton.disabled).toBe(false);
       expect(onAccepted).not.toHaveBeenCalled();
@@ -913,7 +921,7 @@ describe("Feature: Envio de foto pelo paciente", () => {
       });
       vi.stubGlobal("fetch", fetchMock);
 
-      render(<PatientPhotoUpload conditionId="cond-1" consentPending={false} onSent={onSent} />);
+      renderWithToast(<PatientPhotoUpload conditionId="cond-1" consentPending={false} onSent={onSent} />);
 
       fireEvent.change(screen.getByPlaceholderText("Observação (opcional): dor, vazamento, vermelhidão…"), {
         target: { value: "Está coçando" },
@@ -933,7 +941,13 @@ describe("Feature: Envio de foto pelo paciente", () => {
       await waitFor(() => {
         expect(onSent).toHaveBeenCalledTimes(1);
       });
-      expect(await screen.findByText(/Foto enviada/)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getAllByText(/Foto enviada/)).toHaveLength(2);
+      });
+      const toastText = screen
+        .getAllByText(/Foto enviada/)
+        .find((el) => el.className === "sv-toast__description");
+      expect(toastText?.closest(".sv-toast--success")).not.toBeNull();
       expect(receivedBody).not.toBeNull();
       expect((receivedBody as unknown as FormData).get("conditionId")).toBe("cond-1");
       expect((receivedBody as unknown as FormData).get("note")).toBe("Está coçando");
@@ -943,7 +957,7 @@ describe("Feature: Envio de foto pelo paciente", () => {
 
   describe("Cenário: consentimento pendente", () => {
     it("Dado termo não aceito, Quando renderizar o envio, Então orienta o aceite e não oferece o arquivo (COMP3-01)", () => {
-      render(<PatientPhotoUpload conditionId="cond-1" consentPending onSent={vi.fn()} />);
+      renderWithToast(<PatientPhotoUpload conditionId="cond-1" consentPending onSent={vi.fn()} />);
 
       expect(
         screen.getByText("Aceite o termo de consentimento acima para enviar fotos à equipe."),
@@ -958,12 +972,18 @@ describe("Feature: Envio de foto pelo paciente", () => {
       const fetchMock = vi.fn(async () => rawResponse(false, { error: "Arquivo muito grande" }));
       vi.stubGlobal("fetch", fetchMock);
 
-      render(<PatientPhotoUpload conditionId="cond-1" consentPending={false} onSent={onSent} />);
+      renderWithToast(<PatientPhotoUpload conditionId="cond-1" consentPending={false} onSent={onSent} />);
 
       const input = document.querySelector('input[type="file"]') as HTMLInputElement;
       fireEvent.change(input, { target: { files: [makeFile()] } });
 
-      expect(await screen.findByText("Arquivo muito grande")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getAllByText("Arquivo muito grande")).toHaveLength(2);
+      });
+      const toastText = screen
+        .getAllByText("Arquivo muito grande")
+        .find((el) => el.className === "sv-toast__description");
+      expect(toastText?.closest(".sv-toast--danger")).not.toBeNull();
       expect(onSent).not.toHaveBeenCalled();
     });
   });

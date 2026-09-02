@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useToast } from "@still-void/ui/react/client";
 import { apiFetch } from "@/lib/client";
 import type { PartnerDto, PatientDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import { usePagedQuery } from "@/lib/use-paged-query";
 import { formatDate } from "@/lib/format";
 import { Modal } from "@/components/modal";
+import { ConfirmAction } from "@/components/confirm-action";
 import { StatusBadge } from "@/components/status-badge";
 import { ErrorAlert } from "@/components/feedback";
 import { LoadMoreButton } from "@/components/load-more-button";
@@ -36,65 +38,83 @@ interface PatientsTableProps {
 
 function PatientsTable({ patients, onEdit, onToggleActive }: PatientsTableProps) {
   return (
-    <Table className="w-full text-left text-sm">
-      <TableHeader>
-        <TableRow>
-          <TableHead className="px-4 py-3">Nome</TableHead>
-          <TableHead className="px-4 py-3">Contato</TableHead>
-          <TableHead className="px-4 py-3">Nascimento</TableHead>
-          <TableHead className="px-4 py-3">Situação</TableHead>
-          <TableHead className="px-4 py-3 text-right">Ações</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {patients.map((patient) => (
-          <TableRow key={patient.id} className={patient.active ? "" : "opacity-50"}>
-            <TableCell className="px-4 py-3 font-medium">{patient.fullName}</TableCell>
-            <TableCell className="px-4 py-3 text-ink-2">
-              <div>{patient.email}</div>
-              <div className="text-xs text-ink-3">{patient.phone}</div>
-            </TableCell>
-            <TableCell className="px-4 py-3 text-ink-2">
-              {patient.birthDate ? formatDate(patient.birthDate) : "—"}
-            </TableCell>
-            <TableCell className="px-4 py-3">
-              <StatusBadge
-                status={patient.active ? "confirmed" : "cancelled"}
-                label={patient.active ? "Ativo" : "Inativo"}
-              />
-            </TableCell>
-            <TableCell className="px-4 py-3 text-right">
-              <a
-                href={`/pacientes/${patient.id}`}
-                className="mr-2 font-medium text-accent-ink hover:underline"
-              >
-                Prontuário
-              </a>
-              <Button
-                type="button"
-                onClick={() => onEdit(patient)}
-                variant="link"
-                className="h-auto p-0 mr-2 text-accent-ink"
-              >
-                Editar
-              </Button>
-              <Button
-                type="button"
-                onClick={() => onToggleActive(patient)}
-                variant="link"
-                className="h-auto p-0 text-ink-3"
-              >
-                {patient.active ? "Desativar" : "Reativar"}
-              </Button>
-            </TableCell>
+    <div className="overflow-x-auto">
+      <Table className="w-full text-left text-sm">
+        <TableHeader>
+          <TableRow>
+            <TableHead className="px-4 py-3">Nome</TableHead>
+            <TableHead className="px-4 py-3">Contato</TableHead>
+            <TableHead className="px-4 py-3">Nascimento</TableHead>
+            <TableHead className="px-4 py-3">Situação</TableHead>
+            <TableHead className="px-4 py-3 text-right">Ações</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {patients.map((patient) => (
+            <TableRow key={patient.id} className={patient.active ? "" : "opacity-50"}>
+              <TableCell className="px-4 py-3 font-medium">{patient.fullName}</TableCell>
+              <TableCell className="px-4 py-3 text-ink-2">
+                <div>{patient.email}</div>
+                <div className="text-xs text-ink-3">{patient.phone}</div>
+              </TableCell>
+              <TableCell className="px-4 py-3 text-ink-2">
+                {patient.birthDate ? formatDate(patient.birthDate) : "—"}
+              </TableCell>
+              <TableCell className="px-4 py-3">
+                <StatusBadge
+                  status={patient.active ? "confirmed" : "cancelled"}
+                  label={patient.active ? "Ativo" : "Inativo"}
+                />
+              </TableCell>
+              <TableCell className="px-4 py-3 text-right">
+                <a
+                  href={`/pacientes/${patient.id}`}
+                  className="mr-2 font-medium text-accent-ink hover:underline"
+                >
+                  Prontuário
+                </a>
+                <Button
+                  type="button"
+                  onClick={() => onEdit(patient)}
+                  variant="link"
+                  className="h-auto p-0 mr-2 text-accent-ink"
+                >
+                  Editar
+                </Button>
+                {patient.active ? (
+                  <ConfirmAction
+                    trigger={
+                      <Button type="button" variant="link" className="h-auto p-0 text-ink-3">
+                        Desativar
+                      </Button>
+                    }
+                    title="Desativar paciente?"
+                    description="O paciente para de aparecer nos fluxos ativos."
+                    confirmLabel="Confirmar"
+                    variant="danger"
+                    onConfirm={() => onToggleActive(patient)}
+                  />
+                ) : (
+                  <Button
+                    type="button"
+                    onClick={() => onToggleActive(patient)}
+                    variant="link"
+                    className="h-auto p-0 text-ink-3"
+                  >
+                    Reativar
+                  </Button>
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 
 export default function PatientsPage() {
+  const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
@@ -127,16 +147,28 @@ export default function PatientsPage() {
       notes: values.notes || null,
       referredByPartnerId: values.referredByPartnerId || null,
     };
-    if (editing === "new") {
-      await apiFetch<PatientDto>("/api/patients", {
-        method: "POST",
-        body: JSON.stringify(payload),
+    try {
+      if (editing === "new") {
+        await apiFetch<PatientDto>("/api/patients", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+      } else if (editing) {
+        await apiFetch<PatientDto>(`/api/patients/${editing.id}`, {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        });
+      }
+      toast({
+        description: editing === "new" ? "Paciente criado" : "Paciente atualizado",
+        variant: "success",
       });
-    } else if (editing) {
-      await apiFetch<PatientDto>(`/api/patients/${editing.id}`, {
-        method: "PUT",
-        body: JSON.stringify(payload),
+    } catch (err) {
+      toast({
+        description: err instanceof Error ? err.message : "Erro ao salvar paciente",
+        variant: "danger",
       });
+      throw err;
     }
     setEditing(null);
     refresh();
@@ -149,9 +181,15 @@ export default function PatientsPage() {
         body: JSON.stringify({ active: !patient.active }),
       });
       setActionError(null);
+      toast({
+        description: patient.active ? "Paciente desativado" : "Paciente reativado",
+        variant: "success",
+      });
       refresh();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Erro ao atualizar paciente");
+      const message = err instanceof Error ? err.message : "Erro ao atualizar paciente";
+      setActionError(message);
+      toast({ description: message, variant: "danger" });
     }
   };
 

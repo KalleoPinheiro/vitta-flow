@@ -9,7 +9,7 @@ Implement these tasks with the `tlc-spec-driven` skill: **activate it by name an
 ---
 
 **Design**: `.specs/features/fase-a-padroes-estruturais/design.md`
-**Status**: Draft
+**Status**: In Progress — Phase 1 done (T1-T5, commits ed31d8f, a912f98, 821d2a7, e174ecd; T2 sem commit — ErrorAlert já único). Desvio documentado: T3/T4 estenderam escopo a `pacientes/[id]/page.tsx` (propagar isLoading/error do pai). Phase 2 done (T6-T17, commits 8d1e762..8bd4ae6). Desvio documentado em T17: o e2e revelou que envolver as tabelas em `overflow-x-auto` não bastava para AC4 da história P1 — `SidebarProvider` (@still-void/ui) já embrulha os filhos num `.sv-app-shell` flex, e o `<div className="flex min-h-screen">` do próprio shell (`staff-layout-client.tsx`) herdava `min-width: auto` como item flex único dessa linha, crescendo para caber o `<main>` e empurrando a página inteira além do viewport mobile. Fix (`min-w-0` no wrapper + `min-h-11/min-w-11` no `SidebarTrigger` para a área de toque de 44px) entrou no commit de T17 por ser pré-requisito do próprio teste, não constatado no Design original. 2484/2484 testes unit, 82/82 e2e (1 flaky por colisão de horário, absorvida pelo retry padrão da suíte).
 
 ---
 

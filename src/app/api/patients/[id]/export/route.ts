@@ -27,7 +27,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const repos = await getRepositories({ clinicId: null });
+    const repos = await getRepositories({ clinicId: guard.session?.clinicId ?? null });
 
     const patient = await repos.patients.findById(id);
     if (!patient) {

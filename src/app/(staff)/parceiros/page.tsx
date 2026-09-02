@@ -68,55 +68,57 @@ export default function PartnersPage() {
         ) : partners.length === 0 ? (
           <EmptyState message="Nenhum parceiro cadastrado." />
         ) : (
-          <Table className="w-full text-left text-sm">
-            <TableHeader>
-              <TableRow>
-                <TableHead className="px-4 py-3">Nome</TableHead>
-                <TableHead className="px-4 py-3">Contato</TableHead>
-                <TableHead className="px-4 py-3">CRM</TableHead>
-                <TableHead className="px-4 py-3">Especialidade</TableHead>
-                <TableHead className="px-4 py-3">Situação</TableHead>
-                <TableHead className="px-4 py-3 text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {partners.map((partner) => (
-                <TableRow key={partner.id} className={partner.active ? "" : "opacity-50"}>
-                  <TableCell className="px-4 py-3 font-medium">{partner.fullName}</TableCell>
-                  <TableCell className="px-4 py-3 text-ink-2">
-                    <div>{partner.email}</div>
-                    <div className="text-xs text-ink-3">{partner.phone}</div>
-                  </TableCell>
-                  <TableCell className="px-4 py-3 text-ink-2">{partner.crm ?? "—"}</TableCell>
-                  <TableCell className="px-4 py-3 text-ink-2">{partner.specialty ?? "—"}</TableCell>
-                  <TableCell className="px-4 py-3">
-                    <StatusBadge
-                      status={partner.active ? "confirmed" : "cancelled"}
-                      label={partner.active ? "Ativo" : "Inativo"}
-                    />
-                  </TableCell>
-                  <TableCell className="px-4 py-3 text-right">
-                    <Button
-                      type="button"
-                      onClick={() => setEditing(partner)}
-                      variant="link"
-                      className="h-auto p-0 mr-2 text-accent-ink"
-                    >
-                      Editar
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={() => void toggleActive(partner)}
-                      variant="link"
-                      className="h-auto p-0 text-ink-3"
-                    >
-                      {partner.active ? "Desativar" : "Reativar"}
-                    </Button>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table className="w-full text-left text-sm">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="px-4 py-3">Nome</TableHead>
+                  <TableHead className="px-4 py-3">Contato</TableHead>
+                  <TableHead className="px-4 py-3">CRM</TableHead>
+                  <TableHead className="px-4 py-3">Especialidade</TableHead>
+                  <TableHead className="px-4 py-3">Situação</TableHead>
+                  <TableHead className="px-4 py-3 text-right">Ações</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {partners.map((partner) => (
+                  <TableRow key={partner.id} className={partner.active ? "" : "opacity-50"}>
+                    <TableCell className="px-4 py-3 font-medium">{partner.fullName}</TableCell>
+                    <TableCell className="px-4 py-3 text-ink-2">
+                      <div>{partner.email}</div>
+                      <div className="text-xs text-ink-3">{partner.phone}</div>
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-ink-2">{partner.crm ?? "—"}</TableCell>
+                    <TableCell className="px-4 py-3 text-ink-2">{partner.specialty ?? "—"}</TableCell>
+                    <TableCell className="px-4 py-3">
+                      <StatusBadge
+                        status={partner.active ? "confirmed" : "cancelled"}
+                        label={partner.active ? "Ativo" : "Inativo"}
+                      />
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-right">
+                      <Button
+                        type="button"
+                        onClick={() => setEditing(partner)}
+                        variant="link"
+                        className="h-auto p-0 mr-2 text-accent-ink"
+                      >
+                        Editar
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={() => void toggleActive(partner)}
+                        variant="link"
+                        className="h-auto p-0 text-ink-3"
+                      >
+                        {partner.active ? "Desativar" : "Reativar"}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </Card>
 

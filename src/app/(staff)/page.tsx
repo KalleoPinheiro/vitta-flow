@@ -15,6 +15,7 @@ import {
   formatTime,
 } from "@/lib/format";
 import { StatusBadge } from "@/components/status-badge";
+import { ConfirmAction } from "@/components/confirm-action";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
 
 interface SummaryData {
@@ -153,14 +154,22 @@ export default function DashboardPage() {
                     >
                       Concluir
                     </Button>
-                    <Button
-                      type="button"
-                      onClick={() => void resolveFollowUp(followUp.id, "cancelled")}
-                      variant="link"
-                      className="h-auto p-0 shrink-0 text-ink-3"
-                    >
-                      Cancelar
-                    </Button>
+                    <ConfirmAction
+                      trigger={
+                        <Button
+                          type="button"
+                          variant="link"
+                          className="h-auto p-0 shrink-0 text-ink-3"
+                        >
+                          Cancelar
+                        </Button>
+                      }
+                      title="Cancelar retorno?"
+                      description="O retorno agendado será cancelado e o paciente não será mais lembrado."
+                      confirmLabel="Cancelar retorno"
+                      variant="danger"
+                      onConfirm={() => resolveFollowUp(followUp.id, "cancelled")}
+                    />
                   </li>
                 ))}
               </ul>

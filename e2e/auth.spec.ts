@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { E2E_ADMIN_EMAIL, E2E_ADMIN_PASSWORD, OPEN_MODE_BASE_URL } from "./support/constants";
+import { sessionCookie } from "./support/session-token";
 
 // Sobrescreve o storageState admin padrão (playwright.config.ts) — estes specs
 // precisam começar deslogados para exercitar o próprio fluxo de login.
@@ -67,6 +68,33 @@ test.describe("login por e-mail e senha", () => {
     await expect(
       page.getByText("Se houver uma conta com este e-mail, enviamos um link para redefinir a senha."),
     ).toBeVisible();
+  });
+
+  test("copy do login não presume acesso exclusivo de equipe (#68)", async ({ page }) => {
+    await page.goto("/login");
+    await expect(page.getByText("Entre com seu e-mail e sua senha")).toBeVisible();
+    await expect(page.getByText("restrito à equipe", { exact: false })).toHaveCount(0);
+    await expect(page.getByText("Acesso restrito", { exact: false })).toHaveCount(0);
+  });
+
+  test("paciente com sessão válida acessando a raiz é redirecionado ao portal, sem mensagem de acesso negado (#68)", async ({
+    page,
+    context,
+  }) => {
+    await context.addCookies([sessionCookie("paciente-e2e-login@vitta.test", "patient")]);
+    await page.goto("/");
+    await expect(page).toHaveURL(/\/portal/);
+    await expect(page.getByText("restrito à equipe", { exact: false })).toHaveCount(0);
+  });
+
+  test("parceiro com sessão válida acessando a raiz é redirecionado ao portal, sem mensagem de acesso negado (#68)", async ({
+    page,
+    context,
+  }) => {
+    await context.addCookies([sessionCookie("parceiro-e2e-login@vitta.test", "partner")]);
+    await page.goto("/");
+    await expect(page).toHaveURL(/\/portal/);
+    await expect(page.getByText("restrito à equipe", { exact: false })).toHaveCount(0);
   });
 });
 

@@ -14,12 +14,14 @@ export default function AttendanceDocumentPage({
 }) {
   const { appointmentId } = use(params);
   const { data: clinic } = useApiQuery<ClinicInfoDto>("/api/clinic-info");
-  const { data: appointment, error } = useApiQuery<AppointmentDto>(
-    `/api/appointments/${appointmentId}`,
-  );
+  const {
+    data: appointment,
+    error,
+    isLoading: appointmentLoading,
+  } = useApiQuery<AppointmentDto>(`/api/appointments/${appointmentId}`);
 
   if (error) return <ErrorAlert message={error} />;
-  if (!clinic) return <LoadingIndicator />;
+  if (!clinic || appointmentLoading) return <LoadingIndicator />;
   if (!appointment) return <ErrorAlert message="Consulta não encontrada" />;
   if (!isClinicInfoComplete(clinic)) {
     return (

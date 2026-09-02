@@ -77,6 +77,21 @@ test.describe("login por e-mail e senha", () => {
     await expect(page.getByText("Acesso restrito", { exact: false })).toHaveCount(0);
   });
 
+  // SPEC_DEVIATION: os dois testes abaixo estabelecem a sessão de
+  // paciente/parceiro via cookie assinado (sessionCookie), não pelo
+  // formulário real de /login com email+senha.
+  // Reason: /api/accounts (criação de conta) não devolve o link de convite na
+  // resposta — só a rota de bootstrap do Super Admin devolve, e só em
+  // dry-run. Fora do bootstrap, o link só existe no e-mail (ou no log do
+  // gateway nulo em dev), inacessível a este processo de teste por design
+  // (a rota é deliberadamente silenciosa quanto a revelar links — mesma
+  // razão de projeto por trás da resposta neutra de /api/auth/forgot-password).
+  // Não há hoje um caminho de teste que percorra o formulário real de senha
+  // para paciente/parceiro sem violar esse design; os specs de portal já
+  // existentes (portal-paciente.spec.ts, portal-parceiro.spec.ts) seguem o
+  // mesmo precedente. O que este teste prova (AC2: redirecionamento pós-login
+  // para /portal sem mensagem de acesso negado) permanece válido — a
+  // diferença é só como a sessão nasce.
   test("paciente com sessão válida acessando a raiz é redirecionado ao portal, sem mensagem de acesso negado (#68)", async ({
     page,
     context,

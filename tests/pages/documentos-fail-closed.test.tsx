@@ -24,7 +24,9 @@ const jsonResponse = (data: unknown, ok = true) => ({
   json: async () => ({ success: ok, data, error: ok ? null : "não encontrado" }),
 });
 
-const mockFetch = (router: (call: FetchCall) => { ok: boolean; json: () => Promise<unknown> }) => {
+type MockedResponse = { ok: boolean; json: () => Promise<unknown> };
+
+const mockFetch = (router: (call: FetchCall) => MockedResponse | Promise<never>) => {
   const fn = vi.fn(async (url: string) => router({ url }));
   vi.stubGlobal("fetch", fn);
   return fn;
@@ -136,6 +138,20 @@ describe("Feature: bloqueio fail-closed de documentos sem dados cadastrais (#62)
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "Declaração de Comparecimento" })).toBeInTheDocument(),
     );
+    expect(screen.getByText(`CNPJ: ${CLINIC_COMPLETE.cnpj}`)).toBeInTheDocument();
+    expect(screen.getByText(CLINIC_COMPLETE.professionalName as string)).toBeInTheDocument();
+  });
+
+  it("Dado consulta ainda carregando, Quando abrir o atestado, Então exibe carregamento, não 'consulta não encontrada' (#63)", async () => {
+    mockFetch(({ url }) => {
+      if (url.includes("/api/clinic-info")) return jsonResponse(CLINIC_COMPLETE);
+      return new Promise<never>(() => {});
+    });
+
+    await renderPage(<AttendanceDocumentPage params={Promise.resolve({ appointmentId: "apt-1" })} />);
+
+    expect(await screen.findByText("Carregando…")).toBeInTheDocument();
+    expect(screen.queryByText("Consulta não encontrada")).not.toBeInTheDocument();
   });
 
   it("Dado consulta cancelada, Quando abrir o atestado, Então bloqueia com o status atual", async () => {
@@ -190,6 +206,8 @@ describe("Feature: bloqueio fail-closed de documentos sem dados cadastrais (#62)
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "Relatório de Evolução Clínica" })).toBeInTheDocument(),
     );
+    expect(screen.getByText(`CNPJ: ${CLINIC_COMPLETE.cnpj}`)).toBeInTheDocument();
+    expect(screen.getByText(CLINIC_COMPLETE.professionalName as string)).toBeInTheDocument();
   });
 
   it("Dado clínica incompleta, Quando abrir o plano de cuidados, Então bloqueia", async () => {
@@ -219,6 +237,8 @@ describe("Feature: bloqueio fail-closed de documentos sem dados cadastrais (#62)
         screen.getByRole("heading", { name: "Plano de Cuidados de Enfermagem (SAE)" }),
       ).toBeInTheDocument(),
     );
+    expect(screen.getByText(`CNPJ: ${CLINIC_COMPLETE.cnpj}`)).toBeInTheDocument();
+    expect(screen.getByText(CLINIC_COMPLETE.professionalName as string)).toBeInTheDocument();
   });
 
   it("Dado clínica incompleta, Quando abrir o consentimento, Então renderiza normalmente (fora do escopo do bloqueio)", async () => {

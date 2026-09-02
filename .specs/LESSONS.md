@@ -210,6 +210,18 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: src/app/(staff)/pacientes/page.tsx:164 (variant swap) (testing,toast)
 - last seen: 2026-09-02T06:15:14Z
 
+### L-034 - When a page combines multiple useApiQuery results, guard '!resource' as not-found only after confirming the query actually settled (isLoading false or error set) — otherwise a still-loading resource is misread as not-found, as happened in the atestado page while clinic-info had already resolved.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `src/app/documentos` · harmful: 0
+- features: fase-b-clinico-legal-critico
+- evidence: CLIN-03 / spec.md:178 (src/app/documentos)
+- last seen: 2026-09-02T10:28:04Z
+
+### L-035 - When a task explicitly says to exercise a real credential/login flow (not a forged session token) for an E2E test, verify the diff actually does that — a session cookie minted directly proves route-guard/redirect behavior but not that the underlying login form/credentials path works, and no SPEC_DEVIATION was left to flag the shortcut.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `e2e` · harmful: 0
+- features: fase-b-clinico-legal-critico
+- evidence: CLIN-08 T16 tasks.md Done-when (e2e)
+- last seen: 2026-09-02T10:28:04Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

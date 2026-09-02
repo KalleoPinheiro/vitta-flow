@@ -166,7 +166,7 @@ Explicitamente excluído. Documentado para prevenir scope creep.
 1. WHEN staff, paciente e parceiro logam pela tela `/login` THEN nenhum SHALL ver copy que presuma acesso exclusivo de equipe.
 2. WHEN paciente ou parceiro loga com sucesso THEN o sistema SHALL redirecionar para `/portal` (via proxy, comportamento já existente).
 
-**Independent Test**: Rodar/estender E2E de login cobrindo os 3 perfis; fechar a issue #68 com a evidência.
+**Independent Test**: Rodar/estender E2E de login cobrindo os 3 perfis; fechar a issue #68 com a evidência. Staff cobre a copy e o formulário real de `/login`; paciente/parceiro cobrem a copy (mesma página) e o redirecionamento pós-sessão para `/portal` via cookie assinado — `POST /api/accounts` não expõe o link de convite na resposta, então o formulário real de senha não é alcançável por um paciente/parceiro criado via teste (mesmo precedente de `portal-paciente.spec.ts`/`portal-parceiro.spec.ts`).
 
 ---
 

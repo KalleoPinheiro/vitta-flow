@@ -9,7 +9,8 @@ export interface InvoiceFilter {
 
 export interface InvoicePage {
   limit?: number;
-  offset?: number;
+  /** Cursor opaco (issue #75) — retoma após o último item da página anterior. */
+  cursor?: string;
 }
 
 export interface InvoiceSummary {

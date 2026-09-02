@@ -1,6 +1,7 @@
-import { and, asc, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import { and, asc, eq, gt, ilike, inArray, or, sql } from "drizzle-orm";
 import { Patient } from "@/domain/patient/patient";
 import type { PatientPage, PatientRepository } from "@/domain/patient/patient-repository";
+import { decodeCursor } from "@/lib/pagination";
 import { MAX_ROWS, type AppDb } from "./db";
 import { patients } from "./schema";
 import { withTenant } from "./tenant-scope";
@@ -110,15 +111,25 @@ export class DrizzlePatientRepository implements PatientRepository {
     }
     const limit = Math.min(page.limit ?? MAX_ROWS, MAX_ROWS);
     const filter = buildPatientFilter(search, page.ids);
+    const cursorFilter = buildPatientCursorFilter(page.cursor);
     const rows = await this.db
       .select()
       .from(patients)
-      .where(withTenant(patients, this.clinicId, filter))
+      .where(withTenant(patients, this.clinicId, and(filter, cursorFilter)))
       .orderBy(asc(patients.fullName), asc(patients.id))
-      .limit(limit)
-      .offset(page.offset ?? 0);
+      .limit(limit);
     return rows.map(toPatient);
   }
+}
+
+/** Predicado de keyset: retoma estritamente depois de (fullName, id) do cursor. */
+function buildPatientCursorFilter(cursor?: string) {
+  const decoded = decodeCursor<{ fullName: string; id: string }>(cursor);
+  if (!decoded) return undefined;
+  return or(
+    gt(patients.fullName, decoded.fullName),
+    and(eq(patients.fullName, decoded.fullName), gt(patients.id, decoded.id)),
+  );
 }
 
 /**

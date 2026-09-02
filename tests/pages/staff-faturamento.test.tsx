@@ -10,9 +10,13 @@ interface FetchCall {
   init?: RequestInit;
 }
 
-const jsonResponse = (data: unknown, ok = true) => ({
+const jsonResponse = (
+  data: unknown,
+  ok = true,
+  meta?: { nextCursor: string | null },
+) => ({
   ok,
-  json: async () => ({ success: ok, data, error: ok ? null : "Erro" }),
+  json: async () => ({ success: ok, data, error: ok ? null : "Erro", meta }),
 });
 
 const errorResponse = (message: string) => ({
@@ -766,15 +770,16 @@ describe("Feature: Faturamento", () => {
   });
 
   describe("Cenário: carregar mais", () => {
-    it("Dado mais itens disponíveis, Quando clicar em Carregar mais, Então busca a próxima página", async () => {
+    it("Dado mais itens disponíveis, Quando clicar em Carregar mais, Então busca a próxima página pelo cursor", async () => {
       const fullPage: InvoiceDto[] = Array.from({ length: 100 }, (_, index) => ({
         ...invoicePending,
         id: `inv-${index}`,
       }));
+      const cursor = "eyJpc3N1ZWRBdCI6IngiLCJpZCI6InkifQ";
       const fetchMock = mockFetch(({ url }) => {
         if (url.startsWith("/api/invoices")) {
-          if (url.includes("offset=100")) return jsonResponse([]);
-          return jsonResponse(fullPage);
+          if (url.includes(`cursor=${cursor}`)) return jsonResponse([]);
+          return jsonResponse(fullPage, true, { nextCursor: cursor });
         }
         if (url.startsWith("/api/patients")) return jsonResponse([]);
         return jsonResponse(null, false);
@@ -787,7 +792,7 @@ describe("Feature: Faturamento", () => {
 
       await waitFor(() => {
         expect(
-          fetchMock.mock.calls.some(([url]) => String(url).includes("offset=100")),
+          fetchMock.mock.calls.some(([url]) => String(url).includes(`cursor=${cursor}`)),
         ).toBe(true);
       });
     });

@@ -15,6 +15,7 @@ interface Envelope<T> {
   success: boolean;
   data: T;
   error: string | null;
+  meta?: { nextCursor: string | null };
 }
 
 describe("Feature: Branches restantes de consultas, pacientes e catálogo clínico", () => {
@@ -401,13 +402,19 @@ describe("Feature: Branches restantes de consultas, pacientes e catálogo clíni
       expect(body.data.every((p) => p.fullName.includes("Zelda"))).toBe(true);
     });
 
-    it("Dado limit e offset, Quando GET, Então pagina resultados", async () => {
-      const response = await patientsRoute.GET(
-        jsonRequest("/api/patients?limit=1&offset=0", "GET"),
-      );
-      const body = (await response.json()) as Envelope<Array<{ id: string }>>;
+    it("Dado limit, Quando GET, Então pagina resultados e devolve nextCursor", async () => {
+      const response = await patientsRoute.GET(jsonRequest("/api/patients?limit=1", "GET"));
+      const body = (await response.json()) as Envelope<Array<{ id: string; fullName: string }>>;
 
       expect(body.data).toHaveLength(1);
+      expect(body.meta?.nextCursor).toBeTruthy();
+
+      const nextResponse = await patientsRoute.GET(
+        jsonRequest(`/api/patients?limit=1&cursor=${encodeURIComponent(body.meta!.nextCursor!)}`, "GET"),
+      );
+      const nextBody = (await nextResponse.json()) as Envelope<Array<{ id: string }>>;
+
+      expect(nextBody.data[0]?.id).not.toBe(body.data[0]?.id);
     });
 
     it("Dado referredByPartnerId válido e birthDate, Quando POST, Então cria paciente indicado", async () => {

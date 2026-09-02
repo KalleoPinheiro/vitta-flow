@@ -5,7 +5,7 @@ import { apiFetch } from "@/lib/client";
 import { useToast } from "@still-void/ui/react/client";
 import type { InvoiceDto, PatientDto, ProcedureDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
-import { usePagedQuery } from "@/lib/use-paged-query";
+import { useCursorPagedQuery } from "@/lib/use-cursor-paged-query";
 import {
   INVOICE_STATUS_LABELS,
   PAYMENT_METHOD_LABELS,
@@ -136,7 +136,7 @@ export default function BillingPage() {
     error: loadError,
     refresh,
     loadMore,
-  } = usePagedQuery<InvoiceDto>(
+  } = useCursorPagedQuery<InvoiceDto>(
     `/api/invoices${statusFilter ? `?status=${statusFilter}` : ""}`,
     PAGE_SIZE,
   );

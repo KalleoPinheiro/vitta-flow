@@ -5,6 +5,7 @@ import type {
   InvoiceRepository,
   InvoiceSummary,
 } from "@/domain/billing/invoice-repository";
+import { decodeCursor } from "@/lib/pagination";
 
 export class InMemoryInvoiceRepository implements InvoiceRepository {
   private readonly invoices = new Map<string, Invoice>();
@@ -37,9 +38,16 @@ export class InMemoryInvoiceRepository implements InvoiceRepository {
   async findAll(filter?: InvoiceFilter, page: InvoicePage = {}): Promise<Invoice[]> {
     const all = [...this.invoices.values()]
       .filter((invoice) => this.matchesFilter(invoice, filter))
-      .sort((a, b) => b.issuedAt.getTime() - a.issuedAt.getTime());
-    const offset = page.offset ?? 0;
-    return page.limit != null ? all.slice(offset, offset + page.limit) : all.slice(offset);
+      .sort((a, b) => b.issuedAt.getTime() - a.issuedAt.getTime() || b.id.localeCompare(a.id));
+    const decoded = decodeCursor<{ issuedAt: string; id: string }>(page.cursor);
+    const afterCursor = decoded
+      ? all.filter((invoice) => {
+          const issuedAt = invoice.issuedAt.getTime();
+          const cursorIssuedAt = new Date(decoded.issuedAt).getTime();
+          return issuedAt < cursorIssuedAt || (issuedAt === cursorIssuedAt && invoice.id < decoded.id);
+        })
+      : all;
+    return page.limit != null ? afterCursor.slice(0, page.limit) : afterCursor;
   }
 
   async summarize(filter?: InvoiceFilter): Promise<InvoiceSummary> {

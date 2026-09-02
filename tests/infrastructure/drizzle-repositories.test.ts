@@ -27,6 +27,7 @@ import { Professional } from "@/domain/professional/professional";
 import { Procedure } from "@/domain/catalog/procedure";
 import { UserAccount } from "@/domain/auth/user-account";
 import { DEFAULT_SCHEDULE_CONFIG } from "@/domain/scheduling/schedule-config";
+import { encodeCursor } from "@/lib/pagination";
 
 const slot = (startIso: string, endIso: string) =>
   TimeSlot.create(new Date(startIso), new Date(endIso));
@@ -112,6 +113,32 @@ describe("Feature: Persistência PostgreSQL (Drizzle)", () => {
       expect(await patientRepo.findByEmail("maria@example.com")).not.toBeNull();
       expect(await patientRepo.findAll("mari")).toHaveLength(1);
       expect(await patientRepo.findAll("inexistente")).toHaveLength(0);
+    });
+
+    it("Dado vários pacientes, Quando paginar por cursor, Então percorre tudo sem repetir nem pular (issue #75)", async () => {
+      const names = ["Ana", "Bruno", "Carla", "Diego", "Elis"];
+      for (const fullName of names) {
+        await patientRepo.save(
+          Patient.create({
+            fullName,
+            email: `${fullName.toLowerCase()}@example.com`,
+            phone: "11999990000",
+          }),
+        );
+      }
+
+      const collected: string[] = [];
+      let cursor: string | undefined;
+      for (let guard = 0; guard < 10; guard += 1) {
+        const page = await patientRepo.findAll(undefined, { limit: 2, cursor });
+        if (page.length === 0) break;
+        collected.push(...page.map((p) => p.fullName));
+        const last = page[page.length - 1];
+        cursor = encodeCursor({ fullName: last.fullName, id: last.id });
+        if (page.length < 2) break;
+      }
+
+      expect(collected).toEqual(names);
     });
   });
 
@@ -367,6 +394,33 @@ describe("Feature: Persistência PostgreSQL (Drizzle)", () => {
       expect(
         await invoiceRepo.findAll({ from: new Date(Date.now() + 86_400_000) }),
       ).toHaveLength(0);
+    });
+
+    it("Dado várias faturas, Quando paginar por cursor, Então percorre tudo sem repetir nem pular (issue #75)", async () => {
+      const patient = await savedPatient();
+      for (let i = 0; i < 5; i += 1) {
+        await invoiceRepo.save(
+          Invoice.create({
+            patientId: patient.id,
+            description: `Fatura ${i}`,
+            amount: Money.fromCents(1000 * (i + 1)),
+          }),
+        );
+      }
+      const fullOrder = (await invoiceRepo.findAll()).map((i) => i.id);
+
+      const collected: string[] = [];
+      let cursor: string | undefined;
+      for (let guard = 0; guard < 10; guard += 1) {
+        const page = await invoiceRepo.findAll({}, { limit: 2, cursor });
+        if (page.length === 0) break;
+        collected.push(...page.map((i) => i.id));
+        const last = page[page.length - 1];
+        cursor = encodeCursor({ issuedAt: last.issuedAt.toISOString(), id: last.id });
+        if (page.length < 2) break;
+      }
+
+      expect(collected).toEqual(fullOrder);
     });
   });
 

@@ -30,3 +30,22 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   }
   return envelope.data as T;
 }
+
+export interface CursorPage<T> {
+  items: T[];
+  nextCursor: string | null;
+}
+
+/** Como `apiFetch`, mas para listagens paginadas por cursor (issue #75). */
+export async function apiFetchPage<T>(path: string, init?: RequestInit): Promise<CursorPage<T>> {
+  const response = await fetch(path, {
+    ...init,
+    headers: { "Content-Type": "application/json", ...init?.headers },
+    cache: "no-store",
+  });
+  const envelope = (await response.json()) as ApiEnvelope<T[]>;
+  if (!response.ok || !envelope.success) {
+    throw new ApiError(envelope.error ?? "Erro desconhecido", response.status);
+  }
+  return { items: envelope.data ?? [], nextCursor: envelope.meta?.nextCursor ?? null };
+}

@@ -37,6 +37,7 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
   let partnerPortalRoute: typeof import("@/app/api/portal/partner/route");
   let confirmRoute: typeof import("@/app/api/portal/patient/appointments/[id]/confirm/route");
   let consentRoute: typeof import("@/app/api/portal/patient/consent/route");
+  let consentRevokeRoute: typeof import("@/app/api/portal/patient/consent/revoke/route");
   let photosRoute: typeof import("@/app/api/portal/patient/photos/route");
   let photoByIdRoute: typeof import("@/app/api/portal/patient/photos/[id]/route");
   let slotsRoute: typeof import("@/app/api/portal/patient/slots/route");
@@ -50,6 +51,7 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
   let partnersRoute: typeof import("@/app/api/partners/route");
   let appointmentsRoute: typeof import("@/app/api/appointments/route");
   let conditionsRoute: typeof import("@/app/api/patients/[id]/conditions/route");
+  let assessmentsRoute: typeof import("@/app/api/conditions/[id]/assessments/route");
 
   let patientId: string;
   let patientEmail: string;
@@ -57,8 +59,10 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
   let otherPatientEmail: string;
   let partnerId: string;
   let partnerEmail: string;
+  let referredPatientId: string;
   let appointmentId: string;
   let conditionId: string;
+  const INTERNAL_NOTE = "nota interna teste";
 
   let patientCookieToken: string;
   let otherPatientCookieToken: string;
@@ -70,6 +74,7 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
     partnerPortalRoute = await import("@/app/api/portal/partner/route");
     confirmRoute = await import("@/app/api/portal/patient/appointments/[id]/confirm/route");
     consentRoute = await import("@/app/api/portal/patient/consent/route");
+    consentRevokeRoute = await import("@/app/api/portal/patient/consent/revoke/route");
     photosRoute = await import("@/app/api/portal/patient/photos/route");
     photoByIdRoute = await import("@/app/api/portal/patient/photos/[id]/route");
     slotsRoute = await import("@/app/api/portal/patient/slots/route");
@@ -83,6 +88,7 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
     partnersRoute = await import("@/app/api/partners/route");
     appointmentsRoute = await import("@/app/api/appointments/route");
     conditionsRoute = await import("@/app/api/patients/[id]/conditions/route");
+    assessmentsRoute = await import("@/app/api/conditions/[id]/assessments/route");
 
     const { createSessionToken } = await import("@/lib/auth/session");
 
@@ -135,16 +141,48 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
     const appointmentBody = (await appointmentResponse.json()) as Envelope<{ id: string }>;
     appointmentId = appointmentBody.data.id;
 
-    // Condição clínica ativa para o paciente principal (para testes de foto)
+    // Condição clínica ativa para o paciente principal (para testes de foto e allowlist do portal, #69)
     const conditionResponse = await conditionsRoute.POST(
       staffRequest(`/api/patients/${patientId}/conditions`, "POST", {
         kind: "wound",
         title: "Ferida abdominal",
+        notes: INTERNAL_NOTE,
       }),
       context(patientId),
     );
     const conditionBody = (await conditionResponse.json()) as Envelope<{ id: string }>;
     conditionId = conditionBody.data.id;
+
+    // Avaliação com nota interna, para o mesmo teste de allowlist do portal (#69)
+    await assessmentsRoute.POST(
+      staffRequest(`/api/conditions/${conditionId}/assessments`, "POST", {
+        notes: INTERNAL_NOTE,
+      }),
+      context(conditionId),
+    );
+
+    // Paciente indicado pelo parceiro, com condição contendo nota interna (allowlist #69, portal do parceiro)
+    const referredPatientResponse = await patientsRoute.POST(
+      staffRequest("/api/patients", "POST", {
+        fullName: "Referida Portal",
+        email: "portal.indicado@example.com",
+        phone: "11922221111",
+        referredByPartnerId: partnerId,
+      }),
+    );
+    const referredPatientBody = (await referredPatientResponse.json()) as Envelope<{
+      id: string;
+    }>;
+    referredPatientId = referredPatientBody.data.id;
+
+    await conditionsRoute.POST(
+      staffRequest(`/api/patients/${referredPatientId}/conditions`, "POST", {
+        kind: "wound",
+        title: "Ferida indicada",
+        notes: INTERNAL_NOTE,
+      }),
+      context(referredPatientId),
+    );
 
     const expiresAtMs = Date.now() + 3_600_000;
     patientCookieToken = createSessionToken(
@@ -228,6 +266,22 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
       expect(body.data.patient.email).toBe(patientEmail);
       expect(body.data.appointments.some((a) => a.id === appointmentId)).toBe(true);
     });
+
+    it("Dado condição e avaliação com nota interna preenchida, Quando GET portal do paciente, Então resposta não contém a nota interna (#69)", async () => {
+      const response = await patientPortalRoute.GET(
+        jsonRequest("/api/portal/patient", "GET", undefined, cookieHeader(patientCookieToken)),
+      );
+      const body = (await response.json()) as Envelope<{
+        conditions: Array<{ condition: Record<string, unknown> }>;
+      }>;
+
+      expect(response.status).toBe(200);
+      expect(JSON.stringify(body)).not.toContain(INTERNAL_NOTE);
+      const conditionDto = body.data.conditions.find(
+        (entry) => entry.condition.id === conditionId,
+      )?.condition;
+      expect(conditionDto).not.toHaveProperty("notes");
+    });
   });
 
   describe("GET /api/portal/partner", () => {
@@ -253,6 +307,26 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
 
       expect(response.status).toBe(200);
       expect(body.data.partner.id).toBe(partnerId);
+    });
+
+    it("Dado paciente indicado com condição contendo nota interna, Quando GET portal do parceiro, Então resposta não contém a nota interna (#69)", async () => {
+      const response = await partnerPortalRoute.GET(
+        jsonRequest("/api/portal/partner", "GET", undefined, cookieHeader(partnerCookieToken)),
+      );
+      const body = (await response.json()) as Envelope<{
+        referredPatients: Array<{
+          patient: { id: string };
+          conditions: Array<{ condition: Record<string, unknown> }>;
+        }>;
+      }>;
+
+      expect(response.status).toBe(200);
+      expect(JSON.stringify(body)).not.toContain(INTERNAL_NOTE);
+      const referred = body.data.referredPatients.find(
+        (entry) => entry.patient.id === referredPatientId,
+      );
+      expect(referred).toBeDefined();
+      expect(referred?.conditions[0]?.condition).not.toHaveProperty("notes");
     });
   });
 
@@ -373,6 +447,188 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
 
       expect(response.status).toBe(200);
       expect(body.data.accepted).toBe(true);
+    });
+
+    it("Dado paciente sem nenhum aceite, Quando GET consent, Então retorna revoked false (distinto de revogado)", async () => {
+      const response = await consentRoute.GET(
+        jsonRequest(
+          "/api/portal/patient/consent",
+          "GET",
+          undefined,
+          cookieHeader(otherPatientCookieToken),
+        ),
+      );
+      const body = (await response.json()) as Envelope<{ accepted: boolean; revoked: boolean }>;
+
+      expect(response.status).toBe(200);
+      expect(body.data.accepted).toBe(false);
+      expect(body.data.revoked).toBe(false);
+    });
+
+    it("Dado sem sessão, Quando POST revoke, Então retorna 401", async () => {
+      const response = await consentRevokeRoute.POST(
+        jsonRequest("/api/portal/patient/consent/revoke", "POST"),
+      );
+
+      expect(response.status).toBe(401);
+    });
+
+    it("Dado aceite vigente, Quando revogar, Então GET consent passa a refletir revoked true e accepted false", async () => {
+      const revokeResponse = await consentRevokeRoute.POST(
+        jsonRequest(
+          "/api/portal/patient/consent/revoke",
+          "POST",
+          undefined,
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      const revokeBody = (await revokeResponse.json()) as Envelope<{
+        accepted: boolean;
+        revoked: boolean;
+      }>;
+
+      expect(revokeResponse.status).toBe(200);
+      expect(revokeBody.data.accepted).toBe(false);
+      expect(revokeBody.data.revoked).toBe(true);
+
+      const getResponse = await consentRoute.GET(
+        jsonRequest(
+          "/api/portal/patient/consent",
+          "GET",
+          undefined,
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      const getBody = (await getResponse.json()) as Envelope<{
+        accepted: boolean;
+        revoked: boolean;
+      }>;
+
+      expect(getBody.data.accepted).toBe(false);
+      expect(getBody.data.revoked).toBe(true);
+    });
+
+    it("Dado aceite vigente, Quando revogar, Então GET consent preserva data/versão do último ACEITE (não a data da revogação) e expõe revokedAt separado", async () => {
+      const consentGetBefore = (await (
+        await consentRoute.GET(
+          jsonRequest(
+            "/api/portal/patient/consent",
+            "GET",
+            undefined,
+            cookieHeader(patientCookieToken),
+          ),
+        )
+      ).json()) as Envelope<{ acceptedAt: string; textVersion: string }>;
+      const originalAcceptedAt = consentGetBefore.data.acceptedAt;
+      const originalTextVersion = consentGetBefore.data.textVersion;
+      expect(originalAcceptedAt).not.toBeNull();
+
+      const revokeResponse = await consentRevokeRoute.POST(
+        jsonRequest(
+          "/api/portal/patient/consent/revoke",
+          "POST",
+          undefined,
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      const revokeBody = (await revokeResponse.json()) as Envelope<{ revokedAt: string }>;
+      expect(revokeResponse.status).toBe(200);
+      expect(revokeBody.data.revokedAt).not.toBeNull();
+
+      const getResponse = await consentRoute.GET(
+        jsonRequest(
+          "/api/portal/patient/consent",
+          "GET",
+          undefined,
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      const getBody = (await getResponse.json()) as Envelope<{
+        acceptedAt: string;
+        textVersion: string;
+        revokedAt: string;
+      }>;
+
+      // acceptedAt/textVersion continuam do último ACEITE real — a revogação
+      // não "vira" um aceite com data trocada.
+      expect(getBody.data.acceptedAt).toBe(originalAcceptedAt);
+      expect(getBody.data.textVersion).toBe(originalTextVersion);
+      // revokedAt é a data da revogação, exposta em campo próprio.
+      expect(getBody.data.revokedAt).toBe(revokeBody.data.revokedAt);
+    });
+
+    it("Dado aceite vigente, Quando revogar duas vezes em sequência, Então idempotente — status final continua revogado sem erro na segunda chamada", async () => {
+      const first = await consentRevokeRoute.POST(
+        jsonRequest(
+          "/api/portal/patient/consent/revoke",
+          "POST",
+          undefined,
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      const second = await consentRevokeRoute.POST(
+        jsonRequest(
+          "/api/portal/patient/consent/revoke",
+          "POST",
+          undefined,
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      const secondBody = (await second.json()) as Envelope<{
+        accepted: boolean;
+        revoked: boolean;
+      }>;
+
+      expect(first.status).toBe(200);
+      expect(second.status).toBe(200);
+      expect(secondBody.data.accepted).toBe(false);
+      expect(secondBody.data.revoked).toBe(true);
+
+      const getResponse = await consentRoute.GET(
+        jsonRequest(
+          "/api/portal/patient/consent",
+          "GET",
+          undefined,
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      const getBody = (await getResponse.json()) as Envelope<{
+        accepted: boolean;
+        revoked: boolean;
+      }>;
+      expect(getBody.data.accepted).toBe(false);
+      expect(getBody.data.revoked).toBe(true);
+    });
+
+    it("Dado revogação recente, Quando aceitar de novo, Então GET consent volta a accepted true (revogação não é terminal)", async () => {
+      const postResponse = await consentRoute.POST(
+        jsonRequest(
+          "/api/portal/patient/consent",
+          "POST",
+          undefined,
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      const postBody = (await postResponse.json()) as Envelope<{ accepted: boolean }>;
+
+      expect(postResponse.status).toBe(200);
+      expect(postBody.data.accepted).toBe(true);
+
+      const getResponse = await consentRoute.GET(
+        jsonRequest(
+          "/api/portal/patient/consent",
+          "GET",
+          undefined,
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      const getBody = (await getResponse.json()) as Envelope<{
+        accepted: boolean;
+        revoked: boolean;
+      }>;
+
+      expect(getBody.data.accepted).toBe(true);
+      expect(getBody.data.revoked).toBe(false);
     });
   });
 
@@ -497,6 +753,56 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
       );
 
       expect(response.status).toBe(404);
+    });
+
+    it("Dado consentimento revogado (mesmo com aceite antigo do mesmo texto no histórico), Quando POST photos, Então bloqueia com ConsentRequiredError", async () => {
+      const revokeResponse = await consentRevokeRoute.POST(
+        jsonRequest(
+          "/api/portal/patient/consent/revoke",
+          "POST",
+          undefined,
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      expect(revokeResponse.status).toBe(200);
+
+      const file = new File([pngBytes], "foto.png", { type: "image/png" });
+      const response = await photosRoute.POST(
+        multipartRequest(
+          "/api/portal/patient/photos",
+          { file, conditionId, note: "pós-revogação" },
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      const body = (await response.json()) as Envelope<null> & { error: string };
+
+      expect(response.status).toBe(403);
+      expect(body.error).toMatch(/[Cc]onsentimento/);
+    });
+
+    it("Dado aceite vigente após novo aceite pós-revogação, Quando POST photos, Então volta a subir normalmente", async () => {
+      const acceptResponse = await consentRoute.POST(
+        jsonRequest(
+          "/api/portal/patient/consent",
+          "POST",
+          undefined,
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      expect(acceptResponse.status).toBe(200);
+
+      const file = new File([pngBytes], "foto.png", { type: "image/png" });
+      const response = await photosRoute.POST(
+        multipartRequest(
+          "/api/portal/patient/photos",
+          { file, conditionId, note: "pós-reaceite" },
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      const body = (await response.json()) as Envelope<{ triageStatus: string }>;
+
+      expect(response.status).toBe(200);
+      expect(body.data.triageStatus).toBe("pending");
     });
   });
 

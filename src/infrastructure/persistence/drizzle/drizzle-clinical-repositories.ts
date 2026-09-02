@@ -26,6 +26,7 @@ import {
 } from "@/domain/clinical/condition-photo";
 import {
   ConsentRecord,
+  type ConsentRecordKind,
   type ConsentRecordRepository,
 } from "@/domain/consent/consent-record";
 import type { AppDb } from "./db";
@@ -38,6 +39,7 @@ import {
   evolutionNotes,
 } from "./schema";
 import { withTenant } from "./tenant-scope";
+import { decryptField, encryptField } from "@/lib/auth/crypto";
 
 export class DrizzleAnamnesisRepository implements AnamnesisRepository {
   constructor(
@@ -81,7 +83,18 @@ export class DrizzleEvolutionNoteRepository implements EvolutionNoteRepository {
   constructor(
     private readonly db: AppDb,
     private readonly clinicId: string | null,
+    private readonly secret: string,
   ) {}
+
+  private toEntity(row: typeof evolutionNotes.$inferSelect): EvolutionNote {
+    return EvolutionNote.restore({
+      ...row,
+      subjective: decryptField(row.subjective, this.secret) ?? "",
+      objective: decryptField(row.objective, this.secret) ?? "",
+      assessment: decryptField(row.assessment, this.secret) ?? "",
+      plan: decryptField(row.plan, this.secret) ?? "",
+    });
+  }
 
   async save(note: EvolutionNote): Promise<void> {
     if (this.clinicId === null) {
@@ -95,10 +108,10 @@ export class DrizzleEvolutionNoteRepository implements EvolutionNoteRepository {
       patientId: note.patientId,
       appointmentId: note.appointmentId,
       professionalId: note.professionalId,
-      subjective: note.subjective,
-      objective: note.objective,
-      assessment: note.assessment,
-      plan: note.plan,
+      subjective: encryptField(note.subjective, this.secret) ?? "",
+      objective: encryptField(note.objective, this.secret) ?? "",
+      assessment: encryptField(note.assessment, this.secret) ?? "",
+      plan: encryptField(note.plan, this.secret) ?? "",
       createdAt: note.createdAt,
     });
   }
@@ -109,7 +122,7 @@ export class DrizzleEvolutionNoteRepository implements EvolutionNoteRepository {
       .from(evolutionNotes)
       .where(withTenant(evolutionNotes, this.clinicId, eq(evolutionNotes.patientId, patientId)))
       .orderBy(desc(evolutionNotes.createdAt), desc(evolutionNotes.id));
-    return rows.map((row) => EvolutionNote.restore(row));
+    return rows.map((row) => this.toEntity(row));
   }
 }
 
@@ -117,11 +130,13 @@ export class DrizzleClinicalConditionRepository implements ClinicalConditionRepo
   constructor(
     private readonly db: AppDb,
     private readonly clinicId: string | null,
+    private readonly secret: string,
   ) {}
 
   private toEntity(row: typeof clinicalConditions.$inferSelect): ClinicalCondition {
     return ClinicalCondition.restore({
       ...row,
+      notes: decryptField(row.notes, this.secret),
       kind: row.kind as ConditionKind,
       stomaType: row.stomaType as StomaType | null,
       status: row.status as ConditionStatus,
@@ -142,7 +157,7 @@ export class DrizzleClinicalConditionRepository implements ClinicalConditionRepo
       title: condition.title,
       stomaType: condition.stomaType,
       startedAt: condition.startedAt,
-      notes: condition.notes,
+      notes: encryptField(condition.notes, this.secret),
       status: condition.status,
       createdAt: condition.createdAt,
     };
@@ -208,7 +223,16 @@ export class DrizzleConditionAssessmentRepository implements ConditionAssessment
   constructor(
     private readonly db: AppDb,
     private readonly clinicId: string | null,
+    private readonly secret: string,
   ) {}
+
+  private toEntity(row: typeof conditionAssessments.$inferSelect): ConditionAssessment {
+    return ConditionAssessment.restore({
+      ...row,
+      notes: decryptField(row.notes, this.secret),
+      exudate: row.exudate as ExudateLevel | null,
+    });
+  }
 
   async save(assessment: ConditionAssessment): Promise<void> {
     if (this.clinicId === null) {
@@ -238,7 +262,7 @@ export class DrizzleConditionAssessmentRepository implements ConditionAssessment
       detErosionSeverity: assessment.detErosionSeverity,
       detOvergrowthArea: assessment.detOvergrowthArea,
       detOvergrowthSeverity: assessment.detOvergrowthSeverity,
-      notes: assessment.notes,
+      notes: encryptField(assessment.notes, this.secret),
       createdAt: assessment.createdAt,
     });
   }
@@ -255,9 +279,7 @@ export class DrizzleConditionAssessmentRepository implements ConditionAssessment
         ),
       )
       .orderBy(desc(conditionAssessments.createdAt), desc(conditionAssessments.id));
-    return rows.map((row) =>
-      ConditionAssessment.restore({ ...row, exudate: row.exudate as ExudateLevel | null }),
-    );
+    return rows.map((row) => this.toEntity(row));
   }
 
   async findByConditionIds(conditionIds: string[]): Promise<ConditionAssessment[]> {
@@ -276,9 +298,7 @@ export class DrizzleConditionAssessmentRepository implements ConditionAssessment
         ),
       )
       .orderBy(desc(conditionAssessments.createdAt), desc(conditionAssessments.id));
-    return rows.map((row) =>
-      ConditionAssessment.restore({ ...row, exudate: row.exudate as ExudateLevel | null }),
-    );
+    return rows.map((row) => this.toEntity(row));
   }
 }
 
@@ -385,7 +405,9 @@ export class DrizzleConsentRecordRepository implements ConsentRecordRepository {
       id: record.id,
       clinicId: this.clinicId,
       patientId: record.patientId,
+      kind: record.kind,
       textHash: record.textHash,
+      textVersion: record.textVersion,
       ipAddress: record.ipAddress,
       acceptedAt: record.acceptedAt,
     });
@@ -397,6 +419,16 @@ export class DrizzleConsentRecordRepository implements ConsentRecordRepository {
       .from(consentRecords)
       .where(withTenant(consentRecords, this.clinicId, eq(consentRecords.patientId, patientId)))
       .orderBy(desc(consentRecords.acceptedAt));
-    return rows.map((row) => ConsentRecord.restore(row));
+    return rows.map((row) => ConsentRecord.restore({ ...row, kind: row.kind as ConsentRecordKind }));
+  }
+
+  async findLatestByPatientId(patientId: string): Promise<ConsentRecord | null> {
+    const [row] = await this.db
+      .select()
+      .from(consentRecords)
+      .where(withTenant(consentRecords, this.clinicId, eq(consentRecords.patientId, patientId)))
+      .orderBy(desc(consentRecords.acceptedAt))
+      .limit(1);
+    return row ? ConsentRecord.restore({ ...row, kind: row.kind as ConsentRecordKind }) : null;
   }
 }

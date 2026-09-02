@@ -41,7 +41,12 @@ describe("Feature: Isolamento de Consentimento por empresa (MT-27)", () => {
 
     const consentRepoA = new DrizzleConsentRecordRepository(appDb, "legacy-clinic");
     await consentRepoA.save(
-      ConsentRecord.create({ patientId, consentText: "termo v1", ipAddress: "127.0.0.1" }),
+      ConsentRecord.create({
+        patientId,
+        consentText: "termo v1",
+        textVersion: "v1",
+        ipAddress: "127.0.0.1",
+      }),
     );
   });
 
@@ -66,8 +71,86 @@ describe("Feature: Isolamento de Consentimento por empresa (MT-27)", () => {
 
     await expect(
       systemRepo.save(
-        ConsentRecord.create({ patientId, consentText: "termo v2", ipAddress: null }),
+        ConsentRecord.create({
+          patientId,
+          consentText: "termo v2",
+          textVersion: "v1",
+          ipAddress: null,
+        }),
       ),
     ).rejects.toThrow("Papel de sistema não pode salvar consentimento");
+  });
+});
+
+describe("Feature: Versionamento e revogação de consentimento persistidos (#70)", () => {
+  let db: PgliteDatabase<typeof schema>;
+  let appDb: AppDb;
+  let patientId: string;
+  let consentRepo: DrizzleConsentRecordRepository;
+
+  beforeAll(async () => {
+    const client = new PGlite({ extensions: { pg_trgm, btree_gist } });
+    db = drizzle(client, { schema });
+    await migrate(db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
+    appDb = db as unknown as AppDb;
+
+    const patientRepo = new DrizzlePatientRepository(appDb, "legacy-clinic");
+    const patient = Patient.create({
+      fullName: "Paciente Versionamento",
+      email: "consent-versioning@x.com",
+      phone: "11988880000",
+    });
+    await patientRepo.save(patient);
+    patientId = patient.id;
+
+    consentRepo = new DrizzleConsentRecordRepository(appDb, "legacy-clinic");
+  });
+
+  it("Dado aceite com versão, Quando salvar e ler, Então kind e textVersion persistem", async () => {
+    const accept = ConsentRecord.create({
+      patientId,
+      consentText: "termo v1",
+      textVersion: "v1",
+      ipAddress: "10.0.0.1",
+    });
+    await consentRepo.save(accept);
+
+    const [found] = await consentRepo.findByPatientId(patientId);
+
+    expect(found.kind).toBe("accept");
+    expect(found.textVersion).toBe("v1");
+  });
+
+  it("Dado revogação registrada, Quando salvar e ler, Então kind revoke persiste sem textVersion", async () => {
+    // acceptedAt explícito (via restore) evita empate de timestamp com o aceite
+    // do teste anterior — garante ordenação determinística no teste seguinte.
+    const revoke = ConsentRecord.restore({
+      id: `${patientId}-revoke-1`,
+      patientId,
+      kind: "revoke",
+      textHash: "",
+      textVersion: null,
+      ipAddress: "10.0.0.2",
+      acceptedAt: new Date(Date.now() + 1000),
+    });
+    await consentRepo.save(revoke);
+
+    const records = await consentRepo.findByPatientId(patientId);
+    const found = records.find((r) => r.id === revoke.id);
+
+    expect(found?.kind).toBe("revoke");
+    expect(found?.textVersion).toBeNull();
+  });
+
+  it("Dado múltiplos registros, Quando buscar o mais recente, Então findLatestByPatientId retorna o de acceptedAt mais alto", async () => {
+    const latest = await consentRepo.findLatestByPatientId(patientId);
+
+    expect(latest?.kind).toBe("revoke");
+  });
+
+  it("Dado paciente sem nenhum registro, Quando buscar o mais recente, Então retorna null", async () => {
+    const latest = await consentRepo.findLatestByPatientId("paciente-inexistente");
+
+    expect(latest).toBeNull();
   });
 });

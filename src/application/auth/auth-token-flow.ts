@@ -1,6 +1,7 @@
 import { AuthToken, hashAuthTokenSecret, type AuthTokenPurpose } from "@/domain/auth/auth-token";
 import type { AuthTokenRepository } from "@/domain/auth/auth-token";
 import type { UserAccount, UserAccountRepository } from "@/domain/auth/user-account";
+import type { UserRole } from "@/domain/auth/user-role";
 import type { EmailGateway } from "@/application/ports/email-gateway";
 import { ValidationError } from "@/domain/shared/errors";
 import { hashPassword } from "@/lib/auth/password";
@@ -115,6 +116,19 @@ export interface ConsumeAuthTokenInput {
   nowMs?: number;
 }
 
+/**
+ * Conta e propósito do token consumido — o chamador usa pra registrar a
+ * trilha de auditoria (#71), que precisa saber quem teve a senha alterada e
+ * se foi convite ou reset.
+ */
+export interface ConsumeAuthTokenResult {
+  accountId: string;
+  email: string;
+  role: UserRole;
+  clinicId: string | null;
+  purpose: AuthTokenPurpose;
+}
+
 /** Consome um token de uso único e grava a nova senha da conta correspondente. */
 export class ConsumeAuthToken {
   constructor(
@@ -122,7 +136,7 @@ export class ConsumeAuthToken {
     private readonly accounts: UserAccountRepository,
   ) {}
 
-  async execute(input: ConsumeAuthTokenInput): Promise<void> {
+  async execute(input: ConsumeAuthTokenInput): Promise<ConsumeAuthTokenResult> {
     if (input.newPassword.length < MIN_PASSWORD_LENGTH) {
       throw new ValidationError(`A senha precisa ter ao menos ${MIN_PASSWORD_LENGTH} caracteres`);
     }
@@ -151,5 +165,13 @@ export class ConsumeAuthToken {
     // emissão já os invalidou.
     await this.tokens.markAllUnusedAsUsed(account.id, token.purpose, new Date(nowMs));
     await this.accounts.updatePasswordHash(account.id, await hashPassword(input.newPassword));
+
+    return {
+      accountId: account.id,
+      email: account.email,
+      role: account.role,
+      clinicId: account.clinicId,
+      purpose: token.purpose,
+    };
   }
 }

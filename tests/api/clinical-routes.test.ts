@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll } from "vitest";
+import { eq } from "drizzle-orm";
 import { jsonRequest, multipartRequest } from "../support/request";
 import { cookieHeaderFor } from "../support/session";
 import { getRepositories } from "@/infrastructure/container";
@@ -331,6 +332,74 @@ describe("Feature: Rotas clínicas (condições, avaliações, fotos, anamnese, 
 
       expect(body.data).toHaveLength(1);
       expect(body.data[0].conditionId).toBe(conditionBId);
+    });
+
+    it("Dada avaliação salva com notes preenchido, Quando consultada por SQL direto (bypass do repositório), Então a coluna não contém o texto plano; Quando lida via GET, Então retorna o texto plano de volta", async () => {
+      const plainText = "Avaliação com secreção purulenta — nota clínica sensível";
+      const createResponse = await assessmentsRoute.POST(
+        jsonRequest(`/api/conditions/${conditionBId}/assessments`, "POST", {
+          painScale: 3,
+          notes: plainText,
+        }),
+        context(conditionBId),
+      );
+      const createBody = (await createResponse.json()) as Envelope<{ id: string }>;
+      const assessmentId = createBody.data.id;
+
+      const { getDb } = await import("@/infrastructure/persistence/drizzle/db");
+      const { conditionAssessments } = await import("@/infrastructure/persistence/drizzle/schema");
+      const db = await getDb();
+      const rows = await db
+        .select()
+        .from(conditionAssessments)
+        .where(eq(conditionAssessments.id, assessmentId));
+
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.notes).not.toContain(plainText);
+      expect(rows[0]?.notes).not.toBeNull();
+
+      const getResponse = await assessmentsRoute.GET(
+        jsonRequest(`/api/conditions/${conditionBId}/assessments`, "GET"),
+        context(conditionBId),
+      );
+      const getBody = (await getResponse.json()) as Envelope<
+        Array<{ id: string; notes: string | null }>
+      >;
+
+      expect(getBody.data.find((a) => a.id === assessmentId)?.notes).toBe(plainText);
+    });
+
+    it("Dada avaliação salva sem notes (null), Quando persistida e lida, Então permanece null sem tentar cifrar", async () => {
+      const createResponse = await assessmentsRoute.POST(
+        jsonRequest(`/api/conditions/${conditionBId}/assessments`, "POST", { painScale: 2 }),
+        context(conditionBId),
+      );
+      const createBody = (await createResponse.json()) as Envelope<{
+        id: string;
+        notes: string | null;
+      }>;
+
+      expect(createBody.data.notes).toBeNull();
+
+      const { getDb } = await import("@/infrastructure/persistence/drizzle/db");
+      const { conditionAssessments } = await import("@/infrastructure/persistence/drizzle/schema");
+      const db = await getDb();
+      const rows = await db
+        .select()
+        .from(conditionAssessments)
+        .where(eq(conditionAssessments.id, createBody.data.id));
+
+      expect(rows[0]?.notes).toBeNull();
+
+      const getResponse = await assessmentsRoute.GET(
+        jsonRequest(`/api/conditions/${conditionBId}/assessments`, "GET"),
+        context(conditionBId),
+      );
+      const getBody = (await getResponse.json()) as Envelope<
+        Array<{ id: string; notes: string | null }>
+      >;
+
+      expect(getBody.data.find((a) => a.id === createBody.data.id)?.notes).toBeNull();
     });
   });
 

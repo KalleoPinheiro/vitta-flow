@@ -29,7 +29,9 @@ import {
   toAnamnesisDto,
   toEvolutionNoteDto,
   toConditionDto,
+  toPortalConditionDto,
   toAssessmentDto,
+  toPortalAssessmentDto,
   toSupplyDto,
   toStockMovementDto,
   toFollowUpDto,
@@ -331,6 +333,32 @@ describe("Feature: DTO de condição clínica", () => {
     expect(dto.startedAt).toBeNull();
     expect(dto.notes).toBeNull();
   });
+
+  it("Dado condição com nota interna preenchida, Quando toPortalConditionDto, Então omite notes (allowlist #69)", () => {
+    const condition = ClinicalCondition.create({
+      patientId: "patient-1",
+      kind: "stoma",
+      title: "Colostomia definitiva",
+      stomaType: "colostomia",
+      startedAt: new Date("2026-01-10T00:00:00.000Z"),
+      notes: "nota interna teste",
+    });
+
+    const dto = toPortalConditionDto(condition);
+
+    expect(dto).toEqual({
+      id: condition.id,
+      patientId: "patient-1",
+      kind: "stoma",
+      title: "Colostomia definitiva",
+      stomaType: "colostomia",
+      startedAt: condition.startedAt?.toISOString(),
+      status: "active",
+      createdAt: condition.createdAt.toISOString(),
+    });
+    expect(dto).not.toHaveProperty("notes");
+    expect(JSON.stringify(dto)).not.toContain("nota interna teste");
+  });
 });
 
 describe("Feature: DTO de avaliação de condição", () => {
@@ -393,6 +421,43 @@ describe("Feature: DTO de avaliação de condição", () => {
     expect(dto.complicationCodes).toEqual([]);
     expect(dto.pushScore).toBeNull();
     expect(dto.detScore).toBeNull();
+  });
+
+  it("Dado avaliação com nota interna preenchida, Quando toPortalAssessmentDto, Então omite notes (allowlist #69)", () => {
+    const assessment = ConditionAssessment.create({
+      conditionId: "condition-1",
+      lengthMm: 20,
+      widthMm: 10,
+      tissueType: "granulation",
+      exudate: "moderate",
+      painScale: 4,
+      skinCondition: "Íntegra ao redor",
+      complications: "Nenhuma",
+      complicationCodes: "dermatitis,bleeding",
+      notes: "nota interna teste",
+    });
+
+    const dto = toPortalAssessmentDto(assessment);
+
+    expect(dto).toEqual({
+      id: assessment.id,
+      conditionId: "condition-1",
+      lengthMm: 20,
+      widthMm: 10,
+      depthMm: null,
+      areaMm2: 200,
+      tissueType: "granulation",
+      exudate: "moderate",
+      painScale: 4,
+      skinCondition: "Íntegra ao redor",
+      complications: "Nenhuma",
+      complicationCodes: ["dermatitis", "bleeding"],
+      detScore: null,
+      pushScore: assessment.pushScore,
+      createdAt: assessment.createdAt.toISOString(),
+    });
+    expect(dto).not.toHaveProperty("notes");
+    expect(JSON.stringify(dto)).not.toContain("nota interna teste");
   });
 });
 

@@ -115,6 +115,77 @@ describe("Feature: Registro de auditoria best-effort (após a resposta)", () => 
   });
 });
 
+describe("Feature: Ator explícito pré-sessão (actorOverride, #71)", () => {
+  beforeEach(() => {
+    afterTasks.length = 0;
+  });
+
+  it("Dado actorOverride presente, Quando recordAudit, Então usa seus valores e ignora a sessão", async () => {
+    const auditEvents = createRepositoryStub();
+    const session: Session = {
+      expiresAtMs: Date.now() + 60_000,
+      subject: "sessao@clinica.com",
+      role: "company_admin",
+      clinicId: "clinic-sessao",
+      professionalId: null,
+    };
+
+    recordAudit(auditEvents, session, {
+      action: "read",
+      resourceType: "session",
+      resourceId: "login-attempt",
+      actorOverride: { role: "atendente", id: "login@clinica.com", clinicId: "clinic-override" },
+    });
+
+    await afterTasks[0]!();
+
+    const saved = auditEvents.save.mock.calls[0][0];
+    expect(saved.actorRole).toBe("atendente");
+    expect(saved.actorId).toBe("login@clinica.com");
+    expect(saved.clinicId).toBe("clinic-override");
+  });
+
+  it("Dado actorOverride com clinicId nulo e sem sessão, Quando recordAuditNow, Então grava LEGACY_CLINIC_ID", async () => {
+    const auditEvents = createRepositoryStub();
+
+    await recordAuditNow(auditEvents, null, {
+      action: "read",
+      resourceType: "session",
+      resourceId: "login-attempt-2",
+      actorOverride: { role: "anonymous", id: "sem-conta@clinica.com", clinicId: null },
+    });
+
+    const saved = auditEvents.save.mock.calls[0][0];
+    expect(saved.actorRole).toBe("anonymous");
+    expect(saved.actorId).toBe("sem-conta@clinica.com");
+    expect(saved.clinicId).toBe("legacy-clinic");
+  });
+
+  it("Dado actorOverride ausente, Quando recordAudit com sessão, Então comportamento atual é preservado (regressão zero)", async () => {
+    const auditEvents = createRepositoryStub();
+    const session: Session = {
+      expiresAtMs: Date.now() + 60_000,
+      subject: "maria@clinica.com",
+      role: "company_admin",
+      clinicId: "legacy-clinic",
+      professionalId: null,
+    };
+
+    recordAudit(auditEvents, session, {
+      action: "update",
+      resourceType: "clinic-info",
+      resourceId: "clinic-1",
+    });
+
+    await afterTasks[0]!();
+
+    const saved = auditEvents.save.mock.calls[0][0];
+    expect(saved.actorRole).toBe("company_admin");
+    expect(saved.actorId).toBe("maria@clinica.com");
+    expect(saved.clinicId).toBe("legacy-clinic");
+  });
+});
+
 describe("Feature: Auditoria write-ahead em ações críticas (SEC1-20..21)", () => {
   it("Dado sessão autenticada, Quando recordAuditNow, Então persiste antes de resolver com ator da sessão", async () => {
     const auditEvents = createRepositoryStub();

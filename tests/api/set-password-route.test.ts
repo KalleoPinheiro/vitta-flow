@@ -152,6 +152,66 @@ describe("Feature: POST /api/auth/set-password", () => {
     expect(json.error).toBe(INVALID_TOKEN_MESSAGE);
   });
 
+  it("Dado consumo de token de convite, Quando definir a senha, Então registra evento de auditoria com detail 'invite' (#71)", async () => {
+    const token = await inviteFor("audit-invite@x.com");
+    const { getRepositories } = await import("@/infrastructure/container");
+    const { auditEvents } = await getRepositories({ clinicId: CLINIC_A_ID });
+
+    const response = await setPassword(token, "senha-forte-audit-1");
+
+    expect(response.status).toBe(200);
+    const events = await auditEvents.findAll();
+    const event = events.find(
+      (e) => e.resourceType === "account-password" && e.actorId === "audit-invite@x.com",
+    );
+    expect(event).toBeDefined();
+    expect(event?.action).toBe("update");
+    expect(event?.detail).toBe("invite");
+  });
+
+  it("Dado consumo de token de reset, Quando definir a senha, Então registra evento de auditoria com detail 'reset' (#71)", async () => {
+    const inviteToken = await inviteFor("audit-reset@x.com");
+    await setPassword(inviteToken, "senha-forte-audit-2");
+
+    const { getRepositories } = await import("@/infrastructure/container");
+    const { authTokens, userAccounts, auditEvents } = await getRepositories({
+      clinicId: CLINIC_A_ID,
+    });
+    const { AuthToken } = await import("@/domain/auth/auth-token");
+    const account = await userAccounts.findByEmail("audit-reset@x.com");
+    const { token: resetToken, secret } = AuthToken.issue({
+      accountId: account!.id,
+      purpose: "reset",
+      nowMs: Date.now(),
+    });
+    await authTokens.replaceUnused(resetToken, new Date());
+
+    const response = await setPassword(secret, "senha-forte-audit-3");
+
+    expect(response.status).toBe(200);
+    const events = await auditEvents.findAll();
+    const event = events.find(
+      (e) =>
+        e.resourceType === "account-password" &&
+        e.actorId === "audit-reset@x.com" &&
+        e.detail === "reset",
+    );
+    expect(event).toBeDefined();
+    expect(event?.action).toBe("update");
+  });
+
+  it("Dado token inválido/expirado, Quando definir a senha, Então não registra evento de auditoria (#71)", async () => {
+    const { getRepositories } = await import("@/infrastructure/container");
+    const { auditEvents } = await getRepositories({ clinicId: CLINIC_A_ID });
+    const before = (await auditEvents.findAll()).length;
+
+    const response = await setPassword("token-invalido-para-auditoria", "senha-forte-audit-4");
+
+    expect(response.status).toBe(400);
+    const after = await auditEvents.findAll();
+    expect(after).toHaveLength(before);
+  });
+
   it("Dado seis tentativas no mesmo minuto, Quando a sexta chegar, Então responde 429", async () => {
     const sameIp = { "x-forwarded-for": "10.9.9.9" };
     const attempts: number[] = [];

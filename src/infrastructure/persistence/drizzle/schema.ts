@@ -394,7 +394,9 @@ export const consentRecords = pgTable(
     patientId: text("patient_id")
       .notNull()
       .references(() => patients.id),
+    kind: text("kind").notNull().default("accept"),
     textHash: text("text_hash").notNull(),
+    textVersion: text("text_version"),
     ipAddress: text("ip_address"),
     acceptedAt: timestamp("accepted_at", { withTimezone: true, mode: "date" }).notNull(),
   },

@@ -48,3 +48,39 @@ export function decryptSecret(payload: string, secret: string): string {
     decipher.final(),
   ]).toString("utf8");
 }
+
+/**
+ * Wrapper null-safe de `encryptSecret` — usado nos campos clínicos que aceitam `null`.
+ * String vazia passa direto também: `decryptSecret` valida `dataPart` com checagem de
+ * falsy, então um ciphertext de texto vazio (`iv.tag.` sem `dataPart`) seria rejeitado
+ * como formato inválido na leitura — e não há conteúdo sensível em "" para proteger.
+ */
+export function encryptField(value: string | null, secret: string): string | null {
+  return value === null || value === "" ? value : encryptSecret(value, secret);
+}
+
+/** Wrapper null-safe de `decryptSecret` — usado nos campos clínicos que aceitam `null`. */
+export function decryptField(value: string | null, secret: string): string | null {
+  return value === null || value === "" ? value : decryptSecret(value, secret);
+}
+
+/**
+ * Detecta se um valor já está cifrado (formato `iv.tag.ciphertext` produzido por
+ * `encryptSecret` E autenticado pela mesma `secret`) — usado pelo script de migração
+ * de dado pra pular linhas já cifradas (idempotência).
+ *
+ * Exige a tentativa real de decifra (não só checagem de formato): um texto plano
+ * gravado pela equipe pode coincidir por acaso com o formato `x.y.z` em base64url
+ * (3 segmentos, tamanhos plausíveis) sem jamais ter sido cifrado — aceitar isso só
+ * pelo formato faria a migração PULAR a linha e deixá-la em claro pra sempre
+ * (CWE-311). A tag de autenticação do GCM é o único jeito de confirmar que o
+ * payload veio de `encryptSecret` com esta `secret`.
+ */
+export function isEncryptedPayload(value: string, secret: string): boolean {
+  try {
+    decryptSecret(value, secret);
+    return true;
+  } catch {
+    return false;
+  }
+}

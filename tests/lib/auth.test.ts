@@ -5,7 +5,13 @@ import {
   verifySessionToken,
   passwordMatches,
 } from "@/lib/auth/session";
-import { encryptSecret, decryptSecret } from "@/lib/auth/crypto";
+import {
+  encryptSecret,
+  decryptSecret,
+  encryptField,
+  decryptField,
+  isEncryptedPayload,
+} from "@/lib/auth/crypto";
 import { RateLimiter } from "@/lib/auth/rate-limit";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 
@@ -124,6 +130,66 @@ describe("Feature: Criptografia de segredos em repouso (AES-256-GCM)", () => {
 
   it("Dado mesmo texto cifrado duas vezes, Quando comparar, Então saídas diferentes (IV aleatório)", () => {
     expect(encryptSecret("x", SECRET)).not.toBe(encryptSecret("x", SECRET));
+  });
+});
+
+describe("Feature: Helpers null-safe de cifra e detecção de payload cifrado", () => {
+  it("Dado valor null, Quando encryptField, Então retorna null sem cifrar", () => {
+    expect(encryptField(null, SECRET)).toBeNull();
+  });
+
+  it("Dado valor não nulo, Quando encryptField, Então retorna cifrado equivalente a encryptSecret", () => {
+    const encrypted = encryptField("nota clínica sensível", SECRET);
+
+    expect(encrypted).not.toBeNull();
+    expect(encrypted).not.toContain("nota clínica sensível");
+  });
+
+  it("Dado valor null, Quando decryptField, Então retorna null sem decifrar", () => {
+    expect(decryptField(null, SECRET)).toBeNull();
+  });
+
+  it("Dado valor cifrado por encryptField, Quando decryptField, Então retorna texto original (round-trip)", () => {
+    const encrypted = encryptField("nota clínica sensível", SECRET);
+
+    expect(decryptField(encrypted, SECRET)).toBe("nota clínica sensível");
+  });
+
+  it("Dado string vazia, Quando encryptField/decryptField, Então passa direto sem cifrar (sem conteúdo a proteger)", () => {
+    expect(encryptField("", SECRET)).toBe("");
+    expect(decryptField("", SECRET)).toBe("");
+  });
+
+  it("Dado payload cifrado válido com a mesma secret, Quando isEncryptedPayload, Então true", () => {
+    const encrypted = encryptSecret("valor", SECRET);
+
+    expect(isEncryptedPayload(encrypted, SECRET)).toBe(true);
+  });
+
+  it("Dado texto plano (formato não bate com iv.tag.ciphertext), Quando isEncryptedPayload, Então false", () => {
+    expect(isEncryptedPayload("nota clínica em claro", SECRET)).toBe(false);
+    expect(isEncryptedPayload("", SECRET)).toBe(false);
+    expect(isEncryptedPayload("a.b", SECRET)).toBe(false);
+    expect(isEncryptedPayload("a.b.c", SECRET)).toBe(false);
+  });
+
+  it("Dado texto plano que só coincide no FORMATO com iv.tag.ciphertext (3 segmentos base64url plausíveis), Quando isEncryptedPayload, Então false — checagem exige autenticação GCM real, não só forma (evita a migração pular linha em claro)", () => {
+    // 16 bytes / 16 bytes / N bytes em base64url, mesma forma estrutural de um payload
+    // real de `encryptSecret` — mas nunca passou por cifra: não pode ser aceito como
+    // "já cifrado", ou a migração (#72) deixaria a linha em claro pra sempre.
+    const lookalike = [
+      Buffer.alloc(12, 1).toString("base64url"),
+      Buffer.alloc(16, 2).toString("base64url"),
+      Buffer.from("nota clínica", "utf8").toString("base64url"),
+    ].join(".");
+
+    expect(isEncryptedPayload(lookalike, SECRET)).toBe(false);
+  });
+
+  it("Dado payload cifrado com OUTRA secret, Quando isEncryptedPayload com a secret vigente, Então false (tag de autenticação não bate)", () => {
+    const encryptedWithOtherSecret = encryptSecret("valor", "outra-secret-diferente-0000000000");
+
+    expect(isEncryptedPayload(encryptedWithOtherSecret, SECRET)).toBe(false);
   });
 });
 

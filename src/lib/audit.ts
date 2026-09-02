@@ -4,6 +4,12 @@ import type { AuditEventRepository } from "@/domain/audit/audit-event-repository
 import type { Session } from "@/lib/auth/session";
 import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
+export interface AuditActorOverride {
+  role: string;
+  id: string;
+  clinicId: string | null;
+}
+
 export interface AuditInput {
   action: AuditAction;
   resourceType: string;
@@ -16,6 +22,12 @@ export interface AuditInput {
    * demais casos resolve sozinho a partir de `session.clinicId`.
    */
   clinicId?: string | null;
+  /**
+   * Ator explícito para rotas que autenticam mas ainda não têm `Session`
+   * (login, set-password). Quando presente, sobrepõe o ator/empresa
+   * derivados de `session`.
+   */
+  actorOverride?: AuditActorOverride;
 }
 
 /**
@@ -55,11 +67,12 @@ async function persistAuditEvent(
   session: Session | null,
   input: AuditInput,
 ): Promise<void> {
+  const resolved = resolveActor(input.actorOverride, session);
   await auditEvents.save(
     AuditEvent.create({
-      clinicId: input.clinicId ?? session?.clinicId ?? LEGACY_CLINIC_ID,
-      actorRole: session?.role ?? "anonymous",
-      actorId: session?.subject ?? "anonymous",
+      clinicId: input.clinicId ?? resolved.clinicId,
+      actorRole: resolved.role,
+      actorId: resolved.id,
       action: input.action,
       resourceType: input.resourceType,
       resourceId: input.resourceId,
@@ -67,4 +80,22 @@ async function persistAuditEvent(
       detail: input.detail ?? null,
     }),
   );
+}
+
+function resolveActor(
+  actorOverride: AuditActorOverride | undefined,
+  session: Session | null,
+): { role: string; id: string; clinicId: string } {
+  if (actorOverride) {
+    return {
+      role: actorOverride.role,
+      id: actorOverride.id,
+      clinicId: actorOverride.clinicId ?? LEGACY_CLINIC_ID,
+    };
+  }
+  return {
+    role: session?.role ?? "anonymous",
+    id: session?.subject ?? "anonymous",
+    clinicId: session?.clinicId ?? LEGACY_CLINIC_ID,
+  };
 }

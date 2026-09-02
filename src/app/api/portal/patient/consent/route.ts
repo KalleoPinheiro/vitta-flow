@@ -1,13 +1,30 @@
 import type { NextRequest } from "next/server";
 import { getRepositories } from "@/infrastructure/container";
 import { ConsentRecord } from "@/domain/consent/consent-record";
-import { CONSENT_TEXT } from "@/lib/consent-text";
+import { CONSENT_TEXT, CONSENT_TEXT_VERSION } from "@/lib/consent-text";
 import { requirePortalSession } from "@/lib/auth/require-session";
 import { clientIp } from "@/lib/auth/client-ip";
 import { handleRequest } from "@/lib/api-response";
 import { recordAudit } from "@/lib/audit";
 import { NotFoundError } from "@/domain/shared/errors";
 import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+
+/**
+ * Monta o payload de status a partir do resultado de `resolveStatus` —
+ * `acceptedAt`/`textVersion` sempre do último ACEITE real, nunca da
+ * revogação, mesmo quando o status atual é revogado (AC-70-2).
+ */
+function toConsentStatusDto(status: ReturnType<typeof ConsentRecord.resolveStatus>) {
+  const revoked = status.current?.kind === "revoke";
+  return {
+    consentText: CONSENT_TEXT,
+    accepted: status.accepted,
+    revoked,
+    acceptedAt: status.latestAccept?.acceptedAt.toISOString() ?? null,
+    textVersion: status.latestAccept?.textVersion ?? null,
+    revokedAt: revoked ? (status.current?.acceptedAt.toISOString() ?? null) : null,
+  };
+}
 
 /** Texto vigente + status do aceite do paciente logado. */
 export async function GET(request: NextRequest) {
@@ -23,12 +40,8 @@ export async function GET(request: NextRequest) {
       throw new NotFoundError("Paciente", auth.session.subject);
     }
     const records = await consentRecords.findByPatientId(patient.id);
-    const current = records.find((record) => record.covers(CONSENT_TEXT)) ?? null;
-    return {
-      consentText: CONSENT_TEXT,
-      accepted: current !== null,
-      acceptedAt: current?.acceptedAt.toISOString() ?? null,
-    };
+    const status = ConsentRecord.resolveStatus(records, CONSENT_TEXT);
+    return toConsentStatusDto(status);
   });
 }
 
@@ -47,14 +60,15 @@ export async function POST(request: NextRequest) {
     }
 
     const existing = await consentRecords.findByPatientId(patient.id);
-    const already = existing.find((record) => record.covers(CONSENT_TEXT));
-    if (already) {
-      return { accepted: true, acceptedAt: already.acceptedAt.toISOString() };
+    const status = ConsentRecord.resolveStatus(existing, CONSENT_TEXT);
+    if (status.accepted && status.current) {
+      return { accepted: true, acceptedAt: status.current.acceptedAt.toISOString() };
     }
 
     const record = ConsentRecord.create({
       patientId: patient.id,
       consentText: CONSENT_TEXT,
+      textVersion: CONSENT_TEXT_VERSION,
       // Evidência do aceite: mesma derivação confiável usada no rate limit (SEC1-10..13).
       ipAddress: clientIp(request),
     });

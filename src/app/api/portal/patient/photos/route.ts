@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { getRepositories } from "@/infrastructure/container";
 import { AddConditionPhoto } from "@/application/clinical/add-condition-photo";
+import { ConsentRecord } from "@/domain/consent/consent-record";
 import { MAX_PHOTO_BYTES } from "@/domain/clinical/condition-photo";
 import { requirePortalSession } from "@/lib/auth/require-session";
 import { handleRequest, fail } from "@/lib/api-response";
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
     // Gate de consentimento (COMP3-01): tratamento de imagem exige base legal
     // registrada — sem aceite vigente do termo atual, nada é gravado.
     const consents = await consentRecords.findByPatientId(patient.id);
-    if (!consents.some((record) => record.covers(CONSENT_TEXT))) {
+    if (!ConsentRecord.resolveStatus(consents, CONSENT_TEXT).accepted) {
       throw new ConsentRequiredError(
         "Consentimento pendente — aceite o termo de consentimento no portal antes de enviar fotos",
       );

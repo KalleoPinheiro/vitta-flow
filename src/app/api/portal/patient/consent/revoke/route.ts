@@ -1,0 +1,46 @@
+import type { NextRequest } from "next/server";
+import { getRepositories } from "@/infrastructure/container";
+import { ConsentRecord } from "@/domain/consent/consent-record";
+import { requirePortalSession } from "@/lib/auth/require-session";
+import { clientIp } from "@/lib/auth/client-ip";
+import { handleRequest } from "@/lib/api-response";
+import { recordAudit } from "@/lib/audit";
+import { NotFoundError } from "@/domain/shared/errors";
+import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+
+/**
+ * Revogação self-service do consentimento LGPD (art. 8º/18): registra evento
+ * imutável de revogação — não apaga o aceite original (append-only, mesmo
+ * padrão do POST de aceite). Idempotente por natureza: acionar mais de uma
+ * vez em sequência só grava múltiplos registros de revogação, sem erro; o
+ * status final continua "revogado".
+ */
+export async function POST(request: NextRequest) {
+  const auth = requirePortalSession(request, "patient");
+  if (!auth.ok) return auth.response;
+
+  return handleRequest(async () => {
+    const { patients, consentRecords, auditEvents } = await getRepositories({
+      clinicId: auth.session.clinicId ?? LEGACY_CLINIC_ID,
+    });
+    const patient = await patients.findByEmail(auth.session.subject);
+    if (!patient || !patient.isActive) {
+      throw new NotFoundError("Paciente", auth.session.subject);
+    }
+
+    const record = ConsentRecord.revoke({
+      patientId: patient.id,
+      ipAddress: clientIp(request),
+    });
+    await consentRecords.save(record);
+
+    recordAudit(auditEvents, auth.session, {
+      action: "update",
+      resourceType: "consent",
+      resourceId: record.id,
+      patientId: patient.id,
+      detail: "revogação de consentimento",
+    });
+    return { accepted: false, revoked: true, revokedAt: record.acceptedAt.toISOString() };
+  });
+}

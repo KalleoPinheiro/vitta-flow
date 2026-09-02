@@ -8,6 +8,7 @@ import {
 import { handleRequest } from "@/lib/api-response";
 import { requireStaffSession } from "@/lib/auth/require-session";
 import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import { recordAudit } from "@/lib/audit";
 
 const configSchema = z.object({
   weekdays: z.array(z.number().int().min(0).max(6)).min(1).max(7),
@@ -35,11 +36,15 @@ export async function PUT(request: NextRequest) {
 
   return handleRequest(async () => {
     const body = configSchema.parse(await request.json());
-    const { scheduleConfig } = await getRepositories({
-      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
-    });
+    const clinicId = guard.session?.clinicId ?? LEGACY_CLINIC_ID;
+    const { scheduleConfig, auditEvents } = await getRepositories({ clinicId });
     const validated = validateScheduleConfig(body);
     await scheduleConfig.save(validated);
+    recordAudit(auditEvents, guard.session, {
+      action: "update",
+      resourceType: "clinic-schedule",
+      resourceId: clinicId,
+    });
     return { config: validated, isDefault: false };
   });
 }

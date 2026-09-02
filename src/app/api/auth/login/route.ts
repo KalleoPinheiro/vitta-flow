@@ -12,6 +12,7 @@ import { clientIp } from "@/lib/auth/client-ip";
 import { verifyPassword } from "@/lib/auth/password";
 import { getRepositories } from "@/infrastructure/container";
 import { fail } from "@/lib/api-response";
+import { recordAuditNow } from "@/lib/audit";
 import type { UserRole } from "@/domain/auth/user-role";
 
 const LOGIN_RATE_LIMIT = new RateLimiter(5, 60_000);
@@ -41,10 +42,27 @@ export async function POST(request: NextRequest) {
     return fail("Credenciais inválidas", 401);
   }
 
+  const { auditEvents } = await getRepositories({ clinicId: null });
   const identity = await authenticateAccount(parsed.data.email, parsed.data.password);
   if ("error" in identity) {
+    // Ator anônimo pré-sessão: nunca revela no evento se a conta existe além
+    // do que a própria resposta HTTP já revela (AC-02).
+    await recordAuditNow(auditEvents, null, {
+      action: "read",
+      resourceType: "session",
+      resourceId: parsed.data.email,
+      detail: "invalid_credentials",
+      actorOverride: { role: "anonymous", id: parsed.data.email, clinicId: null },
+    });
     return fail(identity.error, identity.status);
   }
+
+  await recordAuditNow(auditEvents, null, {
+    action: "read",
+    resourceType: "session",
+    resourceId: identity.subject,
+    actorOverride: { role: identity.role, id: identity.subject, clinicId: identity.clinicId },
+  });
 
   const expiresAtMs = Date.now() + SESSION_TTL_MS;
   const response = NextResponse.json({ success: true, data: { ok: true }, error: null });

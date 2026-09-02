@@ -76,6 +76,29 @@ describe("Feature: Dados cadastrais da clínica (issue #61)", () => {
     expect(body.data?.info.name).toBe("Clínica VittaFlow Ltda");
   });
 
+  it("Dado Admin de Empresa, Quando salvar dados cadastrais, Então registra evento de auditoria (#71)", async () => {
+    await ensureTestClinics();
+    const route = await import("@/app/api/settings/clinic-info/route");
+    const { getRepositories } = await import("@/infrastructure/container");
+    const { auditEvents } = await getRepositories({ clinicId: CLINIC_A_ID });
+
+    await route.PUT(
+      jsonRequest(
+        "/api/settings/clinic-info",
+        "PUT",
+        { name: "Clínica Auditada Ltda" },
+        adminCookieHeader(CLINIC_A_ID),
+      ),
+    );
+
+    const events = await auditEvents.findAll();
+    const event = events.find(
+      (e) => e.resourceType === "clinic-info" && e.resourceId === CLINIC_A_ID,
+    );
+    expect(event).toBeDefined();
+    expect(event?.action).toBe("update");
+  });
+
   it("Dado Admin de Empresa, Quando enviar nome vazio, Então retorna 400", async () => {
     await ensureTestClinics();
     const route = await import("@/app/api/settings/clinic-info/route");

@@ -50,6 +50,20 @@ describe("Feature: Fluxo completo da API (paciente → consulta → fatura → r
     patientId = body.data.id;
   });
 
+  it("Dado paciente criado, Quando POST /api/patients, Então registra evento de auditoria (#71)", async () => {
+    const { getRepositories } = await import("@/infrastructure/container");
+    const { auditEvents } = await getRepositories({ clinicId: "legacy-clinic" });
+
+    const events = await auditEvents.findAll();
+    const event = events.find(
+      (e) => e.resourceType === "patient" && e.resourceId === patientId,
+    );
+
+    expect(event).toBeDefined();
+    expect(event?.action).toBe("create");
+    expect(event?.patientId).toBe(patientId);
+  });
+
   it("Dado email duplicado, Quando POST /api/patients, Então retorna 400", async () => {
     const response = await patientsRoute.POST(
       jsonRequest("/api/patients", "POST", {

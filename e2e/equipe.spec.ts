@@ -35,6 +35,7 @@ test.describe("equipe — profissionais", () => {
     await expect(row.getByText("Ativo")).toBeVisible();
 
     await row.getByRole("button", { name: "Desativar" }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Confirmar" }).click();
     await expect(row.getByText("Inativo")).toBeVisible();
 
     await row.getByRole("button", { name: "Reativar" }).click();
@@ -76,6 +77,7 @@ test.describe("equipe — parceiros", () => {
     await expect(row.getByText("Ativo")).toBeVisible();
 
     await row.getByRole("button", { name: "Desativar" }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Confirmar" }).click();
     await expect(row.getByText("Inativo")).toBeVisible();
   });
 

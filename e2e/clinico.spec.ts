@@ -119,6 +119,7 @@ test.describe("prontuário clínico", () => {
     await expect(item.getByText("Em acompanhamento")).toBeVisible();
 
     await item.getByRole("button", { name: "Marcar resolvida" }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Confirmar" }).click();
     await expect(item.getByText("Resolvida")).toBeVisible();
     await expect(item.getByRole("button", { name: "+ Avaliação" })).toHaveCount(0);
 

@@ -179,7 +179,100 @@ describe("Feature: AuditPage", () => {
   });
 });
 
+const EMPTY_CLINIC_INFO = {
+  name: "Clínica VittaFlow",
+  cnpj: null,
+  address: null,
+  city: null,
+  professionalName: null,
+  professionalRegistry: null,
+};
+
 describe("Feature: SettingsPage", () => {
+  describe("Cenário: dados da clínica (#61)", () => {
+    const routeSchedule = (url: string) =>
+      url.startsWith("/api/settings/schedule")
+        ? jsonResponse({
+            config: { weekdays: [1], startHour: 8, endHour: 18, minGapMinutes: 30 },
+            isDefault: true,
+          })
+        : undefined;
+
+    it("Dado nenhum dado cadastrado, Quando a página carrega, Então exibe os campos vazios (não erro)", async () => {
+      mockFetch(({ url }) => {
+        const schedule = routeSchedule(url);
+        if (schedule) return schedule;
+        if (url.startsWith("/api/accounts")) return jsonResponse([]);
+        if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<SettingsPage />);
+
+      await screen.findByText("Dados da clínica");
+      expect(screen.getByPlaceholderText("00.000.000/0001-00")).toHaveValue("");
+      expect(screen.getByPlaceholderText("Nome completo")).toHaveValue("");
+    });
+
+    it("Dado edição dos campos, Quando salvar com sucesso, Então envia PUT e confirma com toast", async () => {
+      const fetchMock = mockFetch(({ url, init }) => {
+        const schedule = routeSchedule(url);
+        if (schedule) return schedule;
+        if (url.startsWith("/api/accounts")) return jsonResponse([]);
+        if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        if (url.startsWith("/api/settings/clinic-info") && init?.method === "PUT") {
+          return jsonResponse({
+            info: { ...EMPTY_CLINIC_INFO, cnpj: "12.345.678/0001-90", professionalName: "Enf. Ana" },
+          });
+        }
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<SettingsPage />);
+      await screen.findByText("Dados da clínica");
+
+      fireEvent.change(screen.getByPlaceholderText("00.000.000/0001-00"), {
+        target: { value: "12.345.678/0001-90" },
+      });
+      fireEvent.change(screen.getByPlaceholderText("Nome completo"), {
+        target: { value: "Enf. Ana" },
+      });
+      fireEvent.click(screen.getByText("Salvar dados da clínica"));
+
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(
+          "/api/settings/clinic-info",
+          expect.objectContaining({ method: "PUT" }),
+        );
+      });
+      expect(await screen.findByText("Dados da clínica salvos")).toBeInTheDocument();
+    });
+
+    it("Dado erro ao salvar, Quando a chamada falha, Então exibe alerta de erro", async () => {
+      mockFetch(({ url, init }) => {
+        const schedule = routeSchedule(url);
+        if (schedule) return schedule;
+        if (url.startsWith("/api/accounts")) return jsonResponse([]);
+        if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        if (url.startsWith("/api/settings/clinic-info") && init?.method === "PUT") {
+          return errorResponse("Apenas Admin de Empresa pode editar os dados da clínica");
+        }
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<SettingsPage />);
+      await screen.findByText("Dados da clínica");
+
+      fireEvent.click(screen.getByText("Salvar dados da clínica"));
+
+      const alert = await screen.findByRole("alert");
+      expect(alert).toHaveTextContent("Apenas Admin de Empresa pode editar os dados da clínica");
+    });
+  });
+
   /** AUTH-20: a conexão da agenda é oferecida como integração, fora do login. */
   describe("Cenário: integração do Google Agenda", () => {
     it("Dado a tela de configurações, Quando carregar, Então oferece o link de conexão da agenda apontando para a rota de integração", async () => {
@@ -192,6 +285,7 @@ describe("Feature: SettingsPage", () => {
         }
         if (url.startsWith("/api/accounts")) return jsonResponse([]);
         if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
         return jsonResponse(null, false);
       });
 
@@ -213,6 +307,7 @@ describe("Feature: SettingsPage", () => {
         }
         if (url.startsWith("/api/accounts")) return jsonResponse([]);
         if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
         return jsonResponse(null, false);
       });
 
@@ -236,6 +331,7 @@ describe("Feature: SettingsPage", () => {
         }
         if (url.startsWith("/api/accounts")) return jsonResponse([]);
         if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
         return jsonResponse(null, false);
       });
 
@@ -269,6 +365,7 @@ describe("Feature: SettingsPage", () => {
         }
         if (url.startsWith("/api/accounts")) return jsonResponse([]);
         if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
         return jsonResponse(null, false);
       });
 
@@ -296,6 +393,7 @@ describe("Feature: SettingsPage", () => {
         }
         if (url.startsWith("/api/accounts")) return jsonResponse([]);
         if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
         return jsonResponse(null, false);
       });
 
@@ -312,6 +410,7 @@ describe("Feature: SettingsPage", () => {
         if (url.startsWith("/api/settings/schedule")) return jsonResponse(null, false);
         if (url.startsWith("/api/accounts")) return jsonResponse([]);
         if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
         return jsonResponse(null, false);
       });
 
@@ -330,6 +429,7 @@ describe("Feature: SettingsPage", () => {
         }
         if (url.startsWith("/api/accounts")) return jsonResponse([]);
         if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
         return jsonResponse(null, false);
       });
 
@@ -356,6 +456,7 @@ describe("Feature: SettingsPage", () => {
         }
         if (url.startsWith("/api/accounts")) return jsonResponse([]);
         if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
         return jsonResponse(null, false);
       });
 
@@ -384,6 +485,7 @@ describe("Feature: SettingsPage", () => {
         }
         if (url.startsWith("/api/accounts")) return jsonResponse([]);
         if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
         return jsonResponse(null, false);
       });
 
@@ -409,6 +511,7 @@ describe("Feature: SettingsPage", () => {
         }
         if (url.startsWith("/api/accounts")) return jsonResponse([]);
         if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
         return jsonResponse(null, false);
       });
 
@@ -436,6 +539,7 @@ describe("Feature: SettingsPage", () => {
         if (url.startsWith("/api/professionals")) {
           return jsonResponse([{ id: "pr1", fullName: "Dra. Ana", registry: null, commissionPct: null, active: true }]);
         }
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
         return jsonResponse(null, false);
       });
 
@@ -467,6 +571,7 @@ describe("Feature: SettingsPage", () => {
           ]);
         }
         if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
         return jsonResponse(null, false);
       });
 
@@ -499,6 +604,7 @@ describe("Feature: SettingsPage", () => {
           ]);
         }
         if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
         return jsonResponse(null, false);
       });
 
@@ -528,6 +634,7 @@ describe("Feature: SettingsPage", () => {
           ]);
         }
         if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
         return jsonResponse(null, false);
       });
 
@@ -561,6 +668,7 @@ describe("Feature: SettingsPage", () => {
           ]);
         }
         if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
         return jsonResponse(null, false);
       });
 
@@ -584,6 +692,7 @@ describe("Feature: SettingsPage", () => {
         }
         if (url.startsWith("/api/accounts")) return jsonResponse(null, false);
         if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
         return jsonResponse(null, false);
       });
 
@@ -610,6 +719,7 @@ describe("Feature: SettingsPage", () => {
         if (url.startsWith("/api/professionals")) {
           return jsonResponse([{ id: "pr1", fullName: "Dra. Ana", registry: null, commissionPct: null, active: true }]);
         }
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
         return jsonResponse(null, false);
       });
 
@@ -643,6 +753,7 @@ describe("Feature: SettingsPage", () => {
         if (url.startsWith("/api/professionals")) {
           return jsonResponse([{ id: "pr1", fullName: "Dra. Ana", registry: null, commissionPct: null, active: true }]);
         }
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
         return jsonResponse(null, false);
       });
 
@@ -676,6 +787,7 @@ describe("Feature: SettingsPage", () => {
         if (url.startsWith("/api/professionals")) {
           return jsonResponse([{ id: "pr1", fullName: "Dra. Ana", registry: null, commissionPct: null, active: true }]);
         }
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
         return jsonResponse(null, false);
       });
 
@@ -710,6 +822,7 @@ describe("Feature: SettingsPage", () => {
         if (url.startsWith("/api/professionals")) {
           return jsonResponse([{ id: "pr1", fullName: "Dra. Ana", registry: null, commissionPct: null, active: true }]);
         }
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
         return jsonResponse(null, false);
       });
 
@@ -739,6 +852,7 @@ describe("Feature: SettingsPage", () => {
         }
         if (url.startsWith("/api/accounts")) return jsonResponse([]);
         if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
         return jsonResponse(null, false);
       });
 
@@ -768,6 +882,7 @@ describe("Feature: SettingsPage", () => {
         }
         if (url.startsWith("/api/accounts")) return jsonResponse([]);
         if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
         return jsonResponse(null, false);
       });
 
@@ -796,6 +911,7 @@ describe("Feature: SettingsPage", () => {
         }
         if (url.startsWith("/api/accounts")) return jsonResponse([]);
         if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
         return jsonResponse(null, false);
       });
 
@@ -825,6 +941,7 @@ describe("Feature: SettingsPage", () => {
           ]);
         }
         if (url.startsWith("/api/professionals")) return jsonResponse(null, false);
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
         return jsonResponse(null, false);
       });
 
@@ -857,6 +974,7 @@ describe("Feature: SettingsPage", () => {
           ]);
         }
         if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
         return jsonResponse(null, false);
       });
 
@@ -891,6 +1009,7 @@ describe("Feature: SettingsPage", () => {
           ]);
         }
         if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
         return jsonResponse(null, false);
       });
 
@@ -927,6 +1046,7 @@ describe("Feature: SettingsPage", () => {
           ]);
         }
         if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
         return jsonResponse(null, false);
       });
 

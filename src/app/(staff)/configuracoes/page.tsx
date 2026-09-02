@@ -343,27 +343,29 @@ function AccountsTable({
   if (accounts.length === 0) return <EmptyState message="Nenhuma conta cadastrada nesta empresa." />;
 
   return (
-    <Table className="w-full text-left text-sm">
-      <TableHeader>
-        <TableRow>
-          <TableHead className="py-2 pr-3">Email</TableHead>
-          <TableHead className="py-2 pr-3">Profissional vinculado</TableHead>
-          <TableHead className="py-2 pr-3">Situação</TableHead>
-          <TableHead className="py-2 text-right">Ações</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {accounts.map((account) => (
-          <AccountRow
-            key={account.id}
-            account={account}
-            professionalName={professionalName(account.professionalId)}
-            onToggleActive={() => onToggleActive(account)}
-            onResendInvite={() => onResendInvite(account)}
-          />
-        ))}
-      </TableBody>
-    </Table>
+    <div className="overflow-x-auto">
+      <Table className="w-full text-left text-sm">
+        <TableHeader>
+          <TableRow>
+            <TableHead className="py-2 pr-3">Email</TableHead>
+            <TableHead className="py-2 pr-3">Profissional vinculado</TableHead>
+            <TableHead className="py-2 pr-3">Situação</TableHead>
+            <TableHead className="py-2 text-right">Ações</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {accounts.map((account) => (
+            <AccountRow
+              key={account.id}
+              account={account}
+              professionalName={professionalName(account.professionalId)}
+              onToggleActive={() => onToggleActive(account)}
+              onResendInvite={() => onResendInvite(account)}
+            />
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 

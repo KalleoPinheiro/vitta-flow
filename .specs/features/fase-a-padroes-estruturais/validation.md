@@ -212,3 +212,121 @@ Root cause confirmed by reading the failing specs (e.g. `e2e/equipe.spec.ts:37-3
 4. **Major** — the discrimination sensor found a real, exploitable test-weakness: toast `variant` is never asserted anywhere, so a `success`/`danger` swap ships silently.
 
 **Next steps**: Fix 1 (update the 8 e2e specs) is the blocking item — it must land before this branch can be considered done, since it fails the feature's own declared Build gate. Fixes 2-4 should be scoped as fix tasks and routed back through the implement→verify cycle (iteration 1 of the bounded 3).
+
+---
+---
+
+# Iteration 2 — Independent Re-Verification
+
+**Date**: 2026-09-02
+**Diff range**: `86c65d7..HEAD` (39 commits total; fix round 1 = `c40990a`, `8f6511f`, `276c385`, `a7f9109`, `21dd8e6`)
+**Verifier**: fresh independent sub-agent (author ≠ verifier; different agent than iteration 1 and than the implementer of the 5 fix commits)
+
+This section re-derives everything from current code/tests, not from the implementer's or iteration-1 Verifier's claims.
+
+## Gap-by-gap re-verification (evidence-or-zero)
+
+| # | Iteration 1 gap | Fixed? | Evidence |
+| --- | --- | --- | --- |
+| 1 | Blocker — `npm run test:e2e` fails (8 specs never updated for `ConfirmAction`) | ✅ Fixed | `c40990a` adds `await page.getByRole("alertdialog").getByRole("button", { name: "Confirmar" }).click();` to all 8 affected specs (`e2e/equipe.spec.ts:38,80`, `e2e/pacientes.spec.ts`, `e2e/clinico.spec.ts`, `e2e/followup.spec.ts`, `e2e/plano-cuidados.spec.ts`, `e2e/triagem.spec.ts` ×2). Re-ran full `npm run test:e2e` myself (not trusting the implementer's report): **exit code 0, 80 passed, 2 flaky (both passed on retry)**. Isolated re-run of the previously-flaky `e2e/clinico.spec.ts:110` (`--repeat-each=5`): 5/5 pass — confirms the flake is transient parallel-worker load (webserver log shows a concurrent test's `409`/JSON-parse noise at the same timestamp), not a deterministic regression from this feature. The other flake (`responsive-tables.spec.ts:102`, scheduling collision) is the same pre-existing flake iteration 1 already documented as acceptable. |
+| 2 | Major — no retry-via-`refresh` on Prontuário error state (Story 1 AC4) | ✅ Fixed | `8f6511f`: `ErrorAlert` (`src/components/feedback.tsx:9,18-26`) gains optional `onRetry` prop rendering a "Tentar novamente" button. Wired at the list-fetch error site of all 4 components: `evolutions-section.tsx:135`, `conditions-section.tsx:103`, `care-plans-section.tsx:78`, `condition-photos.tsx:110` (`onRetry={load}` there, since that component uses `load()` not `refresh()` — consistent with the fix plan's own wording). Tests prove the click actually re-fetches, not just that a button exists: `tests/pages/staff-paciente-detail.test.tsx:444-465` (conditions, call-count assertion `expect(conditionsCallCount).toBe(2)`), `:1158-1176` (photos), `:1467-1486` (evolutions), `tests/pages/staff-paciente-care-plans.test.tsx:405-425` (care plans, `expect(carePlansCallCount).toBe(2)`) — all click "Tentar novamente" and assert a second network call plus the resulting UI transition to empty state. |
+| 3 | Major — 3 mutation handlers (`ScheduleSection.save`, `resendInvite`, `PatientPhotoUpload.upload`) bypassed `useToast` | ✅ Fixed | `276c385`. `ScheduleSection.save` → `configuracoes/page.tsx:100-103` (success) / `:107` (danger), both via `toast()`. `resendInvite` → `configuracoes/page.tsx:253` (`toast({ description: notice, variant: result.delivered ? "success" : "danger" })`) / `:258` (danger on throw). `PatientPhotoUpload.upload` → `portal/consent-card.tsx:122` (success) / `:127` (danger). Tests: `tests/pages/staff-operations.test.tsx:280-283` (schedule save toast + `.sv-toast--success` class assert), `:843-910` (resend invite, both delivered/not-delivered/error branches, each asserting the correct `.sv-toast--success`/`.sv-toast--danger` class), `tests/pages/portal.test.tsx:940-950,975-986` (photo upload success + error, variant-asserted). |
+| 4 | Major — toast `variant` never asserted anywhere (sensor mutant survived) | ✅ Fixed | `a7f9109` strengthens `tests/pages/staff-pacientes-list.test.tsx:187,236` to `expect(toastText.closest(".sv-toast--success")).not.toBeNull()` (previously text-only). All 3 new-handler tests added in `276c385` (see row above) and the portal photo/consent tests also assert the `.sv-toast--{variant}` class, not just text. Re-ran the discrimination sensor against this exact class of fault (see below) — killed. |
+
+**Conclusion**: all 4 iteration-1 gaps are genuinely closed, not just declared closed. No regression found in the fix commits themselves.
+
+## Spec-Anchored Acceptance Criteria — full 17-AC re-check
+
+| Req ID | Criterion | Result | Evidence (delta from iteration 1 only; unchanged ACs re-confirmed by direct grep/read, not re-copied verbatim) |
+| --- | --- | --- | --- |
+| FASEA-01 | isLoading true during fetch | ✅ PASS | `tests/lib/hooks.test.tsx:65-81` (unchanged, re-confirmed) |
+| FASEA-02 | error + isLoading:false + distinct error UI | ✅ PASS | `src/lib/use-api-query.ts:38-40`; `tests/pages/staff-paciente-detail.test.tsx:1411-1417` (unchanged, re-confirmed) |
+| FASEA-03 | success+empty → EmptyState | ⚠️ Spec-precision gap (unchanged) | Empty-state test exists (`staff-paciente-detail.test.tsx:1455`) but not framed as a dedicated positive assertion separate from the error-negative check; not a code gap, no fix required |
+| FASEA-04 | Prontuário error UI **with retry via refresh** | ✅ PASS (was ❌ GAP) | See gap-table row 2 above — retry now implemented and tested with call-count proof on all 4 components |
+| FASEA-05 | pages migrated to check error before data | ✅ PASS | `evolutions-section.tsx:130-136`, `conditions-section.tsx:100-101`, `care-plans-section.tsx:73-78` (unchanged, re-confirmed) |
+| FASEA-06 | sidebar off-canvas <1024px | ✅ PASS | `staff-layout-client.tsx:24` (unchanged) |
+| FASEA-07 | 11 pages wrap tables in `overflow-x-auto` | ✅ PASS | re-confirmed by direct grep on all 11 files, all present |
+| FASEA-08 | touch targets ≥44×44px | ✅ PASS | `staff-layout-client.tsx:44`; `e2e/responsive-tables.spec.ts:213-221` — ran, passes |
+| FASEA-09 | 375px viewport → no page-level horizontal scroll | ✅ PASS | `e2e/responsive-tables.spec.ts` — 11/11 target pages pass in the full suite run (1 unrelated flake on retry) |
+| FASEA-10 | 12 destructive actions open `AlertDialog` with specific copy | ✅ PASS | `src/components/confirm-action.tsx` at all 12 call sites (unchanged, re-confirmed) |
+| FASEA-11 | confirm executes same API call as before | ✅ PASS (was ❌ GAP at e2e level) | Now proven end-to-end: full `test:e2e` run passes (0 real failures) after `c40990a` |
+| FASEA-12 | new destructive action without dialog needs justification | ⚠️ Spec-precision gap (process rule, not code-checkable) | unchanged — no regression |
+| FASEA-13 | cancel/Esc/click-outside never calls API | ✅ PASS | `tests/components/confirm-action.test.tsx:56-98` (unchanged); e2e regression from same root cause as FASEA-11 now resolved |
+| FASEA-14 | every successful mutation on the 4 named pages fires success toast via `useToast` | ✅ PASS (was ❌ GAP) | See gap-table row 3 |
+| FASEA-15 | failed mutation → `variant="danger"` toast | ✅ PASS | confirmed for all handlers including the 3 newly-covered ones |
+| FASEA-16 | successful mutation → `variant="success"` toast | ✅ PASS (was ⚠️ test-precision gap) | See gap-table row 4 — variant now asserted via `.sv-toast--success`/`.sv-toast--danger` class checks across all target pages |
+| FASEA-17 | new toast usage reuses central `useToast` hook | ✅ PASS (was ❌ GAP) | all 3 previously-ad-hoc handlers now use `useToast` exclusively |
+
+**Status**: 15/17 ACs ✅ PASS, 2/17 ⚠️ spec-precision gaps (FASEA-03, FASEA-12 — both pre-existing, non-blocking, not code gaps), 0/17 ❌ GAP.
+
+## Gate Check (re-run from scratch, not trusted from implementer's report)
+
+- `npm run typecheck` — ✅ pass, 0 errors
+- `npm run lint` — ✅ pass, "ESLint: No issues found"
+- `npm run check:sv` — ✅ pass, "OK — adoção do @still-void/ui v2 completa"
+- `npm run test:coverage` — ✅ pass, **163 test files / 2509 tests, all passed**, exit 0. Coverage: 96.8% statements / 91.35% branches / 96.69% functions / 96.88% lines — exceeds AGENTS.md's 90% minimum on every dimension.
+- `npm run test:e2e` — ✅ pass, exit 0. **80 passed, 2 flaky (both passed on retry, 0 real failures)**. The 2 flakes are: (a) `responsive-tables.spec.ts:102` — pre-existing scheduling-collision flake, already documented in iteration 1; (b) `clinico.spec.ts:110` — new appearance this run, but isolated re-run confirms it is transient parallel-load flakiness (5/5 pass with `--repeat-each=5` outside full-suite contention), not a deterministic regression tied to this feature's code.
+
+**All 5 mandatory gate commands pass.** This directly overturns iteration 1's blocking finding.
+
+## Discrimination Sensor — Round 2 (3 new mutations, different from iteration 1's 4)
+
+All injected via direct file edit on the clean working tree, run against the targeted test file, then reverted with `git checkout --`; tree confirmed clean (`git status --porcelain`) before and after each mutation.
+
+| # | File:line | Description | Killed? |
+| --- | --- | --- | --- |
+| 1 | `src/components/feedback.tsx:22` | Inverted the condition that decides whether to render the "Tentar novamente" button: `{onRetry && (` → `{!onRetry && (` | ✅ Killed — 4 tests failed across `tests/pages/staff-paciente-detail.test.tsx` and `tests/pages/staff-paciente-care-plans.test.tsx` (button no longer found when `onRetry` is passed) |
+| 2 | `src/app/(staff)/configuracoes/page.tsx:253` | Removed the `toast(...)` call from `resendInvite`'s success path | ✅ Killed — `tests/pages/staff-operations.test.tsx` — 2 tests failed (`expect(screen.getAllByText(message)).toHaveLength(2)` dropped to 1) |
+| 3 | `src/app/portal/consent-card.tsx:122` | Swapped `PatientPhotoUpload.upload`'s success toast variant `"success"` → `"danger"` | ✅ Killed — `tests/pages/portal.test.tsx` — 1 test failed (`expect(toastText?.closest(".sv-toast--success")).not.toBeNull()` → received `null`) |
+
+**Sensor depth**: lightweight (3 targeted mutations across the exact code introduced by fix round 1: retry-button gating, the newly-added `resendInvite` toast, and the newly-added `PatientPhotoUpload` toast variant)
+**Result**: 3/3 killed — ✅ PASS. Combined with iteration 1's sensor (3/4 killed, 1 survived — now also fixed and independently re-tested as row 3 above), the feature's discrimination coverage across both rounds is 6/7 mutations killed on first try, with the one survivor from iteration 1 subsequently fixed and confirmed killed in this round.
+
+## Code Quality (re-check)
+
+| Principle | Status |
+| --- | --- |
+| Minimum code | ✅ — fix round 1 touches only the files named in the 4 fix plans |
+| Surgical changes | ✅ |
+| No scope creep | ✅ |
+| Matches patterns | ✅ — new toast calls follow the exact `toast({ description, variant })` shape used elsewhere; `onRetry` follows existing optional-prop conventions |
+| Spec-anchored outcome check | ✅ — all previously-flagged mismatches (retry, orphaned toasts, variant assertion) now match spec-defined outcomes exactly |
+| Per-layer coverage | ✅ — 12 destructive flows now covered at both unit and e2e level |
+| Every test maps to a spec requirement | ✅ — no unclaimed tests found in the 5 fix commits |
+| Documented guidelines followed | `AGENTS.md` (90% coverage minimum) — met (96.8% statements) |
+
+## Summary
+
+**Overall**: ✅ **PASS**
+
+**Spec-anchored check**: 15/17 ACs cleanly PASS, 2 pre-existing spec-precision gaps (non-blocking), 0 GAPs
+**Sensor**: 3/3 new mutations killed (round 2); the 1 surviving mutant from round 1 is now also killed
+**Gate**: typecheck / lint / check:sv / test:coverage (2509 tests, 96.8% stmt coverage) / test:e2e (80 passed, 2 flaky-but-retried, exit 0) — **all 5 pass**
+
+**What works**: All 4 iteration-1 gaps are genuinely resolved with file:line evidence and passing tests, not just declared resolved. The mandatory Build gate — the iteration-1 blocker — now passes in full, verified by an independent re-run of `npm run test:e2e` from a clean tree. The discrimination sensor found no new weaknesses in the fix commits themselves.
+
+**Issues found**: None blocking. Two long-standing spec-precision gaps remain (FASEA-03, FASEA-12) but both were already correctly classified as non-blocking in iteration 1 and require no code — one is a testing-emphasis nuance, the other is an organizational-process rule not expressible as a runtime assertion.
+
+**Next steps**: None required. Feature is ready for PR/merge.
+
+## Requirement Traceability Update (iteration 2)
+
+| Requirement | Iteration 1 Status | Iteration 2 Status |
+| --- | --- | --- |
+| FASEA-01 | ✅ Verified | ✅ Verified |
+| FASEA-02 | ✅ Verified | ✅ Verified |
+| FASEA-03 | ⚠️ Spec-precision gap | ⚠️ Spec-precision gap (unchanged, non-blocking) |
+| FASEA-04 | ❌ Needs Fix | ✅ Verified |
+| FASEA-05 | ✅ Verified | ✅ Verified |
+| FASEA-06 | ✅ Verified | ✅ Verified |
+| FASEA-07 | ✅ Verified | ✅ Verified |
+| FASEA-08 | ✅ Verified | ✅ Verified |
+| FASEA-09 | ✅ Verified | ✅ Verified |
+| FASEA-10 | ✅ Verified (unit) | ✅ Verified (unit + e2e) |
+| FASEA-11 | ❌ Needs Fix | ✅ Verified |
+| FASEA-12 | ⚠️ Spec-precision gap | ⚠️ Spec-precision gap (unchanged, non-blocking) |
+| FASEA-13 | ❌ Needs Fix | ✅ Verified |
+| FASEA-14 | ❌ Needs Fix | ✅ Verified |
+| FASEA-15 | ❌ Needs Fix | ✅ Verified |
+| FASEA-16 | ⚠️ Spec-precision gap | ✅ Verified |
+| FASEA-17 | ❌ Needs Fix | ✅ Verified |

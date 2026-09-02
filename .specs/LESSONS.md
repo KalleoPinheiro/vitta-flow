@@ -186,6 +186,30 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: tests/api/calendar-integration-routes.test.ts:174 (tests)
 - last seen: 2026-09-01T04:32:08Z
 
+### L-030 - When wrapping an existing destructive action in a confirmation dialog (ConfirmAction/AlertDialog), grep for and update every pre-existing e2e spec that clicks that action's trigger before treating the migration as done — unit tests that click-then-confirm can pass while old e2e specs that click-then-assert silently regress.
+- signal: `gate_fail` · recurrence: 1 feature(s) · scope: `e2e,confirm-action` · harmful: 0
+- features: fase-a-padroes-estruturais
+- evidence: e2e/equipe.spec.ts:28,71; e2e/pacientes.spec.ts:39; e2e/clinico.spec.ts:110; e2e/followup.spec.ts:24; e2e/plano-cuidados.spec.ts:125; e2e/triagem.spec.ts:38,64 (e2e,confirm-action)
+- last seen: 2026-09-02T06:15:13Z
+
+### L-031 - An AC phrase like 'com opção de tentar novamente via X' is a distinct, separately-testable requirement — don't let it get silently absorbed into a broader 'error UI is distinct from empty state' task without its own explicit done-when checkbox and test.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `spec-writing` · harmful: 0
+- features: fase-a-padroes-estruturais
+- evidence: spec.md FASEA-04 (Story 1, AC4) (spec-writing)
+- last seen: 2026-09-02T06:15:13Z
+
+### L-032 - When a spec AC is scoped at the page/file level ('toda mutação... nas páginas X'), don't let task execution silently narrow it to only the handlers named in the task's own prose — every mutation in that file is in scope unless the spec itself is amended.
+- signal: `spec_deviation` · recurrence: 1 feature(s) · scope: `toast,scope-narrowing` · harmful: 0
+- features: fase-a-padroes-estruturais
+- evidence: src/app/(staff)/configuracoes/page.tsx:96-104,240-260; src/app/portal/consent-card.tsx:106-127 (toast,scope-narrowing)
+- last seen: 2026-09-02T06:15:14Z
+
+### L-033 - When a spec AC names a specific enum/variant value (e.g. toast variant='success' vs 'danger'), assert the rendered variant/class directly in tests, not just the message text — text-only assertions don't discriminate a variant swap.
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `testing,toast` · harmful: 0
+- features: fase-a-padroes-estruturais
+- evidence: src/app/(staff)/pacientes/page.tsx:164 (variant swap) (testing,toast)
+- last seen: 2026-09-02T06:15:14Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

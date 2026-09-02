@@ -223,6 +223,12 @@ export const authTokens = pgTable(
     uniqueIndex("uq_auth_tokens_secret_hash").on(table.secretHash),
     // Invalidação em lote dos tokens anteriores do mesmo propósito.
     index("idx_auth_tokens_account_purpose").on(table.accountId, table.purpose),
+    // No máximo um token não-usado por conta+propósito: força emissões
+    // concorrentes a serializar no índice (issue #50) em vez de deixar duas
+    // linhas "não usadas" nascerem da mesma janela de corrida.
+    uniqueIndex("uq_auth_tokens_account_purpose_unused")
+      .on(table.accountId, table.purpose)
+      .where(sql`${table.usedAt} IS NULL`),
   ],
 );
 

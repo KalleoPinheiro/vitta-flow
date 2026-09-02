@@ -18,6 +18,9 @@ class InMemoryAuthTokenRepository implements AuthTokenRepository {
     _purpose: AuthTokenPurpose,
     _usedAt: Date = new Date(),
   ): Promise<void> {}
+  async replaceUnused(token: AuthToken, _usedAt: Date = new Date()): Promise<void> {
+    this.items.set(token.id, token);
+  }
 }
 
 class ThrowingEmailGateway implements EmailGateway {

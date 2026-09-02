@@ -115,4 +115,10 @@ export interface AuthTokenRepository {
   claimBySecretHash(secretHash: string, nowMs?: number): Promise<AuthToken | null>;
   /** Invalida os tokens não usados de um propósito — emitir um novo mata os anteriores. */
   markAllUnusedAsUsed(accountId: string, purpose: AuthTokenPurpose, usedAt?: Date): Promise<void>;
+  /**
+   * Invalida os tokens não usados do mesmo propósito e persiste `token` numa
+   * única unidade atômica — emissões concorrentes não podem deixar dois links
+   * válidos vivos ao mesmo tempo para a mesma conta+propósito.
+   */
+  replaceUnused(token: AuthToken, usedAt?: Date): Promise<void>;
 }

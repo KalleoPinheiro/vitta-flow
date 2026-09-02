@@ -84,14 +84,14 @@ export class IssueAuthToken {
   /** Invalida os anteriores do mesmo propósito, persiste o novo e devolve o link. */
   private async persist(input: IssueAuthTokenInput): Promise<string> {
     const nowMs = input.nowMs ?? Date.now();
-    await this.tokens.markAllUnusedAsUsed(input.account.id, input.purpose, new Date(nowMs));
-
     const { token, secret } = AuthToken.issue({
       accountId: input.account.id,
       purpose: input.purpose,
       nowMs,
     });
-    await this.tokens.save(token);
+    // Invalidar os irmãos e inserir o novo token numa única unidade atômica
+    // (issue #50) — duas emissões concorrentes não deixam dois links válidos.
+    await this.tokens.replaceUnused(token, new Date(nowMs));
 
     const base = input.appUrl.replace(/\/$/, "");
     return `${base}/definir-senha?token=${secret}`;

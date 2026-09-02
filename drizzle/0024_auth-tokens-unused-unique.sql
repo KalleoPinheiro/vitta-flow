@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "uq_auth_tokens_account_purpose_unused" ON "auth_tokens" USING btree ("account_id","purpose") WHERE "auth_tokens"."used_at" IS NULL;

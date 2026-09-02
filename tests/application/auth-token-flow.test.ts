@@ -60,6 +60,12 @@ class InMemoryAuthTokenRepository implements AuthTokenRepository {
       }
     }
   }
+
+  /** Espelha a semântica atômica do repositório real (issue #50). */
+  async replaceUnused(token: AuthToken, usedAt: Date = new Date()): Promise<void> {
+    await this.markAllUnusedAsUsed(token.accountId, token.purpose, usedAt);
+    await this.save(token);
+  }
 }
 
 class SpyEmailGateway implements EmailGateway {

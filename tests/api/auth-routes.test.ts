@@ -211,6 +211,138 @@ describe("Feature: Rotas de autenticação (login, logout, provedores)", () => {
 
       expect(lastStatus).toBe(429);
     });
+
+    it("Dado login válido, Quando POST login, Então registra evento de auditoria com ator e empresa da conta (#71)", async () => {
+      resetAuthEnv();
+      process.env.AUTH_SECRET = "test-secret-audit-ok";
+
+      const { getRepositories } = await import("@/infrastructure/container");
+      const { hashPassword } = await import("@/lib/auth/password");
+      const { UserAccount } = await import("@/domain/auth/user-account");
+      const { userAccounts, auditEvents } = await getRepositories({ clinicId: "legacy-clinic" });
+      await userAccounts.save(
+        UserAccount.create({
+          email: "auditoria-ok@clinica.com",
+          passwordHash: await hashPassword("s3nh@auditoria"),
+          role: "company_admin",
+          clinicId: "legacy-clinic",
+        }),
+      );
+
+      const response = await loginRoute.POST(
+        jsonRequest(
+          "/api/auth/login",
+          "POST",
+          { password: "s3nh@auditoria", email: "auditoria-ok@clinica.com" },
+          { "x-forwarded-for": "10.0.0.61" },
+        ),
+      );
+
+      expect(response.status).toBe(200);
+      const events = await auditEvents.findAll();
+      const loginEvent = events.find(
+        (event) => event.resourceType === "session" && event.actorId === "auditoria-ok@clinica.com",
+      );
+      expect(loginEvent).toBeDefined();
+      expect(loginEvent?.action).toBe("read");
+      expect(loginEvent?.actorRole).toBe("company_admin");
+      expect(loginEvent?.clinicId).toBe("legacy-clinic");
+    });
+
+    it("Dado senha errada para conta existente, Quando POST login, Então registra evento de falha com detail invalid_credentials (#71)", async () => {
+      resetAuthEnv();
+      process.env.AUTH_SECRET = "test-secret-audit-fail";
+
+      const { getRepositories } = await import("@/infrastructure/container");
+      const { hashPassword } = await import("@/lib/auth/password");
+      const { UserAccount } = await import("@/domain/auth/user-account");
+      const { userAccounts, auditEvents } = await getRepositories({ clinicId: "legacy-clinic" });
+      await userAccounts.save(
+        UserAccount.create({
+          email: "auditoria-falha-senha@clinica.com",
+          passwordHash: await hashPassword("s3nh@correta"),
+          role: "company_admin",
+          clinicId: "legacy-clinic",
+        }),
+      );
+
+      const response = await loginRoute.POST(
+        jsonRequest(
+          "/api/auth/login",
+          "POST",
+          { password: "senha-errada", email: "auditoria-falha-senha@clinica.com" },
+          { "x-forwarded-for": "10.0.0.62" },
+        ),
+      );
+
+      expect(response.status).toBe(401);
+      const events = await auditEvents.findAll();
+      const failEvent = events.find(
+        (event) =>
+          event.resourceType === "session" &&
+          event.actorId === "auditoria-falha-senha@clinica.com",
+      );
+      expect(failEvent).toBeDefined();
+      expect(failEvent?.detail).toBe("invalid_credentials");
+      expect(failEvent?.actorRole).toBe("anonymous");
+    });
+
+    it("Dado conta inexistente, Quando POST login, Então registra evento de falha sem revelar se a conta existe além da resposta HTTP (#71)", async () => {
+      resetAuthEnv();
+      process.env.AUTH_SECRET = "test-secret-audit-inexistente";
+
+      const { getRepositories } = await import("@/infrastructure/container");
+      const { auditEvents } = await getRepositories({ clinicId: "legacy-clinic" });
+
+      const response = await loginRoute.POST(
+        jsonRequest(
+          "/api/auth/login",
+          "POST",
+          { password: "qualquer-senha", email: "nao-existe-auditoria@clinica.com" },
+          { "x-forwarded-for": "10.0.0.63" },
+        ),
+      );
+
+      expect(response.status).toBe(401);
+      const events = await auditEvents.findAll();
+      const failEvent = events.find(
+        (event) =>
+          event.resourceType === "session" &&
+          event.actorId === "nao-existe-auditoria@clinica.com",
+      );
+      expect(failEvent).toBeDefined();
+      expect(failEvent?.detail).toBe("invalid_credentials");
+      expect(failEvent?.actorRole).toBe("anonymous");
+    });
+
+    it("Dado bloqueio por rate limit (429), Quando POST login, Então não registra evento de auditoria adicional (edge case)", async () => {
+      resetAuthEnv();
+      process.env.AUTH_SECRET = "test-secret-audit-rate-limit";
+      const ip = "10.0.0.101";
+      const { getRepositories } = await import("@/infrastructure/container");
+      const { auditEvents } = await getRepositories({ clinicId: "legacy-clinic" });
+
+      const responses: number[] = [];
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        const response = await loginRoute.POST(
+          jsonRequest(
+            "/api/auth/login",
+            "POST",
+            { password: "errada", email: `rate-limit-audit-${attempt}@clinica.com` },
+            { "x-forwarded-for": ip },
+          ),
+        );
+        responses.push(response.status);
+      }
+      expect(responses[5]).toBe(429);
+
+      const events = await auditEvents.findAll();
+      // As 5 primeiras tentativas (não bloqueadas) geram evento; a 6ª (429) não.
+      const rateLimitEvents = events.filter((event) =>
+        event.actorId.startsWith("rate-limit-audit-"),
+      );
+      expect(rateLimitEvents).toHaveLength(5);
+    });
   });
 
   describe("POST /api/auth/logout", () => {

@@ -13,6 +13,7 @@ import {
   formatDate,
 } from "@/lib/format";
 import { Modal } from "@/components/modal";
+import { ConfirmAction } from "@/components/confirm-action";
 import { StatusBadge } from "@/components/status-badge";
 import { ErrorAlert } from "@/components/feedback";
 import { LoadMoreButton } from "@/components/load-more-button";
@@ -94,14 +95,22 @@ function InvoicesTable({ invoices, onPay, onCancel }: InvoicesTableProps) {
                     >
                       Receber
                     </Button>
-                    <Button
-                      type="button"
-                      onClick={() => onCancel(invoice)}
-                      variant="link"
-                      className="h-auto p-0 text-danger"
-                    >
-                      Cancelar
-                    </Button>
+                    <ConfirmAction
+                      trigger={
+                        <Button
+                          type="button"
+                          variant="link"
+                          className="h-auto p-0 text-danger"
+                        >
+                          Cancelar
+                        </Button>
+                      }
+                      title="Cancelar fatura?"
+                      description="A fatura é cancelada permanentemente."
+                      confirmLabel="Cancelar fatura"
+                      variant="danger"
+                      onConfirm={() => onCancel(invoice)}
+                    />
                   </>
                 )}
               </TableCell>

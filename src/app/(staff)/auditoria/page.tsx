@@ -82,41 +82,43 @@ export default function AuditPage() {
           items={events}
           emptyMessage="Nenhum evento de auditoria registrado."
           render={(list) => (
-            <Table className="w-full text-left text-sm">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="px-4 py-3">Quando</TableHead>
-                  <TableHead className="px-4 py-3">Ator</TableHead>
-                  <TableHead className="px-4 py-3">Ação</TableHead>
-                  <TableHead className="px-4 py-3">Recurso</TableHead>
-                  <TableHead className="px-4 py-3">Paciente</TableHead>
-                  <TableHead className="px-4 py-3">Detalhe</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {list.map((event) => (
-                  <TableRow key={event.id}>
-                    <TableCell className="whitespace-nowrap px-4 py-2 text-ink-2">
-                      {formatDateTime(event.occurredAt)}
-                    </TableCell>
-                    <TableCell className="px-4 py-2">
-                      <span className="font-medium">{event.actorRole}</span>
-                      <span className="block text-xs text-ink-3">{event.actorId}</span>
-                    </TableCell>
-                    <TableCell className="px-4 py-2">{ACTION_LABELS[event.action] ?? event.action}</TableCell>
-                    <TableCell className="px-4 py-2">
-                      {RESOURCE_LABELS[event.resourceType] ?? event.resourceType}
-                    </TableCell>
-                    <TableCell className="px-4 py-2 text-ink-2">
-                      {event.patientId
-                        ? (patientNames.get(event.patientId) ?? event.patientId)
-                        : "—"}
-                    </TableCell>
-                    <TableCell className="px-4 py-2 text-ink-3">{event.detail ?? "—"}</TableCell>
+            <div className="overflow-x-auto">
+              <Table className="w-full text-left text-sm">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="px-4 py-3">Quando</TableHead>
+                    <TableHead className="px-4 py-3">Ator</TableHead>
+                    <TableHead className="px-4 py-3">Ação</TableHead>
+                    <TableHead className="px-4 py-3">Recurso</TableHead>
+                    <TableHead className="px-4 py-3">Paciente</TableHead>
+                    <TableHead className="px-4 py-3">Detalhe</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {list.map((event) => (
+                    <TableRow key={event.id}>
+                      <TableCell className="whitespace-nowrap px-4 py-2 text-ink-2">
+                        {formatDateTime(event.occurredAt)}
+                      </TableCell>
+                      <TableCell className="px-4 py-2">
+                        <span className="font-medium">{event.actorRole}</span>
+                        <span className="block text-xs text-ink-3">{event.actorId}</span>
+                      </TableCell>
+                      <TableCell className="px-4 py-2">{ACTION_LABELS[event.action] ?? event.action}</TableCell>
+                      <TableCell className="px-4 py-2">
+                        {RESOURCE_LABELS[event.resourceType] ?? event.resourceType}
+                      </TableCell>
+                      <TableCell className="px-4 py-2 text-ink-2">
+                        {event.patientId
+                          ? (patientNames.get(event.patientId) ?? event.patientId)
+                          : "—"}
+                      </TableCell>
+                      <TableCell className="px-4 py-2 text-ink-3">{event.detail ?? "—"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         />
       </Card>

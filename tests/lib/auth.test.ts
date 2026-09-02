@@ -160,17 +160,36 @@ describe("Feature: Helpers null-safe de cifra e detecção de payload cifrado", 
     expect(decryptField("", SECRET)).toBe("");
   });
 
-  it("Dado payload cifrado válido, Quando isEncryptedPayload, Então true", () => {
+  it("Dado payload cifrado válido com a mesma secret, Quando isEncryptedPayload, Então true", () => {
     const encrypted = encryptSecret("valor", SECRET);
 
-    expect(isEncryptedPayload(encrypted)).toBe(true);
+    expect(isEncryptedPayload(encrypted, SECRET)).toBe(true);
   });
 
   it("Dado texto plano (formato não bate com iv.tag.ciphertext), Quando isEncryptedPayload, Então false", () => {
-    expect(isEncryptedPayload("nota clínica em claro")).toBe(false);
-    expect(isEncryptedPayload("")).toBe(false);
-    expect(isEncryptedPayload("a.b")).toBe(false);
-    expect(isEncryptedPayload("a.b.c")).toBe(false);
+    expect(isEncryptedPayload("nota clínica em claro", SECRET)).toBe(false);
+    expect(isEncryptedPayload("", SECRET)).toBe(false);
+    expect(isEncryptedPayload("a.b", SECRET)).toBe(false);
+    expect(isEncryptedPayload("a.b.c", SECRET)).toBe(false);
+  });
+
+  it("Dado texto plano que só coincide no FORMATO com iv.tag.ciphertext (3 segmentos base64url plausíveis), Quando isEncryptedPayload, Então false — checagem exige autenticação GCM real, não só forma (evita a migração pular linha em claro)", () => {
+    // 16 bytes / 16 bytes / N bytes em base64url, mesma forma estrutural de um payload
+    // real de `encryptSecret` — mas nunca passou por cifra: não pode ser aceito como
+    // "já cifrado", ou a migração (#72) deixaria a linha em claro pra sempre.
+    const lookalike = [
+      Buffer.alloc(12, 1).toString("base64url"),
+      Buffer.alloc(16, 2).toString("base64url"),
+      Buffer.from("nota clínica", "utf8").toString("base64url"),
+    ].join(".");
+
+    expect(isEncryptedPayload(lookalike, SECRET)).toBe(false);
+  });
+
+  it("Dado payload cifrado com OUTRA secret, Quando isEncryptedPayload com a secret vigente, Então false (tag de autenticação não bate)", () => {
+    const encryptedWithOtherSecret = encryptSecret("valor", "outra-secret-diferente-0000000000");
+
+    expect(isEncryptedPayload(encryptedWithOtherSecret, SECRET)).toBe(false);
   });
 });
 

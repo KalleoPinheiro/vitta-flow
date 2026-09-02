@@ -69,8 +69,8 @@ Quatro gaps de proteção de dado sensível de saúde, todos apontados pela audi
 **Acceptance Criteria**:
 
 1. WHEN um paciente aceita o termo THEN o sistema SHALL gravar, além do hash já existente, a `CONSENT_TEXT_VERSION` vigente no momento do aceite.
-2. WHEN o portal do paciente carrega a tela de consentimento THEN o sistema SHALL exibir a versão do termo do aceite mais recente e a data do aceite.
-3. WHEN o paciente aciona "revogar consentimento" no portal THEN o sistema SHALL gravar um evento de revogação imutável (não apaga o aceite original — append-only, mesmo padrão do `ConsentRecord`) e a consulta de "status atual de consentimento" SHALL passar a retornar revogado.
+2. WHEN o portal do paciente carrega a tela de consentimento THEN o sistema SHALL exibir a versão do termo do aceite mais recente e a data do aceite — mesmo quando o status atual é revogado, `acceptedAt`/`textVersion` continuam refletindo o último ACEITE real, nunca a data da revogação.
+3. WHEN o paciente aciona "revogar consentimento" no portal THEN o sistema SHALL gravar um evento de revogação imutável (não apaga o aceite original — append-only, mesmo padrão do `ConsentRecord`), expor a data da revogação em campo próprio (`revokedAt`, distinto de `acceptedAt`) e a consulta de "status atual de consentimento" SHALL passar a retornar revogado.
 4. WHEN existe uma revogação mais recente que o último aceite para o paciente THEN qualquer fluxo que hoje verifica `covers(consentText)` (ex.: upload de foto pelo portal, se aplicável) SHALL tratar o paciente como sem consentimento válido.
 5. WHEN o paciente revoga e depois aceita de novo THEN o sistema SHALL permitir novo aceite (revogação não é estado terminal).
 6. WHEN a revogação é registrada THEN o sistema SHALL gerar evento de auditoria (`resourceType: "consent"`, `action: "update"`).
@@ -113,8 +113,8 @@ Quatro gaps de proteção de dado sensível de saúde, todos apontados pela audi
 3. WHEN uma condição clínica (`clinical_conditions.notes`) ou avaliação (`condition_assessments.notes`) é salva com `notes` não nulo THEN o sistema SHALL cifrar esse campo antes de persistir e decifrar na leitura, mesmo mecanismo do item 1.
 4. WHEN o campo cifrado está `null` (nunca preenchido) THEN o sistema SHALL persistir/ler `null` sem tentar cifrar/decifrar string vazia.
 5. WHEN existem linhas já gravadas em claro nas 3 tabelas antes desta mudança THEN uma migração de dado SHALL cifrar essas linhas existentes sem perda, executável uma única vez (idempotente: rodar duas vezes não cifra de novo o que já está cifrado).
-6. WHEN `AUTH_SECRET` está ausente (servidor não configurado) THEN a leitura/escrita desses campos SHALL falhar de forma explícita, no mesmo padrão fail-closed do resto da autenticação (`getAuthConfig()` retorna null → 503), nunca gravar em claro como fallback silencioso.
-7. WHEN o backup do banco (`pg_dump` ou equivalente) é gerado THEN os 3 campos SHALL sair cifrados no dump, pois a cifra acontece na aplicação antes do INSERT — nenhuma configuração adicional de backup é necessária (documentar essa garantia, não implementar backup novo).
+6. WHEN `AUTH_SECRET` está ausente (servidor não configurado) THEN a leitura/escrita desses campos SHALL falhar de forma explícita (erro propagado, resposta 500 — fail-closed, não o mesmo 503 do `getAuthConfig()` porque a checagem acontece dentro do use case, não na guarda de sessão), nunca gravar em claro como fallback silencioso.
+7. WHEN o backup do banco (`pg_dump` ou equivalente) é gerado THEN os 6 campos (4 de evolução + 2 de nota clínica) SHALL sair cifrados no dump, pois a cifra acontece na aplicação antes do INSERT — nenhuma configuração adicional de backup é necessária (documentar essa garantia, não implementar backup novo).
 
 **Independent Test**: Criar evolução com texto conhecido → consultar a tabela via SQL direto (bypass do repositório) → confirmar que a coluna não contém o texto plano → consultar via `ListEvolutionNotes` → confirmar texto plano de volta.
 

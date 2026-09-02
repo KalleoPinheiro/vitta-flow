@@ -508,6 +508,98 @@ describe("Feature: Rotas do portal (paciente e parceiro)", () => {
       expect(getBody.data.revoked).toBe(true);
     });
 
+    it("Dado aceite vigente, Quando revogar, Então GET consent preserva data/versão do último ACEITE (não a data da revogação) e expõe revokedAt separado", async () => {
+      const consentGetBefore = (await (
+        await consentRoute.GET(
+          jsonRequest(
+            "/api/portal/patient/consent",
+            "GET",
+            undefined,
+            cookieHeader(patientCookieToken),
+          ),
+        )
+      ).json()) as Envelope<{ acceptedAt: string; textVersion: string }>;
+      const originalAcceptedAt = consentGetBefore.data.acceptedAt;
+      const originalTextVersion = consentGetBefore.data.textVersion;
+      expect(originalAcceptedAt).not.toBeNull();
+
+      const revokeResponse = await consentRevokeRoute.POST(
+        jsonRequest(
+          "/api/portal/patient/consent/revoke",
+          "POST",
+          undefined,
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      const revokeBody = (await revokeResponse.json()) as Envelope<{ revokedAt: string }>;
+      expect(revokeResponse.status).toBe(200);
+      expect(revokeBody.data.revokedAt).not.toBeNull();
+
+      const getResponse = await consentRoute.GET(
+        jsonRequest(
+          "/api/portal/patient/consent",
+          "GET",
+          undefined,
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      const getBody = (await getResponse.json()) as Envelope<{
+        acceptedAt: string;
+        textVersion: string;
+        revokedAt: string;
+      }>;
+
+      // acceptedAt/textVersion continuam do último ACEITE real — a revogação
+      // não "vira" um aceite com data trocada.
+      expect(getBody.data.acceptedAt).toBe(originalAcceptedAt);
+      expect(getBody.data.textVersion).toBe(originalTextVersion);
+      // revokedAt é a data da revogação, exposta em campo próprio.
+      expect(getBody.data.revokedAt).toBe(revokeBody.data.revokedAt);
+    });
+
+    it("Dado aceite vigente, Quando revogar duas vezes em sequência, Então idempotente — status final continua revogado sem erro na segunda chamada", async () => {
+      const first = await consentRevokeRoute.POST(
+        jsonRequest(
+          "/api/portal/patient/consent/revoke",
+          "POST",
+          undefined,
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      const second = await consentRevokeRoute.POST(
+        jsonRequest(
+          "/api/portal/patient/consent/revoke",
+          "POST",
+          undefined,
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      const secondBody = (await second.json()) as Envelope<{
+        accepted: boolean;
+        revoked: boolean;
+      }>;
+
+      expect(first.status).toBe(200);
+      expect(second.status).toBe(200);
+      expect(secondBody.data.accepted).toBe(false);
+      expect(secondBody.data.revoked).toBe(true);
+
+      const getResponse = await consentRoute.GET(
+        jsonRequest(
+          "/api/portal/patient/consent",
+          "GET",
+          undefined,
+          cookieHeader(patientCookieToken),
+        ),
+      );
+      const getBody = (await getResponse.json()) as Envelope<{
+        accepted: boolean;
+        revoked: boolean;
+      }>;
+      expect(getBody.data.accepted).toBe(false);
+      expect(getBody.data.revoked).toBe(true);
+    });
+
     it("Dado revogação recente, Quando aceitar de novo, Então GET consent volta a accepted true (revogação não é terminal)", async () => {
       const postResponse = await consentRoute.POST(
         jsonRequest(

@@ -9,6 +9,23 @@ import { recordAudit } from "@/lib/audit";
 import { NotFoundError } from "@/domain/shared/errors";
 import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 
+/**
+ * Monta o payload de status a partir do resultado de `resolveStatus` —
+ * `acceptedAt`/`textVersion` sempre do último ACEITE real, nunca da
+ * revogação, mesmo quando o status atual é revogado (AC-70-2).
+ */
+function toConsentStatusDto(status: ReturnType<typeof ConsentRecord.resolveStatus>) {
+  const revoked = status.current?.kind === "revoke";
+  return {
+    consentText: CONSENT_TEXT,
+    accepted: status.accepted,
+    revoked,
+    acceptedAt: status.latestAccept?.acceptedAt.toISOString() ?? null,
+    textVersion: status.latestAccept?.textVersion ?? null,
+    revokedAt: revoked ? (status.current?.acceptedAt.toISOString() ?? null) : null,
+  };
+}
+
 /** Texto vigente + status do aceite do paciente logado. */
 export async function GET(request: NextRequest) {
   const auth = requirePortalSession(request, "patient");
@@ -24,13 +41,7 @@ export async function GET(request: NextRequest) {
     }
     const records = await consentRecords.findByPatientId(patient.id);
     const status = ConsentRecord.resolveStatus(records, CONSENT_TEXT);
-    return {
-      consentText: CONSENT_TEXT,
-      accepted: status.accepted,
-      revoked: status.current?.kind === "revoke",
-      acceptedAt: status.current?.acceptedAt.toISOString() ?? null,
-      textVersion: status.current?.textVersion ?? null,
-    };
+    return toConsentStatusDto(status);
   });
 }
 

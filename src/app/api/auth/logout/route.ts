@@ -9,14 +9,20 @@ export async function POST(request: NextRequest) {
   // erro (o logout ainda precisa limpar o cookie normalmente).
   const session = getRequestSession(request);
   if (session) {
-    const { auditEvents } = await getRepositories({ clinicId: session.clinicId });
-    // AC-03 não define a `action` — "delete" reflete o encerramento da sessão
-    // (spec-precision gap: valor exato não especificado no spec.md).
-    await recordAuditNow(auditEvents, session, {
-      action: "delete",
-      resourceType: "session",
-      resourceId: session.subject,
-    });
+    try {
+      const { auditEvents } = await getRepositories({ clinicId: session.clinicId });
+      // AC-03 não define a `action` — "delete" reflete o encerramento da sessão
+      // (spec-precision gap: valor exato não especificado no spec.md).
+      await recordAuditNow(auditEvents, session, {
+        action: "delete",
+        resourceType: "session",
+        resourceId: session.subject,
+      });
+    } catch (error) {
+      // Falha de auditoria nunca pode impedir o logout — indisponibilidade
+      // transitória do banco não pode travar quem está tentando sair.
+      console.error("Auditoria: falha ao registrar logout", error);
+    }
   }
 
   const response = NextResponse.json({ success: true, data: { ok: true }, error: null });

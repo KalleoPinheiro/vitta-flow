@@ -41,6 +41,6 @@ export async function POST(request: NextRequest) {
       patientId: patient.id,
       detail: "revogação de consentimento",
     });
-    return { accepted: false, revoked: true, acceptedAt: record.acceptedAt.toISOString() };
+    return { accepted: false, revoked: true, revokedAt: record.acceptedAt.toISOString() };
   });
 }

@@ -65,27 +65,21 @@ export function decryptField(value: string | null, secret: string): string | nul
 }
 
 /**
- * Detecta, só pelo formato, se um valor já está no formato `iv.tag.ciphertext` produzido
- * por `encryptSecret` — usado pelo script de migração de dado pra pular linhas já cifradas
- * (idempotência) sem precisar do secret pra tentar decifrar cada linha.
+ * Detecta se um valor já está cifrado (formato `iv.tag.ciphertext` produzido por
+ * `encryptSecret` E autenticado pela mesma `secret`) — usado pelo script de migração
+ * de dado pra pular linhas já cifradas (idempotência).
+ *
+ * Exige a tentativa real de decifra (não só checagem de formato): um texto plano
+ * gravado pela equipe pode coincidir por acaso com o formato `x.y.z` em base64url
+ * (3 segmentos, tamanhos plausíveis) sem jamais ter sido cifrado — aceitar isso só
+ * pelo formato faria a migração PULAR a linha e deixá-la em claro pra sempre
+ * (CWE-311). A tag de autenticação do GCM é o único jeito de confirmar que o
+ * payload veio de `encryptSecret` com esta `secret`.
  */
-export function isEncryptedPayload(value: string): boolean {
-  const [ivPart, tagPart, dataPart] = value.split(".");
-  if (!ivPart || !tagPart || !dataPart) {
-    return false;
-  }
+export function isEncryptedPayload(value: string, secret: string): boolean {
   try {
-    const iv = Buffer.from(ivPart, "base64url");
-    const tag = Buffer.from(tagPart, "base64url");
-    const data = Buffer.from(dataPart, "base64url");
-    return (
-      iv.length === IV_LENGTH &&
-      tag.length === AUTH_TAG_LENGTH &&
-      data.length > 0 &&
-      iv.toString("base64url") === ivPart &&
-      tag.toString("base64url") === tagPart &&
-      data.toString("base64url") === dataPart
-    );
+    decryptSecret(value, secret);
+    return true;
   } catch {
     return false;
   }

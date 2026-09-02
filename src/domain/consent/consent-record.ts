@@ -81,25 +81,41 @@ export class ConsentRecord {
 
   /**
    * Resolve o status atual de consentimento a partir do histórico completo
-   * (qualquer ordem): olha só o registro mais recente por `acceptedAt`.
+   * (qualquer ordem): olha só o registro mais recente por `acceptedAt`
+   * (empate resolvido a favor da revogação — o desfecho mais restritivo — já
+   * que `acceptedAt` tem resolução de milissegundo e duas chamadas em rápida
+   * sucessão podem colidir).
    * Revogação mais recente → não aceito. Aceite mais recente que não cobre o
    * texto vigente (versão antiga) → não aceito. Sem nenhum registro → não
    * aceito, `current: null` (distinto de revogado — ver Edge Cases da spec).
+   *
+   * `latestAccept` é sempre o aceite mais recente, independente do resultado
+   * de `accepted` — necessário pra exibir "sob qual versão/quando foi o
+   * último aceite" mesmo quando o status atual é revogado (AC-70-2): usar
+   * `current.acceptedAt` nesse caso devolveria o horário da REVOGAÇÃO como se
+   * fosse data de aceite.
    */
   static resolveStatus(
     records: readonly ConsentRecord[],
     consentText: string,
-  ): { accepted: boolean; current: ConsentRecord | null } {
+  ): { accepted: boolean; current: ConsentRecord | null; latestAccept: ConsentRecord | null } {
+    const latestAccept =
+      records
+        .filter((record) => record.kind === "accept")
+        .sort((a, b) => b.state.acceptedAt.getTime() - a.state.acceptedAt.getTime())[0] ?? null;
+
     if (records.length === 0) {
-      return { accepted: false, current: null };
+      return { accepted: false, current: null, latestAccept: null };
     }
     const latest = [...records].sort(
-      (a, b) => b.state.acceptedAt.getTime() - a.state.acceptedAt.getTime(),
+      (a, b) =>
+        b.state.acceptedAt.getTime() - a.state.acceptedAt.getTime() ||
+        (a.kind === "revoke" ? -1 : 1),
     )[0];
     if (latest.kind === "revoke") {
-      return { accepted: false, current: latest };
+      return { accepted: false, current: latest, latestAccept };
     }
-    return { accepted: latest.covers(consentText), current: latest };
+    return { accepted: latest.covers(consentText), current: latest, latestAccept };
   }
 
   /** O aceite cobre este texto? (hash idêntico) */

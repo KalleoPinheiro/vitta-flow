@@ -51,7 +51,7 @@ graph TD
 | `encryptSecret`/`decryptSecret` (AES-256-GCM) | `src/lib/auth/crypto.ts` | Reusado sem alteração para os 7 campos de #72 |
 | `recordAudit`/`recordAuditNow` | `src/lib/audit.ts` | Estendido com parâmetro opcional de ator explícito; chamado nos 6 pontos novos de #71 |
 | `AuditEvent` (domínio) | `src/domain/audit/audit-event.ts` | Sem alteração — `actorRole`/`actorId` já são campos livres |
-| `ConsentRecord` (append-only) | `src/domain/consent/consent-record.ts` | Mesmo padrão de imutabilidade estendido com `kind: "accept" | "revoke"` |
+| `ConsentRecord` (append-only) | `src/domain/consent/consent-record.ts` | Mesmo padrão de imutabilidade estendido com `kind: "accept" \| "revoke"` |
 | `toXxxDto` pattern | `src/lib/dto.ts` | Mesmo padrão de função pura de mapeamento aplicado às 2 novas funções allowlist |
 | `withTenant` | `src/infrastructure/persistence/drizzle/tenant-scope.ts` | Sem alteração — repositórios cifrados continuam usando o helper normalmente |
 | `getAuthConfig()` | `src/lib/auth/session.ts` | Fonte do secret de cifra (mesma chave do resto da auth, AD já ativa) |
@@ -110,7 +110,7 @@ Campo novo no estado: `kind: "accept" | "revoke"` (default `"accept"` em `restor
 
 ### 3 repositórios Drizzle cifrados (#72)
 
-- **Purpose**: Cifrar/decifrar os 7 campos sensíveis na fronteira do repositório — domínio e aplicação continuam falando texto plano.
+- **Purpose**: Cifrar/decifrar os 6 campos sensíveis (4 SOAP + 2 `notes`) em 3 tabelas, na fronteira do repositório — domínio e aplicação continuam falando texto plano.
 - **Location**: `src/infrastructure/persistence/drizzle/drizzle-clinical-repositories.ts`
 - **Interfaces** (assinatura de construtor muda nos 3):
   - `new DrizzleEvolutionNoteRepository(db, clinicId, secret: string)`

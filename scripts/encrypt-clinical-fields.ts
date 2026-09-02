@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { getDb } from "@/infrastructure/persistence/drizzle/db";
 import {
   clinicalConditions,
@@ -15,8 +15,8 @@ import { encryptField, isEncryptedPayload } from "@/lib/auth/crypto";
  * risco de timeout).
  *
  * Idempotente: cada campo passa por `isEncryptedPayload` antes de cifrar — se
- * já está no formato `iv.tag.ciphertext`, a linha é pulada. Rodar o script
- * duas vezes não cifra de novo o que já está cifrado.
+ * já decifra com sucesso com a `secret` vigente, a linha é pulada. Rodar o
+ * script duas vezes não cifra de novo o que já está cifrado.
  */
 
 const BATCH_SIZE = 200;
@@ -26,9 +26,9 @@ interface FieldUpdatePlan {
   encrypted: string | null;
 }
 
-/** Decide se um campo precisa ser cifrado (não nulo, não vazio, ainda não cifrado). */
+/** Decide se um campo precisa ser cifrado (não nulo, não vazio, ainda não cifrado de fato). */
 function planField(value: string | null, secret: string): FieldUpdatePlan {
-  if (value === null || value === "" || isEncryptedPayload(value)) {
+  if (value === null || value === "" || isEncryptedPayload(value, secret)) {
     return { needsUpdate: false, encrypted: value };
   }
   return { needsUpdate: true, encrypted: encryptField(value, secret) };
@@ -38,7 +38,12 @@ async function encryptEvolutionNotes(db: Awaited<ReturnType<typeof getDb>>, secr
   let offset = 0;
   let updated = 0;
   for (;;) {
-    const rows = await db.select().from(evolutionNotes).limit(BATCH_SIZE).offset(offset);
+    const rows = await db
+      .select()
+      .from(evolutionNotes)
+      .orderBy(asc(evolutionNotes.id))
+      .limit(BATCH_SIZE)
+      .offset(offset);
     if (rows.length === 0) break;
 
     for (const row of rows) {
@@ -70,7 +75,12 @@ async function encryptClinicalConditions(db: Awaited<ReturnType<typeof getDb>>, 
   let offset = 0;
   let updated = 0;
   for (;;) {
-    const rows = await db.select().from(clinicalConditions).limit(BATCH_SIZE).offset(offset);
+    const rows = await db
+      .select()
+      .from(clinicalConditions)
+      .orderBy(asc(clinicalConditions.id))
+      .limit(BATCH_SIZE)
+      .offset(offset);
     if (rows.length === 0) break;
 
     for (const row of rows) {
@@ -91,7 +101,12 @@ async function encryptConditionAssessments(db: Awaited<ReturnType<typeof getDb>>
   let offset = 0;
   let updated = 0;
   for (;;) {
-    const rows = await db.select().from(conditionAssessments).limit(BATCH_SIZE).offset(offset);
+    const rows = await db
+      .select()
+      .from(conditionAssessments)
+      .orderBy(asc(conditionAssessments.id))
+      .limit(BATCH_SIZE)
+      .offset(offset);
     if (rows.length === 0) break;
 
     for (const row of rows) {

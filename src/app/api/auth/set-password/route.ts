@@ -36,14 +36,21 @@ export async function POST(request: NextRequest) {
       // ambos têm o mesmo poder de efeito (definir/redefinir senha).
       expectedPurposes: ["invite", "reset"],
     });
-    // Ator explícito pré-sessão: quem teve a senha alterada (AC-07).
-    await recordAuditNow(auditEvents, null, {
-      action: "update",
-      resourceType: "account-password",
-      resourceId: result.accountId,
-      detail: result.purpose,
-      actorOverride: { role: result.role, id: result.email, clinicId: result.clinicId },
-    });
+    // Ator explícito pré-sessão: quem teve a senha alterada (AC-07). A senha já
+    // foi trocada e o token já foi consumido (uso único) — uma falha aqui não
+    // pode virar erro pro usuário: a ação já é irreversível e não há como pedir
+    // retry (o token não existe mais). Loga alto e segue.
+    try {
+      await recordAuditNow(auditEvents, null, {
+        action: "update",
+        resourceType: "account-password",
+        resourceId: result.accountId,
+        detail: result.purpose,
+        actorOverride: { role: result.role, id: result.email, clinicId: result.clinicId },
+      });
+    } catch (error) {
+      console.error("Auditoria: falha ao registrar definição/reset de senha", error);
+    }
     return { ok: true };
   });
 }

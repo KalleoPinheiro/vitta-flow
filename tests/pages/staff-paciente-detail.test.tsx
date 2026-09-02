@@ -1566,7 +1566,6 @@ describe("Feature: PatientRecordPage", () => {
               objective: "",
               assessment: "",
               plan: "Trocar curativo",
-              professionalId: null,
             }),
           }),
         );
@@ -1575,6 +1574,18 @@ describe("Feature: PatientRecordPage", () => {
         expect(screen.queryByText("Registrar evolução")).not.toBeInTheDocument();
       });
       expect(await screen.findByText("Evolução registrada")).toBeInTheDocument();
+    });
+
+    it("Dado formulário de nova evolução aberto, Quando renderizar, Então não exibe seletor de profissional (#64)", async () => {
+      mockFetch(buildRouter({ professionals: [professionalFixture] }));
+
+      await openEvolutionsTab();
+      await screen.findByText("Nenhuma evolução registrada.");
+
+      fireEvent.click(screen.getByText("+ Nova evolução"));
+
+      expect(screen.queryByText("Profissional responsável")).not.toBeInTheDocument();
+      expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
     });
 
     it("Dado erro ao registrar evolução, Quando a chamada falha, Então exibe alerta de erro", async () => {

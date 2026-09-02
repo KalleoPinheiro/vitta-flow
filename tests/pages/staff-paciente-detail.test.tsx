@@ -146,6 +146,13 @@ const detAssessmentFixture: AssessmentDto = {
   createdAt: "2026-01-02T09:00:00.000Z",
 };
 
+const complicationsAssessmentFixture: AssessmentDto = {
+  ...pushAssessmentFixture,
+  id: "assess-complications",
+  complications: "Observação livre adicional",
+  complicationCodes: ["dermatitis", "bleeding"],
+};
+
 const evolutionFixture: EvolutionNoteDto = {
   id: "evo-1",
   patientId: "pac-1",
@@ -842,6 +849,42 @@ describe("Feature: PatientRecordPage", () => {
       fireEvent.click(screen.getByText("Ocultar avaliações"));
       expect(screen.queryByText("PUSH 7")).not.toBeInTheDocument();
       expect(screen.getByText("Ver avaliações")).toBeInTheDocument();
+    });
+
+    it("Dado avaliação com complicações de estomia registradas, Quando expandir a condição, Então exibe os labels na leitura (#67)", async () => {
+      mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          assessmentsByCondition: { "cond-wound": [complicationsAssessmentFixture] },
+        }),
+      );
+
+      await openConditionsTab();
+      await screen.findByText("Úlcera venosa perna E");
+
+      fireEvent.click(screen.getByText("Ver avaliações"));
+
+      expect(await screen.findByText(/Dermatite/)).toBeInTheDocument();
+      expect(screen.getByText(/Sangramento/)).toBeInTheDocument();
+      expect(screen.getByText(/Observação livre adicional/)).toBeInTheDocument();
+    });
+
+    it("Dado avaliação sem complicações registradas, Quando expandir a condição, Então exibe travessão", async () => {
+      mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          assessmentsByCondition: { "cond-wound": [pushAssessmentFixture] },
+        }),
+      );
+
+      await openConditionsTab();
+      await screen.findByText("Úlcera venosa perna E");
+
+      fireEvent.click(screen.getByText("Ver avaliações"));
+      await screen.findByText("PUSH 7");
+
+      const cells = screen.getAllByRole("cell");
+      expect(cells[cells.length - 1]).toHaveTextContent("—");
     });
 
     it("Dado erro ao carregar avaliações, Quando expandir a condição, Então mantém a lista vazia sem quebrar", async () => {

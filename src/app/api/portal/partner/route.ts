@@ -5,10 +5,10 @@ import { requirePortalSession } from "@/lib/auth/require-session";
 import { handleRequest } from "@/lib/api-response";
 import { recordAudit } from "@/lib/audit";
 import {
-  toAssessmentDto,
-  toConditionDto,
   toPartnerDto,
   toPortalAppointmentDto,
+  toPortalAssessmentDto,
+  toPortalConditionDto,
   toReferredPatientSummaryDto,
 } from "@/lib/dto";
 
@@ -40,8 +40,8 @@ export async function GET(request: NextRequest) {
         patient: toReferredPatientSummaryDto(entry.patient),
         appointments: entry.appointments.map(toPortalAppointmentDto),
         conditions: entry.conditions.map(({ condition, assessments: list }) => ({
-          condition: toConditionDto(condition),
-          assessments: list.map(toAssessmentDto),
+          condition: toPortalConditionDto(condition),
+          assessments: list.map(toPortalAssessmentDto),
         })),
       })),
     };

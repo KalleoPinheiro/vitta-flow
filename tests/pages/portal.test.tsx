@@ -826,15 +826,17 @@ describe("Feature: Cartão de consentimento", () => {
 
   describe("Cenário: carregando", () => {
     it("Dado que o status ainda não chegou, Quando renderizar, Então não exibe nada", () => {
-      const { container } = render(<ConsentCard status={null} onAccepted={vi.fn()} />);
+      renderWithToast(<ConsentCard status={null} onAccepted={vi.fn()} />);
 
-      expect(container).toBeEmptyDOMElement();
+      expect(screen.queryByText(TERMO)).not.toBeInTheDocument();
+      expect(screen.queryByText("Li e aceito o termo")).not.toBeInTheDocument();
+      expect(screen.queryByText(/Termo de consentimento/)).not.toBeInTheDocument();
     });
   });
 
   describe("Cenário: termo já aceito", () => {
     it("Dado consentimento aceito, Quando renderizar, Então exibe confirmação com data", () => {
-      render(
+      renderWithToast(
         <ConsentCard
           status={{ consentText: TERMO, accepted: true, acceptedAt: "2026-01-10T14:30:00.000Z" }}
           onAccepted={vi.fn()}
@@ -857,7 +859,7 @@ describe("Feature: Cartão de consentimento", () => {
         },
       ]);
 
-      render(
+      renderWithToast(
         <ConsentCard
           status={{ consentText: TERMO, accepted: false, acceptedAt: null }}
           onAccepted={onAccepted}
@@ -872,9 +874,10 @@ describe("Feature: Cartão de consentimento", () => {
       await waitFor(() => {
         expect(onAccepted).toHaveBeenCalledTimes(1);
       });
+      expect(await screen.findByText("Termo de consentimento aceito")).toBeInTheDocument();
     });
 
-    it("Dado falha ao registrar aceite, Quando aceitar, Então exibe alerta de erro e reabilita o botão", async () => {
+    it("Dado falha ao registrar aceite, Quando aceitar, Então exibe alerta de erro e toast de erro, e reabilita o botão", async () => {
       const onAccepted = vi.fn();
       mockFetch([
         {
@@ -884,7 +887,7 @@ describe("Feature: Cartão de consentimento", () => {
         },
       ]);
 
-      render(
+      renderWithToast(
         <ConsentCard
           status={{ consentText: TERMO, accepted: false, acceptedAt: null }}
           onAccepted={onAccepted}
@@ -893,7 +896,9 @@ describe("Feature: Cartão de consentimento", () => {
 
       fireEvent.click(screen.getByText("Li e aceito o termo"));
 
-      expect(await screen.findByText("Erro ao registrar aceite do termo")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getAllByText("Erro ao registrar aceite do termo").length).toBeGreaterThanOrEqual(2);
+      });
       const enabledButton = screen.getByText("Li e aceito o termo") as HTMLButtonElement;
       expect(enabledButton.disabled).toBe(false);
       expect(onAccepted).not.toHaveBeenCalled();

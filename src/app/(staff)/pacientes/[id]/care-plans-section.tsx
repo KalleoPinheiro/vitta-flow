@@ -22,6 +22,7 @@ import {
   pesSentence,
 } from "@/lib/format";
 import { Modal } from "@/components/modal";
+import { ConfirmAction } from "@/components/confirm-action";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import {
@@ -242,14 +243,18 @@ function CarePlanPanel({ planId, onChanged }: { planId: string; onChanged: () =>
       />
 
       {isActive && (
-        <Button
-          type="button"
-          onClick={() => void resolvePlan()}
-          variant="link"
-          className="h-auto p-0 self-start text-ink-3"
-        >
-          Resolver plano
-        </Button>
+        <ConfirmAction
+          trigger={
+            <Button type="button" variant="link" className="h-auto p-0 self-start text-ink-3">
+              Resolver plano
+            </Button>
+          }
+          title="Resolver o plano de cuidados?"
+          description="O plano é travado permanentemente. Não existe ação de reabrir depois."
+          confirmLabel="Confirmar"
+          variant="danger"
+          onConfirm={() => resolvePlan()}
+        />
       )}
 
       {addingDiagnosis && (

@@ -58,12 +58,14 @@ export class InMemoryPatientRepository implements PatientRepository {
       : all;
     const filtered = page.ids ? byTerm.filter((p) => page.ids!.includes(p.id)) : byTerm;
     const decoded = decodeCursor<{ fullName: string; id: string }>(page.cursor);
+    // Mesmo comparador do sort acima (localeCompare) — comparação por `>` usaria
+    // ordem UTF-16 e poderia excluir/repetir itens quando os dois divergem
+    // (ex.: acentos), pulando a página seguinte.
     const afterCursor = decoded
-      ? filtered.filter(
-          (p) =>
-            p.fullName > decoded.fullName ||
-            (p.fullName === decoded.fullName && p.id > decoded.id),
-        )
+      ? filtered.filter((p) => {
+          const cmp = p.fullName.localeCompare(decoded.fullName) || p.id.localeCompare(decoded.id);
+          return cmp > 0;
+        })
       : filtered;
     return page.limit != null ? afterCursor.slice(0, page.limit) : afterCursor;
   }

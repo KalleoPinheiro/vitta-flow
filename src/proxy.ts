@@ -62,7 +62,8 @@ function nextWithCsp(request: NextRequest): NextResponse {
   const csp = [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
-    `style-src 'self' 'nonce-${nonce}'`,
+    // unsafe-inline só em dev: HMR/overlay do Next injeta estilo inline sem nonce.
+    `style-src 'self' ${isDev ? "'unsafe-inline'" : `'nonce-${nonce}'`}`,
     "img-src 'self' data:",
     "font-src 'self'",
     "connect-src 'self'",

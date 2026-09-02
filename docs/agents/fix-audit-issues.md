@@ -24,14 +24,21 @@ especificar → implementar → documentar → PR → merge → fechar issue.
    (YAGNI). Não edite o audit doc de origem: `docs/audits/` é snapshot
    congelado (ver `docs/agents/planning.md`); a decisão de escopo mora no
    spec da feature, não lá.
-3. **Branch a partir da `main` atualizada**: `git fetch origin && git status`
-   (nada pendente) antes de `git checkout -b fix/<slug>`.
+3. **Branch a partir da `main` atualizada**: `git checkout main && git pull
+   --ff-only && git status` (árvore limpa) antes de `git checkout -b
+   fix/<slug>` — só `git fetch` não atualiza o `HEAD` local nem garante que
+   a branch nasça da `main` mais recente.
 4. **Implementar** com o `tlc-spec-driven` (`/implement`) — gate local
    (`typecheck`, `lint`, `check:sv`, `test:coverage` ≥ 90%, `test:e2e`) verde
-   antes de cada commit.
-5. **Um commit semântico por issue** (`fix: <resumo> (#N)`), não um commit
-   só pro PR inteiro — cada issue fecha via `Closes #N` no corpo do commit
-   final que a resolve, ou no squash do PR (ver passo 8).
+   antes de cada commit. O `tlc-spec-driven` já roda um Verifier independente
+   (author ≠ verifier) ao final de `/implement` quando o escopo virou
+   `tasks.md` formal — não duplique essa verificação; registre o PASS dele em
+   `.specs/STATE.md` no passo 10.
+5. **Um commit semântico por issue** (`fix: <resumo> (#N)`) — ou um commit
+   atômico por task se o `tlc-spec-driven` gerou `tasks.md` formal (o
+   contrato dele exige isso). Em ambos os casos: cada issue fecha via
+   `Closes #N` no corpo do commit/task final que a resolve, ou no squash do
+   PR (ver passo 8) — nunca um commit monolítico pro PR inteiro.
 6. **Atualizar a documentação viva** antes de abrir o PR:
    - `docs/plano-evolucao-faseado.md` — risque o item de backlog citado e
      marque `**entregue**`, linkando a issue e o spec novo.

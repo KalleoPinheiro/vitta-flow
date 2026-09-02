@@ -28,8 +28,9 @@ export const metadata: Metadata = {
 
 // CSP estrita com nonce (issue #76) exige um nonce novo por request — só existe
 // se a renderização for dinâmica (docs/01-app/02-guides/content-security-policy.md).
-// App já é 100% autenticado (proxy.ts barra tudo sem sessão), sem página pública
-// cacheável hoje, então o custo de desativar a otimização estática é aceitável.
+// Cobre tanto páginas autenticadas quanto públicas (ex.: /login) — nenhuma delas
+// tem hoje um caso de uso que justifique o ganho de estático/ISR sobre o custo
+// de desativar essa otimização.
 export const dynamic = "force-dynamic";
 
 export default function RootLayout({

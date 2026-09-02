@@ -77,9 +77,10 @@ execução de qualquer script inline injetado (XSS).
   estáticos não têm acesso à requisição, logo não podem gerar nonce.
 - Nonce exige renderização dinâmica (Next só injeta o valor em HTML gerado
   por request). `src/app/layout.tsx` ganhou `export const dynamic =
-  "force-dynamic"`: aceitável porque o app é 100% autenticado (proxy barra
-  tudo sem sessão) — não existe hoje página pública cacheável cujo ganho de
-  estático valha a perda.
+  "force-dynamic"`: cobre tanto páginas autenticadas quanto as poucas
+  páginas públicas (`/login`, `/definir-senha`, `/esqueci-senha`) — nenhuma
+  delas tem hoje um caso de uso que justifique o ganho de estático/ISR sobre
+  o custo de desativar essa otimização.
 - Nenhum script/estilo inline customizado existe no código (`grep
   dangerouslySetInnerHTML`, `next/script`: zero ocorrências) — não havia
   nada para "migrar para nonce" no app em si.

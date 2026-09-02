@@ -40,11 +40,14 @@ export class InMemoryInvoiceRepository implements InvoiceRepository {
       .filter((invoice) => this.matchesFilter(invoice, filter))
       .sort((a, b) => b.issuedAt.getTime() - a.issuedAt.getTime() || b.id.localeCompare(a.id));
     const decoded = decodeCursor<{ issuedAt: string; id: string }>(page.cursor);
+    // Mesmo comparador do sort acima (localeCompare no id) — `<` usaria ordem
+    // UTF-16 e poderia divergir do sort em ids com caracteres não-ASCII.
     const afterCursor = decoded
       ? all.filter((invoice) => {
           const issuedAt = invoice.issuedAt.getTime();
           const cursorIssuedAt = new Date(decoded.issuedAt).getTime();
-          return issuedAt < cursorIssuedAt || (issuedAt === cursorIssuedAt && invoice.id < decoded.id);
+          if (issuedAt !== cursorIssuedAt) return issuedAt < cursorIssuedAt;
+          return invoice.id.localeCompare(decoded.id) < 0;
         })
       : all;
     return page.limit != null ? afterCursor.slice(0, page.limit) : afterCursor;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { apiFetchPage } from "./client";
 
 export interface CursorPagedQueryResult<T> {
@@ -21,6 +21,11 @@ export function useCursorPagedQuery<T>(baseUrl: string, pageSize: number): Curso
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
+  // Geração da requisição em curso: toda resposta (1ª página ou loadMore) só é
+  // aplicada se ainda for a mais recente — evita que um loadMore atrasado (ou
+  // disparado 2x antes do 1º resolver) sobrescreva um refresh()/troca de url
+  // mais novo, ou duplique a página anexada.
+  const requestIdRef = useRef(0);
 
   const pageUrl = useCallback(
     (cursor: string | null) => {
@@ -32,36 +37,36 @@ export function useCursorPagedQuery<T>(baseUrl: string, pageSize: number): Curso
   );
 
   useEffect(() => {
-    let cancelled = false;
+    const requestId = ++requestIdRef.current;
     apiFetchPage<T>(pageUrl(null))
       .then((page) => {
-        if (!cancelled) {
+        if (requestIdRef.current === requestId) {
           setItems(page.items);
           setNextCursor(page.nextCursor);
           setError(null);
         }
       })
       .catch((err: unknown) => {
-        if (!cancelled) {
+        if (requestIdRef.current === requestId) {
           setError(err instanceof Error ? err.message : "Erro ao carregar dados");
         }
       });
-    return () => {
-      cancelled = true;
-    };
   }, [pageUrl, version]);
 
   const refresh = useCallback(() => setVersion((current) => current + 1), []);
 
   const loadMore = useCallback(() => {
     if (!nextCursor) return;
+    const requestId = ++requestIdRef.current;
     apiFetchPage<T>(pageUrl(nextCursor))
       .then((page) => {
+        if (requestIdRef.current !== requestId) return;
         setItems((latest) => [...(latest ?? []), ...page.items]);
         setNextCursor(page.nextCursor);
         setError(null);
       })
       .catch((err: unknown) => {
+        if (requestIdRef.current !== requestId) return;
         setError(err instanceof Error ? err.message : "Erro ao carregar dados");
       });
   }, [nextCursor, pageUrl]);

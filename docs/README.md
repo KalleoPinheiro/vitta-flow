@@ -1,6 +1,7 @@
 # docs/
 
 - [`plano-evolucao-faseado.md`](./plano-evolucao-faseado.md) — master roadmap, one row per phase. Start here.
+- [`plano-correcao-achados-auditoria-2026-09.md`](./plano-correcao-achados-auditoria-2026-09.md) — phased plan for audit findings triaged into issues #57–#77 (no product decision involved, see `agents/planning.md`).
 - [`product/`](./product/) — one PRD per phase, written only when a phase involves an explicit product/business decision.
 - [`audits/`](./audits/) — dated audit/analysis findings (security, UX, design system). Input to planning, not a work request by itself.
 - [`adr/`](./adr/) — durable architecture/domain decisions. Read alongside [`../CONTEXT.md`](../CONTEXT.md).

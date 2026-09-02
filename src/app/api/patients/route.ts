@@ -8,6 +8,7 @@ import { toPatientDto } from "@/lib/dto";
 import { requireStaffSession } from "@/lib/auth/require-session";
 import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
 import { ensureLinkBestEffort } from "@/lib/patient-link";
+import { recordAudit } from "@/lib/audit";
 
 const paginationSchema = z.object({
   limit: z.coerce.number().int().min(1).max(500).default(100),
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
 
   return handleRequest(async () => {
     const body = createPatientSchema.parse(await request.json());
-    const { patients, partners, professionalPatientLinks } = await getRepositories({
+    const { patients, partners, professionalPatientLinks, auditEvents } = await getRepositories({
       clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
     });
     const patient = await new CreatePatient(patients, partners).execute({
@@ -77,6 +78,12 @@ export async function POST(request: NextRequest) {
     if (guard.session?.role === "profissional" && guard.session.professionalId) {
       await ensureLinkBestEffort(professionalPatientLinks, guard.session.professionalId, patient.id);
     }
+    recordAudit(auditEvents, guard.session, {
+      action: "create",
+      resourceType: "patient",
+      resourceId: patient.id,
+      patientId: patient.id,
+    });
     return toPatientDto(patient);
   });
 }

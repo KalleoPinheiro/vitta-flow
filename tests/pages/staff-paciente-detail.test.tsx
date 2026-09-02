@@ -1095,6 +1095,25 @@ describe("Feature: PatientRecordPage", () => {
       expect(await screen.findByText("Nenhuma foto registrada.")).toBeInTheDocument();
     });
 
+    it("Dado erro 500 ao carregar fotos, Quando expandir, Então exibe alerta de erro, não mensagem de vazio", async () => {
+      mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          extra: ({ url }) => {
+            if (url === "/api/conditions/cond-wound/photos") {
+              return errorResponse("Erro ao carregar fotos");
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      await expandWoundCondition();
+
+      expect(await screen.findByText("Erro ao carregar fotos")).toBeInTheDocument();
+      expect(screen.queryByText("Nenhuma foto registrada.")).not.toBeInTheDocument();
+    });
+
     it("Dado duas ou mais fotos, Quando expandir, Então exibe comparação entre a primeira e a última", async () => {
       mockFetch(
         buildRouter({

@@ -134,9 +134,19 @@ function ClinicInfoSection() {
   );
 }
 
+function validateScheduleDraft(draft: ScheduleConfigDto): string | null {
+  if (draft.startHour >= draft.endHour) {
+    return "Horário de abertura deve ser antes do fechamento";
+  }
+  if (draft.minGapMinutes < 15 || draft.minGapMinutes > 120) {
+    return "Intervalo mínimo deve estar entre 15 e 120 minutos";
+  }
+  return null;
+}
+
 function ScheduleSection() {
   const { toast } = useToast();
-  const { data, error } = useApiQuery<{ config: ScheduleConfigDto; isDefault: boolean }>(
+  const { data, error, refresh } = useApiQuery<{ config: ScheduleConfigDto; isDefault: boolean }>(
     "/api/settings/schedule",
   );
   const [edits, setEdits] = useState<ScheduleConfigDto | null>(null);
@@ -164,9 +174,15 @@ function ScheduleSection() {
     );
 
   const save = async () => {
+    const validationMessage = validateScheduleDraft(draft);
+    if (validationMessage) {
+      setSaveError(validationMessage);
+      return;
+    }
     setSaveError(null);
     try {
       await apiFetch("/api/settings/schedule", { method: "PUT", body: JSON.stringify(draft) });
+      refresh();
       toast({
         description: "Grade salva — vale imediatamente para novos agendamentos.",
         variant: "success",
@@ -462,7 +478,7 @@ function AccountRow({
   onResendInvite: () => void;
 }) {
   return (
-    <TableRow className={account.active ? "" : "opacity-50"}>
+    <TableRow className={account.active ? "" : "bg-surface-2/60"}>
       <TableCell className="py-2 pr-3 font-medium">{account.email}</TableCell>
       <TableCell className="py-2 pr-3 text-ink-2">{professionalName}</TableCell>
       <TableCell className="py-2 pr-3">

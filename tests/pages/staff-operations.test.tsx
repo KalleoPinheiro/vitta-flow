@@ -177,6 +177,75 @@ describe("Feature: AuditPage", () => {
       expect(screen.getAllByText("—")).toHaveLength(2);
     });
   });
+
+  describe("Cenário: filtro de período (AUD-04)", () => {
+    it("Dado preenchimento de De/Até, Quando alterado, Então a busca inclui from/to na querystring", async () => {
+      const fetchMock = mockFetch(({ url }) => {
+        if (url.startsWith("/api/patients")) return jsonResponse([]);
+        if (url.startsWith("/api/audit")) return jsonResponse([]);
+        return jsonResponse(null, false);
+      });
+
+      render(<AuditPage />);
+      await screen.findByText("Nenhum evento de auditoria registrado.");
+
+      fireEvent.change(screen.getByLabelText("De"), { target: { value: "2026-01-01" } });
+      await waitFor(() => {
+        expect(
+          fetchMock.mock.calls.some(([url]) => String(url).includes("/api/audit?from=")),
+        ).toBe(true);
+      });
+
+      fireEvent.change(screen.getByLabelText("Até"), { target: { value: "2026-01-31" } });
+      await waitFor(() => {
+        expect(
+          fetchMock.mock.calls.some(
+            ([url]) => String(url).includes("from=") && String(url).includes("&to="),
+          ),
+        ).toBe(true);
+      });
+    });
+  });
+
+  describe("Cenário: acessibilidade e formatação (AUD-05/AUD-06)", () => {
+    it("Dado select de paciente, Então tem aria-label acessível", async () => {
+      mockFetch(({ url }) => {
+        if (url.startsWith("/api/patients")) return jsonResponse([]);
+        if (url.startsWith("/api/audit")) return jsonResponse([]);
+        return jsonResponse(null, false);
+      });
+
+      render(<AuditPage />);
+
+      expect(await screen.findByLabelText("Filtrar por paciente")).toBeInTheDocument();
+    });
+
+    it("Dado evento com horário conhecido, Então a coluna Quando inclui segundos", async () => {
+      mockFetch(({ url }) => {
+        if (url.startsWith("/api/patients")) return jsonResponse([]);
+        if (url.startsWith("/api/audit")) {
+          return jsonResponse([
+            {
+              id: "e4",
+              actorRole: "staff",
+              actorId: "u1",
+              action: "read",
+              resourceType: "patient",
+              patientId: null,
+              detail: null,
+              occurredAt: "2026-01-01T10:00:45.000Z",
+            },
+          ]);
+        }
+        return jsonResponse(null, false);
+      });
+
+      render(<AuditPage />);
+
+      await screen.findByText("Leitura");
+      expect(screen.getByText(/:\d{2}:\d{2}$/)).toBeInTheDocument();
+    });
+  });
 });
 
 const EMPTY_CLINIC_INFO = {
@@ -504,6 +573,103 @@ describe("Feature: SettingsPage", () => {
         within(await screen.findByRole("alert")).getByText("Erro ao salvar grade"),
       ).toBeInTheDocument();
     });
+
+    it("Dado salvar com sucesso, Quando a chamada retorna, Então recarrega o estado e some o aviso de padrão (CFG-01)", async () => {
+      let scheduleCallCount = 0;
+      mockFetch(({ url, init }) => {
+        if (url.startsWith("/api/settings/schedule") && init?.method === "PUT") {
+          return jsonResponse({});
+        }
+        if (url.startsWith("/api/settings/schedule")) {
+          scheduleCallCount += 1;
+          return jsonResponse({
+            config: { weekdays: [1, 2, 3, 4, 5], startHour: 8, endHour: 18, minGapMinutes: 30 },
+            isDefault: scheduleCallCount === 1,
+          });
+        }
+        if (url.startsWith("/api/accounts")) return jsonResponse([]);
+        if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<SettingsPage />);
+      expect(await screen.findByText(/usando padrão — nada salvo ainda/)).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("Salvar grade"));
+
+      await screen.findByText(
+        "Grade salva — vale imediatamente para novos agendamentos.",
+      );
+      await waitFor(() => {
+        expect(screen.queryByText(/usando padrão — nada salvo ainda/)).not.toBeInTheDocument();
+      });
+    });
+
+    it("Dado abertura depois do fechamento, Quando salvar, Então bloqueia com erro inline sem chamar a API (CFG-02)", async () => {
+      const fetchMock = mockFetch(({ url }) => {
+        if (url.startsWith("/api/settings/schedule")) {
+          return jsonResponse({
+            config: { weekdays: [1, 2, 3, 4, 5], startHour: 8, endHour: 18, minGapMinutes: 30 },
+            isDefault: false,
+          });
+        }
+        if (url.startsWith("/api/accounts")) return jsonResponse([]);
+        if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<SettingsPage />);
+      await screen.findByText("Grade de horários");
+
+      fireEvent.change(screen.getByLabelText(/Abre \(h\)/), { target: { value: "18" } });
+      fireEvent.change(screen.getByLabelText(/Fecha \(h\)/), { target: { value: "8" } });
+      fireEvent.click(screen.getByText("Salvar grade"));
+
+      expect(
+        await screen.findByText("Horário de abertura deve ser antes do fechamento"),
+      ).toBeInTheDocument();
+      expect(
+        fetchMock.mock.calls.some(
+          ([url, init]) =>
+            String(url).startsWith("/api/settings/schedule") &&
+            (init as RequestInit | undefined)?.method === "PUT",
+        ),
+      ).toBe(false);
+    });
+
+    it("Dado intervalo mínimo fora de 15-120, Quando salvar, Então bloqueia com erro inline (CFG-02)", async () => {
+      const fetchMock = mockFetch(({ url }) => {
+        if (url.startsWith("/api/settings/schedule")) {
+          return jsonResponse({
+            config: { weekdays: [1, 2, 3, 4, 5], startHour: 8, endHour: 18, minGapMinutes: 30 },
+            isDefault: false,
+          });
+        }
+        if (url.startsWith("/api/accounts")) return jsonResponse([]);
+        if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        if (url.startsWith("/api/settings/clinic-info")) return jsonResponse({ info: EMPTY_CLINIC_INFO });
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<SettingsPage />);
+      await screen.findByText("Grade de horários");
+
+      fireEvent.change(screen.getByLabelText(/Intervalo \(min\)/), { target: { value: "10" } });
+      fireEvent.click(screen.getByText("Salvar grade"));
+
+      expect(
+        await screen.findByText("Intervalo mínimo deve estar entre 15 e 120 minutos"),
+      ).toBeInTheDocument();
+      expect(
+        fetchMock.mock.calls.some(
+          ([url, init]) =>
+            String(url).startsWith("/api/settings/schedule") &&
+            (init as RequestInit | undefined)?.method === "PUT",
+        ),
+      ).toBe(false);
+    });
   });
 
   describe("Cenário: contas de acesso", () => {
@@ -556,6 +722,11 @@ describe("Feature: SettingsPage", () => {
       expect(screen.getByText("Dra. Ana")).toBeInTheDocument();
       expect(screen.getByText("Ativa")).toBeInTheDocument();
       expect(screen.getByText("Desativada")).toBeInTheDocument();
+
+      // CFG-03: linha inativa usa bg-surface-2/60, não opacity-50
+      const inactiveRow = screen.getByText("bob@clinica.com").closest("tr");
+      expect(inactiveRow).toHaveClass("bg-surface-2/60");
+      expect(inactiveRow).not.toHaveClass("opacity-50");
     });
 
     it("Dado clique em desativar conta, Quando a chamada é bem-sucedida, Então recarrega as contas", async () => {

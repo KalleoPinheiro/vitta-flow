@@ -6,6 +6,7 @@ import { handleRequest } from "@/lib/api-response";
 import { toProfessionalDto } from "@/lib/dto";
 import { requireStaffSession } from "@/lib/auth/require-session";
 import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import { recordAudit } from "@/lib/audit";
 
 const professionalSchema = z.object({
   fullName: z.string().min(1).max(200),
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
 
   return handleRequest(async () => {
     const body = professionalSchema.parse(await request.json());
-    const { professionals } = await getRepositories({
+    const { professionals, auditEvents } = await getRepositories({
       clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
     });
     const professional = Professional.create({
@@ -41,6 +42,11 @@ export async function POST(request: NextRequest) {
       commissionPct: body.commissionPct ?? null,
     });
     await professionals.save(professional);
+    recordAudit(auditEvents, guard.session, {
+      action: "create",
+      resourceType: "professional",
+      resourceId: professional.id,
+    });
     return toProfessionalDto(professional);
   });
 }

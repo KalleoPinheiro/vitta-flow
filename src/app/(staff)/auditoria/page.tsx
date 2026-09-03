@@ -4,12 +4,12 @@ import { useState } from "react";
 import type { AuditEventDto, PatientDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import { usePagedQuery } from "@/lib/use-paged-query";
-import { formatDateTime } from "@/lib/format";
 import { ErrorAlert } from "@/components/feedback";
 import { LoadMoreButton } from "@/components/load-more-button";
 import { PagedList } from "@/components/paged-list";
 import {
   Card,
+  Input,
   NativeSelect,
   Table,
   TableBody,
@@ -39,18 +39,55 @@ const RESOURCE_LABELS: Record<string, string> = {
   "portal-patient": "Portal do paciente",
   "portal-partner": "Portal do parceiro",
   photo: "Foto",
+  photos: "Fotos",
   document: "Documento",
+  "account-password": "Senha da conta",
+  appointment: "Consulta",
+  care_plan: "Plano de cuidado",
+  care_plan_diagnosis: "Diagnóstico do plano de cuidado",
+  care_plan_intervention: "Intervenção do plano de cuidado",
+  care_plan_outcome: "Desfecho do plano de cuidado",
+  care_plans: "Planos de cuidado",
+  "clinic-info": "Dados da clínica",
+  "clinic-schedule": "Grade de horários",
+  consent: "Consentimento",
+  export: "Exportação",
+  intervention_record: "Registro de intervenção",
+  outcome_evaluation: "Avaliação de desfecho",
+  patient: "Paciente",
+  session: "Sessão",
+  taxonomy_catalog: "Catálogo de taxonomia",
+  professional: "Profissional",
+  account: "Conta de acesso",
 };
+
+function formatDateTimeWithSeconds(iso: string): string {
+  return new Date(iso).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
 
 export default function AuditPage() {
   const [patientId, setPatientId] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
   const { data: patients } = useApiQuery<PatientDto[]>("/api/patients");
 
-  const query = patientId ? `?patientId=${encodeURIComponent(patientId)}` : "";
+  const params = new URLSearchParams();
+  if (patientId) params.set("patientId", patientId);
+  if (from) params.set("from", new Date(`${from}T00:00:00`).toISOString());
+  if (to) params.set("to", new Date(`${to}T23:59:59.999`).toISOString());
+  const query = params.toString() ? `?${params.toString()}` : "";
   const {
     items: events,
     hasMore,
     error,
+    isLoading,
     loadMore,
   } = usePagedQuery<AuditEventDto>(`/api/audit${query}`, PAGE_SIZE);
 
@@ -58,16 +95,30 @@ export default function AuditPage() {
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <h1 className="sv-display text-2xl font-bold">Auditoria de prontuário</h1>
-        <NativeSelect value={patientId} onChange={(e) => setPatientId(e.target.value)}>
-          <option value="">Todos os pacientes</option>
-          {(patients ?? []).map((patient) => (
-            <option key={patient.id} value={patient.id}>
-              {patient.fullName}
-            </option>
-          ))}
-        </NativeSelect>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-1 text-sm text-ink-2">
+            De
+            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+          </label>
+          <label className="flex flex-col gap-1 text-sm text-ink-2">
+            Até
+            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+          </label>
+          <NativeSelect
+            aria-label="Filtrar por paciente"
+            value={patientId}
+            onChange={(e) => setPatientId(e.target.value)}
+          >
+            <option value="">Todos os pacientes</option>
+            {(patients ?? []).map((patient) => (
+              <option key={patient.id} value={patient.id}>
+                {patient.fullName}
+              </option>
+            ))}
+          </NativeSelect>
+        </div>
       </div>
 
       <p className="mb-4 text-sm text-ink-3">
@@ -83,7 +134,10 @@ export default function AuditPage() {
           emptyMessage="Nenhum evento de auditoria registrado."
           render={(list) => (
             <div className="overflow-x-auto">
-              <Table className="w-full text-left text-sm">
+              <Table
+                className={`w-full text-left text-sm ${isLoading ? "opacity-60" : ""}`}
+                aria-busy={isLoading}
+              >
                 <TableHeader>
                   <TableRow>
                     <TableHead className="px-4 py-3">Quando</TableHead>
@@ -98,7 +152,7 @@ export default function AuditPage() {
                   {list.map((event) => (
                     <TableRow key={event.id}>
                       <TableCell className="whitespace-nowrap px-4 py-2 text-ink-2">
-                        {formatDateTime(event.occurredAt)}
+                        {formatDateTimeWithSeconds(event.occurredAt)}
                       </TableCell>
                       <TableCell className="px-4 py-2">
                         <span className="font-medium">{event.actorRole}</span>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Card, Hero } from "@still-void/ui/react";
+import { Alert, AlertDescription, Button, Card, Hero } from "@still-void/ui/react";
 import { useToast } from "@still-void/ui/react/client";
 import { apiFetch } from "@/lib/client";
 import type {
@@ -68,7 +68,16 @@ export function PatientPortalView() {
       new Date(a.startsAt).getTime() >= PAGE_LOAD_MS &&
       (a.status === "scheduled" || a.status === "confirmed"),
   );
-  const past = data.appointments.filter((a) => !upcoming.includes(a));
+  // PORT-09: consulta cancelada pela clínica com data ainda futura fica
+  // separada — antes só aparecia enterrada em "Histórico", abaixo da
+  // evolução clínica, e o paciente podia aparecer presencialmente no dia
+  // errado.
+  const cancelledUpcoming = data.appointments.filter(
+    (a) => new Date(a.startsAt).getTime() >= PAGE_LOAD_MS && a.status === "cancelled",
+  );
+  const past = data.appointments.filter(
+    (a) => !upcoming.includes(a) && !cancelledUpcoming.includes(a),
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -81,10 +90,15 @@ export function PatientPortalView() {
 
       <ConsentCard status={consent} onAccepted={refreshConsent} />
 
+      <CancelledAppointmentsAlert appointments={cancelledUpcoming} />
+
       <Section title="Próximas consultas">
         {confirmError && <ErrorAlert message={confirmError} />}
         {upcoming.length === 0 ? (
-          <EmptyState message="Nenhuma consulta agendada. Entre em contato com a clínica para agendar." />
+          <EmptyState
+            icon="pending"
+            message="Nenhuma consulta agendada. Entre em contato com a clínica para agendar."
+          />
         ) : (
           <AppointmentList
             appointments={upcoming}
@@ -108,7 +122,7 @@ export function PatientPortalView() {
 
       <Section title="Minha evolução clínica">
         {data.conditions.length === 0 ? (
-          <EmptyState message="Nenhuma condição em acompanhamento." />
+          <EmptyState icon="info" message="Nenhuma condição em acompanhamento." />
         ) : (
           <div className="flex flex-col gap-3">
             {data.conditions.map((entry) => (
@@ -129,34 +143,14 @@ export function PatientPortalView() {
 
       <Section title="Histórico de consultas">
         {past.length === 0 ? (
-          <EmptyState message="Sem consultas anteriores." />
+          <EmptyState icon="info" message="Sem consultas anteriores." />
         ) : (
           <AppointmentList appointments={past} />
         )}
       </Section>
 
       <Section title="Minhas faturas">
-        {data.invoices.length === 0 ? (
-          <EmptyState message="Nenhuma fatura." />
-        ) : (
-          <Card>
-            <ul className="divide-y divide-border text-sm">
-            {data.invoices.map((invoice) => (
-              <li key={invoice.id} className="flex items-center gap-3 px-4 py-3">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate">{invoice.description}</p>
-                  <p className="text-xs text-ink-3">{formatDate(invoice.issuedAt)}</p>
-                </div>
-                <span className="font-medium">{formatCurrency(invoice.amountCents)}</span>
-                <StatusBadge
-                  status={invoice.status}
-                  label={INVOICE_STATUS_LABELS[invoice.status] ?? invoice.status}
-                />
-              </li>
-            ))}
-          </ul>
-          </Card>
-        )}
+        <InvoicesList invoices={data.invoices} />
       </Section>
     </div>
   );
@@ -168,6 +162,61 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       <h2 className="mb-3 text-lg font-semibold">{title}</h2>
       {children}
     </section>
+  );
+}
+
+// PORT-09: consulta cancelada pela clínica com data ainda futura fica
+// destacada — antes só aparecia enterrada em "Histórico", abaixo da evolução
+// clínica, e o paciente podia aparecer presencialmente no dia errado.
+function CancelledAppointmentsAlert({ appointments }: { appointments: PortalAppointmentDto[] }) {
+  if (appointments.length === 0) return null;
+  return (
+    <Alert variant="warning">
+      <AlertDescription>
+        <strong>
+          {appointments.length === 1
+            ? "Uma consulta sua foi cancelada pela clínica:"
+            : "Consultas suas foram canceladas pela clínica:"}
+        </strong>
+        <ul className="mt-1 list-inside list-disc">
+          {appointments.map((appointment) => (
+            <li key={appointment.id}>
+              {formatDateTime(appointment.startsAt)} — {appointment.procedure}
+            </li>
+          ))}
+        </ul>
+      </AlertDescription>
+    </Alert>
+  );
+}
+
+function InvoicesList({ invoices }: { invoices: InvoiceDto[] }) {
+  if (invoices.length === 0) {
+    return <EmptyState icon="check-circle" message="Nenhuma fatura." />;
+  }
+  return (
+    <>
+      <Card>
+        <ul className="divide-y divide-border text-sm">
+          {invoices.map((invoice) => (
+            <li key={invoice.id} className="flex items-center gap-3 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <p className="truncate">{invoice.description}</p>
+                <p className="text-xs text-ink-3">{formatDate(invoice.issuedAt)}</p>
+              </div>
+              <span className="font-medium">{formatCurrency(invoice.amountCents)}</span>
+              <StatusBadge
+                status={invoice.status}
+                label={INVOICE_STATUS_LABELS[invoice.status] ?? invoice.status}
+              />
+            </li>
+          ))}
+        </ul>
+      </Card>
+      {/* PORT-13: legenda mínima — sem gateway de pagamento no sistema hoje
+          (ver Assumptions do spec). */}
+      <p className="mt-2 text-xs text-ink-3">Pagamento realizado presencialmente na clínica.</p>
+    </>
   );
 }
 

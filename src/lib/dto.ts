@@ -302,8 +302,11 @@ export const toAssessmentDto = (assessment: ConditionAssessment): AssessmentDto 
 });
 
 /**
- * DTO allowlist do portal (#69) — sem `notes` (nota interna da equipe).
- * Tipo próprio para que um campo novo no domínio não vaze automaticamente.
+ * DTO allowlist do portal (#69, #93) — sem `notes` nem `complications` (texto
+ * livre escrito por um profissional pra outro, não pra leitura do paciente/
+ * parceiro — achado P0 real de #93, `complicationCodes` codificado continua
+ * disponível pra quem quiser status estruturado). Tipo próprio para que um
+ * campo novo no domínio não vaze automaticamente.
  */
 export interface PortalAssessmentDto {
   id: string;
@@ -316,7 +319,6 @@ export interface PortalAssessmentDto {
   exudate: string | null;
   painScale: number | null;
   skinCondition: string | null;
-  complications: string | null;
   complicationCodes: string[];
   detScore: number | null;
   pushScore: number | null;
@@ -334,7 +336,6 @@ export const toPortalAssessmentDto = (assessment: ConditionAssessment): PortalAs
   exudate: assessment.exudate,
   painScale: assessment.painScale,
   skinCondition: assessment.skinCondition,
-  complications: assessment.complications,
   complicationCodes: assessment.complicationCodes,
   detScore: assessment.detScore,
   pushScore: assessment.pushScore,

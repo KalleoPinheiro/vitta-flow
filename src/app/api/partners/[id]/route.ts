@@ -9,7 +9,7 @@ import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-cl
 
 const updateSchema = z.object({
   fullName: z.string().min(1).max(200).optional(),
-  email: z.string().min(1).max(200).optional(),
+  email: z.string().min(1).max(200).email("Email inválido").optional(),
   phone: z.string().min(1).max(50).optional(),
   crm: z.string().max(50).nullish(),
   specialty: z.string().max(200).nullish(),

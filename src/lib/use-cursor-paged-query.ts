@@ -7,6 +7,9 @@ export interface CursorPagedQueryResult<T> {
   items: T[] | null;
   hasMore: boolean;
   error: string | null;
+  /** true enquanto a 1ª página da `baseUrl` atual está em voo (PRONT-10) — `items` mantém o valor
+   * anterior nesse meio-tempo, para o consumidor decidir como sinalizar "desatualizado". */
+  isLoading: boolean;
   refresh: () => void;
   loadMore: () => void;
 }
@@ -21,6 +24,10 @@ export function useCursorPagedQuery<T>(baseUrl: string, pageSize: number): Curso
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
+  // Chave da última 1ª página já resolvida (sucesso ou erro) — mesmo padrão de
+  // `useApiQuery`: `isLoading` deriva da comparação em vez de `setState`
+  // síncrono no corpo do efeito (proibido por `react-hooks/set-state-in-effect`).
+  const [settledKey, setSettledKey] = useState<string | null>(null);
   // Geração da requisição em curso: toda resposta (1ª página ou loadMore) só é
   // aplicada se ainda for a mais recente — evita que um loadMore atrasado (ou
   // disparado 2x antes do 1º resolver) sobrescreva um refresh()/troca de url
@@ -35,6 +42,8 @@ export function useCursorPagedQuery<T>(baseUrl: string, pageSize: number): Curso
     },
     [baseUrl, pageSize],
   );
+  const requestKey = `${baseUrl}:${version}`;
+  const isLoading = settledKey !== requestKey;
 
   useEffect(() => {
     const requestId = ++requestIdRef.current;
@@ -44,14 +53,16 @@ export function useCursorPagedQuery<T>(baseUrl: string, pageSize: number): Curso
           setItems(page.items);
           setNextCursor(page.nextCursor);
           setError(null);
+          setSettledKey(requestKey);
         }
       })
       .catch((err: unknown) => {
         if (requestIdRef.current === requestId) {
           setError(err instanceof Error ? err.message : "Erro ao carregar dados");
+          setSettledKey(requestKey);
         }
       });
-  }, [pageUrl, version]);
+  }, [pageUrl, version, baseUrl, requestKey]);
 
   const refresh = useCallback(() => setVersion((current) => current + 1), []);
 
@@ -71,5 +82,5 @@ export function useCursorPagedQuery<T>(baseUrl: string, pageSize: number): Curso
       });
   }, [nextCursor, pageUrl]);
 
-  return { items, hasMore: nextCursor !== null, error, refresh, loadMore };
+  return { items, hasMore: nextCursor !== null, error, isLoading, refresh, loadMore };
 }

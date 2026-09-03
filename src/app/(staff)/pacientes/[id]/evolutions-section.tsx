@@ -31,6 +31,12 @@ type SoapKey = (typeof SOAP_FIELDS)[number]["key"];
 
 const EMPTY: Record<SoapKey, string> = { subjective: "", objective: "", assessment: "", plan: "" };
 
+const EVOLUTIONS_VISIBLE_DEFAULT = 10;
+
+function visibleEvolutions(evolutions: EvolutionNoteDto[], showAll: boolean): EvolutionNoteDto[] {
+  return showAll ? evolutions : evolutions.slice(0, EVOLUTIONS_VISIBLE_DEFAULT);
+}
+
 export function EvolutionsSection({
   patientId,
   evolutions,
@@ -45,6 +51,7 @@ export function EvolutionsSection({
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const { data: professionals } = useApiQuery<ProfessionalDto[]>("/api/professionals");
   const professionalName = (id: string | null) =>
     (professionals ?? []).find((p) => p.id === id)?.fullName ?? null;
@@ -128,30 +135,42 @@ export function EvolutionsSection({
       ) : evolutions.length === 0 ? (
         <EmptyState message="Nenhuma evolução registrada." />
       ) : (
-        <ul className="flex flex-col gap-3">
-          {evolutions.map((note) => (
-            <Card as="li" key={note.id} className="p-4">
-              <p className="mb-2 text-xs font-medium text-ink-3">
-                {formatDateTime(note.createdAt)}
-                {professionalName(note.professionalId) && (
-                  <span> · {professionalName(note.professionalId)}</span>
-                )}
-              </p>
-              <dl className="grid gap-1 text-sm">
-                {SOAP_FIELDS.map((field) =>
-                  note[field.key] ? (
+        <>
+          <ul className="flex flex-col gap-3">
+            {visibleEvolutions(evolutions, showAll).map((note) => (
+              <Card as="li" key={note.id} className="p-4">
+                <p className="mb-2 text-xs font-medium text-ink-3">
+                  {formatDateTime(note.createdAt)}
+                  {professionalName(note.professionalId) && (
+                    <span> · {professionalName(note.professionalId)}</span>
+                  )}
+                </p>
+                <dl className="grid gap-2 text-sm">
+                  {SOAP_FIELDS.map((field) => (
                     <div key={field.key}>
-                      <dt className="inline font-semibold text-accent-ink">
-                        {field.label.slice(0, 1)}:{" "}
-                      </dt>
-                      <dd className="inline whitespace-pre-wrap">{note[field.key]}</dd>
+                      <dt className="font-semibold text-accent-ink">{field.label}</dt>
+                      <dd className="whitespace-pre-wrap">
+                        {note[field.key] || (
+                          <span className="italic text-ink-3">— não preenchido —</span>
+                        )}
+                      </dd>
                     </div>
-                  ) : null,
-                )}
-              </dl>
-            </Card>
-          ))}
-        </ul>
+                  ))}
+                </dl>
+              </Card>
+            ))}
+          </ul>
+          {!showAll && evolutions.length > EVOLUTIONS_VISIBLE_DEFAULT && (
+            <Button
+              type="button"
+              onClick={() => setShowAll(true)}
+              variant="link"
+              className="h-auto self-start p-0"
+            >
+              Ver mais ({evolutions.length - EVOLUTIONS_VISIBLE_DEFAULT})
+            </Button>
+          )}
+        </>
       )}
     </div>
   );

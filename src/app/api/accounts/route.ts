@@ -10,6 +10,7 @@ import { handleRequest } from "@/lib/api-response";
 import { toUserAccountDto } from "@/lib/dto";
 import { requireStaffSession } from "@/lib/auth/require-session";
 import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import { recordAudit } from "@/lib/audit";
 
 const createSchema = z
   .object({
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
         : (actor.clinicId ?? LEGACY_CLINIC_ID);
 
     const services = await getRepositories({ clinicId: targetClinicId });
-    const { userAccounts, professionals } = services;
+    const { userAccounts, professionals, auditEvents } = services;
 
     if (body.professionalId) {
       const professional = await professionals.findById(body.professionalId);
@@ -76,6 +77,11 @@ export async function POST(request: NextRequest) {
       professionalId: body.professionalId ?? null,
     });
     const { delivered } = await sendInvite(services, account);
+    recordAudit(auditEvents, guard.session, {
+      action: "create",
+      resourceType: "account",
+      resourceId: account.id,
+    });
     return { ...toUserAccountDto(account), delivered };
   });
 }

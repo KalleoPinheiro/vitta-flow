@@ -7,6 +7,9 @@ export interface PagedQueryResult<T> {
   items: T[] | null;
   hasMore: boolean;
   error: string | null;
+  /** true enquanto a 1ª página da `baseUrl` atual está em voo (AUD-03) — `items` mantém o valor
+   * anterior nesse meio-tempo, para o consumidor decidir como sinalizar "desatualizado". */
+  isLoading: boolean;
   refresh: () => void;
   loadMore: () => void;
 }
@@ -20,6 +23,9 @@ export function usePagedQuery<T>(baseUrl: string, pageSize: number): PagedQueryR
   const [hasMore, setHasMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
+  // Mesmo padrão de `useCursorPagedQuery`/`useApiQuery`: `isLoading` deriva da
+  // comparação em vez de `setState` síncrono no corpo do efeito.
+  const [settledKey, setSettledKey] = useState<string | null>(null);
 
   const pageUrl = useCallback(
     (offset: number) => {
@@ -28,6 +34,8 @@ export function usePagedQuery<T>(baseUrl: string, pageSize: number): PagedQueryR
     },
     [baseUrl, pageSize],
   );
+  const requestKey = `${baseUrl}:${version}`;
+  const isLoading = settledKey !== requestKey;
 
   useEffect(() => {
     let cancelled = false;
@@ -37,17 +45,19 @@ export function usePagedQuery<T>(baseUrl: string, pageSize: number): PagedQueryR
           setItems(page);
           setHasMore(page.length === pageSize);
           setError(null);
+          setSettledKey(requestKey);
         }
       })
       .catch((err: unknown) => {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : "Erro ao carregar dados");
+          setSettledKey(requestKey);
         }
       });
     return () => {
       cancelled = true;
     };
-  }, [pageUrl, pageSize, version]);
+  }, [pageUrl, pageSize, version, requestKey]);
 
   const refresh = useCallback(() => setVersion((current) => current + 1), []);
 
@@ -64,5 +74,5 @@ export function usePagedQuery<T>(baseUrl: string, pageSize: number): PagedQueryR
       });
   }, [items, pageUrl, pageSize]);
 
-  return { items, hasMore, error, refresh, loadMore };
+  return { items, hasMore, error, isLoading, refresh, loadMore };
 }

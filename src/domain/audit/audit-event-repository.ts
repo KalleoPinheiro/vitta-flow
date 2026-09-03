@@ -4,6 +4,9 @@ export interface AuditEventFilter {
   patientId?: string;
   from?: Date;
   to?: Date;
+  /** Usado pela emissão de documentos (#94) pra achar um registro já existente. */
+  resourceType?: string;
+  resourceId?: string;
 }
 
 export interface AuditEventPage {

@@ -1,8 +1,9 @@
 "use client";
 
-import { use } from "react";
-import type { CarePlanDetailDto, PatientDto } from "@/lib/dto";
+import { use, type ReactNode } from "react";
+import type { CarePlanDetailDto, PatientDto, ProfessionalDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
+import { useDocumentIssuance } from "@/lib/use-document-issuance";
 import {
   CARE_PLAN_DIAGNOSIS_TYPE_LABELS,
   CARE_PLAN_STATUS_LABELS,
@@ -23,6 +24,53 @@ import {
   TableRow,
 } from "@still-void/ui/react";
 
+function guardLoading(
+  clinic: ClinicInfoDto | null,
+  detail: CarePlanDetailDto | null,
+  error: string | null,
+  issuance: { documentNumber: string; issuedAt: string } | null,
+  issuanceError: string | null,
+): ReactNode | null {
+  if (error || issuanceError) return <ErrorAlert message={error ?? issuanceError ?? ""} />;
+  if (!clinic || !detail) return <LoadingIndicator />;
+  if (!isClinicInfoComplete(clinic)) {
+    return (
+      <ErrorAlert message="Clínica sem CNPJ ou responsável técnico cadastrados — cadastre em Configurações antes de emitir este documento." />
+    );
+  }
+  // #94, DOC-01: sem emissão persistida ainda, não renderiza.
+  if (!issuance) return <LoadingIndicator />;
+  return null;
+}
+
+// #94, DOC-04: plano sem nenhum diagnóstico/resultado/intervenção é uma
+// folha timbrada em branco pronta pra assinar — bloqueia antes do DocumentFrame.
+function guardEmptyPlan(detail: CarePlanDetailDto): ReactNode | null {
+  if (
+    detail.diagnoses.length === 0 &&
+    detail.outcomes.length === 0 &&
+    detail.interventions.length === 0
+  ) {
+    return (
+      <ErrorAlert message="Este plano de cuidados ainda não tem diagnóstico, resultado ou intervenção prescritos — não é possível emitir o documento vazio." />
+    );
+  }
+  return null;
+}
+
+function guardBlock(
+  clinic: ClinicInfoDto | null,
+  detail: CarePlanDetailDto | null,
+  error: string | null,
+  issuance: { documentNumber: string; issuedAt: string } | null,
+  issuanceError: string | null,
+): ReactNode | null {
+  const loadingGuard = guardLoading(clinic, detail, error, issuance, issuanceError);
+  if (loadingGuard) return loadingGuard;
+  if (!detail) return null;
+  return guardEmptyPlan(detail);
+}
+
 /**
  * Plano de cuidados (SAE) para impressão — diagnóstico (NANDA-I), resultado
  * esperado (NOC) com trilha basal→atual→meta, e intervenções (NIC) prescritas.
@@ -35,34 +83,55 @@ export default function CarePlanDocumentPage({
   const { carePlanId } = use(params);
   const { data: clinic } = useApiQuery<ClinicInfoDto>("/api/clinic-info");
   const { data: detail, error } = useApiQuery<CarePlanDetailDto>(`/api/care-plans/${carePlanId}`);
+  const { issuance, error: issuanceError } = useDocumentIssuance("plano-cuidados", carePlanId);
 
-  if (error) return <ErrorAlert message={error} />;
-  if (!clinic || !detail) return <LoadingIndicator />;
-  if (!isClinicInfoComplete(clinic)) {
-    return (
-      <ErrorAlert message="Clínica sem CNPJ ou responsável técnico cadastrados — cadastre em Configurações antes de emitir este documento." />
-    );
-  }
+  const guard = guardBlock(clinic, detail, error, issuance, issuanceError);
+  if (guard) return guard;
+  if (!clinic || !detail || !issuance) return null;
 
-  return <CarePlanDocumentContent clinic={clinic} detail={detail} />;
+  return (
+    <CarePlanDocumentContent
+      clinic={clinic}
+      detail={detail}
+      documentNumber={issuance.documentNumber}
+      issuedAt={issuance.issuedAt}
+    />
+  );
 }
 
 function CarePlanDocumentContent({
   clinic,
   detail,
+  documentNumber,
+  issuedAt,
 }: {
   clinic: ClinicInfoDto;
   detail: CarePlanDetailDto;
+  documentNumber: string;
+  issuedAt: string;
 }) {
   const { data: patient, error: patientError } = useApiQuery<PatientDto>(
     `/api/patients/${detail.plan.patientId}`,
+  );
+  // #94, DOC-11: assinatura do responsável técnico QUE PRESCREVEU o plano, não
+  // a assinatura genérica da clínica (que podia ser qualquer profissional).
+  const { data: professional } = useApiQuery<ProfessionalDto>(
+    detail.plan.professionalId ? `/api/professionals/${detail.plan.professionalId}` : null,
   );
 
   if (patientError) return <ErrorAlert message={patientError} />;
   if (!patient) return <LoadingIndicator />;
 
   return (
-    <DocumentFrame clinic={clinic} title="Plano de Cuidados de Enfermagem (SAE)">
+    <DocumentFrame
+      clinic={clinic}
+      title="Plano de Cuidados de Enfermagem (SAE)"
+      documentNumber={documentNumber}
+      issuedAt={issuedAt}
+      signerOverride={
+        professional ? { name: professional.fullName, registry: professional.registry } : undefined
+      }
+    >
       <p className="mb-1">
         <strong>Paciente:</strong> {patient.fullName}
       </p>
@@ -100,15 +169,15 @@ function CarePlanDocumentContent({
             <TableHeader>
               <TableRow className="border-b border-black text-left">
                 <TableHead className="py-1 pr-2 text-black">Resultado</TableHead>
-                <TableHead className="py-1 pr-2 text-black">Basal</TableHead>
-                <TableHead className="py-1 pr-2 text-black">Atual</TableHead>
-                <TableHead className="py-1 pr-2 text-black">Meta</TableHead>
+                <TableHead className="py-1 pr-2 text-black">Basal (escala 1-5)</TableHead>
+                <TableHead className="py-1 pr-2 text-black">Atual (escala 1-5)</TableHead>
+                <TableHead className="py-1 pr-2 text-black">Meta (escala 1-5)</TableHead>
                 <TableHead className="py-1 text-black">Situação</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {detail.outcomes.map((outcome) => (
-                <TableRow key={outcome.id} className="border-b border-black/30">
+                <TableRow key={outcome.id} className="border-b border-black/60">
                   <TableCell className="py-1 pr-2">
                     {outcome.outcomeCode} — {outcome.outcomeLabel}
                   </TableCell>
@@ -141,7 +210,7 @@ function CarePlanDocumentContent({
             </TableHeader>
             <TableBody>
               {detail.interventions.map((intervention) => (
-                <TableRow key={intervention.id} className="border-b border-black/30">
+                <TableRow key={intervention.id} className="border-b border-black/60">
                   <TableCell className="py-1 pr-2">
                     {intervention.interventionCode} — {intervention.interventionLabel}
                   </TableCell>

@@ -8,6 +8,16 @@ import type {
 import { MAX_ROWS, type AppDb } from "./db";
 import { auditEvents } from "./schema";
 
+function buildConditions(filter: AuditEventFilter): SQL[] {
+  const conditions: SQL[] = [];
+  if (filter.patientId) conditions.push(eq(auditEvents.patientId, filter.patientId));
+  if (filter.from) conditions.push(gte(auditEvents.occurredAt, filter.from));
+  if (filter.to) conditions.push(lt(auditEvents.occurredAt, filter.to));
+  if (filter.resourceType) conditions.push(eq(auditEvents.resourceType, filter.resourceType));
+  if (filter.resourceId) conditions.push(eq(auditEvents.resourceId, filter.resourceId));
+  return conditions;
+}
+
 export class DrizzleAuditEventRepository implements AuditEventRepository {
   constructor(private readonly db: AppDb) {}
 
@@ -30,11 +40,7 @@ export class DrizzleAuditEventRepository implements AuditEventRepository {
     filter: AuditEventFilter = {},
     page: AuditEventPage = {},
   ): Promise<AuditEvent[]> {
-    const conditions: SQL[] = [];
-    if (filter.patientId) conditions.push(eq(auditEvents.patientId, filter.patientId));
-    if (filter.from) conditions.push(gte(auditEvents.occurredAt, filter.from));
-    if (filter.to) conditions.push(lt(auditEvents.occurredAt, filter.to));
-
+    const conditions = buildConditions(filter);
     const limit = Math.min(page.limit ?? MAX_ROWS, MAX_ROWS);
     const rows = await this.db
       .select()

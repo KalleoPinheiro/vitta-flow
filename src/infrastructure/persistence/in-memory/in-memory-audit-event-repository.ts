@@ -5,6 +5,21 @@ import type {
   AuditEventRepository,
 } from "@/domain/audit/audit-event-repository";
 
+function violatesFilter(event: AuditEvent, filter: AuditEventFilter): boolean {
+  const checks: boolean[] = [
+    Boolean(filter.patientId) && event.patientId !== filter.patientId,
+    Boolean(filter.from) && event.occurredAt.getTime() < (filter.from as Date).getTime(),
+    Boolean(filter.to) && event.occurredAt.getTime() >= (filter.to as Date).getTime(),
+    Boolean(filter.resourceType) && event.resourceType !== filter.resourceType,
+    Boolean(filter.resourceId) && event.resourceId !== filter.resourceId,
+  ];
+  return checks.some(Boolean);
+}
+
+function matchesFilter(event: AuditEvent, filter: AuditEventFilter): boolean {
+  return !violatesFilter(event, filter);
+}
+
 export class InMemoryAuditEventRepository implements AuditEventRepository {
   private readonly items: AuditEvent[] = [];
 
@@ -17,12 +32,7 @@ export class InMemoryAuditEventRepository implements AuditEventRepository {
     page: AuditEventPage = {},
   ): Promise<AuditEvent[]> {
     const filtered = this.items
-      .filter((e) => {
-        if (filter.patientId && e.patientId !== filter.patientId) return false;
-        if (filter.from && e.occurredAt.getTime() < filter.from.getTime()) return false;
-        if (filter.to && e.occurredAt.getTime() >= filter.to.getTime()) return false;
-        return true;
-      })
+      .filter((e) => matchesFilter(e, filter))
       .sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
     const offset = page.offset ?? 0;
     return page.limit != null

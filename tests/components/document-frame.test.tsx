@@ -21,6 +21,9 @@ const minimalClinic: ClinicInfoDto = {
   city: null,
 };
 
+const documentNumber = "ATST-A1B2C3D4";
+const issuedAt = "2026-09-03T14:30:00.000Z";
+
 describe("Feature: Moldura de documento", () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -30,7 +33,7 @@ describe("Feature: Moldura de documento", () => {
   describe("Cenário: cabeçalho com dados completos da clínica", () => {
     it("Dado clínica com todos os campos, Quando renderizar, Então exibe nome, CNPJ e endereço", () => {
       render(
-        <DocumentFrame clinic={fullClinic} title="Atestado">
+        <DocumentFrame clinic={fullClinic} title="Atestado" documentNumber={documentNumber} issuedAt={issuedAt}>
           <p>Corpo do documento</p>
         </DocumentFrame>,
       );
@@ -42,7 +45,7 @@ describe("Feature: Moldura de documento", () => {
 
     it("Dado clínica com todos os campos, Quando renderizar, Então exibe rodapé com cidade e assinatura", () => {
       render(
-        <DocumentFrame clinic={fullClinic} title="Atestado">
+        <DocumentFrame clinic={fullClinic} title="Atestado" documentNumber={documentNumber} issuedAt={issuedAt}>
           <p>Corpo do documento</p>
         </DocumentFrame>,
       );
@@ -56,7 +59,7 @@ describe("Feature: Moldura de documento", () => {
   describe("Cenário: cabeçalho com dados mínimos da clínica", () => {
     it("Dado clínica sem CNPJ, endereço ou profissional, Quando renderizar, Então omite campos ausentes e usa texto padrão de assinatura", () => {
       render(
-        <DocumentFrame clinic={minimalClinic} title="Atestado">
+        <DocumentFrame clinic={minimalClinic} title="Atestado" documentNumber={documentNumber} issuedAt={issuedAt}>
           <p>Corpo do documento</p>
         </DocumentFrame>,
       );
@@ -69,7 +72,7 @@ describe("Feature: Moldura de documento", () => {
   describe("Cenário: título e conteúdo", () => {
     it("Dado title e children, Quando renderizar, Então exibe o título em maiúsculas e o conteúdo filho", () => {
       render(
-        <DocumentFrame clinic={fullClinic} title="Relatório de evolução">
+        <DocumentFrame clinic={fullClinic} title="Relatório de evolução" documentNumber={documentNumber} issuedAt={issuedAt}>
           <p>Conteúdo específico do relatório</p>
         </DocumentFrame>,
       );
@@ -84,7 +87,7 @@ describe("Feature: Moldura de documento", () => {
       const backSpy = vi.spyOn(window.history, "back").mockImplementation(() => {});
 
       render(
-        <DocumentFrame clinic={fullClinic} title="Atestado">
+        <DocumentFrame clinic={fullClinic} title="Atestado" documentNumber={documentNumber} issuedAt={issuedAt}>
           <p>Corpo</p>
         </DocumentFrame>,
       );
@@ -97,7 +100,7 @@ describe("Feature: Moldura de documento", () => {
       const printSpy = vi.spyOn(window, "print").mockImplementation(() => {});
 
       render(
-        <DocumentFrame clinic={fullClinic} title="Atestado">
+        <DocumentFrame clinic={fullClinic} title="Atestado" documentNumber={documentNumber} issuedAt={issuedAt}>
           <p>Corpo</p>
         </DocumentFrame>,
       );
@@ -108,7 +111,7 @@ describe("Feature: Moldura de documento", () => {
 
     it("Dado a barra de ações, Então os botões vêm do Button do Still Void", () => {
       render(
-        <DocumentFrame clinic={fullClinic} title="Atestado">
+        <DocumentFrame clinic={fullClinic} title="Atestado" documentNumber={documentNumber} issuedAt={issuedAt}>
           <p>Corpo</p>
         </DocumentFrame>,
       );
@@ -125,7 +128,7 @@ describe("Feature: Moldura de documento", () => {
 
     it("Dado a barra de ações, Então ela some na impressão e o corpo do documento fica em tinta preta", () => {
       const { container } = render(
-        <DocumentFrame clinic={fullClinic} title="Atestado">
+        <DocumentFrame clinic={fullClinic} title="Atestado" documentNumber={documentNumber} issuedAt={issuedAt}>
           <p>Corpo</p>
         </DocumentFrame>,
       );

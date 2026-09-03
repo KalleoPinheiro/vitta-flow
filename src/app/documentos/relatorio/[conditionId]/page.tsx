@@ -1,8 +1,9 @@
 "use client";
 
-import { use } from "react";
+import { use, type ReactNode } from "react";
 import type { AssessmentDto, ConditionDto, PatientDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
+import { useDocumentIssuance } from "@/lib/use-document-issuance";
 import {
   CONDITION_KIND_LABELS,
   EXUDATE_LABELS,
@@ -22,6 +23,47 @@ import {
   TableRow,
 } from "@still-void/ui/react";
 
+function guardLoading(
+  clinic: ClinicInfoDto | null,
+  condition: ConditionDto | null | undefined,
+  assessments: AssessmentDto[] | null,
+  error: string | null,
+): ReactNode | null {
+  if (error) return <ErrorAlert message={error} />;
+  if (!clinic || condition === undefined || !assessments) return <LoadingIndicator />;
+  if (!isClinicInfoComplete(clinic)) {
+    return (
+      <ErrorAlert message="Clínica sem CNPJ ou responsável técnico cadastrados — cadastre em Configurações antes de emitir este documento." />
+    );
+  }
+  if (condition === null) return <ErrorAlert message="Condição não encontrada" />;
+  return null;
+}
+
+function guardBlock(
+  clinic: ClinicInfoDto | null,
+  condition: ConditionDto | null | undefined,
+  assessments: AssessmentDto[] | null,
+  error: string | null,
+  issuance: { documentNumber: string; issuedAt: string } | null,
+  issuanceError: string | null,
+): ReactNode | null {
+  const loadingGuard = guardLoading(clinic, condition, assessments, error);
+  if (loadingGuard) return loadingGuard;
+  if (!assessments) return null;
+  // #94, DOC-05: relatório sem nenhuma avaliação registrada é uma folha
+  // assinável vazia — bloqueia antes do DocumentFrame, mesma guarda do plano.
+  if (assessments.length === 0) {
+    return (
+      <ErrorAlert message="Esta condição ainda não tem nenhuma avaliação registrada — não é possível emitir o relatório vazio." />
+    );
+  }
+  if (issuanceError) return <ErrorAlert message={issuanceError} />;
+  // #94, DOC-01: sem emissão persistida ainda, não renderiza.
+  if (!issuance) return <LoadingIndicator />;
+  return null;
+}
+
 /**
  * Relatório de evolução clínica para o médico parceiro — mesma minimização do
  * portal do parceiro: sem anamnese e sem qualquer dado financeiro.
@@ -39,37 +81,57 @@ export default function PartnerReportPage({
   const { data: assessments } = useApiQuery<AssessmentDto[]>(
     `/api/conditions/${conditionId}/assessments`,
   );
+  const { issuance, error: issuanceError } = useDocumentIssuance("relatorio", conditionId);
 
-  if (error) return <ErrorAlert message={error} />;
-  if (!clinic || condition === undefined || !assessments) return <LoadingIndicator />;
-  if (!isClinicInfoComplete(clinic)) {
-    return (
-      <ErrorAlert message="Clínica sem CNPJ ou responsável técnico cadastrados — cadastre em Configurações antes de emitir este documento." />
-    );
-  }
-  if (condition === null) return <ErrorAlert message="Condição não encontrada" />;
+  const guard = guardBlock(clinic, condition, assessments, error, issuance, issuanceError);
+  if (guard) return guard;
+  if (!clinic || !condition || !assessments || !issuance) return null;
 
-  return <ReportContent clinic={clinic} condition={condition} assessments={assessments} />;
+  return (
+    <ReportContent
+      clinic={clinic}
+      condition={condition}
+      assessments={assessments}
+      documentNumber={issuance.documentNumber}
+      issuedAt={issuance.issuedAt}
+    />
+  );
 }
 
 function ReportContent({
   clinic,
   condition,
   assessments,
+  documentNumber,
+  issuedAt,
 }: {
   clinic: ClinicInfoDto;
   condition: ConditionDto;
   assessments: AssessmentDto[];
+  documentNumber: string;
+  issuedAt: string;
 }) {
-  const { data: patient } = useApiQuery<PatientDto>(`/api/patients/${condition.patientId}`);
+  const { data: patient, error: patientError } = useApiQuery<PatientDto>(
+    `/api/patients/${condition.patientId}`,
+  );
   const chronological = [...assessments].sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   );
 
+  // #94, DOC-06: sem paciente resolvido ainda, não imprime "Paciente: —" —
+  // espera a busca terminar, igual às outras guardas de carregamento.
+  if (patientError) return <ErrorAlert message={patientError} />;
+  if (!patient) return <LoadingIndicator />;
+
   return (
-    <DocumentFrame clinic={clinic} title="Relatório de Evolução Clínica">
+    <DocumentFrame
+      clinic={clinic}
+      title="Relatório de Evolução Clínica"
+      documentNumber={documentNumber}
+      issuedAt={issuedAt}
+    >
       <p className="mb-1">
-        <strong>Paciente:</strong> {patient?.fullName ?? "—"}
+        <strong>Paciente:</strong> {patient.fullName}
       </p>
       <p className="mb-1">
         <strong>Condição:</strong> {condition.title} (
@@ -87,48 +149,46 @@ function ReportContent({
       </p>
 
       {chronological.length >= 2 && (
-        <div className="mb-6">
+        // #94, DOC-07: gráfico monocromático — impressão neutra explícita,
+        // não depende do tema estar fixo em claro pra ficar legível em P&B.
+        <div className="mb-6 print:grayscale">
           <HealingChart assessments={assessments} />
         </div>
       )}
 
       <h3 className="mb-2 font-semibold">Avaliações registradas</h3>
-      {chronological.length === 0 ? (
-        <p>Nenhuma avaliação registrada até a data deste relatório.</p>
-      ) : (
-        // SPEC_DEVIATION: override neutro de impressão (AD-006) — literal
-        // border-black/text-black em vez de tokens --sv-*, para a folha
-        // continuar em preto-sobre-branco na impressora P&B. O utilitário
-        // vence layer(components), então o override é determinístico.
-        <div className="overflow-x-auto">
-          <Table className="w-full border-collapse text-xs text-black">
-            <TableHeader>
-              <TableRow className="border-b border-black text-left">
-                <TableHead className="py-1 pr-2 text-black">Data</TableHead>
-                <TableHead className="py-1 pr-2 text-black">C×L×P (mm)</TableHead>
-                <TableHead className="py-1 pr-2 text-black">Área (mm²)</TableHead>
-                <TableHead className="py-1 pr-2 text-black">Tecido</TableHead>
-                <TableHead className="py-1 pr-2 text-black">Exsudato</TableHead>
-                <TableHead className="py-1 text-black">Dor</TableHead>
+      {/* SPEC_DEVIATION: override neutro de impressão (AD-006) — literal
+          border-black/text-black em vez de tokens --sv-*, para a folha
+          continuar em preto-sobre-branco na impressora P&B. O utilitário
+          vence layer(components), então o override é determinístico. */}
+      <div className="overflow-x-auto">
+        <Table className="w-full border-collapse text-xs text-black print:text-[9px]">
+          <TableHeader>
+            <TableRow className="border-b border-black text-left">
+              <TableHead className="py-1 pr-2 text-black">Data</TableHead>
+              <TableHead className="py-1 pr-2 text-black">C×L×P (mm)</TableHead>
+              <TableHead className="py-1 pr-2 text-black">Área (mm²)</TableHead>
+              <TableHead className="py-1 pr-2 text-black">Tecido</TableHead>
+              <TableHead className="py-1 pr-2 text-black">Exsudato</TableHead>
+              <TableHead className="py-1 text-black">Dor</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {chronological.map((a) => (
+              <TableRow key={a.id} className="border-b border-black/60">
+                <TableCell className="py-1 pr-2">{formatDate(a.createdAt)}</TableCell>
+                <TableCell className="py-1 pr-2">
+                  {a.lengthMm != null ? `${a.lengthMm}×${a.widthMm ?? "—"}×${a.depthMm ?? "—"}` : "—"}
+                </TableCell>
+                <TableCell className="py-1 pr-2">{a.areaMm2 ?? "—"}</TableCell>
+                <TableCell className="py-1 pr-2">{a.tissueType ?? "—"}</TableCell>
+                <TableCell className="py-1 pr-2">{a.exudate ? (EXUDATE_LABELS[a.exudate] ?? a.exudate) : "—"}</TableCell>
+                <TableCell className="py-1">{a.painScale != null ? `${a.painScale}/10` : "—"}</TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {chronological.map((a) => (
-                <TableRow key={a.id} className="border-b border-black/30">
-                  <TableCell className="py-1 pr-2">{formatDate(a.createdAt)}</TableCell>
-                  <TableCell className="py-1 pr-2">
-                    {a.lengthMm != null ? `${a.lengthMm}×${a.widthMm ?? "—"}×${a.depthMm ?? "—"}` : "—"}
-                  </TableCell>
-                  <TableCell className="py-1 pr-2">{a.areaMm2 ?? "—"}</TableCell>
-                  <TableCell className="py-1 pr-2">{a.tissueType ?? "—"}</TableCell>
-                  <TableCell className="py-1 pr-2">{a.exudate ? (EXUDATE_LABELS[a.exudate] ?? a.exudate) : "—"}</TableCell>
-                  <TableCell className="py-1">{a.painScale != null ? `${a.painScale}/10` : "—"}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </DocumentFrame>
   );
 }

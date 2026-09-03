@@ -6,6 +6,10 @@ import type { CarePlanDiagnosisDto } from "@/lib/dto";
 export const formatCurrency = (cents: number): string =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
 
+/** Fração (0.153) → "15,3%" — vírgula decimal pt-BR (REL-03). */
+export const formatPercent = (fraction: number): string =>
+  new Intl.NumberFormat("pt-BR", { style: "percent", minimumFractionDigits: 1 }).format(fraction);
+
 export const formatDate = (iso: string): string =>
   new Date(iso).toLocaleDateString("pt-BR");
 

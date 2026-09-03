@@ -16,6 +16,7 @@ import {
 import { Modal } from "@/components/modal";
 import { ConfirmAction } from "@/components/confirm-action";
 import { StatusBadge } from "@/components/status-badge";
+import { MetricCard } from "@/components/metric-card";
 import { ErrorAlert } from "@/components/feedback";
 import { LoadMoreButton } from "@/components/load-more-button";
 import { PagedList } from "@/components/paged-list";
@@ -57,7 +58,7 @@ function InvoicesTable({ invoices, onPay, onCancel }: InvoicesTableProps) {
             <TableHead className="px-4 py-3">Emissão</TableHead>
             <TableHead className="px-4 py-3">Paciente</TableHead>
             <TableHead className="px-4 py-3">Descrição</TableHead>
-            <TableHead className="px-4 py-3">Valor</TableHead>
+            <TableHead className="px-4 py-3 text-right">Valor</TableHead>
             <TableHead className="px-4 py-3">Status</TableHead>
             <TableHead className="px-4 py-3">Pagamento</TableHead>
             <TableHead className="px-4 py-3 text-right">Ações</TableHead>
@@ -71,7 +72,9 @@ function InvoicesTable({ invoices, onPay, onCancel }: InvoicesTableProps) {
               <TableCell className="max-w-56 truncate px-4 py-3 text-ink-2">
                 {invoice.description}
               </TableCell>
-              <TableCell className="px-4 py-3 font-medium">{formatCurrency(invoice.amountCents)}</TableCell>
+              <TableCell className="px-4 py-3 text-right font-medium tabular-nums">
+                {formatCurrency(invoice.amountCents)}
+              </TableCell>
               <TableCell className="px-4 py-3">
                 <StatusBadge
                   status={invoice.status}
@@ -86,7 +89,7 @@ function InvoicesTable({ invoices, onPay, onCancel }: InvoicesTableProps) {
                   : "—"}
               </TableCell>
               <TableCell className="px-4 py-3 text-right">
-                {invoice.status === "pending" && (
+                {invoice.status === "pending" ? (
                   <>
                     <Button
                       type="button"
@@ -113,6 +116,8 @@ function InvoicesTable({ invoices, onPay, onCancel }: InvoicesTableProps) {
                       onConfirm={() => onCancel(invoice)}
                     />
                   </>
+                ) : (
+                  <span className="text-ink-3">—</span>
                 )}
               </TableCell>
             </TableRow>
@@ -129,14 +134,8 @@ function BillingSummaryCards({ summary }: { summary: InvoiceSummary | null }) {
 
   return (
     <>
-      <Card className="p-5">
-        <p className="text-sm text-ink-3">Total recebido</p>
-        <p className="mt-1 text-2xl font-bold text-success">{formatCurrency(paidCents)}</p>
-      </Card>
-      <Card className="p-5">
-        <p className="text-sm text-ink-3">Total a receber</p>
-        <p className="mt-1 text-2xl font-bold text-warning">{formatCurrency(pendingCents)}</p>
-      </Card>
+      <MetricCard label="Total recebido" value={formatCurrency(paidCents)} accent="text-success" />
+      <MetricCard label="Total a receber" value={formatCurrency(pendingCents)} accent="text-warning" />
     </>
   );
 }
@@ -254,12 +253,13 @@ export default function BillingPage() {
         <BillingSummaryCards summary={summary} />
       </div>
 
-      <div className="mb-4 flex gap-2">
+      <div className="mb-4 flex gap-2" role="group" aria-label="Filtrar por situação">
         {STATUS_FILTERS.map((filter) => (
           <Button
             key={filter.value}
             type="button"
             onClick={() => setStatusFilter(filter.value)}
+            aria-pressed={statusFilter === filter.value}
             className={`rounded-full px-3 py-1.5 text-sm font-medium ${
               statusFilter === filter.value
                 ? "bg-accent-ink text-white"

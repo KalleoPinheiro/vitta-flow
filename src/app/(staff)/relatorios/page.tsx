@@ -3,14 +3,17 @@
 import { useState } from "react";
 import type { MonthlyReport } from "@/application/reports/get-monthly-report";
 import { useApiQuery } from "@/lib/use-api-query";
-import { APPOINTMENT_STATUS_LABELS, formatCurrency } from "@/lib/format";
+import { APPOINTMENT_STATUS_LABELS, formatCurrency, formatPercent } from "@/lib/format";
+import { MetricCard } from "@/components/metric-card";
 import { ErrorAlert, LoadingIndicator, EmptyState } from "@/components/feedback";
 import {
+  Button,
   Card,
-  Input,
+  Icon,
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -21,48 +24,123 @@ const currentMonth = () => {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 };
 
+/** "2026-08" → "Agosto de 2026" (REL-02) — só a 1ª letra maiúscula, mesma
+ * correção de capitalização já usada em `/agenda`. */
+function monthLabelPtBr(month: string): string {
+  const [year, monthNum] = month.split("-").map(Number);
+  const raw = new Date(year, monthNum - 1, 1).toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+  });
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
+}
+
+function shiftMonth(month: string, delta: number): string {
+  const [year, monthNum] = month.split("-").map(Number);
+  const shifted = new Date(year, monthNum - 1 + delta, 1);
+  return `${shifted.getFullYear()}-${String(shifted.getMonth() + 1).padStart(2, "0")}`;
+}
+
+/** Delta percentual vs. mês anterior (REL-04) — `undefined` quando não há
+ * base de comparação (mês anterior não carregou ou é zero — evita divisão
+ * por zero e casa direto com a prop opcional do `MetricCard`). */
+function computeDelta(current: number, previous: number | undefined): string | undefined {
+  if (!previous) return undefined;
+  const change = (current - previous) / previous;
+  return `${change > 0 ? "+" : ""}${formatPercent(change)} vs mês anterior`;
+}
+
+interface ReportKpisProps {
+  report: MonthlyReport;
+  previousReport: MonthlyReport | null;
+}
+
+function ReportKpis({ report, previousReport }: ReportKpisProps) {
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <MetricCard
+        label="Consultas no mês"
+        value={String(report.totalAppointments)}
+        delta={computeDelta(report.totalAppointments, previousReport?.totalAppointments)}
+      />
+      <MetricCard
+        label="Taxa de falta (no-show)"
+        value={formatPercent(report.noShowRate)}
+        accent={report.noShowRate > 0.15 ? "text-danger" : "text-accent-ink"}
+      />
+      <MetricCard
+        label="Recebido"
+        value={formatCurrency(report.billing.paidCents)}
+        accent="text-success"
+        delta={computeDelta(report.billing.paidCents, previousReport?.billing.paidCents)}
+      />
+      <MetricCard
+        label="A receber"
+        value={formatCurrency(report.billing.pendingCents)}
+        accent="text-warning"
+        delta={computeDelta(report.billing.pendingCents, previousReport?.billing.pendingCents)}
+      />
+    </div>
+  );
+}
+
 export default function ReportsPage() {
   const [month, setMonth] = useState(currentMonth);
   const { data: report, error } = useApiQuery<MonthlyReport>(`/api/reports?month=${month}`);
+  const { data: previousReport } = useApiQuery<MonthlyReport>(
+    `/api/reports?month=${shiftMonth(month, -1)}`,
+  );
 
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="sv-display text-2xl font-bold">Relatório gerencial</h1>
-        <Input
-          type="month"
-          value={month}
-          onChange={(e) => setMonth(e.target.value)}
-        />
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            onClick={() => setMonth((m) => shiftMonth(m, -1))}
+            aria-label="Mês anterior"
+            variant="outline"
+            className="hover:bg-surface-2"
+          >
+            <Icon name="chevron-left" />
+          </Button>
+          <span className="min-w-40 text-center text-lg font-semibold">{monthLabelPtBr(month)}</span>
+          <Button
+            type="button"
+            onClick={() => setMonth((m) => shiftMonth(m, 1))}
+            aria-label="Próximo mês"
+            variant="outline"
+            className="hover:bg-surface-2"
+          >
+            <Icon name="chevron-right" />
+          </Button>
+        </div>
       </div>
 
-      {error && <ErrorAlert message={error} />}
-      {!report ? (
+      {error ? (
+        <ErrorAlert message={error} />
+      ) : !report ? (
         <LoadingIndicator />
       ) : (
         <div className="flex flex-col gap-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <MetricCard label="Consultas no mês" value={String(report.totalAppointments)} />
-            <MetricCard
-              label="Taxa de falta (no-show)"
-              value={`${(report.noShowRate * 100).toFixed(1)}%`}
-              accent={report.noShowRate > 0.15 ? "text-danger" : "text-accent-ink"}
-            />
-            <MetricCard label="Recebido" value={formatCurrency(report.billing.paidCents)} accent="text-success" />
-            <MetricCard label="A receber" value={formatCurrency(report.billing.pendingCents)} accent="text-warning" />
-          </div>
+          <ReportKpis report={report} previousReport={previousReport ?? null} />
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card as="section" className="p-5">
               <h2 className="mb-3 text-lg font-semibold">Consultas por status</h2>
-              <ul className="divide-y divide-border text-sm">
-                {Object.entries(report.byStatus).map(([status, count]) => (
-                  <li key={status} className="flex justify-between py-2">
-                    <span>{APPOINTMENT_STATUS_LABELS[status] ?? status}</span>
-                    <span className="font-medium">{count}</span>
-                  </li>
-                ))}
-              </ul>
+              {Object.keys(report.byStatus).length === 0 ? (
+                <EmptyState message="Nenhuma consulta no mês." />
+              ) : (
+                <ul className="divide-y divide-border text-sm">
+                  {Object.entries(report.byStatus).map(([status, count]) => (
+                    <li key={status} className="flex justify-between py-2">
+                      <span>{APPOINTMENT_STATUS_LABELS[status] ?? status}</span>
+                      <span className="font-medium">{count}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </Card>
 
             <Card as="section" className="p-5">
@@ -105,6 +183,32 @@ export default function ReportsPage() {
                           </TableRow>
                         ))}
                       </TableBody>
+                      <TableFooter>
+                        <TableRow>
+                          <TableCell className="py-2 font-semibold">Total</TableCell>
+                          <TableCell className="py-2 text-right font-semibold">
+                            {report.revenueByProcedure.reduce((sum, row) => sum + row.count, 0)}
+                          </TableCell>
+                          <TableCell className="py-2 text-right font-semibold">
+                            {formatCurrency(
+                              report.revenueByProcedure.reduce((sum, row) => sum + row.totalCents, 0),
+                            )}
+                          </TableCell>
+                          <TableCell className="py-2 text-right font-semibold">
+                            {formatCurrency(
+                              report.revenueByProcedure.reduce(
+                                (sum, row) => sum + row.supplyCostCents,
+                                0,
+                              ),
+                            )}
+                          </TableCell>
+                          <TableCell className="py-2 text-right font-semibold">
+                            {formatCurrency(
+                              report.revenueByProcedure.reduce((sum, row) => sum + row.marginCents, 0),
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      </TableFooter>
                     </Table>
                   </div>
                   {report.unattributedSupplyCostCents > 0 && (
@@ -119,9 +223,11 @@ export default function ReportsPage() {
             </Card>
           </div>
 
-          {report.productionByProfessional.length > 0 && (
-            <Card as="section" className="p-5">
-              <h2 className="mb-3 text-lg font-semibold">Produção por profissional</h2>
+          <Card as="section" className="p-5">
+            <h2 className="mb-3 text-lg font-semibold">Produção por profissional</h2>
+            {report.productionByProfessional.length === 0 ? (
+              <EmptyState message="Nenhuma produção por profissional no mês." />
+            ) : (
               <div className="overflow-x-auto">
                 <Table className="w-full text-left text-sm">
                   <TableHeader>
@@ -146,29 +252,33 @@ export default function ReportsPage() {
                       </TableRow>
                     ))}
                   </TableBody>
+                  <TableFooter>
+                    <TableRow>
+                      <TableCell className="py-2 font-semibold">Total</TableCell>
+                      <TableCell className="py-2 text-right font-semibold">
+                        {report.productionByProfessional.reduce((sum, row) => sum + row.count, 0)}
+                      </TableCell>
+                      <TableCell className="py-2 text-right font-semibold">
+                        {formatCurrency(
+                          report.productionByProfessional.reduce((sum, row) => sum + row.totalCents, 0),
+                        )}
+                      </TableCell>
+                      <TableCell className="py-2 text-right font-semibold">
+                        {formatCurrency(
+                          report.productionByProfessional.reduce(
+                            (sum, row) => sum + (row.commissionCents ?? 0),
+                            0,
+                          ),
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  </TableFooter>
                 </Table>
               </div>
-            </Card>
-          )}
+            )}
+          </Card>
         </div>
       )}
     </div>
-  );
-}
-
-function MetricCard({
-  label,
-  value,
-  accent = "text-accent-ink",
-}: {
-  label: string;
-  value: string;
-  accent?: string;
-}) {
-  return (
-    <Card className="p-5">
-      <p className="text-sm text-ink-3">{label}</p>
-      <p className={`mt-1 text-2xl font-bold ${accent}`}>{value}</p>
-    </Card>
   );
 }

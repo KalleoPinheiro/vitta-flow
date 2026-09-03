@@ -215,6 +215,45 @@ describe("Feature: Faturamento", () => {
         ).toBe(true);
       });
     });
+
+    it("Dado os filtros de status, Quando renderizar, Então formam um role=group com aria-pressed no ativo (FAT-01)", async () => {
+      mockFetch(defaultRouter({ invoices: [invoicePending] }));
+
+      renderWithToast(<BillingPage />);
+      await screen.findByText("Maria Souza");
+
+      expect(screen.getByRole("group", { name: "Filtrar por situação" })).toBeInTheDocument();
+      expect(screen.getByText("Todas")).toHaveAttribute("aria-pressed", "true");
+      expect(screen.getByText("Pendentes")).toHaveAttribute("aria-pressed", "false");
+
+      fireEvent.click(screen.getByText("Pendentes"));
+
+      expect(screen.getByText("Pendentes")).toHaveAttribute("aria-pressed", "true");
+      expect(screen.getByText("Todas")).toHaveAttribute("aria-pressed", "false");
+    });
+  });
+
+  describe("Cenário: alinhamento e ações (FAT-01/03)", () => {
+    it("Dado a coluna Valor, Quando renderizar, Então usa text-right e tabular-nums", async () => {
+      mockFetch(defaultRouter({ invoices: [invoicePending] }));
+
+      renderWithToast(<BillingPage />);
+
+      const valueCell = await screen.findAllByText("R$ 150,00");
+      const cell = valueCell.find((el) => el.tagName === "TD");
+      expect(cell).toHaveClass("text-right", "tabular-nums");
+    });
+
+    it("Dado fatura paga, Quando renderizar a linha, Então a coluna Ações mostra um traço em vez de vazio (FAT-03)", async () => {
+      mockFetch(defaultRouter({ invoices: [invoicePaid] }));
+
+      renderWithToast(<BillingPage />);
+      await screen.findByText("João Lima");
+
+      const row = screen.getByText("João Lima").closest("tr");
+      expect(row).toHaveTextContent("—");
+      expect(row?.querySelector("button")).toBeNull();
+    });
   });
 
   describe("Cenário: registrar pagamento", () => {

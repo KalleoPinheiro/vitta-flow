@@ -100,7 +100,7 @@ describe("Feature: Relatório gerencial", () => {
       render(<ReportsPage />);
 
       expect(await screen.findByText("20")).toBeInTheDocument();
-      expect(screen.getByText("10.0%")).toBeInTheDocument();
+      expect(screen.getByText("10,0%")).toBeInTheDocument();
       expect(screen.getByText("R$ 900,00")).toBeInTheDocument();
       expect(screen.getByText("R$ 300,00")).toBeInTheDocument();
     });
@@ -110,7 +110,7 @@ describe("Feature: Relatório gerencial", () => {
 
       render(<ReportsPage />);
 
-      const rate = await screen.findByText("20.0%");
+      const rate = await screen.findByText("20,0%");
       expect(rate.className).toContain("text-danger");
     });
 
@@ -119,7 +119,7 @@ describe("Feature: Relatório gerencial", () => {
 
       render(<ReportsPage />);
 
-      const rate = await screen.findByText("5.0%");
+      const rate = await screen.findByText("5,0%");
       expect(rate.className).toContain("text-accent-ink");
     });
 
@@ -139,7 +139,7 @@ describe("Feature: Relatório gerencial", () => {
       render(<ReportsPage />);
 
       expect(await screen.findByText("Troca de bolsa")).toBeInTheDocument();
-      expect(screen.getByText("R$ 1.000,00")).toBeInTheDocument();
+      expect(screen.getAllByText("R$ 1.000,00").length).toBeGreaterThan(0);
       expect(screen.getAllByText("R$ 200,00").length).toBeGreaterThan(0);
       expect(screen.getAllByText("R$ 800,00").length).toBeGreaterThan(0);
     });
@@ -181,8 +181,8 @@ describe("Feature: Relatório gerencial", () => {
 
       render(<ReportsPage />);
 
-      const margin = await screen.findByText("-R$ 30,00");
-      expect(margin.className).toContain("text-danger");
+      const margins = await screen.findAllByText("-R$ 30,00");
+      expect(margins.some((el) => el.className.includes("text-danger"))).toBe(true);
     });
 
     it("Dado produção por profissional, Quando renderizar, Então lista nome, contagem, receita e repasse", async () => {
@@ -192,34 +192,78 @@ describe("Feature: Relatório gerencial", () => {
 
       expect(await screen.findByText("Dra. Ana")).toBeInTheDocument();
       expect(screen.getByText("Sem atribuição")).toBeInTheDocument();
-      expect(screen.getByText("R$ 80,00")).toBeInTheDocument();
+      expect(screen.getAllByText("R$ 80,00").length).toBeGreaterThan(0);
     });
 
-    it("Dado produção sem nenhum registro, Quando renderizar, Então não exibe a seção de produção", async () => {
+    it("Dado produção sem nenhum registro, Quando renderizar, Então exibe a seção com estado vazio (REL-05)", async () => {
       mockFetch(() => jsonResponse({ ...baseReport, productionByProfessional: [] }));
 
       render(<ReportsPage />);
 
       await screen.findByText("Troca de bolsa");
-      expect(screen.queryByText("Produção por profissional")).not.toBeInTheDocument();
+      expect(screen.getByText("Produção por profissional")).toBeInTheDocument();
+      expect(
+        screen.getByText("Nenhuma produção por profissional no mês."),
+      ).toBeInTheDocument();
+    });
+
+    it("Dado nenhuma consulta no mês, Quando renderizar, Então 'Consultas por status' exibe estado vazio (REL-05)", async () => {
+      mockFetch(() => jsonResponse({ ...baseReport, byStatus: {} }));
+
+      render(<ReportsPage />);
+
+      expect(await screen.findByText("Nenhuma consulta no mês.")).toBeInTheDocument();
+    });
+
+    it("Dado mês atual e mês anterior com dado diferente, Quando renderizar, Então mostra o delta percentual (REL-04)", async () => {
+      const now = new Date();
+      const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const prevMonthParam = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, "0")}`;
+      mockFetch((url) => {
+        if (url.includes(`month=${prevMonthParam}`)) {
+          return jsonResponse({ ...baseReport, totalAppointments: 10 });
+        }
+        return jsonResponse(baseReport);
+      });
+
+      render(<ReportsPage />);
+
+      expect(await screen.findByText("+100,0% vs mês anterior")).toBeInTheDocument();
     });
   });
 
-  describe("Cenário: seleção de mês", () => {
-    it("Dado alteração do mês, Quando selecionado, Então refaz a busca com o novo mês", async () => {
+  describe("Cenário: navegação por mês", () => {
+    it("Dado clique nas setas de navegação, Quando acionadas, Então refaz a busca com o novo mês", async () => {
       const fetchMock = mockFetch(() => jsonResponse(baseReport));
 
       render(<ReportsPage />);
       await screen.findByText("Troca de bolsa");
 
-      const monthInput = screen.getByDisplayValue(/\d{4}-\d{2}/);
-      fireEvent.change(monthInput, { target: { value: "2026-01" } });
+      fireEvent.click(screen.getByLabelText("Mês anterior"));
 
       await waitFor(() => {
         expect(
-          fetchMock.mock.calls.some(([url]) => String(url).includes("/api/reports?month=2026-01")),
+          fetchMock.mock.calls.some(([url]) => {
+            const current = new Date();
+            const prevMonth = new Date(current.getFullYear(), current.getMonth() - 1, 1);
+            const expected = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, "0")}`;
+            return String(url).includes(`/api/reports?month=${expected}`);
+          }),
         ).toBe(true);
       });
+    });
+
+    it("Dado rótulo do mês, Quando renderizar, Então está em pt-BR sem depender do locale do input nativo", async () => {
+      mockFetch(() => jsonResponse(baseReport));
+
+      render(<ReportsPage />);
+      await screen.findByText("Troca de bolsa");
+
+      const now = new Date();
+      const expectedLabel = now
+        .toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
+        .replace(/^./, (c) => c.toUpperCase());
+      expect(screen.getByText(expectedLabel)).toBeInTheDocument();
     });
   });
 });

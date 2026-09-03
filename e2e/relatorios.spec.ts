@@ -14,30 +14,37 @@ import { literal } from "./support/regexp";
 const monthValue = (year: number, month: number): string =>
   `${year}-${String(month).padStart(2, "0")}`;
 
-/** Mês âncora: garante que o `fill()` seguinte seja sempre mudança real de valor. */
-const ANCHOR_MONTH = "2000-01";
+/** Nº de meses entre "hoje" e o mês alvo (positivo = alvo no futuro). */
+function monthsFromNow(value: string): number {
+  const [year, month] = value.split("-").map(Number);
+  const now = new Date();
+  return (year - now.getFullYear()) * 12 + (month - 1 - now.getMonth());
+}
 
 /**
- * `<input type="month">` é controlado por estado React. `fill()` escreve direto no
- * DOM, e o value-tracker do React pode engolir o `onChange` — o input passa a
- * mostrar o mês novo enquanto o estado (e o fetch) continuam no mês antigo. Checar
- * `toHaveValue` não detecta isso: o `fill()` sempre satisfaz essa asserção.
- *
- * Por isso o critério de sucesso aqui é a REQUISIÇÃO do mês pedido, que só sai se
- * o estado do React realmente mudou. Cada tentativa passa pelo mês âncora antes,
- * senão um `fill()` repetido com o mesmo valor não dispararia busca nenhuma.
+ * A página não tem mais `<input type="month">` (achado REL-02 — mês vira texto
+ * pt-BR + navegação ‹›). Chega no mês pedido clicando "Próximo mês"/"Mês
+ * anterior" a quantidade de vezes necessária, uma requisição por clique.
  */
 async function setReportMonth(page: import("@playwright/test").Page, value: string): Promise<void> {
-  const input = page.locator('input[type="month"]');
-  await expect(async () => {
-    const requested = page.waitForResponse(
-      (response) => response.url().includes(`/api/reports?month=${value}`),
-      { timeout: 5_000 },
-    );
-    await input.fill(ANCHOR_MONTH);
-    await input.fill(value);
-    await requested;
-  }).toPass({ timeout: 20_000 });
+  const delta = monthsFromNow(value);
+  const step = delta >= 0 ? 1 : -1;
+  const buttonLabel = delta >= 0 ? "Próximo mês" : "Mês anterior";
+  const button = page.getByRole("button", { name: buttonLabel });
+  const now = new Date();
+
+  for (let i = 1; i <= Math.abs(delta); i += 1) {
+    const target = new Date(now.getFullYear(), now.getMonth() + step * i, 1);
+    const targetValue = monthValue(target.getFullYear(), target.getMonth() + 1);
+    await expect(async () => {
+      const requested = page.waitForResponse(
+        (response) => response.url().includes(`/api/reports?month=${targetValue}`),
+        { timeout: 5_000 },
+      );
+      await button.click();
+      await requested;
+    }).toPass({ timeout: 20_000 });
+  }
 }
 
 test.describe("relatório gerencial", () => {

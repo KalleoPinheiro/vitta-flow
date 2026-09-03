@@ -236,6 +236,37 @@ describe("Feature: Gráfico de evolução de cicatrização", () => {
       expect(container.querySelectorAll(".sv-chart__line")).toHaveLength(3);
     });
 
+    it("Dado área, score e dor medidos juntos, Quando renderizar, Então cada série tem uma classe de traço distinta (#94, DOC-07)", () => {
+      const { container } = render(
+        <HealingChart
+          assessments={[
+            buildAssessment({
+              id: "a1",
+              areaMm2: 100,
+              pushScore: 12,
+              painScale: 8,
+              createdAt: "2026-01-01T00:00:00.000Z",
+            }),
+            buildAssessment({
+              id: "a2",
+              areaMm2: 50,
+              pushScore: 6,
+              painScale: 3,
+              createdAt: "2026-01-10T00:00:00.000Z",
+            }),
+          ]}
+        />,
+      );
+
+      // Legível sem cor: área (sólida, sem classe extra), score (pontilhada)
+      // e dor (tracejada) precisam de 3 classes de traço diferentes entre si.
+      expect(container.querySelector(".healing-chart__score-line")).not.toBeNull();
+      expect(container.querySelector(".healing-chart__pain-line")).not.toBeNull();
+      // Marcador de score é quadrado (<rect>), distinto do círculo da área.
+      expect(container.querySelectorAll("rect").length).toBeGreaterThan(0);
+      expect(container.querySelectorAll("circle").length).toBeGreaterThan(0);
+    });
+
     it("Dado dados suficientes, Quando renderizar, Então a linha de base usa ChartAxis posicionado na mesma posição pixel do <line> manual anterior", () => {
       const { container } = render(
         <HealingChart

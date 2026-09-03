@@ -4,6 +4,7 @@ import { screen, waitFor, cleanup, act } from "@testing-library/react";
 import type { ReactElement } from "react";
 import type {
   AppointmentDto,
+  AssessmentDto,
   CarePlanDetailDto,
   ClinicInfoDto,
   ConditionDto,
@@ -100,6 +101,60 @@ const carePlanDetail: CarePlanDetailDto = {
   interventions: [],
 };
 
+const carePlanDetailWithDiagnosis: CarePlanDetailDto = {
+  ...carePlanDetail,
+  diagnoses: [
+    {
+      id: "diag-1",
+      carePlanId: "plan-1",
+      diagnosisCode: "00046",
+      diagnosisLabel: "Integridade da pele prejudicada",
+      type: "real",
+      relatedFactors: "pressão prolongada",
+      definingCharacteristics: "lesão em região sacral",
+      createdAt: "2026-08-01T00:00:00.000Z",
+    },
+  ],
+  outcomes: [
+    {
+      id: "outcome-1",
+      carePlanId: "plan-1",
+      outcomeCode: "1101",
+      outcomeLabel: "Integridade tissular",
+      scaleAnchors: ["Gravemente comprometida", "Substancialmente comprometida", "Moderadamente comprometida", "Levemente comprometida", "Não comprometida"],
+      baselineScore: 2,
+      targetScore: 4,
+      deadline: null,
+      createdAt: "2026-08-01T00:00:00.000Z",
+      currentScore: 3,
+      attainment: 50,
+      isAchieved: false,
+      evaluations: [],
+    },
+  ],
+};
+
+const assessment: AssessmentDto = {
+  id: "assess-1",
+  conditionId: "cond-1",
+  lengthMm: 20,
+  widthMm: 10,
+  depthMm: null,
+  areaMm2: 200,
+  tissueType: "granulação",
+  exudate: "moderate",
+  painScale: 3,
+  skinCondition: "íntegra",
+  complications: null,
+  complicationCodes: [],
+  detScore: null,
+  pushScore: 8,
+  notes: null,
+  createdAt: "2026-08-15T00:00:00.000Z",
+};
+
+const issuance = () => jsonResponse({ documentNumber: "TEST-00000001", issuedAt: "2026-09-01T10:00:00.000Z" });
+
 const patient: PatientDto = {
   id: "pat-1",
   fullName: "Maria Souza",
@@ -115,6 +170,7 @@ const patient: PatientDto = {
 describe("Feature: bloqueio fail-closed de documentos sem dados cadastrais (#62)", () => {
   it("Dado clínica incompleta, Quando abrir o atestado, Então bloqueia com mensagem, não a declaração", async () => {
     mockFetch(({ url }) => {
+      if (url.includes("/api/documents/issue")) return issuance();
       if (url.includes("/api/clinic-info")) return jsonResponse(CLINIC_INCOMPLETE);
       return jsonResponse(appointment("completed"));
     });
@@ -129,7 +185,9 @@ describe("Feature: bloqueio fail-closed de documentos sem dados cadastrais (#62)
 
   it("Dado clínica completa e consulta concluída, Quando abrir o atestado, Então renderiza a declaração", async () => {
     mockFetch(({ url }) => {
+      if (url.includes("/api/documents/issue")) return issuance();
       if (url.includes("/api/clinic-info")) return jsonResponse(CLINIC_COMPLETE);
+      if (url.includes("/api/patients/")) return jsonResponse(patient);
       return jsonResponse(appointment("completed"));
     });
 
@@ -144,6 +202,7 @@ describe("Feature: bloqueio fail-closed de documentos sem dados cadastrais (#62)
 
   it("Dado consulta ainda carregando, Quando abrir o atestado, Então exibe carregamento, não 'consulta não encontrada' (#63)", async () => {
     mockFetch(({ url }) => {
+      if (url.includes("/api/documents/issue")) return issuance();
       if (url.includes("/api/clinic-info")) return jsonResponse(CLINIC_COMPLETE);
       return new Promise<never>(() => {});
     });
@@ -156,6 +215,7 @@ describe("Feature: bloqueio fail-closed de documentos sem dados cadastrais (#62)
 
   it("Dado consulta cancelada, Quando abrir o atestado, Então bloqueia com o status atual", async () => {
     mockFetch(({ url }) => {
+      if (url.includes("/api/documents/issue")) return issuance();
       if (url.includes("/api/clinic-info")) return jsonResponse(CLINIC_COMPLETE);
       return jsonResponse(appointment("cancelled"));
     });
@@ -168,6 +228,7 @@ describe("Feature: bloqueio fail-closed de documentos sem dados cadastrais (#62)
 
   it("Dado consulta com falta registrada, Quando abrir o atestado, Então bloqueia", async () => {
     mockFetch(({ url }) => {
+      if (url.includes("/api/documents/issue")) return issuance();
       if (url.includes("/api/clinic-info")) return jsonResponse(CLINIC_COMPLETE);
       return jsonResponse(appointment("no_show"));
     });
@@ -179,8 +240,9 @@ describe("Feature: bloqueio fail-closed de documentos sem dados cadastrais (#62)
 
   it("Dado clínica incompleta, Quando abrir o relatório, Então bloqueia", async () => {
     mockFetch(({ url }) => {
+      if (url.includes("/api/documents/issue")) return issuance();
       if (url.includes("/api/clinic-info")) return jsonResponse(CLINIC_INCOMPLETE);
-      if (url.includes("/assessments")) return jsonResponse([]);
+      if (url.includes("/assessments")) return jsonResponse([assessment]);
       return jsonResponse(condition);
     });
 
@@ -196,8 +258,10 @@ describe("Feature: bloqueio fail-closed de documentos sem dados cadastrais (#62)
 
   it("Dado clínica completa, Quando abrir o relatório, Então renderiza normalmente", async () => {
     mockFetch(({ url }) => {
+      if (url.includes("/api/documents/issue")) return issuance();
       if (url.includes("/api/clinic-info")) return jsonResponse(CLINIC_COMPLETE);
-      if (url.includes("/assessments")) return jsonResponse([]);
+      if (url.includes("/assessments")) return jsonResponse([assessment]);
+      if (url.includes("/api/patients/")) return jsonResponse(patient);
       return jsonResponse(condition);
     });
 
@@ -212,8 +276,9 @@ describe("Feature: bloqueio fail-closed de documentos sem dados cadastrais (#62)
 
   it("Dado clínica incompleta, Quando abrir o plano de cuidados, Então bloqueia", async () => {
     mockFetch(({ url }) => {
+      if (url.includes("/api/documents/issue")) return issuance();
       if (url.includes("/api/clinic-info")) return jsonResponse(CLINIC_INCOMPLETE);
-      return jsonResponse(carePlanDetail);
+      return jsonResponse(carePlanDetailWithDiagnosis);
     });
 
     await renderPage(<CarePlanDocumentPage params={Promise.resolve({ carePlanId: "plan-1" })} />);
@@ -225,9 +290,10 @@ describe("Feature: bloqueio fail-closed de documentos sem dados cadastrais (#62)
 
   it("Dado clínica completa, Quando abrir o plano de cuidados, Então renderiza normalmente", async () => {
     mockFetch(({ url }) => {
+      if (url.includes("/api/documents/issue")) return issuance();
       if (url.includes("/api/clinic-info")) return jsonResponse(CLINIC_COMPLETE);
       if (url.includes("/api/patients/")) return jsonResponse(patient);
-      return jsonResponse(carePlanDetail);
+      return jsonResponse(carePlanDetailWithDiagnosis);
     });
 
     await renderPage(<CarePlanDocumentPage params={Promise.resolve({ carePlanId: "plan-1" })} />);
@@ -241,9 +307,29 @@ describe("Feature: bloqueio fail-closed de documentos sem dados cadastrais (#62)
     expect(screen.getByText(CLINIC_COMPLETE.professionalName as string)).toBeInTheDocument();
   });
 
-  it("Dado clínica incompleta, Quando abrir o consentimento, Então renderiza normalmente (fora do escopo do bloqueio)", async () => {
+  // #94, DOC-02: consentimento era o único dos 4 documentos sem a guarda de
+  // clínica completa — corrigido, então agora bloqueia igual aos outros 3.
+  it("Dado clínica incompleta, Quando abrir o consentimento, Então bloqueia", async () => {
     mockFetch(({ url }) => {
+      if (url.includes("/api/documents/issue")) return issuance();
       if (url.includes("/api/clinic-info")) return jsonResponse(CLINIC_INCOMPLETE);
+      return jsonResponse(patient);
+    });
+
+    await renderPage(<ConsentDocumentPage params={Promise.resolve({ patientId: "pat-1" })} />);
+
+    await waitFor(() =>
+      expect(screen.getByText(/sem CNPJ ou responsável técnico/i)).toBeInTheDocument(),
+    );
+    expect(
+      screen.queryByRole("heading", { name: "Termo de Consentimento Livre e Esclarecido" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("Dado clínica completa, Quando abrir o consentimento, Então renderiza normalmente", async () => {
+    mockFetch(({ url }) => {
+      if (url.includes("/api/documents/issue")) return issuance();
+      if (url.includes("/api/clinic-info")) return jsonResponse(CLINIC_COMPLETE);
       return jsonResponse(patient);
     });
 
@@ -254,5 +340,157 @@ describe("Feature: bloqueio fail-closed de documentos sem dados cadastrais (#62)
         screen.getByRole("heading", { name: "Termo de Consentimento Livre e Esclarecido" }),
       ).toBeInTheDocument(),
     );
+  });
+
+  it("Dado plano sem diagnóstico, resultado ou intervenção, Quando abrir, Então bloqueia (DOC-04)", async () => {
+    mockFetch(({ url }) => {
+      if (url.includes("/api/documents/issue")) return issuance();
+      if (url.includes("/api/clinic-info")) return jsonResponse(CLINIC_COMPLETE);
+      if (url.includes("/api/patients/")) return jsonResponse(patient);
+      return jsonResponse(carePlanDetail);
+    });
+
+    await renderPage(<CarePlanDocumentPage params={Promise.resolve({ carePlanId: "plan-1" })} />);
+
+    await waitFor(() =>
+      expect(screen.getByText(/documento vazio/i)).toBeInTheDocument(),
+    );
+    expect(
+      screen.queryByRole("heading", { name: "Plano de Cuidados de Enfermagem (SAE)" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("Dado condição sem nenhuma avaliação registrada, Quando abrir o relatório, Então bloqueia (DOC-05)", async () => {
+    mockFetch(({ url }) => {
+      if (url.includes("/api/documents/issue")) return issuance();
+      if (url.includes("/api/clinic-info")) return jsonResponse(CLINIC_COMPLETE);
+      if (url.includes("/assessments")) return jsonResponse([]);
+      return jsonResponse(condition);
+    });
+
+    await renderPage(<PartnerReportPage params={Promise.resolve({ conditionId: "cond-1" })} />);
+
+    await waitFor(() =>
+      expect(screen.getByText(/relatório vazio/i)).toBeInTheDocument(),
+    );
+    expect(
+      screen.queryByRole("heading", { name: "Relatório de Evolução Clínica" }),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("Feature: conteúdo dos documentos (#94)", () => {
+  it("Dado atestado emitido, Quando renderizar, Então mostra número e nota de documento eletrônico (DOC-01)", async () => {
+    mockFetch(({ url }) => {
+      if (url.includes("/api/documents/issue")) return issuance();
+      if (url.includes("/api/clinic-info")) return jsonResponse(CLINIC_COMPLETE);
+      if (url.includes("/api/patients/")) return jsonResponse(patient);
+      return jsonResponse(appointment("completed"));
+    });
+
+    await renderPage(<AttendanceDocumentPage params={Promise.resolve({ appointmentId: "apt-1" })} />);
+
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "Declaração de Comparecimento" })).toBeInTheDocument(),
+    );
+    expect(screen.getByText(/Documento nº TEST-00000001/)).toBeInTheDocument();
+    expect(screen.getByText(/gerado eletronicamente/)).toBeInTheDocument();
+  });
+
+  it("Dado consentimento renderizado, Então a data vem antes das duas assinaturas (DOC-03)", async () => {
+    mockFetch(({ url }) => {
+      if (url.includes("/api/documents/issue")) return issuance();
+      if (url.includes("/api/clinic-info")) return jsonResponse(CLINIC_COMPLETE);
+      return jsonResponse(patient);
+    });
+
+    let renderResult!: ReturnType<typeof renderWithToast>;
+    await act(async () => {
+      renderResult = renderWithToast(
+        <ConsentDocumentPage params={Promise.resolve({ patientId: "pat-1" })} />,
+      );
+    });
+    const { container } = renderResult;
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", { name: "Termo de Consentimento Livre e Esclarecido" }),
+      ).toBeInTheDocument(),
+    );
+
+    const text = container.textContent ?? "";
+    const dateIndex = text.indexOf("São Paulo,");
+    const patientSignatureIndex = text.indexOf("Paciente ou responsável legal");
+    const professionalSignatureIndex = text.lastIndexOf(CLINIC_COMPLETE.professionalName as string);
+    expect(dateIndex).toBeGreaterThanOrEqual(0);
+    expect(dateIndex).toBeLessThan(patientSignatureIndex);
+    expect(patientSignatureIndex).toBeLessThan(professionalSignatureIndex);
+  });
+
+  it("Dado consentimento renderizado, Então tem linha de responsável legal, autorização de imagem separada, versão e duas vias (DOC-08/09/10)", async () => {
+    mockFetch(({ url }) => {
+      if (url.includes("/api/documents/issue")) return issuance();
+      if (url.includes("/api/clinic-info")) return jsonResponse(CLINIC_COMPLETE);
+      return jsonResponse(patient);
+    });
+
+    await renderPage(<ConsentDocumentPage params={Promise.resolve({ patientId: "pat-1" })} />);
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", { name: "Termo de Consentimento Livre e Esclarecido" }),
+      ).toBeInTheDocument(),
+    );
+    expect(screen.getByText(/Nome e CPF do responsável legal/)).toBeInTheDocument();
+    expect(screen.getByText("Autorização de uso de imagem")).toBeInTheDocument();
+    expect(screen.getByText(/independente do consentimento acima/)).toBeInTheDocument();
+    expect(screen.getByText(/Versão do termo:/)).toBeInTheDocument();
+    expect(screen.getByText(/duas vias/)).toBeInTheDocument();
+  });
+
+  it("Dado plano de cuidados com profissional responsável, Então a assinatura usa o nome dele, não o genérico da clínica (DOC-11)", async () => {
+    const planWithProfessional: CarePlanDetailDto = {
+      ...carePlanDetailWithDiagnosis,
+      plan: { ...carePlanDetailWithDiagnosis.plan, professionalId: "prof-1" },
+    };
+    mockFetch(({ url }) => {
+      if (url.includes("/api/documents/issue")) return issuance();
+      if (url.includes("/api/clinic-info")) return jsonResponse(CLINIC_COMPLETE);
+      if (url.includes("/api/patients/")) return jsonResponse(patient);
+      if (url.includes("/api/professionals/")) {
+        return jsonResponse({
+          id: "prof-1",
+          fullName: "Enf. Beatriz",
+          registry: "COREN-SP 999999",
+          commissionPct: null,
+          active: true,
+        });
+      }
+      return jsonResponse(planWithProfessional);
+    });
+
+    await renderPage(<CarePlanDocumentPage params={Promise.resolve({ carePlanId: "plan-1" })} />);
+
+    await waitFor(() => expect(screen.getByText("Enf. Beatriz")).toBeInTheDocument());
+    expect(screen.getByText("COREN-SP 999999")).toBeInTheDocument();
+    expect(screen.queryByText(CLINIC_COMPLETE.professionalName as string)).not.toBeInTheDocument();
+  });
+
+  it("Dado tabela NOC do plano de cuidados, Então os cabeçalhos indicam a escala 1-5 (DOC-12)", async () => {
+    mockFetch(({ url }) => {
+      if (url.includes("/api/documents/issue")) return issuance();
+      if (url.includes("/api/clinic-info")) return jsonResponse(CLINIC_COMPLETE);
+      if (url.includes("/api/patients/")) return jsonResponse(patient);
+      return jsonResponse(carePlanDetailWithDiagnosis);
+    });
+
+    await renderPage(<CarePlanDocumentPage params={Promise.resolve({ carePlanId: "plan-1" })} />);
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", { name: "Plano de Cuidados de Enfermagem (SAE)" }),
+      ).toBeInTheDocument(),
+    );
+    expect(screen.getByText("Basal (escala 1-5)")).toBeInTheDocument();
   });
 });

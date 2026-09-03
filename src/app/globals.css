@@ -86,3 +86,11 @@
   stroke-width: 1.5;
   stroke-dasharray: 4 3;
 }
+
+/* #94, DOC-07: score clínico ganha traço pontilhado — em impressora P&B/pra
+   daltonismo, área (sólida) × score (pontilhada) × dor (tracejada) continuam
+   distinguíveis mesmo colapsando a cor. */
+.healing-chart__score-line {
+  stroke-dasharray: 1 3;
+  stroke-linecap: round;
+}

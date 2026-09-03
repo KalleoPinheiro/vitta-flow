@@ -192,16 +192,23 @@ export function HealingChart({ assessments }: HealingChartProps) {
             <ChartLine
               points={toPoints(scoreSeries, 0, CLINICAL_SCORE_MAX, xOf)}
               color={SERIES_SCORE}
+              className="healing-chart__score-line"
             />
-            {scoreSeries.map((p) => (
-              <circle
-                key={`s-${p.date.getTime()}`}
-                cx={xOf(p.date)}
-                cy={PAD_TOP + (HEIGHT - PAD_TOP - PAD_BOTTOM) * (1 - p.value / CLINICAL_SCORE_MAX)}
-                r="3"
-                fill={SERIES_SCORE}
-              />
-            ))}
+            {/* #94, DOC-07: marcador quadrado (a área usa círculo) — forma
+                distinta reforça a diferenciação por traço em P&B/daltonismo. */}
+            {scoreSeries.map((p) => {
+              const cy = PAD_TOP + (HEIGHT - PAD_TOP - PAD_BOTTOM) * (1 - p.value / CLINICAL_SCORE_MAX);
+              return (
+                <rect
+                  key={`s-${p.date.getTime()}`}
+                  x={xOf(p.date) - 3}
+                  y={cy - 3}
+                  width="6"
+                  height="6"
+                  fill={SERIES_SCORE}
+                />
+              );
+            })}
           </>
         )}
         {painSeries.length >= MIN_MEASURED_POINTS && (

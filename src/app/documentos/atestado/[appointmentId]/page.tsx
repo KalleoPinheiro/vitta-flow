@@ -1,14 +1,15 @@
 "use client";
 
 import { use, type ReactNode } from "react";
-import type { AppointmentDto } from "@/lib/dto";
+import type { AppointmentDto, PatientDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
+import { useDocumentIssuance, type DocumentIssuance } from "@/lib/use-document-issuance";
+import { formatDate } from "@/lib/format";
 import { ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import { DocumentFrame, type ClinicInfoDto } from "@/components/document-frame";
 import { isClinicInfoComplete } from "@/domain/clinic/clinic";
 
-/** Guardas de bloqueio/carregamento — extraída para manter a complexidade da página no limite. */
-function guardBlock(
+function guardAppointment(
   clinic: ClinicInfoDto | null,
   clinicError: string | null,
   appointment: AppointmentDto | null,
@@ -31,6 +32,31 @@ function guardBlock(
   return null;
 }
 
+/** Guardas de bloqueio/carregamento — extraída para manter a complexidade da página no limite. */
+function guardBlock(
+  clinic: ClinicInfoDto | null,
+  clinicError: string | null,
+  appointment: AppointmentDto | null,
+  appointmentError: string | null,
+  appointmentLoading: boolean,
+  issuance: DocumentIssuance | null,
+  issuanceError: string | null,
+): ReactNode | null {
+  const appointmentGuard = guardAppointment(
+    clinic,
+    clinicError,
+    appointment,
+    appointmentError,
+    appointmentLoading,
+  );
+  if (appointmentGuard) return appointmentGuard;
+  if (issuanceError) return <ErrorAlert message={issuanceError} />;
+  // #94, DOC-01: sem emissão persistida ainda, não renderiza — a data no
+  // rodapé nunca pode ser `new Date()` do render.
+  if (!issuance) return <LoadingIndicator />;
+  return null;
+}
+
 export default function AttendanceDocumentPage({
   params,
 }: {
@@ -43,10 +69,22 @@ export default function AttendanceDocumentPage({
     error,
     isLoading: appointmentLoading,
   } = useApiQuery<AppointmentDto>(`/api/appointments/${appointmentId}`);
+  const { data: patient } = useApiQuery<PatientDto>(
+    appointment ? `/api/patients/${appointment.patientId}` : null,
+  );
+  const { issuance, error: issuanceError } = useDocumentIssuance("atestado", appointmentId);
 
-  const guard = guardBlock(clinic, clinicError, appointment, error, appointmentLoading);
+  const guard = guardBlock(
+    clinic,
+    clinicError,
+    appointment,
+    error,
+    appointmentLoading,
+    issuance,
+    issuanceError,
+  );
   if (guard) return guard;
-  if (!clinic || !appointment) return null;
+  if (!clinic || !appointment || !issuance) return null;
 
   const start = new Date(appointment.startsAt);
   const end = new Date(appointment.endsAt);
@@ -54,11 +92,17 @@ export default function AttendanceDocumentPage({
     d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
   return (
-    <DocumentFrame clinic={clinic} title="Declaração de Comparecimento">
+    <DocumentFrame
+      clinic={clinic}
+      title="Declaração de Comparecimento"
+      documentNumber={issuance.documentNumber}
+      issuedAt={issuance.issuedAt}
+    >
       <p className="mb-4">
         Declaro, para os devidos fins, que{" "}
-        <strong>{appointment.patientName ?? "o(a) paciente"}</strong> compareceu a atendimento
-        de estomaterapia nesta clínica no dia{" "}
+        <strong>{appointment.patientName ?? "o(a) paciente"}</strong>
+        {patient?.birthDate ? ` (nascido(a) em ${formatDate(patient.birthDate)})` : ""}{" "}
+        compareceu a atendimento de estomaterapia nesta clínica no dia{" "}
         <strong>{start.toLocaleDateString("pt-BR")}</strong>, no período de{" "}
         <strong>{time(start)}</strong> às <strong>{time(end)}</strong>, para realização de:{" "}
         <strong>{appointment.procedure}</strong>.

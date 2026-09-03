@@ -89,8 +89,19 @@ export class Supply {
     return new Supply({ ...this.state, active: true });
   }
 
+  /**
+   * `minQty === 0` significa "sem limiar configurado", não "qualquer estoque
+   * já é baixo" — sem essa guarda, todo insumo recém-criado (stockQty 0,
+   * minQty default 0) nascia marcado "estoque baixo" no dia 1 (achado [P0]
+   * da auditoria UX 2026-08, §4 Materiais).
+   */
   get isLowStock(): boolean {
-    return this.state.stockQty <= this.state.minQty;
+    return this.state.minQty > 0 && this.state.stockQty <= this.state.minQty;
+  }
+
+  /** Zero é mais grave que "baixo" — mesma severidade visual escondia isso (achado [P0]). */
+  get isOutOfStock(): boolean {
+    return this.state.stockQty === 0;
   }
 
   get id(): string {

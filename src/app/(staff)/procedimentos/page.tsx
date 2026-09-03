@@ -29,6 +29,10 @@ export default function ProceduresPage() {
   const [editing, setEditing] = useState<ProcedureDto | "new" | null>(null);
   const [kitFor, setKitFor] = useState<ProcedureDto | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const filtered = (procedures ?? []).filter((p) =>
+    p.name.toLowerCase().includes(search.toLowerCase()),
+  );
 
   const toggleActive = async (procedure: ProcedureDto) => {
     try {
@@ -65,103 +69,185 @@ export default function ProceduresPage() {
         margem por procedimento fica consistente.
       </p>
 
-      {(error || actionError) && <ErrorAlert message={actionError ?? error ?? ""} />}
+      <ErrorAlertOrNull message={resolveErrorMessage(actionError, error)} />
 
-      <Card>
-        {!procedures ? (
-          <LoadingIndicator />
-        ) : procedures.length === 0 ? (
-          <EmptyState message="Nenhum procedimento cadastrado — o agendamento continua com texto livre até o catálogo existir." />
-        ) : (
-          <div className="overflow-x-auto">
-            <Table className="w-full text-left text-sm">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="px-4 py-3">Procedimento</TableHead>
-                  <TableHead className="px-4 py-3">Preço padrão</TableHead>
-                  <TableHead className="px-4 py-3">Duração</TableHead>
-                  <TableHead className="px-4 py-3">Situação</TableHead>
-                  <TableHead className="px-4 py-3 text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {procedures.map((procedure) => (
-                  <TableRow key={procedure.id} className={procedure.active ? "" : "opacity-50"}>
-                    <TableCell className="px-4 py-3 font-medium">{procedure.name}</TableCell>
-                    <TableCell className="px-4 py-3">{formatCurrency(procedure.priceCents)}</TableCell>
-                    <TableCell className="px-4 py-3 text-ink-2">{procedure.durationMinutes} min</TableCell>
-                    <TableCell className="px-4 py-3">
-                      <StatusBadge
-                        status={procedure.active ? "confirmed" : "cancelled"}
-                        label={procedure.active ? "Ativo" : "Inativo"}
-                      />
-                    </TableCell>
-                    <TableCell className="px-4 py-3 text-right">
-                      <Button
-                        type="button"
-                        onClick={() => setKitFor(procedure)}
-                        variant="link"
-                        className="h-auto p-0 mr-2 text-success"
-                      >
-                        Kit
-                      </Button>
-                      <Button
-                        type="button"
-                        onClick={() => setEditing(procedure)}
-                        variant="link"
-                        className="h-auto p-0 mr-2 text-accent-ink"
-                      >
-                        Editar
-                      </Button>
-                      {procedure.active ? (
-                        <ConfirmAction
-                          trigger={
-                            <Button type="button" variant="link" className="h-auto p-0 text-ink-3">
-                              Desativar
-                            </Button>
-                          }
-                          title="Desativar procedimento?"
-                          description="O procedimento para de estar disponível pra agendar."
-                          confirmLabel="Confirmar"
-                          variant="danger"
-                          onConfirm={() => toggleActive(procedure)}
-                        />
-                      ) : (
-                        <Button
-                          type="button"
-                          onClick={() => void toggleActive(procedure)}
-                          variant="link"
-                          className="h-auto p-0 text-ink-3"
-                        >
-                          Reativar
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </Card>
+      <SearchBar count={procedures?.length ?? 0} filteredCount={filtered.length} search={search} onSearch={setSearch} />
+
+      <ProceduresTable
+        procedures={procedures}
+        filtered={filtered}
+        onKit={setKitFor}
+        onEdit={setEditing}
+        onToggleActive={toggleActive}
+      />
 
       <KitModal procedure={kitFor} onClose={() => setKitFor(null)} />
 
-      {editing && (
-        <Modal
-          title={editing === "new" ? "Novo procedimento" : "Editar procedimento"}
-          onClose={() => setEditing(null)}
-        >
-          <ProcedureForm
-            initial={editing === "new" ? undefined : editing}
-            onSaved={() => {
-              setEditing(null);
-              refresh();
-            }}
-          />
-        </Modal>
-      )}
+      <EditProcedureModal
+        editing={editing}
+        onClose={() => setEditing(null)}
+        onSaved={() => {
+          setEditing(null);
+          refresh();
+        }}
+      />
     </div>
+  );
+}
+
+function resolveErrorMessage(actionError: string | null, loadError: string | null): string | null {
+  return actionError ?? loadError;
+}
+
+function ErrorAlertOrNull({ message }: { message: string | null }) {
+  return message ? <ErrorAlert message={message} /> : null;
+}
+
+function SearchBar({
+  count,
+  filteredCount,
+  search,
+  onSearch,
+}: {
+  count: number;
+  filteredCount: number;
+  search: string;
+  onSearch: (value: string) => void;
+}) {
+  if (count === 0) {
+    return null;
+  }
+  return (
+    <div className="mb-4 flex flex-wrap items-center gap-3">
+      <Input
+        type="search"
+        value={search}
+        onChange={(e) => onSearch(e.target.value)}
+        placeholder="Buscar por nome…"
+        className="max-w-sm"
+      />
+      <span className="text-sm text-ink-3">
+        {filteredCount} {filteredCount === 1 ? "procedimento" : "procedimentos"}
+      </span>
+    </div>
+  );
+}
+
+function EditProcedureModal({
+  editing,
+  onClose,
+  onSaved,
+}: {
+  editing: ProcedureDto | "new" | null;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  if (!editing) {
+    return null;
+  }
+  return (
+    <Modal title={editing === "new" ? "Novo procedimento" : "Editar procedimento"} onClose={onClose}>
+      <ProcedureForm initial={editing === "new" ? undefined : editing} onSaved={onSaved} />
+    </Modal>
+  );
+}
+
+interface ProceduresTableProps {
+  procedures: ProcedureDto[] | null;
+  filtered: ProcedureDto[];
+  onKit: (procedure: ProcedureDto) => void;
+  onEdit: (procedure: ProcedureDto) => void;
+  onToggleActive: (procedure: ProcedureDto) => void;
+}
+
+function ProceduresTable({ procedures, filtered, onKit, onEdit, onToggleActive }: ProceduresTableProps) {
+  return (
+    <Card>
+      {!procedures ? (
+        <LoadingIndicator />
+      ) : procedures.length === 0 ? (
+        <EmptyState message="Nenhum procedimento cadastrado — o agendamento continua com texto livre até o catálogo existir." />
+      ) : filtered.length === 0 ? (
+        <EmptyState message="Nenhum procedimento encontrado para a busca." />
+      ) : (
+        <div className="overflow-x-auto">
+          <Table className="w-full text-left text-sm">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="px-4 py-3">Procedimento</TableHead>
+                <TableHead className="px-4 py-3">Preço padrão</TableHead>
+                <TableHead className="px-4 py-3">Duração</TableHead>
+                <TableHead className="px-4 py-3">Situação</TableHead>
+                <TableHead className="px-4 py-3 text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((procedure) => (
+                <ProcedureRow
+                  key={procedure.id}
+                  procedure={procedure}
+                  onKit={() => onKit(procedure)}
+                  onEdit={() => onEdit(procedure)}
+                  onToggleActive={() => onToggleActive(procedure)}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function ProcedureRow({
+  procedure,
+  onKit,
+  onEdit,
+  onToggleActive,
+}: {
+  procedure: ProcedureDto;
+  onKit: () => void;
+  onEdit: () => void;
+  onToggleActive: () => void;
+}) {
+  return (
+    <TableRow className={procedure.active ? "" : "opacity-50"}>
+      <TableCell className="px-4 py-3 font-medium">{procedure.name}</TableCell>
+      <TableCell className="px-4 py-3">{formatCurrency(procedure.priceCents)}</TableCell>
+      <TableCell className="px-4 py-3 text-ink-2">{procedure.durationMinutes} min</TableCell>
+      <TableCell className="px-4 py-3">
+        <StatusBadge
+          status={procedure.active ? "confirmed" : "cancelled"}
+          label={procedure.active ? "Ativo" : "Inativo"}
+        />
+      </TableCell>
+      <TableCell className="px-4 py-3 text-right">
+        <Button type="button" onClick={onKit} variant="ghost" size="sm">
+          {procedure.kitItemCount > 0 ? `Kit (${procedure.kitItemCount})` : "Sem kit"}
+        </Button>
+        <Button type="button" onClick={onEdit} variant="ghost" size="sm">
+          Editar
+        </Button>
+        {procedure.active ? (
+          <ConfirmAction
+            trigger={
+              <Button type="button" variant="ghost" size="sm">
+                Desativar
+              </Button>
+            }
+            title="Desativar procedimento?"
+            description="O procedimento para de estar disponível pra agendar."
+            confirmLabel="Confirmar"
+            variant="danger"
+            onConfirm={onToggleActive}
+          />
+        ) : (
+          <Button type="button" onClick={onToggleActive} variant="ghost" size="sm">
+            Reativar
+          </Button>
+        )}
+      </TableCell>
+    </TableRow>
   );
 }
 
@@ -224,16 +310,19 @@ function ProcedureForm({
       </label>
       <div className="grid grid-cols-2 gap-3">
         <label className="text-sm font-medium">
-          Preço (R$) *
-          <Input
-            required
-            type="number"
-            min="0"
-            step="0.01"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            className="mt-1"
-          />
+          Preço *
+          <div className="mt-1 flex items-center gap-1.5">
+            <span className="text-sm text-ink-3">R$</span>
+            <Input
+              required
+              type="number"
+              min="0"
+              step="0.01"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              className="flex-1"
+            />
+          </div>
         </label>
         <label className="text-sm font-medium">
           Duração (min) *
@@ -299,17 +388,34 @@ function KitForm({ procedure, onSaved }: { procedure: ProcedureDto; onSaved: () 
     edits ?? kit.items.map((item) => ({ supplyId: item.supplyId, quantity: String(item.quantity) }));
   const activeSupplies = supplies.filter((s) => s.active);
   const supplyName = (id: string) => supplies.find((s) => s.id === id)?.name ?? id;
+  const filledItems = items.filter((item) => item.supplyId);
+  const hasInvalidQuantity = filledItems.some((item) => !(Number(item.quantity) > 0));
+
+  /** Opções de um `<select>` de linha excluem insumos já escolhidos em outras
+   * linhas do mesmo kit (PROC-04) — o domínio já rejeita duplicata no save,
+   * isso evita o usuário chegar lá pra descobrir. */
+  const optionsFor = (rowIndex: number) =>
+    activeSupplies.filter(
+      (supply) =>
+        supply.id === items[rowIndex].supplyId ||
+        !items.some((item, i) => i !== rowIndex && item.supplyId === supply.id),
+    );
 
   const save = async () => {
+    if (hasInvalidQuantity) {
+      setError("Quantidade deve ser um número inteiro maior que zero em todos os itens");
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
       await apiFetch(`/api/procedures/${procedure.id}/kit`, {
         method: "PUT",
         body: JSON.stringify({
-          items: items
-            .filter((item) => item.supplyId)
-            .map((item) => ({ supplyId: item.supplyId, quantity: Number(item.quantity) || 1 })),
+          items: filledItems.map((item) => ({
+            supplyId: item.supplyId,
+            quantity: Number(item.quantity),
+          })),
         }),
       });
       toast({
@@ -347,7 +453,7 @@ function KitForm({ procedure, onSaved }: { procedure: ProcedureDto; onSaved: () 
             className="flex-1"
           >
             <option value="">Selecione o insumo…</option>
-            {activeSupplies.map((supply) => (
+            {optionsFor(index).map((supply) => (
               <option key={supply.id} value={supply.id}>
                 {supply.name}
               </option>

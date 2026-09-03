@@ -581,6 +581,8 @@ export interface SupplyDto {
   priceCents: number;
   stockQty: number;
   isLowStock: boolean;
+  /** Zero é mais grave que "baixo" — severidade visual escala (MAT-01/02). */
+  isOutOfStock: boolean;
   active: boolean;
 }
 
@@ -592,6 +594,7 @@ export const toSupplyDto = (supply: Supply): SupplyDto => ({
   priceCents: supply.priceCents,
   stockQty: supply.stockQty,
   isLowStock: supply.isLowStock,
+  isOutOfStock: supply.isOutOfStock,
   active: supply.isActive,
 });
 
@@ -727,14 +730,20 @@ export interface ProcedureDto {
   priceCents: number;
   durationMinutes: number;
   active: boolean;
+  /** Nº de insumos no kit padrão — "Kit" deixa de ser opaco na listagem (PROC-03). */
+  kitItemCount: number;
 }
 
-export const toProcedureDto = (procedure: CatalogProcedure): ProcedureDto => ({
+export const toProcedureDto = (
+  procedure: CatalogProcedure,
+  kitItemCount = 0,
+): ProcedureDto => ({
   id: procedure.id,
   name: procedure.name,
   priceCents: procedure.priceCents,
   durationMinutes: procedure.durationMinutes,
   active: procedure.isActive,
+  kitItemCount,
 });
 
 /** Conta de acesso — nunca expõe o hash de senha. */

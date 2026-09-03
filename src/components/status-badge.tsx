@@ -13,6 +13,9 @@ const COLOR_BY_STATUS: Record<string, string> = {
   no_show: "var(--sv-warning-ink)",
   pending: "var(--sv-warning-ink)",
   paid: "var(--sv-success-ink)",
+  /** Zero é mais grave que "baixo" — precisa de token de perigo, não o cinza
+   * neutro de `cancelled` nem o âmbar de `pending` (achado [P0] Materiais). */
+  out_of_stock: "var(--sv-danger-ink)",
 };
 
 const FALLBACK_COLOR = "var(--sv-text-3)";

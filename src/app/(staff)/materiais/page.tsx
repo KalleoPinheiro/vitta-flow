@@ -7,6 +7,7 @@ import type { AppointmentDto, StockMovementDto, SupplyDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 import { Modal } from "@/components/modal";
+import { ConfirmAction } from "@/components/confirm-action";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import {
@@ -51,11 +52,18 @@ const STOCKOUT_ALERT_DAYS = 30;
 
 export default function SuppliesPage() {
   const { data: supplies, error, refresh } = useApiQuery<SupplyDto[]>("/api/supplies");
-  const { data: insights, refresh: refreshInsights } =
-    useApiQuery<SupplyInsightsDto>("/api/supplies/insights");
+  const {
+    data: insights,
+    error: insightsError,
+    refresh: refreshInsights,
+  } = useApiQuery<SupplyInsightsDto>("/api/supplies/insights");
   const [editing, setEditing] = useState<SupplyDto | "new" | null>(null);
   const [moving, setMoving] = useState<SupplyDto | null>(null);
   const [history, setHistory] = useState<SupplyDto | null>(null);
+  const [search, setSearch] = useState("");
+  const filtered = (supplies ?? []).filter((s) =>
+    s.name.toLowerCase().includes(search.toLowerCase()),
+  );
 
   return (
     <div>
@@ -71,12 +79,21 @@ export default function SuppliesPage() {
       </div>
 
       {error && <ErrorAlert message={error} />}
-      <LowStockBanner supplies={supplies} />
+      <LowStockBanner supplies={supplies} onRepor={setMoving} />
       <ExpiryBanner batches={insights?.expiringBatches ?? []} />
+
+      <SupplySearchBar
+        count={supplies?.length ?? 0}
+        filteredCount={filtered.length}
+        search={search}
+        onSearch={setSearch}
+      />
 
       <SuppliesTable
         supplies={supplies}
+        filtered={filtered}
         insights={insights?.bySupply ?? []}
+        insightsError={insightsError}
         onMove={setMoving}
         onHistory={setHistory}
         onEdit={setEditing}
@@ -91,25 +108,78 @@ export default function SuppliesPage() {
         }}
       />
 
-      {moving && (
-        <Modal title={`Movimentar — ${moving.name}`} onClose={() => setMoving(null)}>
-          <MovementForm
-            supply={moving}
-            onSaved={() => {
-              setMoving(null);
-              refresh();
-              refreshInsights();
-            }}
-          />
-        </Modal>
-      )}
+      <MovementModal
+        supply={moving}
+        onClose={() => setMoving(null)}
+        onSaved={() => {
+          setMoving(null);
+          refresh();
+          refreshInsights();
+        }}
+      />
 
-      {history && (
-        <Modal title={`Histórico — ${history.name}`} onClose={() => setHistory(null)}>
-          <MovementHistory supplyId={history.id} />
-        </Modal>
-      )}
+      <HistoryModal supply={history} onClose={() => setHistory(null)} />
     </div>
+  );
+}
+
+function SupplySearchBar({
+  count,
+  filteredCount,
+  search,
+  onSearch,
+}: {
+  count: number;
+  filteredCount: number;
+  search: string;
+  onSearch: (value: string) => void;
+}) {
+  if (count === 0) {
+    return null;
+  }
+  return (
+    <div className="mb-4 flex flex-wrap items-center gap-3">
+      <Input
+        type="search"
+        value={search}
+        onChange={(e) => onSearch(e.target.value)}
+        placeholder="Buscar por nome…"
+        className="max-w-sm"
+      />
+      <span className="text-sm text-ink-3">
+        {filteredCount} {filteredCount === 1 ? "insumo" : "insumos"}
+      </span>
+    </div>
+  );
+}
+
+function MovementModal({
+  supply,
+  onClose,
+  onSaved,
+}: {
+  supply: SupplyDto | null;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  if (!supply) {
+    return null;
+  }
+  return (
+    <Modal title={`Movimentar — ${supply.name}`} onClose={onClose}>
+      <MovementForm supply={supply} onSaved={onSaved} />
+    </Modal>
+  );
+}
+
+function HistoryModal({ supply, onClose }: { supply: SupplyDto | null; onClose: () => void }) {
+  if (!supply) {
+    return null;
+  }
+  return (
+    <Modal title={`Histórico — ${supply.name}`} onClose={onClose}>
+      <MovementHistory supplyId={supply.id} />
+    </Modal>
   );
 }
 
@@ -130,16 +200,39 @@ function EditSupplyModal({ editing, onClose, onSaved }: EditSupplyModalProps) {
   );
 }
 
-function LowStockBanner({ supplies }: { supplies: SupplyDto[] | null }) {
-  const count = (supplies ?? []).filter((s) => s.active && s.isLowStock).length;
-  if (count === 0) {
+function LowStockBanner({
+  supplies,
+  onRepor,
+}: {
+  supplies: SupplyDto[] | null;
+  onRepor: (supply: SupplyDto) => void;
+}) {
+  const low = (supplies ?? []).filter((s) => s.active && s.isLowStock);
+  if (low.length === 0) {
     return null;
   }
   return (
     <Alert variant="warning" className="mb-4">
       <AlertDescription>
-        <Icon name="alert-triangle" /> {count}{" "}
-        {count === 1 ? "insumo está" : "insumos estão"} com estoque baixo (≤ mínimo).
+        <Icon name="alert-triangle" /> {low.length}{" "}
+        {low.length === 1 ? "insumo está" : "insumos estão"} com estoque baixo (≤ mínimo):{" "}
+        {low.map((supply, index) => (
+          <span key={supply.id}>
+            {index > 0 && ", "}
+            {supply.name} (
+            <Button
+              type="button"
+              onClick={() => onRepor(supply)}
+              variant="link"
+              className="h-auto p-0 font-semibold text-warning underline"
+              aria-label={`Repor ${supply.name}`}
+            >
+              repor
+            </Button>
+            )
+          </span>
+        ))}
+        .
       </AlertDescription>
     </Alert>
   );
@@ -181,13 +274,23 @@ function ExpiryBanner({ batches }: { batches: ExpiringBatchDto[] }) {
 
 interface SuppliesTableProps {
   supplies: SupplyDto[] | null;
+  filtered: SupplyDto[];
   insights: SupplyInsightDto[];
+  insightsError: string | null;
   onMove: (supply: SupplyDto) => void;
   onHistory: (supply: SupplyDto) => void;
   onEdit: (supply: SupplyDto) => void;
 }
 
-function SuppliesTable({ supplies, insights, onMove, onHistory, onEdit }: SuppliesTableProps) {
+function SuppliesTable({
+  supplies,
+  filtered,
+  insights,
+  insightsError,
+  onMove,
+  onHistory,
+  onEdit,
+}: SuppliesTableProps) {
   const insightBySupply = new Map(insights.map((i) => [i.supplyId, i]));
   return (
     <Card>
@@ -195,6 +298,8 @@ function SuppliesTable({ supplies, insights, onMove, onHistory, onEdit }: Suppli
         <LoadingIndicator />
       ) : supplies.length === 0 ? (
         <EmptyState message="Nenhum insumo cadastrado." />
+      ) : filtered.length === 0 ? (
+        <EmptyState message="Nenhum insumo encontrado para a busca." />
       ) : (
         <div className="overflow-x-auto">
           <Table className="w-full text-left text-sm">
@@ -210,11 +315,12 @@ function SuppliesTable({ supplies, insights, onMove, onHistory, onEdit }: Suppli
               </TableRow>
             </TableHeader>
             <TableBody>
-              {supplies.map((supply) => (
+              {filtered.map((supply) => (
                 <SupplyRow
                   key={supply.id}
                   supply={supply}
                   insight={insightBySupply.get(supply.id)}
+                  insightsError={insightsError}
                   onMove={() => onMove(supply)}
                   onHistory={() => onHistory(supply)}
                   onEdit={() => onEdit(supply)}
@@ -231,12 +337,26 @@ function SuppliesTable({ supplies, insights, onMove, onHistory, onEdit }: Suppli
 interface SupplyRowProps {
   supply: SupplyDto;
   insight?: SupplyInsightDto;
+  insightsError: string | null;
   onMove: () => void;
   onHistory: () => void;
   onEdit: () => void;
 }
 
-function StockoutForecast({ insight }: { insight?: SupplyInsightDto }) {
+function StockoutForecast({
+  insight,
+  insightsError,
+}: {
+  insight?: SupplyInsightDto;
+  insightsError: string | null;
+}) {
+  if (insightsError) {
+    return (
+      <span className="inline-flex items-center gap-1 text-danger" title={insightsError}>
+        <Icon name="alert-circle" /> Erro ao calcular
+      </span>
+    );
+  }
   if (!insight || insight.daysToStockout == null) {
     return <span className="text-ink-3">—</span>;
   }
@@ -249,7 +369,7 @@ function StockoutForecast({ insight }: { insight?: SupplyInsightDto }) {
   );
 }
 
-function SupplyRow({ supply, insight, onMove, onHistory, onEdit }: SupplyRowProps) {
+function SupplyRow({ supply, insight, insightsError, onMove, onHistory, onEdit }: SupplyRowProps) {
   return (
     <TableRow className={supply.active ? "" : "opacity-50"}>
       <TableCell className="px-4 py-3 font-medium">{supply.name}</TableCell>
@@ -257,13 +377,17 @@ function SupplyRow({ supply, insight, onMove, onHistory, onEdit }: SupplyRowProp
         {supply.stockQty} {supply.unit}
         {supply.active && supply.isLowStock && (
           <span className="ml-2">
-            <StatusBadge status="pending" label="Estoque baixo" />
+            {supply.isOutOfStock ? (
+              <StatusBadge status="out_of_stock" label="Sem estoque" />
+            ) : (
+              <StatusBadge status="pending" label="Estoque baixo" />
+            )}
           </span>
         )}
       </TableCell>
       <TableCell className="px-4 py-3 text-ink-2">{supply.minQty}</TableCell>
       <TableCell className="px-4 py-3">
-        <StockoutForecast insight={insight} />
+        <StockoutForecast insight={insight} insightsError={insightsError} />
       </TableCell>
       <TableCell className="px-4 py-3">{formatCurrency(supply.priceCents)}</TableCell>
       <TableCell className="px-4 py-3">
@@ -273,22 +397,13 @@ function SupplyRow({ supply, insight, onMove, onHistory, onEdit }: SupplyRowProp
         />
       </TableCell>
       <TableCell className="px-4 py-3 text-right text-sm">
-        <Button type="button" onClick={onMove}
-          variant="link"
-          className="h-auto p-0 mr-2 text-success"
-        >
+        <Button type="button" onClick={onMove} variant="ghost" size="sm">
           Movimentar
         </Button>
-        <Button type="button" onClick={onHistory}
-          variant="link"
-          className="h-auto p-0 mr-2 text-accent-ink"
-        >
+        <Button type="button" onClick={onHistory} variant="ghost" size="sm">
           Histórico
         </Button>
-        <Button type="button" onClick={onEdit}
-          variant="link"
-          className="h-auto p-0 text-ink-3"
-        >
+        <Button type="button" onClick={onEdit} variant="ghost" size="sm">
           Editar
         </Button>
       </TableCell>
@@ -388,16 +503,19 @@ function SupplyForm({ initial, onSaved }: { initial?: SupplyDto; onSaved: () => 
           />
         </label>
         <label className="text-sm font-medium">
-          Preço (R$) *
-          <Input
-            required
-            type="number"
-            min="0"
-            step="0.01"
-            value={values.price}
-            onChange={(e) => setValues((prev) => ({ ...prev, price: e.target.value }))}
-            className="mt-1"
-          />
+          Preço *
+          <div className="mt-1 flex items-center gap-1.5">
+            <span className="text-sm text-ink-3">R$</span>
+            <Input
+              required
+              type="number"
+              min="0"
+              step="0.01"
+              value={values.price}
+              onChange={(e) => setValues((prev) => ({ ...prev, price: e.target.value }))}
+              className="flex-1"
+            />
+          </div>
         </label>
       </div>
       {initial && (
@@ -428,6 +546,120 @@ const todayRange = () => {
   return { from: start.toISOString(), to: end.toISOString() };
 };
 
+interface MovementFormState {
+  type: "in" | "out";
+  quantity: string;
+  reason: string;
+  appointmentId: string;
+  batchLabel: string;
+  expiresAt: string;
+}
+
+function buildMovementPayload(state: MovementFormState) {
+  const isIn = state.type === "in";
+  return {
+    type: state.type,
+    quantity: Number(state.quantity),
+    reason: state.reason,
+    appointmentId: !isIn && state.appointmentId ? state.appointmentId : null,
+    batchLabel: isIn && state.batchLabel ? state.batchLabel : null,
+    expiresAt: isIn && state.expiresAt ? new Date(state.expiresAt).toISOString() : null,
+  };
+}
+
+function canSubmitMovement(state: MovementFormState, exceedsBalance: boolean): boolean {
+  return Boolean(state.quantity) && Boolean(state.reason) && !exceedsBalance;
+}
+
+function movementConfirmCopy(state: MovementFormState, supply: SupplyDto) {
+  const isIn = state.type === "in";
+  return {
+    title: isIn ? "Confirmar entrada de estoque?" : "Confirmar saída de estoque?",
+    description: `${isIn ? "Entrada" : "Saída"} de ${state.quantity || 0} ${supply.unit} de "${supply.name}".`,
+  };
+}
+
+function ExceedsBalanceWarning({ show, supply }: { show: boolean; supply: SupplyDto }) {
+  if (!show) {
+    return null;
+  }
+  return (
+    <span className="mt-1 block text-xs font-medium text-danger">
+      Saldo atual é {supply.stockQty} {supply.unit} — quantidade maior que isso não pode sair.
+    </span>
+  );
+}
+
+function InMovementFields({
+  batchLabel,
+  expiresAt,
+  onBatchLabel,
+  onExpiresAt,
+}: {
+  batchLabel: string;
+  expiresAt: string;
+  onBatchLabel: (value: string) => void;
+  onExpiresAt: (value: string) => void;
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <label className="text-sm font-medium">
+        Lote (opcional)
+        <Input
+          value={batchLabel}
+          onChange={(e) => onBatchLabel(e.target.value)}
+          placeholder="Ex.: L2026-091"
+          className="mt-1"
+        />
+      </label>
+      <label className="text-sm font-medium">
+        Validade (opcional)
+        <Input
+          type="date"
+          value={expiresAt}
+          onChange={(e) => onExpiresAt(e.target.value)}
+          className="mt-1"
+        />
+      </label>
+    </div>
+  );
+}
+
+function OutMovementFields({
+  appointmentId,
+  appointments,
+  onAppointmentId,
+}: {
+  appointmentId: string;
+  appointments: AppointmentDto[];
+  onAppointmentId: (value: string) => void;
+}) {
+  return (
+    <label className="text-sm font-medium">
+      Consulta atendida (custo por atendimento)
+      <NativeSelect
+        value={appointmentId}
+        onChange={(e) => onAppointmentId(e.target.value)}
+        className="mt-1"
+      >
+        <option value="">— sem vínculo —</option>
+        {appointments.map((appointment) => (
+          <option key={appointment.id} value={appointment.id}>
+            {new Date(appointment.startsAt).toLocaleTimeString("pt-BR", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}{" "}
+            — {appointment.patientName ?? "Paciente"} ({appointment.procedure})
+          </option>
+        ))}
+      </NativeSelect>
+      <span className="mt-1 block text-xs font-normal text-ink-3">
+        Vincular a saída à consulta alimenta a margem por procedimento no relatório.
+      </span>
+    </label>
+  );
+}
+
 function MovementForm({ supply, onSaved }: { supply: SupplyDto; onSaved: () => void }) {
   const { toast } = useToast();
   const [type, setType] = useState<"in" | "out">("in");
@@ -444,21 +676,24 @@ function MovementForm({ supply, onSaved }: { supply: SupplyDto; onSaved: () => v
     `/api/appointments?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
   );
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const exceedsBalance = type === "out" && Number(quantity) > supply.stockQty;
+
+  const formState: MovementFormState = {
+    type,
+    quantity,
+    reason,
+    appointmentId,
+    batchLabel,
+    expiresAt,
+  };
+
+  const doSubmit = async () => {
     setSaving(true);
     setError(null);
     try {
       await apiFetch<SupplyDto>(`/api/supplies/${supply.id}/movements`, {
         method: "POST",
-        body: JSON.stringify({
-          type,
-          quantity: Number(quantity),
-          reason,
-          appointmentId: type === "out" && appointmentId ? appointmentId : null,
-          batchLabel: type === "in" && batchLabel ? batchLabel : null,
-          expiresAt: type === "in" && expiresAt ? new Date(expiresAt).toISOString() : null,
-        }),
+        body: JSON.stringify(buildMovementPayload(formState)),
       });
       toast({
         description: type === "in" ? "Entrada registrada" : "Saída registrada",
@@ -471,9 +706,12 @@ function MovementForm({ supply, onSaved }: { supply: SupplyDto; onSaved: () => v
       setSaving(false);
     }
   };
+  const confirmCopy = movementConfirmCopy(formState, supply);
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+    // Confirmação (MAT-08) acontece só via ConfirmAction abaixo — o form não
+    // envia sozinho no Enter, só bloqueia o reload padrão.
+    <form onSubmit={(event) => event.preventDefault()} className="flex flex-col gap-3">
       {error && <ErrorAlert message={error} />}
       <p className="text-sm text-ink-2">
         Estoque atual: <strong>{supply.stockQty} {supply.unit}</strong>
@@ -496,10 +734,12 @@ function MovementForm({ supply, onSaved }: { supply: SupplyDto; onSaved: () => v
             required
             type="number"
             min="1"
+            max={type === "out" ? supply.stockQty : undefined}
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
             className="mt-1"
           />
+          <ExceedsBalanceWarning show={exceedsBalance} supply={supply} />
         </label>
       </div>
       <label className="text-sm font-medium">
@@ -513,81 +753,64 @@ function MovementForm({ supply, onSaved }: { supply: SupplyDto; onSaved: () => v
         />
       </label>
       {type === "in" && (
-        <div className="grid grid-cols-2 gap-3">
-          <label className="text-sm font-medium">
-            Lote (opcional)
-            <Input
-              value={batchLabel}
-              onChange={(e) => setBatchLabel(e.target.value)}
-              placeholder="Ex.: L2026-091"
-              className="mt-1"
-            />
-          </label>
-          <label className="text-sm font-medium">
-            Validade (opcional)
-            <Input
-              type="date"
-              value={expiresAt}
-              onChange={(e) => setExpiresAt(e.target.value)}
-              className="mt-1"
-            />
-          </label>
-        </div>
+        <InMovementFields
+          batchLabel={batchLabel}
+          expiresAt={expiresAt}
+          onBatchLabel={setBatchLabel}
+          onExpiresAt={setExpiresAt}
+        />
       )}
       {type === "out" && (
-        <label className="text-sm font-medium">
-          Consulta atendida (custo por atendimento)
-          <NativeSelect
-            value={appointmentId}
-            onChange={(e) => setAppointmentId(e.target.value)}
+        <OutMovementFields
+          appointmentId={appointmentId}
+          appointments={todayAppointments ?? []}
+          onAppointmentId={setAppointmentId}
+        />
+      )}
+      <ConfirmAction
+        trigger={
+          <Button
+            type="button"
+            disabled={saving || !canSubmitMovement(formState, exceedsBalance)}
+            variant="accent"
             className="mt-1"
           >
-            <option value="">— sem vínculo —</option>
-            {(todayAppointments ?? []).map((appointment) => (
-              <option key={appointment.id} value={appointment.id}>
-                {new Date(appointment.startsAt).toLocaleTimeString("pt-BR", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}{" "}
-                — {appointment.patientName ?? "Paciente"} ({appointment.procedure})
-              </option>
-            ))}
-          </NativeSelect>
-          <span className="mt-1 block text-xs font-normal text-ink-3">
-            Vincular a saída à consulta alimenta a margem por procedimento no relatório.
-          </span>
-        </label>
-      )}
-      <Button
-        type="submit"
-        disabled={saving}
-        variant="accent"
-        className="mt-1"
-      >
-        {saving ? "Registrando…" : "Registrar movimentação"}
-      </Button>
+            {saving ? "Registrando…" : "Registrar movimentação"}
+          </Button>
+        }
+        title={confirmCopy.title}
+        description={confirmCopy.description}
+        confirmLabel="Confirmar"
+        onConfirm={doSubmit}
+      />
     </form>
   );
 }
+
+const MOVEMENTS_VISIBLE_DEFAULT = 10;
 
 function MovementHistory({ supplyId }: { supplyId: string }) {
   const { data: movements, error } = useApiQuery<StockMovementDto[]>(
     `/api/supplies/${supplyId}/movements`,
   );
+  const [showAll, setShowAll] = useState(false);
 
   if (error) return <ErrorAlert message={error} />;
   if (!movements) return <LoadingIndicator />;
   if (movements.length === 0) return <EmptyState message="Nenhuma movimentação registrada." />;
 
+  const visible = showAll ? movements : movements.slice(0, MOVEMENTS_VISIBLE_DEFAULT);
+
   return (
+    <div className="flex flex-col gap-2">
     <ul className="divide-y divide-border text-sm">
-      {movements.map((movement) => (
+      {visible.map((movement) => (
         <li key={movement.id} className="flex items-center gap-3 py-2">
           <span
             className={`inline-block w-14 rounded-full px-2 py-0.5 text-center text-xs font-medium ${
               movement.type === "in"
                 ? "bg-success-soft text-success"
-                : "bg-warning-soft text-warning"
+                : "bg-surface-2 text-ink-2"
             }`}
           >
             {movement.type === "in" ? "+" : "−"}
@@ -600,5 +823,16 @@ function MovementHistory({ supplyId }: { supplyId: string }) {
         </li>
       ))}
     </ul>
+      {!showAll && movements.length > MOVEMENTS_VISIBLE_DEFAULT && (
+        <Button
+          type="button"
+          onClick={() => setShowAll(true)}
+          variant="link"
+          className="h-auto self-start p-0"
+        >
+          Ver mais ({movements.length - MOVEMENTS_VISIBLE_DEFAULT})
+        </Button>
+      )}
+    </div>
   );
 }

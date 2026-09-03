@@ -212,6 +212,18 @@ describe("Feature: Doubles em memória de infraestrutura", () => {
         ]),
       ).rejects.toThrow(ValidationError);
     });
+
+    it("Dado kits de 2 procedimentos e 1 sem kit, Quando countByProcedure, Então conta só os com itens (PROC-03)", async () => {
+      const repo = new InMemoryProcedureKitRepository();
+      await repo.setKit("proc-1", [
+        { supplyId: "supply-1", quantity: 2 },
+        { supplyId: "supply-2", quantity: 1 },
+      ]);
+      await repo.setKit("proc-2", [{ supplyId: "supply-1", quantity: 1 }]);
+      await repo.setKit("proc-3", []);
+
+      expect(await repo.countByProcedure()).toEqual({ "proc-1": 2, "proc-2": 1 });
+    });
   });
 
   describe("Cenário: InMemoryReminderLogRepository", () => {

@@ -478,6 +478,7 @@ describe("Feature: DTO de insumo", () => {
       priceCents: 3000,
       stockQty: 10,
       isLowStock: false,
+      isOutOfStock: false,
       active: true,
     });
   });
@@ -491,6 +492,30 @@ describe("Feature: DTO de insumo", () => {
     });
 
     expect(toSupplyDto(supply).isLowStock).toBe(true);
+  });
+
+  it("Dado insumo recém-criado sem mínimo configurado (minQty 0), Quando toSupplyDto, Então isLowStock é false (MAT-02)", () => {
+    const supply = Supply.create({
+      name: "Insumo novo",
+      unit: "un",
+      minQty: 0,
+      priceCents: 100,
+    });
+
+    expect(toSupplyDto(supply).isLowStock).toBe(false);
+    expect(toSupplyDto(supply).isOutOfStock).toBe(true);
+  });
+
+  it("Dado insumo com mínimo configurado e estoque zerado, Quando toSupplyDto, Então isOutOfStock é true (MAT-01)", () => {
+    const supply = Supply.create({
+      name: "Bolsa de colostomia",
+      unit: "un",
+      minQty: 5,
+      priceCents: 3000,
+    });
+
+    expect(toSupplyDto(supply).isLowStock).toBe(true);
+    expect(toSupplyDto(supply).isOutOfStock).toBe(true);
   });
 });
 
@@ -654,7 +679,18 @@ describe("Feature: DTO de procedimento do catálogo", () => {
       priceCents: 12000,
       durationMinutes: 30,
       active: true,
+      kitItemCount: 0,
     });
+  });
+
+  it("Dado kitItemCount informado, Quando toProcedureDto, Então propaga a contagem (PROC-03)", () => {
+    const procedure = Procedure.create({
+      name: "Curativo",
+      priceCents: 8000,
+      durationMinutes: 20,
+    });
+
+    expect(toProcedureDto(procedure, 3).kitItemCount).toBe(3);
   });
 });
 

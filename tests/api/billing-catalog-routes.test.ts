@@ -45,6 +45,7 @@ interface ProcedureResponse {
   priceCents: number;
   durationMinutes: number;
   active: boolean;
+  kitItemCount: number;
 }
 
 interface KitResponse {
@@ -625,6 +626,14 @@ describe("Feature: Faturamento e catálogo de procedimentos (API)", () => {
       expect(body.data.items).toHaveLength(1);
       expect(body.data.items[0].supplyId).toBe(supplyId);
       expect(body.data.items[0].quantity).toBe(5);
+    });
+
+    it("Dado kit salvo, Quando GET /api/procedures, Então o procedimento vem com kitItemCount correto (PROC-03)", async () => {
+      const response = await proceduresRoute.GET(jsonRequest("/api/procedures", "GET"));
+      const body = (await response.json()) as Envelope<ProcedureResponse[]>;
+
+      const target = body.data.find((p) => p.id === procedureId);
+      expect(target?.kitItemCount).toBe(1);
     });
   });
 });

@@ -255,4 +255,15 @@ export class DrizzleProcedureKitRepository implements ProcedureKitRepository {
       }
     });
   }
+
+  async countByProcedure(): Promise<Record<string, number>> {
+    const rows = await this.db
+      .select({
+        procedureId: procedureSupplies.procedureId,
+        count: sql<number>`count(*)`,
+      })
+      .from(procedureSupplies)
+      .groupBy(procedureSupplies.procedureId);
+    return Object.fromEntries(rows.map((row) => [row.procedureId, Number(row.count)]));
+  }
 }

@@ -27,4 +27,6 @@ export interface ProcedureKitRepository {
   getKit(procedureId: string): Promise<ProcedureKitItem[]>;
   /** Substitui o kit inteiro (lista vazia remove o kit). */
   setKit(procedureId: string, items: ProcedureKitItem[]): Promise<void>;
+  /** Nº de itens de kit por procedimento — evita "Kit" opaco na listagem (PROC-03). */
+  countByProcedure(): Promise<Record<string, number>>;
 }

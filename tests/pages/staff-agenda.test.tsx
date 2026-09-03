@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 import type { AppointmentDto, PatientDto, ProfessionalDto } from "@/lib/dto";
+import { ApiError } from "@/lib/client";
 import AgendaPage from "@/app/(staff)/agenda/page";
 import { AppointmentDetail } from "@/app/(staff)/agenda/appointment-detail";
 import { AppointmentForm } from "@/app/(staff)/agenda/appointment-form";
@@ -76,10 +77,27 @@ interface AgendaFetchOptions {
   appointments?: AppointmentDto[];
   patients?: PatientDto[];
   professionals?: ProfessionalDto[];
+  scheduleConfig?: { weekdays: number[]; startHour: number; endHour: number; minGapMinutes: number };
+  appointmentsPostStatus?: number;
+  appointmentsPostError?: string;
 }
 
+const DEFAULT_TEST_SCHEDULE_CONFIG = {
+  weekdays: [1, 2, 3, 4, 5],
+  startHour: 8,
+  endHour: 18,
+  minGapMinutes: 15,
+};
+
 function mockAgendaFetch(options: AgendaFetchOptions = {}) {
-  const { appointments = [], patients = [patientFixture], professionals = [] } = options;
+  const {
+    appointments = [],
+    patients = [patientFixture],
+    professionals = [],
+    scheduleConfig = DEFAULT_TEST_SCHEDULE_CONFIG,
+    appointmentsPostStatus,
+    appointmentsPostError,
+  } = options;
   vi.stubGlobal(
     "fetch",
     // eslint-disable-next-line complexity -- roteador de mock por url/método, ramificação inerente ao padrão
@@ -97,6 +115,17 @@ function mockAgendaFetch(options: AgendaFetchOptions = {}) {
         return jsonResponse(true, appointmentFixture);
       }
       if (url.startsWith("/api/appointments") && method === "POST") {
+        if (appointmentsPostStatus) {
+          return {
+            ok: false,
+            status: appointmentsPostStatus,
+            json: async () => ({
+              success: false,
+              data: null,
+              error: appointmentsPostError ?? "Erro ao agendar",
+            }),
+          };
+        }
         return jsonResponse(true, appointmentFixture);
       }
       if (url.startsWith("/api/appointments")) {
@@ -110,6 +139,9 @@ function mockAgendaFetch(options: AgendaFetchOptions = {}) {
       }
       if (url.startsWith("/api/procedures")) {
         return jsonResponse(true, []);
+      }
+      if (url.startsWith("/api/settings/schedule")) {
+        return jsonResponse(true, { config: scheduleConfig, isDefault: false });
       }
       throw new Error(`URL não mapeada no mock: ${method} ${url}`);
     }),
@@ -336,6 +368,57 @@ describe("Feature: Página de agenda", () => {
       fireEvent.click(screen.getByLabelText("Mês anterior"));
       expect(monthLabelEl.textContent).not.toBe(initialText);
     });
+
+    it("Dado o mês atual, Quando renderizar, Então só a primeira letra do rótulo é maiúscula (AGENDA-04)", async () => {
+      mockAgendaFetch();
+      const { container } = renderWithToast(<AgendaPage />);
+      await waitFor(() => {
+        expect(screen.queryByText("Carregando…")).not.toBeInTheDocument();
+      });
+
+      const monthLabelEl = container.querySelector(".min-w-48") as HTMLElement;
+      const raw = new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+      const expected = raw.charAt(0).toUpperCase() + raw.slice(1);
+      expect(monthLabelEl.textContent).toBe(expected);
+      expect(monthLabelEl.className).not.toContain("capitalize");
+    });
+
+    it("Dado profissionais cadastrados, Quando renderizar, Então o filtro tem largura limitada (AGENDA-04)", async () => {
+      mockAgendaFetch({ professionals: [professionalFixture] });
+      renderWithToast(<AgendaPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Dra. Ana")).toBeInTheDocument();
+      });
+      expect(screen.getByDisplayValue("Todos os profissionais")).toHaveClass("max-w-56");
+    });
+  });
+
+  describe("Cenário: legenda de status e mês vazio (AGENDA-03)", () => {
+    it("Dado a grade renderizada, Quando exibir, Então mostra a legenda com os 5 status", async () => {
+      mockAgendaFetch();
+      renderWithToast(<AgendaPage />);
+
+      await waitFor(() => {
+        expect(screen.queryByText("Carregando…")).not.toBeInTheDocument();
+      });
+      expect(screen.getByText("Agendada")).toBeInTheDocument();
+      expect(screen.getByText("Confirmada")).toBeInTheDocument();
+      expect(screen.getByText("Concluída")).toBeInTheDocument();
+      expect(screen.getByText("Cancelada")).toBeInTheDocument();
+      expect(screen.getByText("Faltou")).toBeInTheDocument();
+    });
+
+    it("Dado mês sem nenhuma consulta, Quando renderizar, Então exibe mensagem de estado vazio", async () => {
+      mockAgendaFetch({ appointments: [] });
+      renderWithToast(<AgendaPage />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByText("Nenhuma consulta agendada neste mês."),
+        ).toBeInTheDocument();
+      });
+    });
   });
 
   describe("Cenário: criar série recorrente de consultas", () => {
@@ -419,6 +502,32 @@ describe("Feature: Página de agenda", () => {
         const alert = screen.getByRole("alert");
         expect(alert).toHaveTextContent(/Série criada: 1 sessão\(ões\); 1 pulada\(s\)/);
       });
+    });
+
+    it("Dado aviso de série exibido, Quando clicar em 'Dispensar', Então o alerta some (AGENDA-07)", async () => {
+      mockAgendaFetch();
+      renderWithToast(<AgendaPage />);
+
+      await waitFor(() => {
+        expect(screen.queryByText("Carregando…")).not.toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByText("+ Nova consulta"));
+      await waitFor(() => expect(screen.getByText("Nova consulta")).toBeInTheDocument());
+
+      fireEvent.change(screen.getByLabelText(/Paciente/), { target: { value: "pat-1" } });
+      fireEvent.change(screen.getByLabelText(/Repetição/), { target: { value: "4" } });
+      fireEvent.change(screen.getByLabelText(/Procedimento \*/), {
+        target: { value: "Curativo" },
+      });
+      fireEvent.change(screen.getByLabelText(/Valor/), { target: { value: "100" } });
+      fireEvent.click(screen.getByText("Agendar consulta"));
+
+      await waitFor(() => {
+        expect(screen.getByText(/Série criada/)).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByText("Dispensar"));
+
+      expect(screen.queryByText(/Série criada/)).not.toBeInTheDocument();
     });
   });
 
@@ -873,6 +982,80 @@ describe("Feature: Formulário de nova consulta", () => {
       });
     });
   });
+
+  describe("Cenário: aviso de regra vem da configuração real (AGENDA-02)", () => {
+    it("Dado uma ScheduleConfig custom, Quando renderizar, Então o aviso reflete a config real, não a constante fixa", async () => {
+      mockAgendaFetch({
+        scheduleConfig: { weekdays: [2, 4], startHour: 9, endHour: 17, minGapMinutes: 30 },
+      });
+      render(
+        <AppointmentForm
+          patients={[patientFixture]}
+          defaultDate={new Date(2026, 6, 19)}
+          onSubmit={vi.fn().mockResolvedValue(undefined)}
+        />,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(/terça, quinta, das 09:00 às 17:00/)).toBeInTheDocument();
+      });
+      expect(screen.getByText(/intervalo mínimo de 30 minutos/)).toBeInTheDocument();
+    });
+  });
+
+  describe("Cenário: erro 409 distinto de 400 (AGENDA-05)", () => {
+    it("Dado erro 409 (conflito), Quando submetido, Então o alerta usa variante warning", async () => {
+      const onSubmit = vi.fn().mockRejectedValue(
+        new ApiError("Horário indisponível: conflito com outra consulta", 409),
+      );
+      mockAgendaFetch();
+      render(
+        <AppointmentForm
+          patients={[patientFixture]}
+          defaultDate={new Date(2026, 6, 19)}
+          onSubmit={onSubmit}
+        />,
+      );
+
+      fireEvent.change(screen.getByLabelText(/Paciente/), { target: { value: "pat-1" } });
+      fireEvent.change(screen.getByLabelText(/Procedimento \*/), {
+        target: { value: "Curativo" },
+      });
+      fireEvent.change(screen.getByLabelText(/Valor/), { target: { value: "100" } });
+      fireEvent.click(screen.getByText("Agendar consulta"));
+
+      await waitFor(() => {
+        const alert = screen.getByRole("alert");
+        expect(alert).toHaveTextContent("Horário indisponível");
+        expect(alert).toHaveClass("sv-alert--warning");
+      });
+    });
+
+    it("Dado erro 400 (validação), Quando submetido, Então o alerta mantém variante danger (role alert)", async () => {
+      const onSubmit = vi.fn().mockRejectedValue(new ApiError("Dados inválidos", 400));
+      mockAgendaFetch();
+      render(
+        <AppointmentForm
+          patients={[patientFixture]}
+          defaultDate={new Date(2026, 6, 19)}
+          onSubmit={onSubmit}
+        />,
+      );
+
+      fireEvent.change(screen.getByLabelText(/Paciente/), { target: { value: "pat-1" } });
+      fireEvent.change(screen.getByLabelText(/Procedimento \*/), {
+        target: { value: "Curativo" },
+      });
+      fireEvent.change(screen.getByLabelText(/Valor/), { target: { value: "100" } });
+      fireEvent.click(screen.getByText("Agendar consulta"));
+
+      await waitFor(() => {
+        const alert = screen.getByRole("alert");
+        expect(alert).toHaveTextContent("Dados inválidos");
+        expect(alert).toHaveClass("sv-alert--danger");
+      });
+    });
+  });
 });
 
 describe("Feature: Detalhe de consulta", () => {
@@ -1112,6 +1295,11 @@ describe("Feature: Grade do calendário", () => {
     });
 
     it("Dado clique em um dia sem consulta, Quando acionado, Então chama onDayClick", () => {
+      // Dias passados/fora da config ficam não-clicáveis (AGENDA-01) — fixa
+      // "hoje" dentro do próprio mês fixo (julho/2026) pra não depender da
+      // data real de execução da suíte.
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 6, 1));
       const monthDate = new Date(2026, 6, 1);
       const onDayClick = vi.fn();
       const { container } = render(
@@ -1124,9 +1312,32 @@ describe("Feature: Grade do calendário", () => {
       );
 
       const dayCells = container.querySelectorAll(".cursor-pointer");
-      fireEvent.click(dayCells[10]);
+      fireEvent.click(dayCells[0]);
+      vi.useRealTimers();
 
       expect(onDayClick).toHaveBeenCalledTimes(1);
+    });
+
+    it("Dado dia passado ou fora da config, Quando renderizar, Então marca a célula como aria-disabled e não clicável (AGENDA-01)", () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 6, 15));
+      const monthDate = new Date(2026, 6, 1);
+      const onDayClick = vi.fn();
+      const { container } = render(
+        <CalendarGrid
+          monthDate={monthDate}
+          appointments={[]}
+          onDayClick={onDayClick}
+          onAppointmentClick={vi.fn()}
+        />,
+      );
+
+      const invalidCells = container.querySelectorAll('[aria-disabled="true"]');
+      expect(invalidCells.length).toBeGreaterThan(0);
+      fireEvent.click(invalidCells[0]);
+      vi.useRealTimers();
+
+      expect(onDayClick).not.toHaveBeenCalled();
     });
 
     it("Dado clique em uma consulta, Quando acionado, Então chama onAppointmentClick e não propaga para o dia", () => {
@@ -1146,6 +1357,31 @@ describe("Feature: Grade do calendário", () => {
 
       expect(onAppointmentClick).toHaveBeenCalledWith(julyAppointmentFixture);
       expect(onDayClick).not.toHaveBeenCalled();
+    });
+
+    it("Dado um dia com 5 consultas, Quando renderizar, Então mostra só 3 e o indicador '+2 mais' (AGENDA-06)", () => {
+      const monthDate = new Date(2026, 6, 1);
+      const manyAppointments = Array.from({ length: 5 }, (_, i) => ({
+        ...julyAppointmentFixture,
+        id: `appt-${i}`,
+        patientName: `Paciente ${i}`,
+        startsAt: new Date(
+          new Date(julyAppointmentFixture.startsAt).getTime() + i * 30 * 60_000,
+        ).toISOString(),
+      }));
+      render(
+        <CalendarGrid
+          monthDate={monthDate}
+          appointments={manyAppointments}
+          onDayClick={vi.fn()}
+          onAppointmentClick={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByText("+2 mais")).toBeInTheDocument();
+      expect(screen.getByText(/Paciente 0/)).toBeInTheDocument();
+      expect(screen.getByText(/Paciente 2/)).toBeInTheDocument();
+      expect(screen.queryByText(/Paciente 3/)).not.toBeInTheDocument();
     });
 
     it("Dado duas consultas no mesmo dia, uma com status não mapeado e sem nome do paciente, Quando renderizar, Então ordena por horário e aplica estilo padrão", () => {

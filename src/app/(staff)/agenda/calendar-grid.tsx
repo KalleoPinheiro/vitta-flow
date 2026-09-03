@@ -1,8 +1,10 @@
 "use client";
 
 import type { AppointmentDto } from "@/lib/dto";
-import { formatTime } from "@/lib/format";
+import { APPOINTMENT_STATUS_LABELS, formatTime } from "@/lib/format";
+import { DEFAULT_SCHEDULE_CONFIG, type ScheduleConfig } from "@/domain/scheduling/schedule-config";
 import { Button, Card } from "@still-void/ui/react";
+import { EmptyState } from "@/components/feedback";
 
 const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
@@ -13,6 +15,8 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: "bg-surface-2 text-ink-3 border-border line-through",
   no_show: "bg-warning-soft text-warning border-warning",
 };
+
+const MAX_VISIBLE_PER_DAY = 3;
 
 export const dayKey = (date: Date): string =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -29,9 +33,32 @@ function buildMonthDays(monthDate: Date): Date[] {
   });
 }
 
+/** Dia inválido = passado ou fora dos dias configurados (AGENDA-01). */
+function isInvalidDay(day: Date, config: ScheduleConfig): boolean {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const compare = new Date(day);
+  compare.setHours(0, 0, 0, 0);
+  return compare < today || !config.weekdays.includes(day.getDay());
+}
+
+function StatusLegend() {
+  return (
+    <div className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-3">
+      {Object.entries(STATUS_COLORS).map(([status, colorClass]) => (
+        <span key={status} className="inline-flex items-center gap-1.5">
+          <span className={`h-2.5 w-2.5 rounded-full border ${colorClass}`} />
+          {APPOINTMENT_STATUS_LABELS[status] ?? status}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 interface CalendarGridProps {
   monthDate: Date;
   appointments: AppointmentDto[];
+  scheduleConfig?: ScheduleConfig;
   onDayClick: (day: Date) => void;
   onAppointmentClick: (appointment: AppointmentDto) => void;
 }
@@ -39,6 +66,7 @@ interface CalendarGridProps {
 export function CalendarGrid({
   monthDate,
   appointments,
+  scheduleConfig = DEFAULT_SCHEDULE_CONFIG,
   onDayClick,
   onAppointmentClick,
 }: CalendarGridProps) {
@@ -52,61 +80,78 @@ export function CalendarGrid({
   }
 
   return (
-    <div className="overflow-x-auto">
-      <Card className="min-w-[840px] overflow-hidden">
-        <div className="grid grid-cols-7 border-b border-border bg-bg">
-          {WEEKDAY_LABELS.map((label) => (
-            <div key={label} className="px-2 py-2 text-center text-xs font-semibold uppercase text-ink-3">
-              {label}
-            </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-7">
-          {days.map((day) => {
-            const key = dayKey(day);
-            const isCurrentMonth = day.getMonth() === monthDate.getMonth();
-            const dayAppointments = (byDay.get(key) ?? []).sort((a, b) =>
-              a.startsAt.localeCompare(b.startsAt),
-            );
-            return (
-              <div
-                key={key}
-                onClick={() => onDayClick(day)}
-                className={`min-h-24 cursor-pointer border-b border-r border-border p-1.5 align-top transition hover:bg-accent-soft/50 ${
-                  isCurrentMonth ? "" : "bg-bg/70 text-ink-3"
-                }`}
-              >
-                <span
-                  className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${
-                    key === todayKey ? "bg-accent-ink text-white" : ""
-                  }`}
-                >
-                  {day.getDate()}
-                </span>
-                <div className="mt-1 flex flex-col gap-1">
-                  {dayAppointments.map((appointment) => (
-                    <Button
-                      key={appointment.id}
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onAppointmentClick(appointment);
-                      }}
-                      title={`${formatTime(appointment.startsAt)} ${appointment.patientName ?? ""} — ${appointment.procedure}`}
-                      variant="outline"
-                      className={`h-auto w-full truncate rounded border-0 px-1.5 py-0.5 text-left text-xs font-normal ${
-                        STATUS_COLORS[appointment.status] ?? "bg-surface-2"
-                      }`}
-                    >
-                      {formatTime(appointment.startsAt)} {appointment.patientName}
-                    </Button>
-                  ))}
-                </div>
+    <div>
+      <StatusLegend />
+      {appointments.length === 0 && (
+        <EmptyState message="Nenhuma consulta agendada neste mês." />
+      )}
+      <div className="overflow-x-auto">
+        <Card className="min-w-[840px] overflow-hidden">
+          <div className="grid grid-cols-7 border-b border-border bg-bg">
+            {WEEKDAY_LABELS.map((label) => (
+              <div key={label} className="px-2 py-2 text-center text-xs font-semibold uppercase text-ink-3">
+                {label}
               </div>
-            );
-          })}
-        </div>
-      </Card>
+            ))}
+          </div>
+          <div className="grid grid-cols-7">
+            {days.map((day) => {
+              const key = dayKey(day);
+              const isCurrentMonth = day.getMonth() === monthDate.getMonth();
+              const invalid = isInvalidDay(day, scheduleConfig);
+              const dayAppointments = (byDay.get(key) ?? []).sort((a, b) =>
+                a.startsAt.localeCompare(b.startsAt),
+              );
+              const visibleAppointments = dayAppointments.slice(0, MAX_VISIBLE_PER_DAY);
+              const hiddenCount = dayAppointments.length - visibleAppointments.length;
+              return (
+                <div
+                  key={key}
+                  onClick={() => !invalid && onDayClick(day)}
+                  aria-disabled={invalid || undefined}
+                  className={`min-h-24 border-b border-r border-border p-1.5 align-top transition ${
+                    invalid
+                      ? "cursor-not-allowed opacity-50"
+                      : "cursor-pointer hover:bg-accent-soft/50"
+                  } ${isCurrentMonth ? "" : "bg-bg/70 text-ink-3"}`}
+                >
+                  <span
+                    className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${
+                      key === todayKey ? "bg-accent-ink text-white" : ""
+                    }`}
+                  >
+                    {day.getDate()}
+                  </span>
+                  <div className="mt-1 flex max-h-32 flex-col gap-1 overflow-hidden">
+                    {visibleAppointments.map((appointment) => (
+                      <Button
+                        key={appointment.id}
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onAppointmentClick(appointment);
+                        }}
+                        title={`${formatTime(appointment.startsAt)} ${appointment.patientName ?? ""} — ${appointment.procedure}`}
+                        variant="outline"
+                        className={`h-auto w-full truncate rounded border-0 px-1.5 py-0.5 text-left text-xs font-normal ${
+                          STATUS_COLORS[appointment.status] ?? "bg-surface-2"
+                        }`}
+                      >
+                        {formatTime(appointment.startsAt)} {appointment.patientName}
+                      </Button>
+                    ))}
+                    {hiddenCount > 0 && (
+                      <span className="px-1.5 text-xs font-medium text-ink-3">
+                        +{hiddenCount} mais
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

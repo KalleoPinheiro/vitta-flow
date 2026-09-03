@@ -256,6 +256,30 @@ describe("Feature: Recorrência de consultas, grade de horários, profissionais,
       professionalId = body.data.id;
     });
 
+    it("Dado commissionPct válido, Quando POST /api/professionals, Então cria já com o repasse (PROF-01)", async () => {
+      const response = await professionalsRoute.POST(
+        jsonRequest("/api/professionals", "POST", {
+          fullName: "Dr. Rafael Repasse",
+          commissionPct: 25,
+        }),
+      );
+      const body = (await response.json()) as Envelope<{ commissionPct: number }>;
+
+      expect(response.status).toBe(200);
+      expect(body.data.commissionPct).toBe(25);
+    });
+
+    it("Dado commissionPct inválido, Quando POST /api/professionals, Então retorna 400 (PROF-01)", async () => {
+      const response = await professionalsRoute.POST(
+        jsonRequest("/api/professionals", "POST", {
+          fullName: "Dr. Repasse Inválido",
+          commissionPct: 200,
+        }),
+      );
+
+      expect(response.status).toBe(400);
+    });
+
     it("Dado dados válidos, Quando PATCH, Então atualiza nome e registro", async () => {
       const response = await professionalByIdRoute.PATCH(
         jsonRequest(`/api/professionals/${professionalId}`, "PATCH", {
@@ -346,6 +370,27 @@ describe("Feature: Recorrência de consultas, grade de horários, profissionais,
       );
       const body = (await response.json()) as Envelope<{ id: string }>;
       partnerId = body.data.id;
+    });
+
+    it("Dado email inválido, Quando POST /api/partners, Então retorna 400 (PART-01)", async () => {
+      const response = await partnersRoute.POST(
+        jsonRequest("/api/partners", "POST", {
+          fullName: "Dr. Email Inválido",
+          email: "sem-arroba-nem-dominio",
+          phone: "11955554444",
+        }),
+      );
+
+      expect(response.status).toBe(400);
+    });
+
+    it("Dado email inválido, Quando PUT /api/partners/:id, Então retorna 400 (PART-01)", async () => {
+      const response = await partnerByIdRoute.PUT(
+        jsonRequest(`/api/partners/${partnerId}`, "PUT", { email: "invalido-tambem" }),
+        context(partnerId),
+      );
+
+      expect(response.status).toBe(400);
     });
 
     it("Dado dados válidos, Quando PUT, Então atualiza cadastro do parceiro", async () => {

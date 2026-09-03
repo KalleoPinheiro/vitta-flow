@@ -73,15 +73,22 @@ export default function ProfessionalsPage() {
                 <TableRow>
                   <TableHead className="px-4 py-3">Nome</TableHead>
                   <TableHead className="px-4 py-3">Registro</TableHead>
+                  <TableHead className="px-4 py-3">Repasse</TableHead>
                   <TableHead className="px-4 py-3">Situação</TableHead>
                   <TableHead className="px-4 py-3 text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {professionals.map((professional) => (
-                  <TableRow key={professional.id} className={professional.active ? "" : "opacity-50"}>
+                  <TableRow
+                    key={professional.id}
+                    className={professional.active ? "" : "bg-surface-2/60"}
+                  >
                     <TableCell className="px-4 py-3 font-medium">{professional.fullName}</TableCell>
                     <TableCell className="px-4 py-3 text-ink-2">{professional.registry ?? "—"}</TableCell>
+                    <TableCell className="px-4 py-3 text-ink-2">
+                      {professional.commissionPct != null ? `${professional.commissionPct}%` : "—"}
+                    </TableCell>
                     <TableCell className="px-4 py-3">
                       <StatusBadge
                         status={professional.active ? "confirmed" : "cancelled"}
@@ -89,18 +96,13 @@ export default function ProfessionalsPage() {
                       />
                     </TableCell>
                     <TableCell className="px-4 py-3 text-right">
-                      <Button
-                        type="button"
-                        onClick={() => setEditing(professional)}
-                        variant="link"
-                        className="h-auto p-0 mr-2 text-accent-ink"
-                      >
+                      <Button type="button" onClick={() => setEditing(professional)} variant="ghost" size="sm">
                         Editar
                       </Button>
                       {professional.active ? (
                         <ConfirmAction
                           trigger={
-                            <Button type="button" variant="link" className="h-auto p-0 text-ink-3">
+                            <Button type="button" variant="ghost" size="sm">
                               Desativar
                             </Button>
                           }
@@ -114,8 +116,8 @@ export default function ProfessionalsPage() {
                         <Button
                           type="button"
                           onClick={() => void toggleActive(professional)}
-                          variant="link"
-                          className="h-auto p-0 text-ink-3"
+                          variant="ghost"
+                          size="sm"
                         >
                           Reativar
                         </Button>
@@ -157,6 +159,9 @@ function ProfessionalForm({
   const { toast } = useToast();
   const [fullName, setFullName] = useState(initial?.fullName ?? "");
   const [registry, setRegistry] = useState(initial?.registry ?? "");
+  const [commissionPct, setCommissionPct] = useState(
+    initial?.commissionPct != null ? String(initial.commissionPct) : "",
+  );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -165,7 +170,11 @@ function ProfessionalForm({
     setSaving(true);
     setError(null);
     try {
-      const payload = { fullName, registry: registry || null };
+      const payload = {
+        fullName,
+        registry: registry || null,
+        commissionPct: commissionPct ? Number(commissionPct) : null,
+      };
       if (initial) {
         await apiFetch(`/api/professionals/${initial.id}`, {
           method: "PATCH",
@@ -206,6 +215,24 @@ function ProfessionalForm({
           placeholder="Ex.: COREN-SP 123456"
           className="mt-1"
         />
+        <span className="mt-1 block text-xs font-normal text-ink-3">
+          Ex.: COREN-SP 123456
+        </span>
+      </label>
+      <label className="text-sm font-medium">
+        Repasse (%)
+        <Input
+          type="number"
+          min="0"
+          max="100"
+          value={commissionPct}
+          onChange={(e) => setCommissionPct(e.target.value)}
+          placeholder="Ex.: 15"
+          className="mt-1"
+        />
+        <span className="mt-1 block text-xs font-normal text-ink-3">
+          Percentual repassado ao profissional sobre a receita das consultas concluídas.
+        </span>
       </label>
       <Button
         type="submit"

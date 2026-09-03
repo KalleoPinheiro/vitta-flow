@@ -47,7 +47,7 @@ export default function PartnersPage() {
   return (
     <div>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="sv-display text-2xl font-bold">Médicos parceiros</h1>
+        <h1 className="sv-display text-2xl font-bold">Parceiros</h1>
         <Button
           type="button"
           onClick={() => setEditing("new")}
@@ -61,13 +61,13 @@ export default function PartnersPage() {
         entrando com a conta Google do email cadastrado aqui.
       </p>
 
-      {(error ?? actionError) && <ErrorAlert message={(actionError ?? error) as string} />}
+      {(actionError ?? error) && <ErrorAlert message={actionError ?? error ?? ""} />}
 
       <Card>
         {!partners ? (
           <LoadingIndicator />
         ) : partners.length === 0 ? (
-          <EmptyState message="Nenhum parceiro cadastrado." />
+          <EmptyState message="Nenhum parceiro cadastrado." icon="info" />
         ) : (
           <div className="overflow-x-auto">
             <Table className="w-full text-left text-sm">
@@ -83,11 +83,19 @@ export default function PartnersPage() {
               </TableHeader>
               <TableBody>
                 {partners.map((partner) => (
-                  <TableRow key={partner.id} className={partner.active ? "" : "opacity-50"}>
+                  <TableRow key={partner.id} className={partner.active ? "" : "bg-surface-2/60"}>
                     <TableCell className="px-4 py-3 font-medium">{partner.fullName}</TableCell>
                     <TableCell className="px-4 py-3 text-ink-2">
-                      <div>{partner.email}</div>
-                      <div className="text-xs text-ink-3">{partner.phone}</div>
+                      <div>
+                        <a href={`mailto:${partner.email}`} className="hover:underline">
+                          {partner.email}
+                        </a>
+                      </div>
+                      <div className="text-xs text-ink-3">
+                        <a href={`tel:${partner.phone}`} className="hover:underline">
+                          {partner.phone}
+                        </a>
+                      </div>
                     </TableCell>
                     <TableCell className="px-4 py-3 text-ink-2">{partner.crm ?? "—"}</TableCell>
                     <TableCell className="px-4 py-3 text-ink-2">{partner.specialty ?? "—"}</TableCell>
@@ -98,23 +106,18 @@ export default function PartnersPage() {
                       />
                     </TableCell>
                     <TableCell className="px-4 py-3 text-right">
-                      <Button
-                        type="button"
-                        onClick={() => setEditing(partner)}
-                        variant="link"
-                        className="h-auto p-0 mr-2 text-accent-ink"
-                      >
+                      <Button type="button" onClick={() => setEditing(partner)} variant="ghost" size="sm">
                         Editar
                       </Button>
                       {partner.active ? (
                         <ConfirmAction
                           trigger={
-                            <Button type="button" variant="link" className="h-auto p-0 text-ink-3">
+                            <Button type="button" variant="ghost" size="sm">
                               Desativar
                             </Button>
                           }
                           title="Desativar parceiro?"
-                          description="O parceiro para de aparecer nos fluxos ativos."
+                          description="O parceiro para de aparecer nos fluxos ativos. Pacientes indicados por ele podem perder a referência na próxima edição do cadastro."
                           confirmLabel="Confirmar"
                           variant="danger"
                           onConfirm={() => toggleActive(partner)}
@@ -123,8 +126,8 @@ export default function PartnersPage() {
                         <Button
                           type="button"
                           onClick={() => void toggleActive(partner)}
-                          variant="link"
-                          className="h-auto p-0 text-ink-3"
+                          variant="ghost"
+                          size="sm"
                         >
                           Reativar
                         </Button>
@@ -232,7 +235,7 @@ function PartnerForm({ initial, onSaved }: { initial?: PartnerDto; onSaved: () =
         Email (usado no login com Google) *
         <Input required type="email" value={values.email} onChange={(e) => set("email")(e.target.value)} className="mt-1" />
       </label>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="text-sm font-medium">
           Telefone *
           <Input required value={values.phone} onChange={(e) => set("phone")(e.target.value)} className="mt-1" />

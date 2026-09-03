@@ -10,6 +10,7 @@ import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-cl
 const professionalSchema = z.object({
   fullName: z.string().min(1).max(200),
   registry: z.string().max(100).nullish(),
+  commissionPct: z.number().int().min(0).max(100).nullish(),
 });
 
 export async function GET(request: NextRequest) {
@@ -37,6 +38,7 @@ export async function POST(request: NextRequest) {
     const professional = Professional.create({
       fullName: body.fullName,
       registry: body.registry ?? null,
+      commissionPct: body.commissionPct ?? null,
     });
     await professionals.save(professional);
     return toProfessionalDto(professional);

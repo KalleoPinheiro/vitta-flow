@@ -1304,6 +1304,126 @@ describe("Feature: PartnersPage", () => {
       await waitFor(() => expect(calls).toBeGreaterThanOrEqual(2));
       expect(await screen.findByText("Parceiro ativado")).toBeInTheDocument();
     });
+
+    it("Dado parceiro inativo, Quando renderizar a linha, Então usa bg-surface-2/60 em vez de opacity-50 (DIR-01)", async () => {
+      mockFetch(({ url }) => {
+        if (url.startsWith("/api/partners")) {
+          return jsonResponse([
+            {
+              id: "pt3",
+              fullName: "Dr. Carlos",
+              email: "carlos@parceiro.com",
+              phone: "11977777777",
+              crm: null,
+              specialty: null,
+              active: false,
+            },
+          ]);
+        }
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<PartnersPage />);
+      const row = (await screen.findByText("Dr. Carlos")).closest("tr");
+
+      expect(row).toHaveClass("bg-surface-2/60");
+      expect(row).not.toHaveClass("opacity-50");
+    });
+  });
+
+  describe("Cenário: nomenclatura, contato acionável e ações (PART-04/05, DIR-02)", () => {
+    it("Dado a página de parceiros, Quando renderizar, Então o título é 'Parceiros'", async () => {
+      mockFetch(() => jsonResponse([]));
+
+      renderWithToast(<PartnersPage />);
+
+      expect(
+        await screen.findByRole("heading", { name: "Parceiros", level: 1 }),
+      ).toBeInTheDocument();
+    });
+
+    it("Dado um parceiro, Quando renderizar Contato, Então email e telefone são links mailto/tel", async () => {
+      mockFetch(({ url }) => {
+        if (url.startsWith("/api/partners")) {
+          return jsonResponse([
+            {
+              id: "pt5",
+              fullName: "Dr. Igor",
+              email: "igor@parceiro.com",
+              phone: "11955554444",
+              crm: null,
+              specialty: null,
+              active: true,
+            },
+          ]);
+        }
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<PartnersPage />);
+      await screen.findByText("Dr. Igor");
+
+      expect(screen.getByRole("link", { name: "igor@parceiro.com" })).toHaveAttribute(
+        "href",
+        "mailto:igor@parceiro.com",
+      );
+      expect(screen.getByRole("link", { name: "11955554444" })).toHaveAttribute(
+        "href",
+        "tel:11955554444",
+      );
+    });
+
+    it("Dado um parceiro ativo, Quando renderizar as ações, Então usam Button ghost/sm", async () => {
+      mockFetch(({ url }) => {
+        if (url.startsWith("/api/partners")) {
+          return jsonResponse([
+            {
+              id: "pt6",
+              fullName: "Dra. Lia",
+              email: "lia@parceiro.com",
+              phone: "11944443333",
+              crm: null,
+              specialty: null,
+              active: true,
+            },
+          ]);
+        }
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<PartnersPage />);
+      await screen.findByText("Dra. Lia");
+
+      expect(screen.getByText("Editar")).toHaveClass("sv-btn--ghost", "sv-btn--sm");
+    });
+
+    it("Dado clique em Desativar parceiro, Quando o diálogo abre, Então explica o impacto em pacientes indicados (PART-03)", async () => {
+      mockFetch(({ url }) => {
+        if (url.startsWith("/api/partners")) {
+          return jsonResponse([
+            {
+              id: "pt7",
+              fullName: "Dr. Marco",
+              email: "marco@parceiro.com",
+              phone: "11933332222",
+              crm: null,
+              specialty: null,
+              active: true,
+            },
+          ]);
+        }
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<PartnersPage />);
+      await screen.findByText("Dr. Marco");
+
+      fireEvent.click(screen.getByText("Desativar"));
+
+      expect(
+        await screen.findByText(/podem perder a referência na próxima edição/),
+      ).toBeInTheDocument();
+    });
   });
 
   describe("Cenário: criação e edição via modal", () => {
@@ -1335,6 +1455,49 @@ describe("Feature: PartnersPage", () => {
 
       await waitFor(() => expect(created).toBe(true));
       expect(await screen.findByText("Parceiro salvo")).toBeInTheDocument();
+    });
+
+    it("Dado o modal de novo parceiro, Quando renderizar, Então o grid de Telefone/CRM é responsivo (PART-02)", async () => {
+      mockFetch(() => jsonResponse([]));
+
+      renderWithToast(<PartnersPage />);
+      await screen.findByText("Nenhum parceiro cadastrado.");
+      fireEvent.click(screen.getByText("+ Novo parceiro"));
+
+      const phoneInput = screen.getByLabelText(/Telefone/);
+      const grid = phoneInput.closest("label")?.parentElement;
+      expect(grid).toHaveClass("grid-cols-1", "sm:grid-cols-2");
+    });
+
+    it("Dado email inválido, Quando o servidor rejeitar, Então exibe o erro no formulário (PART-01)", async () => {
+      mockFetch(({ url, init }) => {
+        if (url === "/api/partners" && init?.method === "POST") {
+          return errorResponse("Email inválido");
+        }
+        if (url.startsWith("/api/partners")) return jsonResponse([]);
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<PartnersPage />);
+      await screen.findByText("Nenhum parceiro cadastrado.");
+
+      fireEvent.click(screen.getByText("+ Novo parceiro"));
+      fireEvent.change(screen.getByLabelText(/Nome completo/), {
+        target: { value: "Dra. Carla" },
+      });
+      fireEvent.change(screen.getByLabelText(/Email \(usado no login com Google\)/), {
+        target: { value: "carla-sem-arroba" },
+      });
+      fireEvent.change(screen.getByLabelText(/Telefone/), {
+        target: { value: "11988887777" },
+      });
+      // fireEvent.click no botão respeitaria a validação nativa do
+      // type="email" do browser (jsdom bloquearia o submit antes de chegar
+      // no handler React) — fireEvent.submit no <form> dispara o evento
+      // direto, sem passar pelo algoritmo de submissão nativo.
+      fireEvent.submit(screen.getByText("Salvar").closest("form") as HTMLFormElement);
+
+      expect(await screen.findByText("Email inválido")).toBeInTheDocument();
     });
 
     it("Dado clique em editar parceiro existente, Quando o modal abre, Então preenche os campos com os dados atuais", async () => {
@@ -1706,7 +1869,7 @@ describe("Feature: ProfessionalsPage", () => {
       expect(await screen.findByText("Dr. Bruno")).toBeInTheDocument();
       expect(screen.getByText("Inativo")).toBeInTheDocument();
       expect(screen.getByText("Reativar")).toBeInTheDocument();
-      expect(screen.getByText("—")).toBeInTheDocument();
+      expect(screen.getAllByText("—").length).toBe(2);
     });
 
     it("Dado clique em editar profissional existente, Quando o modal abre, Então preenche os campos com os dados atuais", async () => {
@@ -1808,6 +1971,70 @@ describe("Feature: ProfessionalsPage", () => {
 
       await waitFor(() => expect(created).toBe(true));
       expect(await screen.findByText("Profissional salvo")).toBeInTheDocument();
+    });
+
+    it("Dado preenchimento com repasse, Quando submetido, Então envia commissionPct no POST (PROF-01)", async () => {
+      let sentBody: Record<string, unknown> | undefined;
+      mockFetch(({ url, init }) => {
+        if (url === "/api/professionals" && init?.method === "POST") {
+          sentBody = JSON.parse(String(init.body));
+          return jsonResponse({ id: "pr9" });
+        }
+        if (url.startsWith("/api/professionals")) return jsonResponse([]);
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<ProfessionalsPage />);
+      await screen.findByText(
+        "Nenhum profissional cadastrado. Consultas e evoluções podem ser atribuídas após o cadastro.",
+      );
+
+      fireEvent.click(screen.getByText("+ Novo profissional"));
+      fireEvent.change(screen.getByLabelText(/Nome \*/), {
+        target: { value: "Dr. Pedro" },
+      });
+      fireEvent.change(screen.getByLabelText(/Repasse/), {
+        target: { value: "15" },
+      });
+      fireEvent.click(screen.getByText("Salvar"));
+
+      await waitFor(() => {
+        expect(sentBody).toEqual(
+          expect.objectContaining({ commissionPct: 15 }),
+        );
+      });
+    });
+
+    it("Dado profissional com repasse cadastrado, Quando a tabela renderiza, Então mostra a coluna Repasse (PROF-01)", async () => {
+      mockFetch(({ url }) => {
+        if (url.startsWith("/api/professionals")) {
+          return jsonResponse([
+            { id: "pr10", fullName: "Dra. Sofia", registry: null, commissionPct: 20, active: true },
+          ]);
+        }
+        return jsonResponse(null, false);
+      });
+
+      renderWithToast(<ProfessionalsPage />);
+
+      expect(await screen.findByText("Dra. Sofia")).toBeInTheDocument();
+      expect(screen.getByText("20%")).toBeInTheDocument();
+    });
+
+    it("Dado o campo Registro, Quando renderizar, Então mostra hint persistente abaixo do input (PROF-02)", async () => {
+      mockFetch(() => jsonResponse([]));
+
+      renderWithToast(<ProfessionalsPage />);
+      await screen.findByText(
+        "Nenhum profissional cadastrado. Consultas e evoluções podem ser atribuídas após o cadastro.",
+      );
+      fireEvent.click(screen.getByText("+ Novo profissional"));
+
+      fireEvent.change(screen.getByLabelText(/Registro profissional/), {
+        target: { value: "COREN-SP 999" },
+      });
+
+      expect(screen.getByText("Ex.: COREN-SP 123456")).toBeInTheDocument();
     });
 
     it("Dado erro ao salvar profissional, Quando a chamada falha, Então exibe alerta no formulário", async () => {

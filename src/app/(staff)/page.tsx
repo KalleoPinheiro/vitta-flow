@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Button, Card, Hero, Icon } from "@still-void/ui/react";
+import { Button, Card, Icon } from "@still-void/ui/react";
 import { Tooltip, TooltipContent, TooltipTrigger, useToast } from "@still-void/ui/react/client";
 import type { AppointmentDto, FollowUpDto, SupplyDto } from "@/lib/dto";
 import type { BillingSummary } from "@/application/billing/get-billing-summary";
@@ -27,10 +27,18 @@ interface SummaryData {
 export default function DashboardPage() {
   const { toast } = useToast();
   const { data: summary, error } = useApiQuery<SummaryData>("/api/summary");
-  const { data: followUps, refresh: refreshFollowUps } = useApiQuery<FollowUpDto[]>(
-    "/api/follow-ups?status=pending",
-  );
-  const { data: supplies } = useApiQuery<SupplyDto[]>("/api/supplies");
+  const {
+    data: followUps,
+    error: followUpsError,
+    isLoading: followUpsLoading,
+    refresh: refreshFollowUps,
+  } = useApiQuery<FollowUpDto[]>("/api/follow-ups?status=pending");
+  const {
+    data: supplies,
+    error: suppliesError,
+    isLoading: suppliesLoading,
+    refresh: refreshSupplies,
+  } = useApiQuery<SupplyDto[]>("/api/supplies");
 
   const lowStock = (supplies ?? []).filter((s) => s.active && s.isLowStock);
 
@@ -57,35 +65,62 @@ export default function DashboardPage() {
   if (!summary) return <LoadingIndicator />;
 
   const cards = [
-    { label: "Recebido no mês", value: formatCurrency(summary.billing.paidCents) },
-    { label: "A receber", value: formatCurrency(summary.billing.pendingCents) },
-    { label: "Consultas no mês", value: String(summary.appointmentsInMonth) },
-    { label: "Faturas pendentes", value: String(summary.billing.pendingCount) },
+    {
+      label: "Recebido no mês",
+      value: formatCurrency(summary.billing.paidCents),
+      href: "/faturamento",
+    },
+    {
+      label: "A receber",
+      value: formatCurrency(summary.billing.pendingCents),
+      href: "/faturamento",
+    },
+    {
+      label: "Consultas no mês",
+      value: String(summary.appointmentsInMonth),
+      href: "/agenda",
+    },
+    {
+      label: "Faturas pendentes",
+      value: String(summary.billing.pendingCount),
+      href: "/faturamento",
+    },
   ];
 
   return (
     <div>
-      <Hero className="pt-0 pb-6" eyebrow="Visão geral" title="Dashboard" />
+      <h1 className="sv-display pt-0 pb-6 text-2xl font-bold">Dashboard</h1>
 
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((card) => (
-          <Card key={card.label} className="p-5">
-            <p className="text-sm text-ink-3">{card.label}</p>
-            <p className="mt-1 text-2xl font-bold text-accent-ink">{card.value}</p>
-          </Card>
+          <Link key={card.label} href={card.href} aria-label={`Ver ${card.label.toLowerCase()}`}>
+            <Card className="p-5 transition-colors hover:border-accent">
+              <p className="text-sm text-ink-3">{card.label}</p>
+              <p className="mt-1 text-2xl font-bold text-accent-ink">{card.value}</p>
+            </Card>
+          </Link>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+      <TriageQueue />
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card className="p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold">Consultas de hoje</h2>
-            <Link href="/agenda" className="text-sm font-medium text-accent-ink hover:underline">
+            <Link
+              href="/agenda"
+              className="inline-flex items-center gap-1 whitespace-nowrap text-sm font-medium text-accent-ink hover:underline"
+            >
               Ver agenda completa <Icon name="chevron-right" />
             </Link>
           </div>
           {summary.today.length === 0 ? (
-            <EmptyState message="Nenhuma consulta agendada para hoje." />
+            <EmptyState
+              message="Nenhuma consulta agendada para hoje."
+              icon="check-circle"
+              action={{ label: "Ver agenda", href: "/agenda" }}
+            />
           ) : (
             <ul className="divide-y divide-border">
               {summary.today.map((appointment) => (
@@ -108,99 +143,139 @@ export default function DashboardPage() {
         </Card>
 
         <div className="flex flex-col gap-6">
-          <Card className="p-5">
-            <TriageQueue />
-            <h2 className="mb-4 text-lg font-semibold">Retornos pendentes</h2>
-            {!followUps || followUps.length === 0 ? (
-              <EmptyState message="Nenhum retorno pendente." />
-            ) : (
-              <ul className="divide-y divide-border">
-                {followUps.slice(0, 8).map((followUp) => (
-                  <li key={followUp.id} className="flex items-center gap-3 py-3 text-sm">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium">
-                        <Link
-                          href={`/pacientes/${followUp.patientId}`}
-                          className="hover:underline"
-                        >
-                          {followUp.patientName}
-                        </Link>
-                      </p>
-                      <p className="truncate text-ink-3">{followUp.reason}</p>
-                    </div>
-                    <span
-                      className={`shrink-0 text-xs font-medium ${
-                        followUp.isOverdue ? "text-danger" : "text-ink-3"
-                      }`}
-                    >
-                      {followUp.isOverdue ? (
-                        <>
-                          <Icon name="alert-triangle" /> Atrasado —{" "}
-                        </>
-                      ) : null}
-                      {formatDate(followUp.dueDate)}
-                    </span>
-                    <Link
-                      href={`/agenda?followUpId=${followUp.id}&patientId=${followUp.patientId}&procedure=${encodeURIComponent(followUp.reason.replace(/^Retorno: /, ""))}`}
-                      className="shrink-0 font-medium text-accent-ink hover:underline"
-                    >
-                      Agendar
-                    </Link>
-                    <Button
-                      type="button"
-                      onClick={() => void resolveFollowUp(followUp.id, "done")}
-                      variant="link"
-                      className="h-auto p-0 shrink-0 text-success"
-                    >
-                      Concluir
-                    </Button>
-                    <ConfirmAction
-                      trigger={
-                        <Button
-                          type="button"
-                          variant="link"
-                          className="h-auto p-0 shrink-0 text-ink-3"
-                        >
-                          Cancelar
-                        </Button>
-                      }
-                      title="Cancelar retorno?"
-                      description="O retorno agendado será cancelado e o paciente não será mais lembrado."
-                      confirmLabel="Cancelar retorno"
-                      variant="danger"
-                      onConfirm={() => resolveFollowUp(followUp.id, "cancelled")}
-                    />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-
-          <Card className="p-5">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Estoque baixo</h2>
-              <Link href="/materiais" className="text-sm font-medium text-accent-ink hover:underline">
-                Ver materiais <Icon name="chevron-right" />
-              </Link>
-            </div>
-            {lowStock.length === 0 ? (
-              <EmptyState message="Nenhum insumo abaixo do mínimo." />
-            ) : (
-              <ul className="divide-y divide-border text-sm">
-                {lowStock.slice(0, 6).map((supply) => (
-                  <li key={supply.id} className="flex justify-between py-2">
-                    <span className="truncate">{supply.name}</span>
-                    <span className="shrink-0 font-medium text-warning">
-                      {supply.stockQty}/{supply.minQty} {supply.unit}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
+          <FollowUpsCard
+            followUps={followUps}
+            error={followUpsError}
+            isLoading={followUpsLoading}
+            onRetry={refreshFollowUps}
+            onResolve={resolveFollowUp}
+          />
+          <LowStockCard
+            lowStock={lowStock}
+            error={suppliesError}
+            isLoading={suppliesLoading}
+            onRetry={refreshSupplies}
+          />
         </div>
       </div>
     </div>
+  );
+}
+
+interface FollowUpsCardProps {
+  followUps: FollowUpDto[] | null;
+  error: string | null;
+  isLoading: boolean;
+  onRetry: () => void;
+  onResolve: (id: string, status: "done" | "cancelled") => void;
+}
+
+function FollowUpsCard({ followUps, error, isLoading, onRetry, onResolve }: FollowUpsCardProps) {
+  return (
+    <Card className="p-5">
+      <h2 className="mb-4 text-lg font-semibold">Retornos pendentes</h2>
+      {error ? (
+        <ErrorAlert message={error} onRetry={onRetry} />
+      ) : isLoading ? (
+        <LoadingIndicator />
+      ) : !followUps || followUps.length === 0 ? (
+        <EmptyState message="Nenhum retorno pendente." icon="check-circle" />
+      ) : (
+        <ul className="divide-y divide-border">
+          {followUps.slice(0, 8).map((followUp) => (
+            <li key={followUp.id} className="flex items-center gap-3 py-3 text-sm">
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium">
+                  <Link href={`/pacientes/${followUp.patientId}`} className="hover:underline">
+                    {followUp.patientName}
+                  </Link>
+                </p>
+                <p className="truncate text-ink-3">{followUp.reason}</p>
+              </div>
+              <span
+                className={`shrink-0 text-xs font-medium ${
+                  followUp.isOverdue ? "text-danger" : "text-ink-3"
+                }`}
+              >
+                {followUp.isOverdue ? (
+                  <>
+                    <Icon name="alert-triangle" /> Atrasado —{" "}
+                  </>
+                ) : null}
+                {formatDate(followUp.dueDate)}
+              </span>
+              <Link
+                href={`/agenda?followUpId=${followUp.id}&patientId=${followUp.patientId}&procedure=${encodeURIComponent(followUp.reason.replace(/^Retorno: /, ""))}`}
+                className="shrink-0 font-medium text-accent-ink hover:underline"
+              >
+                Agendar
+              </Link>
+              <Button
+                type="button"
+                onClick={() => void onResolve(followUp.id, "done")}
+                variant="link"
+                className="h-auto p-0 shrink-0 text-success"
+              >
+                Concluir
+              </Button>
+              <ConfirmAction
+                trigger={
+                  <Button type="button" variant="link" className="h-auto p-0 shrink-0 text-ink-3">
+                    Cancelar
+                  </Button>
+                }
+                title="Cancelar retorno?"
+                description="O retorno agendado será cancelado e o paciente não será mais lembrado."
+                confirmLabel="Cancelar retorno"
+                variant="danger"
+                onConfirm={() => onResolve(followUp.id, "cancelled")}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
+interface LowStockCardProps {
+  lowStock: SupplyDto[];
+  error: string | null;
+  isLoading: boolean;
+  onRetry: () => void;
+}
+
+function LowStockCard({ lowStock, error, isLoading, onRetry }: LowStockCardProps) {
+  return (
+    <Card className="p-5">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Estoque baixo</h2>
+        <Link
+          href="/materiais"
+          className="inline-flex items-center gap-1 whitespace-nowrap text-sm font-medium text-accent-ink hover:underline"
+        >
+          Ver materiais <Icon name="chevron-right" />
+        </Link>
+      </div>
+      {error ? (
+        <ErrorAlert message={error} onRetry={onRetry} />
+      ) : isLoading ? (
+        <LoadingIndicator />
+      ) : lowStock.length === 0 ? (
+        <EmptyState message="Nenhum insumo abaixo do mínimo." icon="check-circle" />
+      ) : (
+        <ul className="divide-y divide-border text-sm">
+          {lowStock.slice(0, 6).map((supply) => (
+            <li key={supply.id} className="flex justify-between py-2">
+              <span className="truncate">{supply.name}</span>
+              <span className="shrink-0 font-medium text-warning">
+                {supply.stockQty}/{supply.minQty} {supply.unit}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
   );
 }
 

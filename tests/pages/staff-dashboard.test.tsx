@@ -73,7 +73,9 @@ interface FetchOptions {
   summary?: unknown;
   summaryError?: string;
   followUps?: FollowUpDto[];
+  followUpsError?: string;
   supplies?: SupplyDto[];
+  suppliesError?: string;
   triage?: TriagePhotoFixture[];
 }
 
@@ -89,7 +91,9 @@ function mockFetch(options: FetchOptions = {}) {
     summary = summaryFixture,
     summaryError,
     followUps = [],
+    followUpsError,
     supplies = [],
+    suppliesError,
     triage = [],
   } = options;
 
@@ -106,13 +110,17 @@ function mockFetch(options: FetchOptions = {}) {
           : jsonResponse(true, summary);
       }
       if (url.startsWith("/api/follow-ups") && method === "GET") {
-        return jsonResponse(true, followUps);
+        return followUpsError
+          ? jsonResponse(false, null, followUpsError)
+          : jsonResponse(true, followUps);
       }
       if (url.startsWith("/api/follow-ups/") && method === "PATCH") {
         return jsonResponse(true, { ...followUpFixture, status: "done" });
       }
       if (url.startsWith("/api/supplies")) {
-        return jsonResponse(true, supplies);
+        return suppliesError
+          ? jsonResponse(false, null, suppliesError)
+          : jsonResponse(true, supplies);
       }
       if (url.startsWith("/api/photos/triage")) {
         return jsonResponse(true, triage);
@@ -340,6 +348,95 @@ describe("Feature: Dashboard do painel interno", () => {
       await waitFor(() => {
         expect(screen.getByText("Erro ao atualizar retorno")).toBeInTheDocument();
       });
+    });
+  });
+
+  describe("Cenário: erro de API por card (DASH-01)", () => {
+    it("Dado falha na API de retornos, Quando renderizar, Então mostra ErrorAlert no card em vez de lista vazia", async () => {
+      mockFetch({ followUpsError: "Erro ao buscar retornos" });
+      renderWithToast(<DashboardPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Erro ao buscar retornos")).toBeInTheDocument();
+      });
+      expect(screen.queryByText("Nenhum retorno pendente.")).not.toBeInTheDocument();
+    });
+
+    it("Dado falha na API de estoque, Quando renderizar, Então mostra ErrorAlert no card em vez de lista vazia", async () => {
+      mockFetch({ suppliesError: "Erro ao buscar estoque" });
+      renderWithToast(<DashboardPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Erro ao buscar estoque")).toBeInTheDocument();
+      });
+      expect(screen.queryByText("Nenhum insumo abaixo do mínimo.")).not.toBeInTheDocument();
+    });
+
+    it("Dado retornos e estoque falhando ao mesmo tempo, Quando renderizar, Então cada card mostra seu próprio erro isolado", async () => {
+      mockFetch({ followUpsError: "Erro retornos", suppliesError: "Erro estoque" });
+      renderWithToast(<DashboardPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Erro retornos")).toBeInTheDocument();
+      });
+      expect(screen.getByText("Erro estoque")).toBeInTheDocument();
+    });
+
+    it("Dado erro no card de retornos, Quando clicar em 'Tentar novamente', Então refaz a busca", async () => {
+      mockFetch({ followUpsError: "Erro ao buscar retornos" });
+      renderWithToast(<DashboardPage />);
+
+      await screen.findByText("Erro ao buscar retornos");
+      const callsBefore = (fetch as ReturnType<typeof vi.fn>).mock.calls.length;
+      fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+
+      await waitFor(() => {
+        expect((fetch as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(
+          callsBefore,
+        );
+      });
+    });
+  });
+
+  describe("Cenário: fila de triagem em faixa própria (DASH-02)", () => {
+    it("Dado fila de triagem não-vazia, Quando renderizar, Então o heading da fila vem antes do heading de retornos pendentes", async () => {
+      mockFetch({ triage: [triageFixture], followUps: [followUpFixture] });
+      renderWithToast(<DashboardPage />);
+
+      await screen.findByText(/aguardando triagem/);
+      const headings = screen.getAllByRole("heading");
+      const triageIndex = headings.findIndex((h) => /aguardando triagem/.test(h.textContent ?? ""));
+      const followUpsIndex = headings.findIndex((h) => h.textContent === "Retornos pendentes");
+
+      expect(triageIndex).toBeGreaterThanOrEqual(0);
+      expect(followUpsIndex).toBeGreaterThan(triageIndex);
+    });
+  });
+
+  describe("Cenário: KPIs navegáveis e título compacto (DASH-04/06)", () => {
+    it("Dado o dashboard carregado, Quando renderizar, Então cada KPI é um link com aria-label descritivo", async () => {
+      mockFetch();
+      renderWithToast(<DashboardPage />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("link", { name: "Ver recebido no mês" }),
+        ).toHaveAttribute("href", "/faturamento");
+      });
+      expect(screen.getByRole("link", { name: "Ver consultas no mês" })).toHaveAttribute(
+        "href",
+        "/agenda",
+      );
+    });
+
+    it("Dado o dashboard carregado, Quando renderizar, Então o título é um h1 compacto sem Hero de landing page", async () => {
+      mockFetch();
+      renderWithToast(<DashboardPage />);
+
+      await waitFor(() => {
+        expect(screen.getByRole("heading", { level: 1, name: "Dashboard" })).toBeInTheDocument();
+      });
+      expect(document.querySelector(".sv-hero__eyebrow")).not.toBeInTheDocument();
     });
   });
 

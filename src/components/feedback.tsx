@@ -1,4 +1,5 @@
-import { Alert, AlertDescription, Button, CardSkeleton } from "@still-void/ui/react";
+import Link from "next/link";
+import { Alert, AlertDescription, Button, CardSkeleton, Icon, type IconName } from "@still-void/ui/react";
 
 interface ErrorAlertProps {
   message: string;
@@ -42,10 +43,22 @@ export function LoadingIndicator() {
   );
 }
 
-export function EmptyState({ message }: { message: string }) {
+interface EmptyStateProps {
+  message: string;
+  icon?: IconName;
+  action?: { label: string; href: string };
+}
+
+export function EmptyState({ message, icon, action }: EmptyStateProps) {
   return (
-    <p className="py-8 text-center text-sm text-ink-3">
-      {message}
-    </p>
+    <div className="flex flex-col items-center gap-2 py-8 text-center text-sm text-ink-3">
+      {icon && <Icon name={icon} className="text-2xl text-ink-3" />}
+      <p>{message}</p>
+      {action && (
+        <Link href={action.href} className="font-medium text-accent-ink hover:underline">
+          {action.label}
+        </Link>
+      )}
+    </div>
   );
 }

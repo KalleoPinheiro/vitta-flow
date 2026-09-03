@@ -74,5 +74,30 @@ describe("Feature: Componentes de feedback", () => {
 
       expect(screen.getByText("Nenhum registro encontrado")).toBeInTheDocument();
     });
+
+    it("Dado nenhum icon/action, Quando renderizar EmptyState, Então não exibe ícone nem link (DASH-05 AC3)", () => {
+      render(<EmptyState message="Nenhum registro encontrado" />);
+
+      expect(document.querySelector("svg")).not.toBeInTheDocument();
+      expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    });
+
+    it("Dado icon, Quando renderizar EmptyState, Então exibe o ícone acima da mensagem (DASH-05 AC1)", () => {
+      render(<EmptyState message="Nenhuma consulta agendada para hoje." icon="check-circle" />);
+
+      expect(document.querySelector("svg")).toBeInTheDocument();
+    });
+
+    it("Dado action, Quando renderizar EmptyState, Então exibe link com o rótulo apontando pro href (DASH-05 AC2)", () => {
+      render(
+        <EmptyState
+          message="Nenhuma consulta agendada para hoje."
+          action={{ label: "Ver agenda", href: "/agenda" }}
+        />,
+      );
+
+      const link = screen.getByRole("link", { name: "Ver agenda" });
+      expect(link).toHaveAttribute("href", "/agenda");
+    });
   });
 });

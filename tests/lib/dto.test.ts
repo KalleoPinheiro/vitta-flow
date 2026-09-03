@@ -423,7 +423,7 @@ describe("Feature: DTO de avaliação de condição", () => {
     expect(dto.detScore).toBeNull();
   });
 
-  it("Dado avaliação com nota interna preenchida, Quando toPortalAssessmentDto, Então omite notes (allowlist #69)", () => {
+  it("Dado avaliação com nota interna e complicações preenchidas, Quando toPortalAssessmentDto, Então omite notes e complications (allowlist #69, #93)", () => {
     const assessment = ConditionAssessment.create({
       conditionId: "condition-1",
       lengthMm: 20,
@@ -432,7 +432,7 @@ describe("Feature: DTO de avaliação de condição", () => {
       exudate: "moderate",
       painScale: 4,
       skinCondition: "Íntegra ao redor",
-      complications: "Nenhuma",
+      complications: "suspeita de recidiva, encaminhar oncologia",
       complicationCodes: "dermatitis,bleeding",
       notes: "nota interna teste",
     });
@@ -450,14 +450,15 @@ describe("Feature: DTO de avaliação de condição", () => {
       exudate: "moderate",
       painScale: 4,
       skinCondition: "Íntegra ao redor",
-      complications: "Nenhuma",
       complicationCodes: ["dermatitis", "bleeding"],
       detScore: null,
       pushScore: assessment.pushScore,
       createdAt: assessment.createdAt.toISOString(),
     });
     expect(dto).not.toHaveProperty("notes");
+    expect(dto).not.toHaveProperty("complications");
     expect(JSON.stringify(dto)).not.toContain("nota interna teste");
+    expect(JSON.stringify(dto)).not.toContain("suspeita de recidiva");
   });
 });
 

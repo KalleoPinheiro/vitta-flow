@@ -58,6 +58,9 @@ test.describe("portal do paciente", () => {
       mimeType: "image/png",
       buffer: TINY_PNG,
     });
+    // PORT-06 (#93): escolher o arquivo só monta a prévia — exige "Enviar" explícito.
+    await expect(page.getByAltText("Prévia da foto selecionada")).toBeVisible();
+    await page.getByRole("button", { name: "Enviar", exact: true }).click();
     await expect(
       page.getByText("Foto enviada — a equipe vai avaliar e retorna se for preciso antecipar sua consulta."),
     ).toBeVisible();

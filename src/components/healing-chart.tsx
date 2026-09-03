@@ -1,11 +1,23 @@
 "use client";
 
 import { ChartAxis, ChartContainer, ChartLine } from "@still-void/ui/react";
-import type { AssessmentDto } from "@/lib/dto";
 import { formatDate } from "@/lib/format";
 
+/**
+ * Só os campos numéricos usados no gráfico — aceita tanto `AssessmentDto`
+ * (staff) quanto `PortalAssessmentDto` (portal, sem `notes`/`complications`,
+ * #93), sem acoplar o componente ao DTO mais amplo por engano.
+ */
+interface ChartAssessment {
+  areaMm2: number | null;
+  painScale: number | null;
+  pushScore: number | null;
+  detScore: number | null;
+  createdAt: string;
+}
+
 interface HealingChartProps {
-  assessments: AssessmentDto[];
+  assessments: ChartAssessment[];
 }
 
 interface SeriesPoint {
@@ -63,7 +75,7 @@ interface ChartModel {
   xOf: (d: Date) => number;
 }
 
-function buildChartModel(assessments: AssessmentDto[]): ChartModel | null {
+function buildChartModel(assessments: ChartAssessment[]): ChartModel | null {
   const ordered = [...assessments].sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   );
@@ -211,8 +223,9 @@ export function HealingChart({ assessments }: HealingChartProps) {
           {formatDate(new Date(maxT).toISOString())}
         </text>
       </ChartContainer>
-      <p className="mt-1 text-[11px] text-ink-3">
-        Sólida no accent: área (mm²) · sólida azul: score PUSH/DET · tracejada âmbar: dor (0–10)
+      <p className="mt-1 text-xs text-ink-3">
+        Sólida no accent: área da ferida (mm²) · sólida azul: gravidade clínica · tracejada âmbar:
+        dor (0–10)
       </p>
     </div>
   );

@@ -8,6 +8,8 @@ import type { ProcedureDto } from "@/lib/dto";
 import { formatTime } from "@/lib/format";
 import { Button, Card, CardContent, Input, NativeSelect } from "@still-void/ui/react";
 import { ErrorAlert } from "@/components/feedback";
+import { ConfirmAction } from "@/components/confirm-action";
+import { formatDateTime } from "@/lib/format";
 
 interface AvailableSlotDto {
   startsAt: string;
@@ -101,13 +103,13 @@ function SchedulePanel({
       <CardContent className="p-3">
       {error && <ErrorAlert message={error} />}
       <div className="grid gap-2 sm:grid-cols-2">
-        <label className="text-xs font-medium">
+        <label className="text-sm font-medium">
           Procedimento
           <NativeSelect
             value={procedureId}
             disabled={saving}
             onChange={(e) => setProcedureId(e.target.value)}
-            className="mt-1 py-1.5 text-xs"
+            className="mt-1"
           >
             <option value="">Selecione…</option>
             {(procedures ?? []).map((procedure) => (
@@ -117,7 +119,7 @@ function SchedulePanel({
             ))}
           </NativeSelect>
         </label>
-        <label className="text-xs font-medium">
+        <label className="text-sm font-medium">
           Dia
           <Input
             type="date"
@@ -126,10 +128,15 @@ function SchedulePanel({
             min={today}
             max={maxDate}
             onChange={(e) => setDate(e.target.value)}
-            className="mt-1 h-8 text-xs"
+            className="mt-1"
           />
         </label>
       </div>
+      {/* PORT-07: janela de oferta explicada — antes só existia como limite
+          silencioso no `max` do input de data. */}
+      <p className="mt-2 text-xs text-ink-3">
+        Você pode agendar em até {OFFER_WINDOW_DAYS} dias a partir de hoje.
+      </p>
 
       {procedureId && date && (
         <SlotPicker
@@ -188,17 +195,28 @@ function SlotPicker({
   return (
     <div className="mt-3 flex flex-wrap gap-2">
       {slots.map((slot) => (
-        <Button
+        // PORT-02: agendar é a ação mais consequente do portal — exige
+        // confirmação explícita, e o alvo de toque usa o `sm` padrão do
+        // design system (36px), não mais um `h-7` (28px) reduzido pra caber
+        // na grade.
+        <ConfirmAction
           key={slot.startsAt}
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={disabled}
-          onClick={() => onPick(slot)}
-          className="h-7 border-accent px-3 text-xs font-medium text-accent-ink hover:bg-accent-soft"
-        >
-          {formatTime(slot.startsAt)}
-        </Button>
+          trigger={
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={disabled}
+              className="border-accent font-medium text-accent-ink hover:bg-accent-soft"
+            >
+              {formatTime(slot.startsAt)}
+            </Button>
+          }
+          title="Confirmar agendamento"
+          description={`Agendar sua consulta para ${formatDateTime(slot.startsAt)}?`}
+          confirmLabel="Confirmar"
+          onConfirm={() => onPick(slot)}
+        />
       ))}
     </div>
   );

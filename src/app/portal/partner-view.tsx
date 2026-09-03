@@ -40,7 +40,7 @@ export function PartnerPortalView() {
       />
 
       {data.referredPatients.length === 0 ? (
-        <EmptyState message="Nenhum paciente indicado por você até o momento." />
+        <EmptyState icon="info" message="Nenhum paciente indicado por você até o momento." />
       ) : (
         <div className="flex flex-col gap-3">
           {data.referredPatients.map(({ patient, appointments, conditions }) => {
@@ -51,6 +51,7 @@ export function PartnerPortalView() {
                 <Button
                   type="button"
                   variant="ghost"
+                  aria-expanded={isOpen}
                   onClick={() => setExpanded(isOpen ? null : patient.id)}
                   className="flex h-auto w-full items-center justify-between whitespace-normal px-0 py-0 text-left"
                 >
@@ -71,7 +72,7 @@ export function PartnerPortalView() {
                     <div>
                       <h3 className="mb-2 text-sm font-semibold">Consultas</h3>
                       {appointments.length === 0 ? (
-                        <EmptyState message="Nenhuma consulta." />
+                        <EmptyState icon="pending" message="Nenhuma consulta." />
                       ) : (
                         <ul className="divide-y divide-border text-sm">
                           {appointments.map((appointment) => (
@@ -94,7 +95,7 @@ export function PartnerPortalView() {
                     <div>
                       <h3 className="mb-2 text-sm font-semibold">Evolução clínica</h3>
                       {conditions.length === 0 ? (
-                        <EmptyState message="Nenhuma condição registrada." />
+                        <EmptyState icon="info" message="Nenhuma condição registrada." />
                       ) : (
                         <div className="flex flex-col gap-3">
                           {conditions.map((entry) => (

@@ -1,7 +1,8 @@
 "use client";
 
-import { Card, CardContent } from "@still-void/ui/react";
-import type { AssessmentDto, ConditionDto, ConditionPhotoDto } from "@/lib/dto";
+import { useState } from "react";
+import { Button, Card, CardContent } from "@still-void/ui/react";
+import type { ConditionDto, ConditionPhotoDto, PortalAssessmentDto } from "@/lib/dto";
 import {
   CONDITION_KIND_LABELS,
   EXUDATE_LABELS,
@@ -13,7 +14,8 @@ import { HealingChart } from "@/components/healing-chart";
 
 export interface ConditionWithAssessmentsDto {
   condition: ConditionDto;
-  assessments: AssessmentDto[];
+  /** DTO já filtrado pro portal (PORT-03, #93) — sem `notes`/`complications` livres. */
+  assessments: PortalAssessmentDto[];
   /** Fotos só chegam ao próprio paciente — parceiro não recebe (minimização LGPD). */
   photos?: ConditionPhotoDto[];
   /** Base da URL autorizada para servir as fotos no contexto atual. */
@@ -73,25 +75,50 @@ function PortalPhotoGallery({
   photos?: ConditionPhotoDto[];
   photoUrlBase?: string;
 }) {
+  // PORT-12 (#93): fotos de ferida/estomia começam borradas — a imagem antes
+  // aparecia de imediato, mesmo na sala de espera, sem o paciente pedir.
+  const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
+
   if (!photoUrlBase || !photos || photos.length === 0) {
     return null;
   }
   return (
     <div className="mb-3 flex flex-wrap gap-2">
-      {photos.map((photo) => (
-        // eslint-disable-next-line @next/next/no-img-element -- rota autorizada dinâmica, sem otimizador
-        <img
-          key={photo.id}
-          src={`${photoUrlBase}/${photo.id}`}
-          alt={`Foto da condição em ${formatDate(photo.createdAt)}`}
-          className="h-24 w-24 rounded border border-border object-cover"
-        />
-      ))}
+      {photos.map((photo) => {
+        const revealed = revealedIds.has(photo.id);
+        return (
+          <Button
+            key={photo.id}
+            type="button"
+            variant="ghost"
+            className="h-24 w-24 rounded p-0"
+            aria-label={revealed ? "Ocultar foto" : "Ver foto"}
+            onClick={() =>
+              setRevealedIds((current) => {
+                const next = new Set(current);
+                if (next.has(photo.id)) next.delete(photo.id);
+                else next.add(photo.id);
+                return next;
+              })
+            }
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- rota autorizada dinâmica, sem otimizador */}
+            <img
+              src={`${photoUrlBase}/${photo.id}`}
+              alt={`Foto da condição em ${formatDate(photo.createdAt)}`}
+              className={`h-24 w-24 rounded border border-border object-cover ${revealed ? "" : "blur-md"}`}
+            />
+          </Button>
+        );
+      })}
     </div>
   );
 }
 
-function describeAssessment(assessment: AssessmentDto): string {
+// PORT-03 (#93): sem `complications`/`notes` — texto livre interno da equipe,
+// removido do próprio DTO do portal (`PortalAssessmentDto`). Só dados
+// estruturados (medidas, códigos, escalas) chegam até aqui.
+function describeAssessment(assessment: PortalAssessmentDto): string {
   const parts: string[] = [];
   if (assessment.areaMm2 != null) {
     parts.push(`ferida ${assessment.lengthMm}×${assessment.widthMm}mm (área ${assessment.areaMm2}mm²)`);
@@ -100,7 +127,5 @@ function describeAssessment(assessment: AssessmentDto): string {
   if (assessment.exudate) parts.push(`exsudato: ${EXUDATE_LABELS[assessment.exudate] ?? assessment.exudate}`);
   if (assessment.painScale != null) parts.push(`dor ${assessment.painScale}/10`);
   if (assessment.skinCondition) parts.push(`pele periestomal: ${assessment.skinCondition}`);
-  if (assessment.complications) parts.push(`complicações: ${assessment.complications}`);
-  if (assessment.notes) parts.push(assessment.notes);
   return parts.length > 0 ? parts.join(" · ") : "Avaliação registrada";
 }

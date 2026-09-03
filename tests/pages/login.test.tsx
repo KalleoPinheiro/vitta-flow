@@ -66,13 +66,28 @@ afterEach(() => {
 /** AUTH-30: a tela oferece só e-mail + senha e o caminho de recuperação. */
 describe("Feature: Página de login", () => {
   describe("Cenário: erro vindo de um redirecionamento", () => {
-    it("Dado parâmetro de erro na URL, Quando renderizar, Então exibe o alerta com a mensagem", async () => {
-      searchParamsRef.current = new URLSearchParams("error=Sessão expirada");
+    it("Dado código de erro conhecido na URL, Quando renderizar, Então exibe a mensagem mapeada", async () => {
+      searchParamsRef.current = new URLSearchParams("error=session_expired");
       mockProviders({ password: true });
 
       render(<LoginPage />);
 
-      expect(await screen.findByText("Sessão expirada")).toBeInTheDocument();
+      expect(await screen.findByText("Sua sessão expirou. Entre novamente.")).toBeInTheDocument();
+    });
+
+    // LOG-02 (#93): texto arbitrário da URL nunca é renderizado — vetor de
+    // phishing por texto refletido, mesmo sem XSS (React escapa). Só valores
+    // de um allowlist viram mensagem; qualquer outro cai na mensagem genérica.
+    it("Dado código de erro desconhecido na URL, Quando renderizar, Então exibe mensagem genérica, nunca o texto bruto", async () => {
+      searchParamsRef.current = new URLSearchParams("error=<script>alert(1)</script>");
+      mockProviders({ password: true });
+
+      render(<LoginPage />);
+
+      expect(
+        await screen.findByText("Não foi possível concluir a operação. Tente novamente."),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("<script>alert(1)</script>")).not.toBeInTheDocument();
     });
   });
 

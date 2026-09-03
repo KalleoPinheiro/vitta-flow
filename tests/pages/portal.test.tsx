@@ -143,13 +143,18 @@ describe("Feature: Página do portal", () => {
     });
   });
 
+  // PORT-01/PORT-10 (#93): sem sessão válida, a tela não repete a mensagem
+  // crua da API ("Não autenticado" etc.) — mostra estado dedicado com link
+  // "Entrar", não um beco sem saída.
   describe("Cenário: erro ao carregar sessão", () => {
-    it("Dado falha na API de sessão, Quando renderizar, Então exibe alerta de erro", async () => {
-      mockFetch([{ path: "/api/portal/me", respond: () => jsonResponse(false, null, "Sessão expirada") }]);
+    it("Dado falha na API de sessão, Quando renderizar, Então mostra estado de sessão expirada com link de entrar", async () => {
+      mockFetch([{ path: "/api/portal/me", respond: () => jsonResponse(false, null, "Não autenticado") }]);
 
       render(<PortalPage />);
 
-      expect(await screen.findByText("Sessão expirada")).toBeInTheDocument();
+      expect(await screen.findByText("Sua sessão expirou")).toBeInTheDocument();
+      const link = screen.getByRole("link", { name: /Entrar/ });
+      expect(link).toHaveAttribute("href", "/login?error=session_expired");
     });
   });
 
@@ -324,8 +329,11 @@ describe("Feature: Visão do paciente no portal", () => {
     });
   });
 
+  // PORT-09 (#93): antes ficava enterrada em "Histórico", abaixo da evolução
+  // clínica — agora aparece destacada logo no topo, não em "Próximas" nem em
+  // "Histórico".
   describe("Cenário: consulta futura cancelada", () => {
-    it("Dado consulta futura com status cancelado, Quando renderizar, Então aparece no histórico e não nas próximas consultas", async () => {
+    it("Dado consulta futura com status cancelado, Quando renderizar, Então aparece destacada, fora de Próximas e Histórico", async () => {
       mockFetch([
         { path: "/api/portal/patient/consent", respond: () => jsonResponse(true, { consentText: "Termo", accepted: true, acceptedAt: null }) },
         {
@@ -340,9 +348,10 @@ describe("Feature: Visão do paciente no portal", () => {
 
       renderWithToast(<PatientPortalView />);
 
-      expect(await screen.findByText("Nenhuma consulta agendada. Entre em contato com a clínica para agendar.")).toBeInTheDocument();
-      expect(screen.getByText("Cancelada")).toBeInTheDocument();
-      expect(screen.queryByText("Sem consultas anteriores.")).not.toBeInTheDocument();
+      expect(await screen.findByText("Uma consulta sua foi cancelada pela clínica:")).toBeInTheDocument();
+      expect(screen.getByText(/Troca de bolsa/)).toBeInTheDocument();
+      expect(screen.getByText("Nenhuma consulta agendada. Entre em contato com a clínica para agendar.")).toBeInTheDocument();
+      expect(screen.getByText("Sem consultas anteriores.")).toBeInTheDocument();
     });
   });
 
@@ -446,7 +455,10 @@ describe("Feature: Visão do paciente no portal", () => {
       });
       fireEvent.change(screen.getByLabelText(/Dia/), { target: { value: "2099-03-02" } });
 
+      // PORT-02 (#93): tocar o horário abre confirmação — só o "Confirmar" do
+      // diálogo dispara o POST.
       fireEvent.click(await screen.findByText(formatTime(scheduled.startsAt)));
+      fireEvent.click(await screen.findByRole("button", { name: "Confirmar" }));
 
       await waitFor(() => {
         expect(postBody).not.toBeNull();
@@ -509,6 +521,7 @@ describe("Feature: Visão do paciente no portal", () => {
         target: { value: "proc-1" },
       });
       fireEvent.click(await screen.findByText(formatTime("2099-03-02T12:00:00.000Z")));
+      fireEvent.click(await screen.findByRole("button", { name: "Confirmar" }));
 
       expect(await screen.findByText("Horário indisponível")).toBeInTheDocument();
     });
@@ -932,11 +945,14 @@ describe("Feature: Envio de foto pelo paciente", () => {
 
       fireEvent.change(input, { target: { files: [makeFile()] } });
 
-      // Desabilita durante o envio (disabled={sending}) e reseta o value logo
-      // após disparar o upload (e.target.value = ""), evitando reenvio do
-      // mesmo arquivo se o usuário selecionar de novo.
-      expect(input).toBeDisabled();
+      // PORT-06 (#93): escolher o arquivo só monta a prévia — não envia mais
+      // no próprio onChange. Reseta o value do input (evita reenvio do mesmo
+      // arquivo se o usuário selecionar de novo antes de confirmar).
       expect(input.value).toBe("");
+      expect(await screen.findByAltText("Prévia da foto selecionada")).toBeInTheDocument();
+      expect(onSent).not.toHaveBeenCalled();
+
+      fireEvent.click(screen.getByText("Enviar"));
 
       await waitFor(() => {
         expect(onSent).toHaveBeenCalledTimes(1);
@@ -976,6 +992,7 @@ describe("Feature: Envio de foto pelo paciente", () => {
 
       const input = document.querySelector('input[type="file"]') as HTMLInputElement;
       fireEvent.change(input, { target: { files: [makeFile()] } });
+      fireEvent.click(await screen.findByText("Enviar"));
 
       await waitFor(() => {
         expect(screen.getAllByText("Arquivo muito grande")).toHaveLength(2);
@@ -1051,7 +1068,7 @@ describe("Feature: Evolução clínica da condição", () => {
   });
 
   describe("Cenário: descrição completa de uma avaliação", () => {
-    it("Dado avaliação com todos os campos, Quando renderizar, Então exibe a descrição combinada", () => {
+    it("Dado avaliação com todos os campos, Quando renderizar, Então exibe a descrição combinada, sem complicações/notas (PORT-03, #93)", () => {
       const assessment = buildAssessment({
         lengthMm: 10,
         widthMm: 5,
@@ -1060,6 +1077,9 @@ describe("Feature: Evolução clínica da condição", () => {
         exudate: "moderate",
         painScale: 3,
         skinCondition: "íntegra",
+        // Presentes no DTO staff (AssessmentDto) mas NUNCA chegam ao portal —
+        // `PortalAssessmentDto` (o que a API do portal de fato retorna) não
+        // tem esses campos; texto livre interno não é pra leitura do paciente.
         complications: "nenhuma",
         notes: "observação extra",
       });
@@ -1072,9 +1092,11 @@ describe("Feature: Evolução clínica da condição", () => {
 
       expect(
         screen.getByText(
-          "ferida 10×5mm (área 50mm²) · tecido: granulação · exsudato: Moderado · dor 3/10 · pele periestomal: íntegra · complicações: nenhuma · observação extra",
+          "ferida 10×5mm (área 50mm²) · tecido: granulação · exsudato: Moderado · dor 3/10 · pele periestomal: íntegra",
         ),
       ).toBeInTheDocument();
+      expect(screen.queryByText(/complicações/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/observação extra/)).not.toBeInTheDocument();
     });
 
     it("Dado avaliação sem nenhum campo preenchido, Quando renderizar, Então exibe o texto padrão", () => {

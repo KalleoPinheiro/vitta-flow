@@ -679,7 +679,18 @@ describe("Feature: DTO de procedimento do catálogo", () => {
       priceCents: 12000,
       durationMinutes: 30,
       active: true,
+      kitItemCount: 0,
     });
+  });
+
+  it("Dado kitItemCount informado, Quando toProcedureDto, Então propaga a contagem (PROC-03)", () => {
+    const procedure = Procedure.create({
+      name: "Curativo",
+      priceCents: 8000,
+      durationMinutes: 20,
+    });
+
+    expect(toProcedureDto(procedure, 3).kitItemCount).toBe(3);
   });
 });
 

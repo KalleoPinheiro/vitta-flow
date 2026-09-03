@@ -39,6 +39,7 @@ const activeProcedure: ProcedureDto = {
   priceCents: 12000,
   durationMinutes: 60,
   active: true,
+  kitItemCount: 0,
 };
 
 const inactiveProcedure: ProcedureDto = {
@@ -47,6 +48,7 @@ const inactiveProcedure: ProcedureDto = {
   priceCents: 8000,
   durationMinutes: 30,
   active: false,
+  kitItemCount: 0,
 };
 
 const supplyFixture: SupplyDto = {
@@ -57,6 +59,7 @@ const supplyFixture: SupplyDto = {
   priceCents: 3000,
   stockQty: 20,
   isLowStock: false,
+  isOutOfStock: false,
   active: true,
 };
 
@@ -68,6 +71,7 @@ const secondSupplyFixture: SupplyDto = {
   priceCents: 500,
   stockQty: 40,
   isLowStock: false,
+  isOutOfStock: false,
   active: true,
 };
 
@@ -79,6 +83,7 @@ const inactiveSupplyFixture: SupplyDto = {
   priceCents: 500,
   stockQty: 0,
   isLowStock: false,
+  isOutOfStock: true,
   active: false,
 };
 
@@ -439,7 +444,7 @@ describe("Feature: Catálogo de procedimentos", () => {
       renderWithToast(<ProceduresPage />);
       await screen.findByText("Troca de bolsa de colostomia");
 
-      fireEvent.click(screen.getByText("Kit"));
+      fireEvent.click(screen.getByText("Sem kit"));
 
       expect(
         await screen.findByText("Nenhum item — a conclusão não baixa estoque."),
@@ -458,7 +463,7 @@ describe("Feature: Catálogo de procedimentos", () => {
       renderWithToast(<ProceduresPage />);
       await screen.findByText("Troca de bolsa de colostomia");
 
-      fireEvent.click(screen.getByText("Kit"));
+      fireEvent.click(screen.getByText("Sem kit"));
 
       expect(await screen.findByText("Kit de insumos — Troca de bolsa de colostomia")).toBeInTheDocument();
       expect(screen.getByDisplayValue("2")).toBeInTheDocument();
@@ -484,7 +489,7 @@ describe("Feature: Catálogo de procedimentos", () => {
       renderWithToast(<ProceduresPage />);
       await screen.findByText("Troca de bolsa de colostomia");
 
-      fireEvent.click(screen.getByText("Kit"));
+      fireEvent.click(screen.getByText("Sem kit"));
       await screen.findByText("Nenhum item — a conclusão não baixa estoque.");
 
       fireEvent.click(screen.getByText("+ Adicionar insumo"));
@@ -513,7 +518,7 @@ describe("Feature: Catálogo de procedimentos", () => {
       renderWithToast(<ProceduresPage />);
       await screen.findByText("Troca de bolsa de colostomia");
 
-      fireEvent.click(screen.getByText("Kit"));
+      fireEvent.click(screen.getByText("Sem kit"));
       await screen.findByText("Kit de insumos — Troca de bolsa de colostomia");
 
       fireEvent.click(screen.getByText("remover"));
@@ -541,7 +546,7 @@ describe("Feature: Catálogo de procedimentos", () => {
       renderWithToast(<ProceduresPage />);
       await screen.findByText("Troca de bolsa de colostomia");
 
-      fireEvent.click(screen.getByText("Kit"));
+      fireEvent.click(screen.getByText("Sem kit"));
       await screen.findByText("Kit de insumos — Troca de bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Salvar kit"));
@@ -567,7 +572,7 @@ describe("Feature: Catálogo de procedimentos", () => {
       renderWithToast(<ProceduresPage />);
       await screen.findByText("Troca de bolsa de colostomia");
 
-      fireEvent.click(screen.getByText("Kit"));
+      fireEvent.click(screen.getByText("Sem kit"));
       await screen.findByText("Kit de insumos — Troca de bolsa de colostomia");
 
       fireEvent.click(screen.getByText("Salvar kit"));
@@ -587,7 +592,7 @@ describe("Feature: Catálogo de procedimentos", () => {
       renderWithToast(<ProceduresPage />);
       await screen.findByText("Troca de bolsa de colostomia");
 
-      fireEvent.click(screen.getByText("Kit"));
+      fireEvent.click(screen.getByText("Sem kit"));
       await screen.findByText("Kit de insumos — Troca de bolsa de colostomia");
 
       expect(
@@ -607,7 +612,7 @@ describe("Feature: Catálogo de procedimentos", () => {
       renderWithToast(<ProceduresPage />);
       await screen.findByText("Troca de bolsa de colostomia");
 
-      fireEvent.click(screen.getByText("Kit"));
+      fireEvent.click(screen.getByText("Sem kit"));
       await screen.findByText("Kit de insumos — Troca de bolsa de colostomia");
 
       expect(await screen.findByText("sup-removido")).toBeInTheDocument();
@@ -628,7 +633,7 @@ describe("Feature: Catálogo de procedimentos", () => {
       renderWithToast(<ProceduresPage />);
       await screen.findByText("Troca de bolsa de colostomia");
 
-      fireEvent.click(screen.getByText("Kit"));
+      fireEvent.click(screen.getByText("Sem kit"));
       await screen.findByText("Kit de insumos — Troca de bolsa de colostomia");
 
       const selects = screen.getAllByRole("combobox") as HTMLSelectElement[];
@@ -654,7 +659,7 @@ describe("Feature: Catálogo de procedimentos", () => {
       renderWithToast(<ProceduresPage />);
       await screen.findByText("Troca de bolsa de colostomia");
 
-      fireEvent.click(screen.getByText("Kit"));
+      fireEvent.click(screen.getByText("Sem kit"));
       await screen.findByText("Kit de insumos — Troca de bolsa de colostomia");
 
       const quantityInputs = screen.getAllByDisplayValue(/^[0-9]+$/) as HTMLInputElement[];
@@ -665,16 +670,14 @@ describe("Feature: Catálogo de procedimentos", () => {
       expect(quantityInputs[1].value).toBe("3");
     });
 
-    it("Dado quantidade vazia ao salvar o kit, Quando confirmado, Então envia quantidade padrão 1", async () => {
-      let sentBody: string | undefined;
-      mockFetch(
+    it("Dado quantidade vazia ao salvar o kit, Quando confirmado, Então bloqueia o envio com erro inline (PROC-04)", async () => {
+      const fetchMock = mockFetch(
         buildRouter({
           procedures: [activeProcedure],
           supplies: [supplyFixture],
           kitItems: [{ supplyId: supplyFixture.id, quantity: 2 }],
           patchOrPost: ({ url, init }) => {
             if (url === "/api/procedures/proc-1/kit" && init?.method === "PUT") {
-              sentBody = init.body as string;
               return jsonResponse({});
             }
             return null;
@@ -685,17 +688,79 @@ describe("Feature: Catálogo de procedimentos", () => {
       renderWithToast(<ProceduresPage />);
       await screen.findByText("Troca de bolsa de colostomia");
 
-      fireEvent.click(screen.getByText("Kit"));
+      fireEvent.click(screen.getByText("Sem kit"));
       await screen.findByText("Kit de insumos — Troca de bolsa de colostomia");
 
       const quantityInput = screen.getByDisplayValue("2");
       fireEvent.change(quantityInput, { target: { value: "" } });
+      const callsBeforeSave = fetchMock.mock.calls.length;
       fireEvent.click(screen.getByText("Salvar kit"));
 
-      await waitFor(() => expect(sentBody).toBeDefined());
-      expect(JSON.parse(sentBody as string)).toEqual({
-        items: [{ supplyId: supplyFixture.id, quantity: 1 }],
+      expect(
+        await screen.findByText("Quantidade deve ser um número inteiro maior que zero em todos os itens"),
+      ).toBeInTheDocument();
+      expect(fetchMock.mock.calls.length).toBe(callsBeforeSave);
+    });
+
+    it("Dado insumo já escolhido em outra linha do kit, Quando abrir o seletor da 2ª linha, Então a opção não aparece (PROC-04)", async () => {
+      mockFetch(
+        buildRouter({
+          procedures: [activeProcedure],
+          supplies: [supplyFixture, secondSupplyFixture],
+          kitItems: [{ supplyId: supplyFixture.id, quantity: 2 }],
+        }),
+      );
+
+      renderWithToast(<ProceduresPage />);
+      await screen.findByText("Troca de bolsa de colostomia");
+
+      fireEvent.click(screen.getByText("Sem kit"));
+      await screen.findByText("Kit de insumos — Troca de bolsa de colostomia");
+      fireEvent.click(screen.getByText("+ Adicionar insumo"));
+
+      const selects = screen.getAllByRole("combobox") as HTMLSelectElement[];
+      const secondRowOptions = Array.from(selects[1].options).map((o) => o.value);
+      expect(secondRowOptions).not.toContain(supplyFixture.id);
+      expect(secondRowOptions).toContain(secondSupplyFixture.id);
+    });
+  });
+
+  describe("Cenário: busca e contagem", () => {
+    it("Dado 2 procedimentos, Quando digitar parte de um nome, Então filtra a lista e atualiza a contagem (PROC-05)", async () => {
+      mockFetch(buildRouter({ procedures: [activeProcedure, inactiveProcedure] }));
+
+      renderWithToast(<ProceduresPage />);
+      await screen.findByText("Troca de bolsa de colostomia");
+      expect(screen.getByText("2 procedimentos")).toBeInTheDocument();
+
+      fireEvent.change(screen.getByPlaceholderText("Buscar por nome…"), {
+        target: { value: "Curativo" },
       });
+
+      expect(screen.queryByText("Troca de bolsa de colostomia")).not.toBeInTheDocument();
+      expect(screen.getByText("Curativo simples")).toBeInTheDocument();
+      expect(screen.getByText("1 procedimento")).toBeInTheDocument();
+    });
+  });
+
+  describe("Cenário: kit deixa de ser opaco", () => {
+    it("Dado procedimento com kitItemCount > 0, Quando renderizar, Então o botão mostra a contagem (PROC-03)", async () => {
+      mockFetch(buildRouter({ procedures: [{ ...activeProcedure, kitItemCount: 3 }] }));
+
+      renderWithToast(<ProceduresPage />);
+
+      expect(await screen.findByText("Kit (3)")).toBeInTheDocument();
+    });
+  });
+
+  describe("Cenário: alvo de toque e hierarquia", () => {
+    it("Dado a linha do procedimento, Quando renderizar as ações, Então usam Button ghost/sm (PROC-02)", async () => {
+      mockFetch(buildRouter({ procedures: [activeProcedure] }));
+
+      renderWithToast(<ProceduresPage />);
+      await screen.findByText("Troca de bolsa de colostomia");
+
+      expect(screen.getByText("Editar")).toHaveClass("sv-btn--ghost", "sv-btn--sm");
     });
   });
 });

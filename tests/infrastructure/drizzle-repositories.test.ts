@@ -629,6 +629,22 @@ describe("Feature: Persistência PostgreSQL (Drizzle)", () => {
       await procedureKitRepo.setKit(procedure.id, []);
       expect(await procedureKitRepo.getKit(procedure.id)).toEqual([]);
     });
+
+    it("Dado kits de múltiplos procedimentos, Quando countByProcedure, Então agrupa a contagem por procedimento (PROC-03)", async () => {
+      const withKit = Procedure.create({ name: "Com kit", priceCents: 5000, durationMinutes: 15 });
+      const withoutKit = Procedure.create({ name: "Sem kit", priceCents: 3000, durationMinutes: 10 });
+      await procedureRepo.save(withKit);
+      await procedureRepo.save(withoutKit);
+
+      await procedureKitRepo.setKit(withKit.id, [
+        { supplyId: "supply-1", quantity: 2 },
+        { supplyId: "supply-2", quantity: 1 },
+      ]);
+
+      const counts = await procedureKitRepo.countByProcedure();
+      expect(counts[withKit.id]).toBe(2);
+      expect(counts[withoutKit.id]).toBeUndefined();
+    });
   });
 
   describe("Cenário: contas de acesso da equipe", () => {

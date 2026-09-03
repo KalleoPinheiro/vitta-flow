@@ -83,6 +83,7 @@ const procedureFixture: ProcedureDto = {
   priceCents: 12000,
   durationMinutes: 60,
   active: true,
+  kitItemCount: 0,
 };
 
 const defaultRouter =

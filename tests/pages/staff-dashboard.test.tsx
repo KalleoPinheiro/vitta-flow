@@ -55,6 +55,7 @@ const supplyFixture: SupplyDto = {
   priceCents: 3000,
   stockQty: 2,
   isLowStock: true,
+  isOutOfStock: false,
   active: true,
 };
 

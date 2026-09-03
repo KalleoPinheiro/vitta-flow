@@ -211,8 +211,13 @@ ausência de dado), cor semântica coerente no histórico, e confirmação antes
 
 **Acceptance Criteria**:
 
-1. WHEN `stockQty === 1` THEN a célula de estoque SHALL mostrar a unidade no singular (quando
-   aplicável — sem tentar pluralizar `unit` livre, só o rótulo de contagem quando for "unidade")
+1. **REVERTIDO na implementação**: a ideia original (pluralizar "unidade"/"unidades" quando
+   `unit === "un"`) quebrava a convenção existente de mostrar o `unit` cru salvo pelo usuário
+   ("un", "pct" etc.) — um teste pré-existente (`staff-materiais.test.tsx`, "2 un") documentava
+   esse comportamento como intencional. `unit` é texto livre (ver Out of Scope: vocabulário
+   fechado fora de escopo); pluralizar só a abreviação "un" sem tocar as outras seria inconsistente
+   e potencialmente confuso. Mantido `{stockQty} {unit}` sem alteração — achado não corrigido
+   nesta rodada, nenhuma correção segura identificada sem decisão de produto sobre o campo `unit`
 2. WHEN `/api/supplies/insights` falha THEN a coluna "Previsão" SHALL mostrar um indicador de erro
    (ex.: ícone + tooltip "Erro ao calcular previsão"), distinto de "—" (sem consumo)
 3. WHEN o histórico renderiza uma saída (`type: "out"`) THEN a cor SHALL ser neutra (`bg-surface-2

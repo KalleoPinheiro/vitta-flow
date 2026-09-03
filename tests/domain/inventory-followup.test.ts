@@ -66,6 +66,19 @@ describe("Feature: Insumo com controle de estoque", () => {
   it("Dado insumo, Quando desativar, Então isActive false", () => {
     expect(bolsa().deactivate().isActive).toBe(false);
   });
+
+  it("Dado insumo recém-criado sem mínimo configurado (minQty 0), Quando verificar isLowStock, Então false (MAT-02)", () => {
+    const supply = Supply.create({ name: "Insumo novo", unit: "un", minQty: 0, priceCents: 100 });
+
+    expect(supply.isLowStock).toBe(false);
+  });
+
+  it("Dado insumo zerado com mínimo configurado, Quando verificar isOutOfStock, Então true e mais grave que isLowStock isolado (MAT-01)", () => {
+    const supply = bolsa();
+
+    expect(supply.isOutOfStock).toBe(true);
+    expect(supply.registerEntry(5).isOutOfStock).toBe(false);
+  });
 });
 
 describe("Feature: Movimentação de estoque auditável", () => {

@@ -19,11 +19,14 @@ export async function GET(request: NextRequest) {
   if (!guard.ok) return guard.response;
 
   return handleRequest(async () => {
-    const { procedures } = await getRepositories({
+    const { procedures, procedureKits } = await getRepositories({
       clinicId: guard.session?.clinicId ?? null,
     });
-    const result = await procedures.findAll();
-    return result.map(toProcedureDto);
+    const [result, kitCounts] = await Promise.all([
+      procedures.findAll(),
+      procedureKits.countByProcedure(),
+    ]);
+    return result.map((procedure) => toProcedureDto(procedure, kitCounts[procedure.id] ?? 0));
   });
 }
 

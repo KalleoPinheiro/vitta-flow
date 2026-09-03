@@ -478,6 +478,7 @@ describe("Feature: DTO de insumo", () => {
       priceCents: 3000,
       stockQty: 10,
       isLowStock: false,
+      isOutOfStock: false,
       active: true,
     });
   });
@@ -491,6 +492,30 @@ describe("Feature: DTO de insumo", () => {
     });
 
     expect(toSupplyDto(supply).isLowStock).toBe(true);
+  });
+
+  it("Dado insumo recém-criado sem mínimo configurado (minQty 0), Quando toSupplyDto, Então isLowStock é false (MAT-02)", () => {
+    const supply = Supply.create({
+      name: "Insumo novo",
+      unit: "un",
+      minQty: 0,
+      priceCents: 100,
+    });
+
+    expect(toSupplyDto(supply).isLowStock).toBe(false);
+    expect(toSupplyDto(supply).isOutOfStock).toBe(true);
+  });
+
+  it("Dado insumo com mínimo configurado e estoque zerado, Quando toSupplyDto, Então isOutOfStock é true (MAT-01)", () => {
+    const supply = Supply.create({
+      name: "Bolsa de colostomia",
+      unit: "un",
+      minQty: 5,
+      priceCents: 3000,
+    });
+
+    expect(toSupplyDto(supply).isLowStock).toBe(true);
+    expect(toSupplyDto(supply).isOutOfStock).toBe(true);
   });
 });
 

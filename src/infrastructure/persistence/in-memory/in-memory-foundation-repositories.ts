@@ -88,4 +88,12 @@ export class InMemoryProcedureKitRepository implements ProcedureKitRepository {
   async setKit(procedureId: string, items: ProcedureKitItem[]): Promise<void> {
     this.kits.set(procedureId, validateKitItems(items));
   }
+
+  async countByProcedure(): Promise<Record<string, number>> {
+    return Object.fromEntries(
+      [...this.kits.entries()]
+        .filter(([, items]) => items.length > 0)
+        .map(([procedureId, items]) => [procedureId, items.length]),
+    );
+  }
 }

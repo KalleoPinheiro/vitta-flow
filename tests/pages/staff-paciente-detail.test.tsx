@@ -15,6 +15,18 @@ import PatientRecordPage from "@/app/(staff)/pacientes/[id]/page";
 import type { PackageDto } from "@/app/(staff)/pacientes/[id]/packages-section";
 import { renderWithToast } from "@/../tests/support/render-with-toast";
 
+const { routerMock, searchParamsRef } = vi.hoisted(() => {
+  return {
+    routerMock: { push: vi.fn(), replace: vi.fn(), refresh: vi.fn() },
+    searchParamsRef: { current: new URLSearchParams() },
+  };
+});
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => routerMock,
+  useSearchParams: () => searchParamsRef.current,
+}));
+
 interface FetchCall {
   url: string;
   init?: RequestInit;
@@ -47,6 +59,8 @@ const mockFetch = (
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  searchParamsRef.current = new URLSearchParams();
+  routerMock.replace.mockClear();
 });
 
 async function renderDetail(id = "pac-1") {
@@ -362,6 +376,48 @@ describe("Feature: PatientRecordPage", () => {
       fireEvent.mouseDown(screen.getByText("Evoluções (SOAP)"));
       expect(await screen.findByText("Carregando…")).toBeInTheDocument();
       expect(screen.queryByText("Nenhuma evolução registrada.")).not.toBeInTheDocument();
+    });
+
+    it("Dado ?aba=evolucoes na URL, Quando montar a página, Então abre direto na aba de evoluções (PRONT-04)", async () => {
+      searchParamsRef.current = new URLSearchParams("aba=evolucoes");
+      mockFetch(buildRouter({ evolutions: [evolutionFixture] }));
+
+      await renderDetail();
+
+      expect(await screen.findByText(/Dor leve na região/)).toBeInTheDocument();
+    });
+
+    it("Dado ?aba= com valor inválido, Quando montar a página, Então cai no padrão Anamnese (PRONT-04)", async () => {
+      searchParamsRef.current = new URLSearchParams("aba=nao-existe");
+      mockFetch(buildRouter({ anamnesis: anamnesisFixture }));
+
+      await renderDetail();
+
+      expect(await screen.findByText("Comorbidades")).toBeInTheDocument();
+    });
+
+    it("Dado troca de aba, Quando acionada, Então atualiza a URL via router.replace (PRONT-04)", async () => {
+      mockFetch(buildRouter({ conditions: [woundConditionFixture] }));
+
+      await renderDetail();
+      await screen.findByText("Maria Souza");
+      fireEvent.mouseDown(screen.getByText(/Estomias e feridas/));
+
+      await waitFor(() => {
+        expect(routerMock.replace).toHaveBeenCalledWith(
+          "/pacientes/pac-1?aba=condicoes",
+          { scroll: false },
+        );
+      });
+    });
+
+    it("Dado a lista de abas, Quando renderizar, Então 'Pacotes' fica separada das clínicas (PRONT-09)", async () => {
+      mockFetch(buildRouter());
+
+      await renderDetail();
+      await screen.findByText("Maria Souza");
+
+      expect(screen.getByText("Pacotes")).toHaveClass("ml-auto");
     });
   });
 
@@ -802,6 +858,66 @@ describe("Feature: PatientRecordPage", () => {
 
       fireEvent.click(screen.getByText("Ver avaliações"));
       expect(await screen.findByText("DET 5")).toBeInTheDocument();
+    });
+
+    it("Dado avaliação com dor alta (>=7), Quando visualizar, Então a célula de dor ganha destaque (PRONT-05)", async () => {
+      const highPain = { ...pushAssessmentFixture, painScale: 9 };
+      mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          assessmentsByCondition: { "cond-wound": [highPain] },
+        }),
+      );
+
+      await openConditionsTab();
+      await screen.findByText("Úlcera venosa perna E");
+      fireEvent.click(screen.getByText("Ver avaliações"));
+
+      const cell = await screen.findByText("9/10");
+      expect(cell).toHaveClass("text-danger", "font-semibold");
+    });
+
+    it("Dado avaliação com dor baixa, Quando visualizar, Então a célula de dor NÃO tem destaque", async () => {
+      mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          assessmentsByCondition: { "cond-wound": [pushAssessmentFixture] },
+        }),
+      );
+
+      await openConditionsTab();
+      await screen.findByText("Úlcera venosa perna E");
+      fireEvent.click(screen.getByText("Ver avaliações"));
+
+      const cell = await screen.findByText("3/10");
+      expect(cell).not.toHaveClass("text-danger");
+    });
+
+    it("Dado avaliação com complicações registradas, Quando visualizar, Então a célula de complicações ganha destaque (PRONT-05)", async () => {
+      mockFetch(
+        buildRouter({
+          conditions: [stomaConditionFixture],
+          assessmentsByCondition: { "cond-stoma": [complicationsAssessmentFixture] },
+        }),
+      );
+
+      await openConditionsTab();
+      await screen.findByText("Colostomia terminal QIE");
+      fireEvent.click(screen.getByText("Ver avaliações"));
+
+      const cell = await screen.findByText(/Dermatite; Sangramento/);
+      expect(cell).toHaveClass("text-danger", "font-semibold");
+    });
+
+    it("Dado condições ativas e resolvidas, Quando renderizar o rótulo da aba, Então conta só as ativas (PRONT-01)", async () => {
+      mockFetch(
+        buildRouter({ conditions: [woundConditionFixture, resolvedConditionFixture] }),
+      );
+
+      await renderDetail();
+      await screen.findByText("Maria Souza");
+
+      expect(screen.getByText("Estomias e feridas (1)")).toBeInTheDocument();
     });
 
     it("Dado clique em marcar resolvida, Quando a chamada é bem-sucedida, Então envia PATCH com action resolve", async () => {
@@ -1343,6 +1459,26 @@ describe("Feature: PatientRecordPage", () => {
       ).toBeInTheDocument();
     });
 
+    it("Dado fotos fora de ordem de chegada, Quando renderizar a tira, Então corre na mesma direção da comparação (mais antiga primeiro) (PRONT-03)", async () => {
+      mockFetch(
+        buildRouter({
+          conditions: [woundConditionFixture],
+          // API devolve fora de ordem cronológica de propósito — a tira precisa
+          // ordenar por conta própria, não confiar na ordem de chegada.
+          photosByCondition: { "cond-wound": [laterPhotoFixture, photoFixture] },
+        }),
+      );
+
+      await expandWoundCondition();
+      await screen.findByText(`Primeira — ${formatDate(photoFixture.createdAt)}`);
+
+      const stripAlts = Array.from(document.querySelectorAll("figure img"))
+        .map((img) => img.getAttribute("alt"))
+        .filter((alt): alt is string => Boolean(alt?.startsWith("Foto de")));
+      expect(stripAlts[0]).toBe(`Foto de ${formatDate(photoFixture.createdAt)}`);
+      expect(stripAlts[1]).toBe(`Foto de ${formatDate(laterPhotoFixture.createdAt)}`);
+    });
+
     it("Dado upload de foto válida, Quando enviado, Então chama POST multipart e recarrega a lista", async () => {
       const fetchMock = mockFetch(
         buildRouter({
@@ -1625,6 +1761,61 @@ describe("Feature: PatientRecordPage", () => {
       await openEvolutionsTab();
 
       expect(await screen.findByText("Nenhuma evolução registrada.")).toBeInTheDocument();
+    });
+
+    it("Dado evolução com só o campo Plano preenchido, Quando listar, Então os 4 rótulos aparecem e os vazios mostram '— não preenchido —' (PRONT-02)", async () => {
+      const partial: EvolutionNoteDto = {
+        ...evolutionFixture,
+        id: "evo-partial",
+        subjective: "",
+        objective: "",
+        assessment: "",
+      };
+      mockFetch(buildRouter({ evolutions: [partial] }));
+
+      await openEvolutionsTab();
+
+      expect(await screen.findByText("S — Subjetivo")).toBeInTheDocument();
+      expect(screen.getByText("O — Objetivo")).toBeInTheDocument();
+      expect(screen.getByText("A — Avaliação")).toBeInTheDocument();
+      expect(screen.getByText("P — Plano")).toBeInTheDocument();
+      expect(screen.getAllByText("— não preenchido —")).toHaveLength(3);
+      expect(screen.getByText("Manter curativo atual")).toBeInTheDocument();
+    });
+
+    it("Dado 15 evoluções, Quando abrir a aba, Então mostra 10 e o botão 'Ver mais'; clicar revela as 15 (PRONT-08)", async () => {
+      const many: EvolutionNoteDto[] = Array.from({ length: 15 }, (_, i) => ({
+        ...evolutionFixture,
+        id: `evo-${i}`,
+        objective: `Nota número ${i}`,
+      }));
+      mockFetch(buildRouter({ evolutions: many }));
+
+      await openEvolutionsTab();
+      await screen.findByText("Nota número 0");
+
+      expect(screen.queryByText("Nota número 10")).not.toBeInTheDocument();
+      expect(screen.getByText("Ver mais (5)")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("Ver mais (5)"));
+
+      expect(screen.getByText("Nota número 14")).toBeInTheDocument();
+      expect(screen.queryByText(/Ver mais/)).not.toBeInTheDocument();
+    });
+
+    it("Dado 10 evoluções (limite exato), Quando abrir a aba, Então mostra todas sem o botão 'Ver mais' (PRONT-08)", async () => {
+      const ten: EvolutionNoteDto[] = Array.from({ length: 10 }, (_, i) => ({
+        ...evolutionFixture,
+        id: `evo-${i}`,
+        objective: `Nota número ${i}`,
+      }));
+      mockFetch(buildRouter({ evolutions: ten }));
+
+      await openEvolutionsTab();
+      await screen.findByText("Nota número 0");
+
+      expect(screen.getByText("Nota número 9")).toBeInTheDocument();
+      expect(screen.queryByText(/Ver mais/)).not.toBeInTheDocument();
     });
 
     it("Dado erro 500 ao carregar evoluções, Quando abrir a aba, Então exibe alerta de erro, não mensagem de vazio", async () => {

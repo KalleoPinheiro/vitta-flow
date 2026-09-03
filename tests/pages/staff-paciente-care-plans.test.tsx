@@ -15,6 +15,18 @@ import type { InterventionPriority } from "@/domain/clinical/care-plan-intervent
 import PatientRecordPage from "@/app/(staff)/pacientes/[id]/page";
 import { renderWithToast } from "@/../tests/support/render-with-toast";
 
+const { routerMock, searchParamsRef } = vi.hoisted(() => {
+  return {
+    routerMock: { push: vi.fn(), replace: vi.fn(), refresh: vi.fn() },
+    searchParamsRef: { current: new URLSearchParams() },
+  };
+});
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => routerMock,
+  useSearchParams: () => searchParamsRef.current,
+}));
+
 interface FetchCall {
   url: string;
   init?: RequestInit;
@@ -39,6 +51,8 @@ const mockFetch = (router: (call: FetchCall) => MockedResponse | Promise<MockedR
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  searchParamsRef.current = new URLSearchParams();
+  routerMock.replace.mockClear();
 });
 
 async function renderDetail(id = "pac-1") {

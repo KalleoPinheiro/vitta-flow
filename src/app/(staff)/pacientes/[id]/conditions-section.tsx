@@ -206,12 +206,12 @@ export function ConditionsSection({
                                 <TableCell className="py-1.5 pr-3">
                                   {a.exudate ? EXUDATE_LABELS[a.exudate] : "—"}
                                 </TableCell>
-                                <TableCell className="py-1.5 pr-3">
+                                <TableCell className={painCellClass(a.painScale)}>
                                   {a.painScale != null ? `${a.painScale}/10` : "—"}
                                 </TableCell>
                                 <TableCell className="py-1.5 pr-3 font-medium">{scoreLabel(a)}</TableCell>
                                 <TableCell className="py-1.5 pr-3">{a.skinCondition ?? "—"}</TableCell>
-                                <TableCell className="py-1.5">
+                                <TableCell className={complicationsCellClass(a)}>
                                   {complicationsCellText(a)}
                                 </TableCell>
                               </TableRow>
@@ -355,6 +355,20 @@ function ConditionForm({ patientId, onSaved }: { patientId: string; onSaved: () 
   );
 }
 
+const HIGH_PAIN_THRESHOLD = 7;
+const ABNORMAL_CELL_CLASS = "font-semibold text-danger";
+
+/** Dor alta ganha destaque visual (PRONT-05) — mesmo peso de "área 4mm²" hoje. */
+function painCellClass(painScale: number | null): string {
+  const abnormal = painScale != null && painScale >= HIGH_PAIN_THRESHOLD;
+  return `py-1.5 pr-3 ${abnormal ? ABNORMAL_CELL_CLASS : ""}`;
+}
+
+function complicationsCellClass(assessment: AssessmentDto): string {
+  const abnormal = complicationsCellText(assessment) !== "—";
+  return `py-1.5 ${abnormal ? ABNORMAL_CELL_CLASS : ""}`;
+}
+
 /** Score clínico validado da avaliação: PUSH (ferida) ou DET (estomia). */
 function scoreLabel(assessment: AssessmentDto): string {
   if (assessment.pushScore != null) return `PUSH ${assessment.pushScore}`;
@@ -485,7 +499,7 @@ function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSav
       {error && <ErrorAlert message={error} />}
       {isWound && (
         <>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <label className="text-sm font-medium">
               Comprimento (mm)
               <Input type="number" min="0" value={values.lengthMm} onChange={(e) => set("lengthMm")(e.target.value)} className="mt-1" />
@@ -499,7 +513,7 @@ function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSav
               <Input type="number" min="0" value={values.depthMm} onChange={(e) => set("depthMm")(e.target.value)} className="mt-1" />
             </label>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="text-sm font-medium">
               Tecido predominante
               <NativeSelect value={values.tissueType} onChange={(e) => set("tissueType")(e.target.value)} className="mt-1">
@@ -532,7 +546,7 @@ function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSav
             <legend className="px-1 text-xs font-semibold uppercase text-ink-3">
               Escala DET (0–15) — área 0–3 · severidade 0–2
             </legend>
-            <div className="grid grid-cols-3 gap-3 text-sm">
+            <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
               <DetDomainInputs
                 label="Descoloração"
                 area={values.detDiscolorationArea}

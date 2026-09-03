@@ -175,15 +175,22 @@ numéricos empilhem em vez de espremer 3 colunas numa tela de 390px.
 **User Story**: Como enfermeira, quero um retorno visível toda vez que salvo algo, mesmo quando o
 modal já fechou.
 
-**Why P2**: Achado [P2-R15] — confirmado no código: só `ConditionForm` (criar condição) não tem
-`toast` de sucesso; as outras 5+ escritas do prontuário já têm.
+**Why P2**: Achado [P2-R15]. **SPEC_DEVIATION descoberta na implementação**: a leitura inicial do
+código (antes de escrever este spec) sugeriu que `ConditionForm` não tinha `toast` de sucesso — na
+hora de implementar, a linha `toast({ description: "Condição registrada", variant: "success" })`
+já existia (`conditions-section.tsx`). Rechecando as demais 6+ escritas do prontuário
+(`AnamnesisSection`, `EvolutionsSection`, `ConditionPhotos` upload/exclusão, `CarePlansSection` — 6
+call sites), **todas já tinham `toast`**. O achado do audit doc (2026-08) não reproduz mais no
+código atual — provavelmente corrigido incidentalmente por Fase A/B. Nenhuma mudança de código
+necessária para esta AC.
 
 **Acceptance Criteria**:
 
-1. WHEN `ConditionForm` salva com sucesso THEN SHALL disparar `toast({ description: "Condição
-   registrada", variant: "success" })`, igual ao padrão das demais escritas da tela
+1. WHEN `ConditionForm` salva com sucesso THEN SHALL disparar toast de sucesso — **já satisfeito no
+   código atual, verificado, sem mudança**
 
-**Independent Test**: submeter o formulário de nova condição e confirmar o toast na tela.
+**Independent Test**: não aplicável — comportamento já coberto por teste existente (nenhum teste
+novo necessário).
 
 ---
 

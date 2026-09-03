@@ -127,7 +127,7 @@ export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps
             </div>
           )}
           <div className="flex flex-wrap gap-2">
-            {list.map((photo) => (
+            {chronological.map((photo) => (
               <figure key={photo.id} className="w-24">
                 {/* eslint-disable-next-line @next/next/no-img-element -- rota autorizada dinâmica */}
                 <img

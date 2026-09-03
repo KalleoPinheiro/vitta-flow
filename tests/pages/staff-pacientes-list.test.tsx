@@ -95,7 +95,7 @@ describe("Feature: PatientsPage", () => {
 
       renderWithToast(<PatientsPage />);
 
-      expect(await screen.findByText("Nenhum paciente encontrado.")).toBeInTheDocument();
+      expect(await screen.findByText("Nenhum paciente cadastrado.")).toBeInTheDocument();
     });
 
     it("Dado pacientes cadastrados, Quando a página carrega, Então lista nome, contato, nascimento e situação", async () => {
@@ -110,6 +110,47 @@ describe("Feature: PatientsPage", () => {
       expect(screen.getByText("Ativo")).toBeInTheDocument();
       expect(screen.getByText("João Pereira")).toBeInTheDocument();
       expect(screen.getByText("Inativo")).toBeInTheDocument();
+    });
+
+    it("Dado paciente inativo, Quando renderizar a linha, Então usa fundo tingido em vez de opacity-50 (PRONT-12)", async () => {
+      mockFetch(buildRouter({ patients: [inactivePatientFixture] }));
+
+      renderWithToast(<PatientsPage />);
+      const row = (await screen.findByText("João Pereira")).closest("tr");
+
+      expect(row).toHaveClass("bg-surface-2/60");
+      expect(row).not.toHaveClass("opacity-50");
+    });
+
+    it("Dado a linha do paciente, Quando renderizar as ações, Então 'Prontuário' tem mais peso e as demais são Button ghost/sm (PRONT-11)", async () => {
+      mockFetch(buildRouter({ patients: [patientFixture] }));
+
+      renderWithToast(<PatientsPage />);
+      await screen.findByText("Maria Souza");
+
+      expect(screen.getByText("Prontuário")).toHaveClass("font-semibold");
+      const editButton = screen.getByText("Editar");
+      expect(editButton).toHaveClass("sv-btn--ghost", "sv-btn--sm");
+    });
+
+    it("Dado busca sem resultado, Quando renderizar o vazio, Então a mensagem cita o termo buscado (PRONT-13)", async () => {
+      const fetchMock = mockFetch(buildRouter({ patients: [] }));
+
+      renderWithToast(<PatientsPage />);
+      await screen.findByText("Nenhum paciente cadastrado.");
+
+      fireEvent.change(screen.getByPlaceholderText("Buscar por nome, email ou telefone…"), {
+        target: { value: "Zzz" },
+      });
+
+      await waitFor(() => {
+        expect(
+          fetchMock.mock.calls.some(([url]) => String(url).includes("search=Zzz")),
+        ).toBe(true);
+      });
+      expect(
+        await screen.findByText('Nenhum paciente encontrado para "Zzz".'),
+      ).toBeInTheDocument();
     });
   });
 
@@ -130,6 +171,38 @@ describe("Feature: PatientsPage", () => {
         ).toBe(true);
       });
     });
+
+    it("Dado busca disparando nova requisição, Quando a resposta ainda não chegou, Então a tabela fica marcada como obsoleta (aria-busy) sem sumir (PRONT-10)", async () => {
+      let callCount = 0;
+      mockFetch(
+        buildRouter({
+          patients: [patientFixture],
+          extra: ({ url, init }) => {
+            const method = init?.method ?? "GET";
+            if (url.startsWith("/api/patients") && method === "GET") {
+              callCount += 1;
+              // 1ª chamada (montagem) resolve normal; a 2ª (busca) nunca resolve —
+              // só precisamos observar o estado "em voo", não o resultado final.
+              if (callCount === 1) return undefined;
+              return { ok: true, json: () => new Promise<never>(() => {}) };
+            }
+            return undefined;
+          },
+        }),
+      );
+
+      renderWithToast(<PatientsPage />);
+      await screen.findByText("Maria Souza");
+
+      fireEvent.change(screen.getByPlaceholderText("Buscar por nome, email ou telefone…"), {
+        target: { value: "Maria" },
+      });
+
+      await waitFor(() => {
+        const container = screen.getByText("Maria Souza").closest('[aria-busy="true"]');
+        expect(container).not.toBeNull();
+      });
+    });
   });
 
   describe("Cenário: criação via modal", () => {
@@ -148,7 +221,7 @@ describe("Feature: PatientsPage", () => {
       );
 
       renderWithToast(<PatientsPage />);
-      await screen.findByText("Nenhum paciente encontrado.");
+      await screen.findByText("Nenhum paciente cadastrado.");
 
       fireEvent.click(screen.getByText("+ Novo paciente"));
       expect(screen.getByText("Novo paciente")).toBeInTheDocument();

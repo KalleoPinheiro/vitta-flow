@@ -32,13 +32,17 @@ const SEARCH_DEBOUNCE_MS = 300;
 
 interface PatientsTableProps {
   patients: PatientDto[];
+  isStale: boolean;
   onEdit: (patient: PatientDto) => void;
   onToggleActive: (patient: PatientDto) => void;
 }
 
-function PatientsTable({ patients, onEdit, onToggleActive }: PatientsTableProps) {
+function PatientsTable({ patients, isStale, onEdit, onToggleActive }: PatientsTableProps) {
   return (
-    <div className="overflow-x-auto">
+    <div
+      className={`overflow-x-auto ${isStale ? "pointer-events-none opacity-60" : ""}`}
+      aria-busy={isStale || undefined}
+    >
       <Table className="w-full text-left text-sm">
         <TableHeader>
           <TableRow>
@@ -51,7 +55,7 @@ function PatientsTable({ patients, onEdit, onToggleActive }: PatientsTableProps)
         </TableHeader>
         <TableBody>
           {patients.map((patient) => (
-            <TableRow key={patient.id} className={patient.active ? "" : "opacity-50"}>
+            <TableRow key={patient.id} className={patient.active ? "" : "bg-surface-2/60"}>
               <TableCell className="px-4 py-3 font-medium">{patient.fullName}</TableCell>
               <TableCell className="px-4 py-3 text-ink-2">
                 <div>{patient.email}</div>
@@ -69,22 +73,17 @@ function PatientsTable({ patients, onEdit, onToggleActive }: PatientsTableProps)
               <TableCell className="px-4 py-3 text-right">
                 <a
                   href={`/pacientes/${patient.id}`}
-                  className="mr-2 font-medium text-accent-ink hover:underline"
+                  className="mr-2 font-semibold text-accent-ink hover:underline"
                 >
                   Prontuário
                 </a>
-                <Button
-                  type="button"
-                  onClick={() => onEdit(patient)}
-                  variant="link"
-                  className="h-auto p-0 mr-2 text-accent-ink"
-                >
+                <Button type="button" onClick={() => onEdit(patient)} variant="ghost" size="sm">
                   Editar
                 </Button>
                 {patient.active ? (
                   <ConfirmAction
                     trigger={
-                      <Button type="button" variant="link" className="h-auto p-0 text-ink-3">
+                      <Button type="button" variant="ghost" size="sm">
                         Desativar
                       </Button>
                     }
@@ -98,8 +97,8 @@ function PatientsTable({ patients, onEdit, onToggleActive }: PatientsTableProps)
                   <Button
                     type="button"
                     onClick={() => onToggleActive(patient)}
-                    variant="link"
-                    className="h-auto p-0 text-ink-3"
+                    variant="ghost"
+                    size="sm"
                   >
                     Reativar
                   </Button>
@@ -130,6 +129,7 @@ export default function PatientsPage() {
     items: patients,
     hasMore,
     error: loadError,
+    isLoading,
     refresh,
     loadMore,
   } = useCursorPagedQuery<PatientDto>(
@@ -137,6 +137,9 @@ export default function PatientsPage() {
     PAGE_SIZE,
   );
   const error = actionError ?? loadError;
+  const emptyMessage = debouncedSearch
+    ? `Nenhum paciente encontrado para "${debouncedSearch}".`
+    : "Nenhum paciente cadastrado.";
 
   const handleSubmit = async (values: PatientFormValues) => {
     const payload = {
@@ -219,10 +222,11 @@ export default function PatientsPage() {
       <Card>
         <PagedList
           items={patients}
-          emptyMessage="Nenhum paciente encontrado."
+          emptyMessage={emptyMessage}
           render={(list) => (
             <PatientsTable
               patients={list}
+              isStale={isLoading}
               onEdit={setEditing}
               onToggleActive={(patient) => void toggleActive(patient)}
             />

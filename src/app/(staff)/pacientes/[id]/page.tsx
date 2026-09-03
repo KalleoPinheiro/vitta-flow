@@ -2,6 +2,7 @@
 
 import { use, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import type {
   AnamnesisDto,
   CarePlanDto,
@@ -45,16 +46,25 @@ const TABS = [
 type TabKey = (typeof TABS)[number]["key"];
 type Tab = (typeof TABS)[number];
 
+const TAB_KEYS = TABS.map((t) => t.key);
+
+/** Só a chave válida — qualquer outro valor de `?aba=` cai no padrão "anamnese" (PRONT-04). */
+function resolveInitialTab(param: string | null): TabKey {
+  return TAB_KEYS.includes(param as TabKey) ? (param as TabKey) : "anamnese";
+}
+
 function tabLabel(
   tab: Tab,
   conditions: ConditionDto[],
   evolutions: EvolutionNoteDto[],
   carePlans: CarePlanDto[],
 ): string {
+  // Contador só de itens ativos pra condições/planos — evolução não tem
+  // estado ativo/resolvido, conta o total (PRONT-01).
   const counts: Partial<Record<TabKey, number>> = {
-    condicoes: conditions.length,
+    condicoes: conditions.filter((c) => c.status === "active").length,
     evolucoes: evolutions.length,
-    planoCuidados: carePlans.length,
+    planoCuidados: carePlans.filter((p) => p.status === "active").length,
   };
   const count = counts[tab.key] ?? 0;
   return count > 0 ? `${tab.label} (${count})` : tab.label;
@@ -144,7 +154,13 @@ function useDirtyTabGuard(tab: TabKey) {
 
 export default function PatientRecordPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const [tab, setTab] = useState<TabKey>("anamnese");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [tab, setTabState] = useState<TabKey>(() => resolveInitialTab(searchParams.get("aba")));
+  const setTab = (next: TabKey) => {
+    setTabState(next);
+    router.replace(`/pacientes/${id}?aba=${next}`, { scroll: false });
+  };
   const {
     pendingTab,
     setEvolutionsDirty,
@@ -199,7 +215,11 @@ export default function PatientRecordPage({ params }: { params: Promise<{ id: st
       >
         <TabsList aria-label="Seções do prontuário">
           {TABS.map((item) => (
-            <TabsTrigger key={item.key} value={item.key}>
+            <TabsTrigger
+              key={item.key}
+              value={item.key}
+              className={item.key === "pacotes" ? "ml-auto" : undefined}
+            >
               {tabLabel(item, conditions ?? [], evolutions ?? [], carePlans ?? [])}
             </TabsTrigger>
           ))}

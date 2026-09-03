@@ -11,6 +11,7 @@ import { CalendarGrid } from "./calendar-grid";
 import { AppointmentForm, type AppointmentFormValues } from "./appointment-form";
 import { AppointmentDetail } from "./appointment-detail";
 import { Alert, AlertDescription, Button, Icon, NativeSelect } from "@still-void/ui/react";
+import { DEFAULT_SCHEDULE_CONFIG, type ScheduleConfig } from "@/domain/scheduling/schedule-config";
 
 function ProfessionalFilter({
   professionals,
@@ -25,7 +26,7 @@ function ProfessionalFilter({
     return null;
   }
   return (
-    <NativeSelect value={value} onChange={(e) => onChange(e.target.value)}>
+    <NativeSelect value={value} onChange={(e) => onChange(e.target.value)} className="max-w-56">
       <option value="">Todos os profissionais</option>
       {professionals.map((professional) => (
         <option key={professional.id} value={professional.id}>
@@ -39,15 +40,25 @@ function ProfessionalFilter({
 function AgendaNotices({
   error,
   seriesNotice,
+  onDismissSeriesNotice,
 }: {
   error: string | null;
   seriesNotice: { text: string; variant: "success" | "warning" } | null;
+  onDismissSeriesNotice: () => void;
 }) {
   return (
     <>
       {error && <ErrorAlert message={error} />}
       {seriesNotice && (
-        <Alert variant={seriesNotice.variant} className="mb-4">
+        <Alert
+          variant={seriesNotice.variant}
+          className="mb-4"
+          action={
+            <Button type="button" variant="link" className="h-auto p-0" onClick={onDismissSeriesNotice}>
+              Dispensar
+            </Button>
+          }
+        >
           <AlertDescription>{seriesNotice.text}</AlertDescription>
         </Alert>
       )}
@@ -55,8 +66,16 @@ function AgendaNotices({
   );
 }
 
-const monthLabel = (date: Date): string =>
-  date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+/** Só a primeira letra maiúscula ("Agosto de 2026") — a classe Tailwind
+ * `capitalize` maiusculiza cada palavra, incluindo a preposição "de". */
+const monthLabel = (date: Date): string => {
+  const raw = date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
+};
+
+function resolveScheduleConfig(data: { config: ScheduleConfig } | null): ScheduleConfig {
+  return data?.config ?? DEFAULT_SCHEDULE_CONFIG;
+}
 
 /** Parâmetros do recall de 1 clique (?followUpId&patientId&procedure). */
 function readRecallParams() {
@@ -99,6 +118,10 @@ export default function AgendaPage() {
   const { data: appointments, error, refresh } = useApiQuery<AppointmentDto[]>(appointmentsUrl);
   const { data: patients } = useApiQuery<PatientDto[]>("/api/patients");
   const { data: professionals } = useApiQuery<ProfessionalDto[]>("/api/professionals");
+  const { data: scheduleData } = useApiQuery<{ config: ScheduleConfig; isDefault: boolean }>(
+    "/api/settings/schedule",
+  );
+  const scheduleConfig = resolveScheduleConfig(scheduleData);
 
   const changeMonth = (delta: number) =>
     setMonthDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
@@ -198,7 +221,11 @@ export default function AgendaPage() {
         </Button>
       </div>
 
-      <AgendaNotices error={error} seriesNotice={seriesNotice} />
+      <AgendaNotices
+        error={error}
+        seriesNotice={seriesNotice}
+        onDismissSeriesNotice={() => setSeriesNotice(null)}
+      />
 
       <div className="mb-4 flex items-center gap-3">
         <Button
@@ -210,7 +237,7 @@ export default function AgendaPage() {
         >
           <Icon name="chevron-left" />
         </Button>
-        <span className="min-w-48 text-center text-lg font-semibold capitalize">
+        <span className="min-w-48 text-center text-lg font-semibold">
           {monthLabel(monthDate)}
         </span>
         <Button
@@ -235,6 +262,7 @@ export default function AgendaPage() {
         <CalendarGrid
           monthDate={monthDate}
           appointments={appointments}
+          scheduleConfig={scheduleConfig}
           onDayClick={(day) => setCreatingFor(day)}
           onAppointmentClick={setSelected}
         />

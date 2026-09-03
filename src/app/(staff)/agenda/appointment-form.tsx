@@ -3,7 +3,12 @@
 import { useState } from "react";
 import type { PatientDto, ProcedureDto, ProfessionalDto } from "@/lib/dto";
 import { useApiQuery } from "@/lib/use-api-query";
-import { BUSINESS_HOURS, MIN_GAP_MINUTES } from "@/domain/scheduling/business-hours";
+import { ApiError } from "@/lib/client";
+import {
+  DEFAULT_SCHEDULE_CONFIG,
+  describeSchedule,
+  type ScheduleConfig,
+} from "@/domain/scheduling/schedule-config";
 import { ErrorAlert } from "@/components/feedback";
 import { dayKey } from "./calendar-grid";
 import { Button, Input, NativeSelect, Textarea } from "@still-void/ui/react";
@@ -33,6 +38,17 @@ interface AppointmentFormProps {
 
 const DURATION_OPTIONS = [30, 45, 60, 90, 120];
 
+/** 409 (conflito de horário) é `warning`, o resto (400 etc.) continua `danger` (AGENDA-05). */
+function resolveSubmitError(err: unknown): { message: string; variant: "danger" | "warning" } {
+  const message = err instanceof Error ? err.message : "Erro ao agendar consulta";
+  const variant = err instanceof ApiError && err.status === 409 ? "warning" : "danger";
+  return { message, variant };
+}
+
+function resolveScheduleConfig(data: { config: ScheduleConfig } | null): ScheduleConfig {
+  return data?.config ?? DEFAULT_SCHEDULE_CONFIG;
+}
+
 export function AppointmentForm({
   patients,
   professionals = [],
@@ -54,11 +70,14 @@ export function AppointmentForm({
     occurrences: 1,
   });
   const [error, setError] = useState<string | null>(null);
+  const [errorVariant, setErrorVariant] = useState<"danger" | "warning">("danger");
   const [saving, setSaving] = useState(false);
 
   const activePatients = patients.filter((p) => p.active);
   const { data: catalog } = useApiQuery<ProcedureDto[]>("/api/procedures");
   const activeCatalog = (catalog ?? []).filter((p) => p.active);
+  const { data: scheduleData } = useApiQuery<{ config: ScheduleConfig }>("/api/settings/schedule");
+  const scheduleConfig = resolveScheduleConfig(scheduleData);
 
   // Selecionar do catálogo preenche nome, preço e duração (editáveis depois).
   const applyCatalogProcedure = (procedureId: string) => {
@@ -76,10 +95,13 @@ export function AppointmentForm({
     event.preventDefault();
     setSaving(true);
     setError(null);
+    setErrorVariant("danger");
     try {
       await onSubmit(values);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao agendar consulta");
+      const resolved = resolveSubmitError(err);
+      setErrorVariant(resolved.variant);
+      setError(resolved.message);
     } finally {
       setSaving(false);
     }
@@ -87,11 +109,10 @@ export function AppointmentForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-      {error && <ErrorAlert message={error} />}
+      {error && <ErrorAlert message={error} variant={errorVariant} />}
       <p className="rounded-lg bg-accent-soft px-3 py-2 text-xs text-accent-ink">
-        Atendimento de {BUSINESS_HOURS.weekDays}, das{" "}
-        {String(BUSINESS_HOURS.startHour).padStart(2, "0")}:00 às {BUSINESS_HOURS.endHour}:00,
-        com intervalo mínimo de {MIN_GAP_MINUTES} minutos entre consultas.
+        Atendimento de {describeSchedule(scheduleConfig)}, com intervalo mínimo de{" "}
+        {scheduleConfig.minGapMinutes} minutos entre consultas.
       </p>
       <label className="text-sm font-medium">
         Paciente *

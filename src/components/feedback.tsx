@@ -8,6 +8,11 @@ interface ErrorAlertProps {
    * Quando ausente, nenhum botão de retentativa é exibido (FASEA-04).
    */
   onRetry?: () => void;
+  /**
+   * `warning` distingue erro de conflito (409) de erro de validação (400) —
+   * mesmo alerta vermelho pros dois exigia ações opostas (AGENDA-05).
+   */
+  variant?: "danger" | "warning";
 }
 
 /**
@@ -16,9 +21,9 @@ interface ErrorAlertProps {
  * (danger -ink pra contrast 4.5:1), e ícone padrão (se necessário).
  * O token semântico garante que erros nunca colidem com a cor accent do site.
  */
-export function ErrorAlert({ message, onRetry }: ErrorAlertProps) {
+export function ErrorAlert({ message, onRetry, variant = "danger" }: ErrorAlertProps) {
   return (
-    <Alert variant="danger" className="mb-4">
+    <Alert variant={variant} className="mb-4">
       <AlertDescription>{message}</AlertDescription>
       {onRetry && (
         <Button type="button" variant="link" className="h-auto p-0 mt-1" onClick={onRetry}>

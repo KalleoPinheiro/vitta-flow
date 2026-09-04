@@ -46,9 +46,12 @@ Se qualquer um dos três não se confirmar por grep+leitura do teste equivalente
 ## Fora de escopo
 
 - Paralelizar a suíte e2e (avaliado e descartado na própria issue — não revisitado aqui).
-- Corrigir flakiness/infra pré-existente do ambiente local de execução e2e não relacionada a
-  conteúdo de teste (ver nota "Achado fora de escopo" abaixo).
-- Qualquer mudança em `src/**` — este trabalho toca só `e2e/**` e a documentação do spec.
+- Robustez do `next dev`/webServer do Playwright ficar vivo entre execuções interrompidas (item 1
+  do "Achado fora de escopo" abaixo) — infra local, não conteúdo de teste.
+- Qualquer mudança em `src/**` — este trabalho toca `e2e/**`, `tests/**`, `vitest.config.mts`,
+  `package.json` (lint-staged) e a documentação do spec; nada em código de produção.
+- A correção do item 3 (flake de e-mail) saiu do escopo original mas foi feita mesmo assim —
+  bloqueava o próprio gate de push desta branch (ver detalhe no item 3 abaixo).
 
 ## Achado fora de escopo (não corrigido aqui)
 
@@ -71,17 +74,21 @@ corte nem por conteúdo de teste:
 Nenhum dos dois é tratado aqui (não é redundância de teste, é robustez de ambiente local de
 execução) — fica registrado para eventual issue própria.
 
-3. `npm run test` (suíte unitária completa) é intermitentemente flaky em `tests/api/
-   reset-password-flow.test.ts` e `tests/api/set-password-route.test.ts`: rodados isolados,
-   sempre passam (17/17); dentro da suíte completa (167 arquivos), falham em bloco
-   ocasionalmente com `Nenhum link de definição de senha no último e-mail`
-   (`tests/support/email.ts:55`). Causa provável: `spyOnSentEmails()` espiona
-   `console.info` e o envio de e-mail é fire-and-forget (comentário no próprio
-   `tests/support/email.ts` — a rota responde antes do e-mail ser "enviado"); se o spy de um
-   teste for restaurado antes desse envio assíncrono do teste anterior no mesmo arquivo
-   terminar, a captura se perde. Pré-existente, não introduzido por este corte (que só toca
-   `e2e/**`) — fora de escopo da issue #113, registrado aqui para uma issue de estabilização
-   da suíte unitária.
+3. ~~`npm run test` intermitentemente flaky em `reset-password-flow.test.ts`/
+   `set-password-route.test.ts`~~ — **investigado e corrigido nesta branch**, apesar de fora do
+   escopo original da issue #113, porque bloqueava o próprio gate de push local. Duas causas
+   raiz distintas, ambas em `.env` local vazando pro processo de teste:
+   - `accountWithPassword`/`inviteFor` liam o token do e-mail sem `await waitForEmails(...)`
+     primeiro (`requestReset`, no mesmo arquivo, já usava o padrão certo) — corrida real contra
+     o envio fire-and-forget. Corrigido replicando o padrão correto.
+   - `RESEND_API_KEY`/`EMAIL_FROM` reais em `.env` local faziam `buildEmailGateway()`
+     (`src/infrastructure/email/resend-email-gateway.ts`) escolher o gateway Resend de verdade
+     em vez do `NullEmailGateway` — a suíte inteira depende do dry-run via `console.info`. Sem
+     isso, toda rota que envia e-mail batia no rate-limit de sandbox do Resend (403) e nenhum
+     e-mail chegava ao spy. Corrigido forçando as duas vars vazias em `vitest.config.mts` (mesmo
+     padrão já usado para `AUTH_SECRET`/`VITTA_ALLOW_OPEN_MODE`).
+   Verificado com o vazamento simulado (`RESEND_API_KEY=fake EMAIL_FROM=fake@x.com
+   VITTA_ALLOW_OPEN_MODE=true npm run test`) → 2750/2750 limpo.
 
 ## Requirement Traceability
 

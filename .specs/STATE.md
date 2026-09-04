@@ -418,3 +418,10 @@ serviço reindexar o lockfile. Acima disso, reproduza localmente antes de agir.
 - **Next step**: seguir pra #112 (`vitest --changed` fast-path), próxima da fila #116.
 - **Blockers**: nenhum.
 - **Branch**: `perf/111-worker-db-reuse` (deletada remota e local após merge). PR #118, merge commit `99954a7` em `main`.
+
+- **`vitest --changed` fast-path — CONCLUÍDA** (issue #112, segunda das 5 filhas de #116). Escopo pequeno (2 arquivos): novo script `npm run test:changed` (`vitest run --changed`) + doc em `AGENTS.md`. `ci.yml` não mudou — `test:coverage` continua rodando suite completa como gate obrigatório de merge, por decisão explícita da issue.
+- **Verificação**: `npm run test:changed -- origin/main` rodou 167/167 arquivos limpo (mudança nos 2 arquivos tocados dispara full-run, esperado pra config/doc); `npm run typecheck` limpo; `biome check` não se aplica a `package.json`/`AGENTS.md` (fora do escopo de lint configurado).
+- **Sem Design/Tasks** — escopo pequeno, spec inline, sem sub-agentes.
+- **Next step**: seguir pra próxima filha de #116 (3ª de 5) — checar issues restantes do mapa #116.
+- **Blockers**: nenhum.
+- **Branch**: `perf/vitest-changed-fastpath-112` (deletada remota e local após merge, `-D` porque squash-merge não é ancestor local). PR #119, merged.

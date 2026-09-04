@@ -1,9 +1,4 @@
-import path from 'node:path';
-import { PGlite } from '@electric-sql/pglite';
-import { btree_gist } from '@electric-sql/pglite/contrib/btree_gist';
-import { pg_trgm } from '@electric-sql/pglite/contrib/pg_trgm';
 import { drizzle, type PgliteDatabase } from 'drizzle-orm/pglite';
-import { migrate } from 'drizzle-orm/pglite/migrator';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AuthToken, hashAuthTokenSecret } from '@/domain/auth/auth-token';
 import { UserAccount } from '@/domain/auth/user-account';
@@ -13,6 +8,7 @@ import { DrizzleAuthTokenRepository } from '@/infrastructure/persistence/drizzle
 import { DrizzleClinicRepository } from '@/infrastructure/persistence/drizzle/drizzle-clinic-repository';
 import { DrizzleUserAccountRepository } from '@/infrastructure/persistence/drizzle/drizzle-foundation-repositories';
 import * as schema from '@/infrastructure/persistence/drizzle/schema';
+import { createPgliteFromTemplate } from '../support/pglite-template';
 
 const CLINIC_ID = 'clinic-auth-tokens';
 const NOW = new Date('2026-09-01T12:00:00.000Z').getTime();
@@ -28,11 +24,8 @@ describe('Feature: Persistência de tokens de ativação (Drizzle)', () => {
   let accountId: string;
 
   beforeAll(async () => {
-    const client = new PGlite({ extensions: { pg_trgm, btree_gist } });
+    const client = await createPgliteFromTemplate();
     db = drizzle(client, { schema });
-    await migrate(db, {
-      migrationsFolder: path.join(process.cwd(), 'drizzle'),
-    });
     appDb = db as unknown as AppDb;
     tokens = new DrizzleAuthTokenRepository(appDb);
 

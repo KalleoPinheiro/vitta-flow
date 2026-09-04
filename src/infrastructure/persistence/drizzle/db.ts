@@ -20,6 +20,22 @@ async function createPgliteDb(): Promise<AppDb> {
     '@electric-sql/pglite/contrib/btree_gist'
   );
   const { drizzle } = await import('drizzle-orm/pglite');
+
+  // Suíte de testes (tests/support/pglite-global-setup.ts) migra 1x pra todo
+  // o processo e expõe o dump aqui — pula o `migrate()` (parsing+execução de
+  // todo o SQL de schema, o maior custo de tempo/máquina da suíte, issue
+  // #111) sem abrir mão de uma instância PGlite nova e isolada por arquivo.
+  const templatePath = process.env.VITTA_PGLITE_TEMPLATE_PATH;
+  if (templatePath) {
+    const fs = await import('node:fs/promises');
+    const buffer = await fs.readFile(templatePath);
+    const client = new PGlite({
+      loadDataDir: new Blob([buffer]),
+      extensions: { pg_trgm, btree_gist },
+    });
+    return drizzle(client, { schema }) as unknown as AppDb;
+  }
+
   const { migrate } = await import('drizzle-orm/pglite/migrator');
   const client = new PGlite({ extensions: { pg_trgm, btree_gist } });
   const db = drizzle(client, { schema });

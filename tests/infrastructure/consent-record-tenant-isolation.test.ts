@@ -1,9 +1,4 @@
-import path from 'node:path';
-import { PGlite } from '@electric-sql/pglite';
-import { btree_gist } from '@electric-sql/pglite/contrib/btree_gist';
-import { pg_trgm } from '@electric-sql/pglite/contrib/pg_trgm';
 import { drizzle, type PgliteDatabase } from 'drizzle-orm/pglite';
-import { migrate } from 'drizzle-orm/pglite/migrator';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { Clinic } from '@/domain/clinic/clinic';
 import { ConsentRecord } from '@/domain/consent/consent-record';
@@ -13,6 +8,7 @@ import { DrizzleClinicRepository } from '@/infrastructure/persistence/drizzle/dr
 import { DrizzleConsentRecordRepository } from '@/infrastructure/persistence/drizzle/drizzle-clinical-repositories';
 import { DrizzlePatientRepository } from '@/infrastructure/persistence/drizzle/drizzle-patient-repository';
 import * as schema from '@/infrastructure/persistence/drizzle/schema';
+import { createPgliteFromTemplate } from '../support/pglite-template';
 
 describe('Feature: Isolamento de Consentimento por empresa (MT-27)', () => {
   let db: PgliteDatabase<typeof schema>;
@@ -20,11 +16,8 @@ describe('Feature: Isolamento de Consentimento por empresa (MT-27)', () => {
   let patientId: string;
 
   beforeAll(async () => {
-    const client = new PGlite({ extensions: { pg_trgm, btree_gist } });
+    const client = await createPgliteFromTemplate();
     db = drizzle(client, { schema });
-    await migrate(db, {
-      migrationsFolder: path.join(process.cwd(), 'drizzle'),
-    });
     appDb = db as unknown as AppDb;
 
     const clinicRepo = new DrizzleClinicRepository(appDb);
@@ -102,11 +95,8 @@ describe('Feature: Versionamento e revogação de consentimento persistidos (#70
   let consentRepo: DrizzleConsentRecordRepository;
 
   beforeAll(async () => {
-    const client = new PGlite({ extensions: { pg_trgm, btree_gist } });
+    const client = await createPgliteFromTemplate();
     db = drizzle(client, { schema });
-    await migrate(db, {
-      migrationsFolder: path.join(process.cwd(), 'drizzle'),
-    });
     appDb = db as unknown as AppDb;
 
     const patientRepo = new DrizzlePatientRepository(appDb, 'legacy-clinic');

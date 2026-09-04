@@ -11,10 +11,10 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    // Testes de API migram o PGlite completo no primeiro caso — precisa de folga.
     testTimeout: 20_000,
-    // beforeAll de rotas API importa módulos + migra PGlite; sob paralelismo de
-    // workers (vários arquivos migrando ao mesmo tempo) o default de 10s estoura.
+    // beforeAll de rotas API importa módulos + carrega o snapshot do PGlite
+    // (tests/support/pglite-global-setup.ts); folga extra sob paralelismo de
+    // workers.
     hookTimeout: 30_000,
     env: {
       TZ: "UTC",
@@ -25,6 +25,12 @@ export default defineConfig({
       // sobrescrevem/limpam estas variáveis localmente.
       AUTH_SECRET: "vitest-auth-secret-0000000000000000",
     },
+    // Migra o PGlite 1x (todo o processo, não por worker/arquivo) e faz dump
+    // do datadir num arquivo temporário — cada arquivo de teste que precisa
+    // de um PGlite (tests/setup.ts + os 8 arquivos de tests/infrastructure)
+    // carrega esse snapshot via `loadDataDir` em vez de rodar `migrate()` de
+    // novo (#111 — maior custo de tempo/máquina da suíte).
+    globalSetup: ["tests/support/pglite-global-setup.ts"],
     setupFiles: ["tests/setup.ts"],
     include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
     coverage: {

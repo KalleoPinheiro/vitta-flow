@@ -1,9 +1,4 @@
-import path from 'node:path';
-import { PGlite } from '@electric-sql/pglite';
-import { btree_gist } from '@electric-sql/pglite/contrib/btree_gist';
-import { pg_trgm } from '@electric-sql/pglite/contrib/pg_trgm';
 import { drizzle, type PgliteDatabase } from 'drizzle-orm/pglite';
-import { migrate } from 'drizzle-orm/pglite/migrator';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AuditEvent } from '@/domain/audit/audit-event';
 import { SessionPackage } from '@/domain/billing/package';
@@ -21,6 +16,7 @@ import { DrizzlePatientRepository } from '@/infrastructure/persistence/drizzle/d
 import { DrizzleProfessionalRepository } from '@/infrastructure/persistence/drizzle/drizzle-professional-repository';
 import { DrizzleReminderLogRepository } from '@/infrastructure/persistence/drizzle/drizzle-reminder-log-repository';
 import * as schema from '@/infrastructure/persistence/drizzle/schema';
+import { createPgliteFromTemplate } from '../support/pglite-template';
 
 describe('Feature: Persistência PostgreSQL — auditoria, pacotes, equipe e integrações', () => {
   let db: PgliteDatabase<typeof schema>;
@@ -40,11 +36,8 @@ describe('Feature: Persistência PostgreSQL — auditoria, pacotes, equipe e int
     new DrizzlePartnerRepository(appDb, 'legacy-clinic');
 
   beforeAll(async () => {
-    const client = new PGlite({ extensions: { pg_trgm, btree_gist } });
+    const client = await createPgliteFromTemplate();
     db = drizzle(client, { schema });
-    await migrate(db, {
-      migrationsFolder: path.join(process.cwd(), 'drizzle'),
-    });
     appDb = db as unknown as AppDb;
   });
 

@@ -71,6 +71,18 @@ corte nem por conteúdo de teste:
 Nenhum dos dois é tratado aqui (não é redundância de teste, é robustez de ambiente local de
 execução) — fica registrado para eventual issue própria.
 
+3. `npm run test` (suíte unitária completa) é intermitentemente flaky em `tests/api/
+   reset-password-flow.test.ts` e `tests/api/set-password-route.test.ts`: rodados isolados,
+   sempre passam (17/17); dentro da suíte completa (167 arquivos), falham em bloco
+   ocasionalmente com `Nenhum link de definição de senha no último e-mail`
+   (`tests/support/email.ts:55`). Causa provável: `spyOnSentEmails()` espiona
+   `console.info` e o envio de e-mail é fire-and-forget (comentário no próprio
+   `tests/support/email.ts` — a rota responde antes do e-mail ser "enviado"); se o spy de um
+   teste for restaurado antes desse envio assíncrono do teste anterior no mesmo arquivo
+   terminar, a captura se perde. Pré-existente, não introduzido por este corte (que só toca
+   `e2e/**`) — fora de escopo da issue #113, registrado aqui para uma issue de estabilização
+   da suíte unitária.
+
 ## Requirement Traceability
 
 | Requirement ID | Fase | Status |

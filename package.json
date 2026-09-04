@@ -21,7 +21,7 @@
     "check:sv": "bash scripts/check-sv-adoption.sh"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,jsx}": "biome check --write"
+    "*.{ts,tsx,js,jsx}": "biome check --no-errors-on-unmatched --write"
   },
   "dependencies": {
     "@still-void/ui": "^3.3.1",

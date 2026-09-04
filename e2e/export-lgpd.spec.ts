@@ -57,13 +57,9 @@ test.describe("exportação de dados do titular (LGPD art. 18)", () => {
     expect(data.anamnesis).toBeNull();
   });
 
-  test("exportação de paciente inexistente retorna 404", async ({ page }) => {
-    const response = await page.request.get("/api/patients/id-que-nao-existe/export");
-    expect(response.ok()).toBe(false);
-    expect(response.status()).toBe(404);
-    const body = await response.json();
-    expect(body.error).toContain("não encontrado");
-  });
+  // why: cenário "paciente inexistente retorna 404" removido (#113) — 100% API,
+  // sem toque de UI, duplicava tests/api/audit-lgpd-routes.test.ts:223. Ver
+  // .specs/features/e2e-cortar-redundantes/levantamento.md.
 
   test("exportação fica registrada na trilha de auditoria", async ({ page, request }) => {
     const patient = await createPatient(request, { fullName: `Paciente Export Auditado ${unique()}` });

@@ -1,11 +1,11 @@
-import type { AppointmentRepository } from "@/domain/scheduling/appointment-repository";
-import { assertWithinBusinessHours } from "@/domain/scheduling/business-hours";
+import type { AppointmentRepository } from '@/domain/scheduling/appointment-repository';
+import { assertWithinBusinessHours } from '@/domain/scheduling/business-hours';
 import {
   DEFAULT_SCHEDULE_CONFIG,
   type ScheduleConfig,
-} from "@/domain/scheduling/schedule-config";
-import type { TimeSlot } from "@/domain/shared/time-slot";
-import { SchedulingConflictError } from "@/domain/shared/errors";
+} from '@/domain/scheduling/schedule-config';
+import { SchedulingConflictError } from '@/domain/shared/errors';
+import type { TimeSlot } from '@/domain/shared/time-slot';
 
 /**
  * Regra única de disponibilidade de horário (agendar e remarcar):

@@ -1,6 +1,6 @@
-import type { Supply, SupplyProps } from "@/domain/inventory/supply";
-import type { SupplyRepository } from "@/domain/inventory/inventory-repositories";
-import { NotFoundError } from "@/domain/shared/errors";
+import type { SupplyRepository } from '@/domain/inventory/inventory-repositories';
+import type { Supply, SupplyProps } from '@/domain/inventory/supply';
+import { NotFoundError } from '@/domain/shared/errors';
 
 export interface UpdateSupplyInput extends Partial<SupplyProps> {
   id: string;
@@ -13,7 +13,7 @@ export class UpdateSupply {
   async execute(input: UpdateSupplyInput): Promise<Supply> {
     const supply = await this.supplies.findById(input.id);
     if (!supply) {
-      throw new NotFoundError("Insumo", input.id);
+      throw new NotFoundError('Insumo', input.id);
     }
     let updated = supply.update(input);
     if (input.active !== undefined) {

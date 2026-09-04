@@ -1,4 +1,4 @@
-import type { Partner } from "./partner";
+import type { Partner } from './partner';
 
 export interface PartnerRepository {
   save(partner: Partner): Promise<void>;

@@ -1,25 +1,25 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { headerClasses } from "@still-void/ui/react";
+import { headerClasses } from '@still-void/ui/react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 const NAV_ITEMS = [
-  { href: "/", label: "Dashboard" },
-  { href: "/agenda", label: "Agenda" },
-  { href: "/pacientes", label: "Pacientes" },
-  { href: "/parceiros", label: "Parceiros" },
-  { href: "/profissionais", label: "Profissionais" },
-  { href: "/faturamento", label: "Faturamento" },
-  { href: "/procedimentos", label: "Procedimentos" },
-  { href: "/materiais", label: "Materiais" },
-  { href: "/relatorios", label: "Relatórios" },
-  { href: "/auditoria", label: "Auditoria" },
-  { href: "/configuracoes", label: "Configurações" },
+  { href: '/', label: 'Dashboard' },
+  { href: '/agenda', label: 'Agenda' },
+  { href: '/pacientes', label: 'Pacientes' },
+  { href: '/parceiros', label: 'Parceiros' },
+  { href: '/profissionais', label: 'Profissionais' },
+  { href: '/faturamento', label: 'Faturamento' },
+  { href: '/procedimentos', label: 'Procedimentos' },
+  { href: '/materiais', label: 'Materiais' },
+  { href: '/relatorios', label: 'Relatórios' },
+  { href: '/auditoria', label: 'Auditoria' },
+  { href: '/configuracoes', label: 'Configurações' },
 ];
 
 function isActive(pathname: string, href: string) {
-  return href === "/" ? pathname === "/" : pathname.startsWith(href);
+  return href === '/' ? pathname === '/' : pathname.startsWith(href);
 }
 
 /**
@@ -38,7 +38,7 @@ export function StaffNav() {
             key={item.href}
             href={item.href}
             className={active ? headerClasses.linkActive : headerClasses.link}
-            aria-current={active ? "page" : undefined}
+            aria-current={active ? 'page' : undefined}
           >
             {item.label}
           </Link>

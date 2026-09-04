@@ -1,12 +1,5 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import type { AuditEventDto, PatientDto } from "@/lib/dto";
-import { useApiQuery } from "@/lib/use-api-query";
-import { usePagedQuery } from "@/lib/use-paged-query";
-import { ErrorAlert } from "@/components/feedback";
-import { LoadMoreButton } from "@/components/load-more-button";
-import { PagedList } from "@/components/paged-list";
 import {
   Card,
   Input,
@@ -17,72 +10,79 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@still-void/ui/react";
+} from '@still-void/ui/react';
+import { useState } from 'react';
+import { ErrorAlert } from '@/components/feedback';
+import { LoadMoreButton } from '@/components/load-more-button';
+import { PagedList } from '@/components/paged-list';
+import type { AuditEventDto, PatientDto } from '@/lib/dto';
+import { useApiQuery } from '@/lib/use-api-query';
+import { usePagedQuery } from '@/lib/use-paged-query';
 
 const PAGE_SIZE = 100;
 
 const ACTION_LABELS: Record<string, string> = {
-  read: "Leitura",
-  create: "Criação",
-  update: "Alteração",
-  delete: "Exclusão",
+  read: 'Leitura',
+  create: 'Criação',
+  update: 'Alteração',
+  delete: 'Exclusão',
 };
 
 const RESOURCE_LABELS: Record<string, string> = {
-  anamnesis: "Anamnese",
-  evolution: "Evolução",
-  evolutions: "Evoluções",
-  condition: "Condição",
-  conditions: "Condições",
-  assessment: "Avaliação",
-  assessments: "Avaliações",
-  "portal-patient": "Portal do paciente",
-  "portal-partner": "Portal do parceiro",
-  photo: "Foto",
-  photos: "Fotos",
-  document: "Documento",
-  "account-password": "Senha da conta",
-  appointment: "Consulta",
-  care_plan: "Plano de cuidado",
-  care_plan_diagnosis: "Diagnóstico do plano de cuidado",
-  care_plan_intervention: "Intervenção do plano de cuidado",
-  care_plan_outcome: "Desfecho do plano de cuidado",
-  care_plans: "Planos de cuidado",
-  "clinic-info": "Dados da clínica",
-  "clinic-schedule": "Grade de horários",
-  consent: "Consentimento",
-  export: "Exportação",
-  intervention_record: "Registro de intervenção",
-  outcome_evaluation: "Avaliação de desfecho",
-  patient: "Paciente",
-  session: "Sessão",
-  taxonomy_catalog: "Catálogo de taxonomia",
-  professional: "Profissional",
-  account: "Conta de acesso",
+  anamnesis: 'Anamnese',
+  evolution: 'Evolução',
+  evolutions: 'Evoluções',
+  condition: 'Condição',
+  conditions: 'Condições',
+  assessment: 'Avaliação',
+  assessments: 'Avaliações',
+  'portal-patient': 'Portal do paciente',
+  'portal-partner': 'Portal do parceiro',
+  photo: 'Foto',
+  photos: 'Fotos',
+  document: 'Documento',
+  'account-password': 'Senha da conta',
+  appointment: 'Consulta',
+  care_plan: 'Plano de cuidado',
+  care_plan_diagnosis: 'Diagnóstico do plano de cuidado',
+  care_plan_intervention: 'Intervenção do plano de cuidado',
+  care_plan_outcome: 'Desfecho do plano de cuidado',
+  care_plans: 'Planos de cuidado',
+  'clinic-info': 'Dados da clínica',
+  'clinic-schedule': 'Grade de horários',
+  consent: 'Consentimento',
+  export: 'Exportação',
+  intervention_record: 'Registro de intervenção',
+  outcome_evaluation: 'Avaliação de desfecho',
+  patient: 'Paciente',
+  session: 'Sessão',
+  taxonomy_catalog: 'Catálogo de taxonomia',
+  professional: 'Profissional',
+  account: 'Conta de acesso',
 };
 
 function formatDateTimeWithSeconds(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
+  return new Date(iso).toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
   });
 }
 
 export default function AuditPage() {
-  const [patientId, setPatientId] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const { data: patients } = useApiQuery<PatientDto[]>("/api/patients");
+  const [patientId, setPatientId] = useState('');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const { data: patients } = useApiQuery<PatientDto[]>('/api/patients');
 
   const params = new URLSearchParams();
-  if (patientId) params.set("patientId", patientId);
-  if (from) params.set("from", new Date(`${from}T00:00:00`).toISOString());
-  if (to) params.set("to", new Date(`${to}T23:59:59.999`).toISOString());
-  const query = params.toString() ? `?${params.toString()}` : "";
+  if (patientId) params.set('patientId', patientId);
+  if (from) params.set('from', new Date(`${from}T00:00:00`).toISOString());
+  if (to) params.set('to', new Date(`${to}T23:59:59.999`).toISOString());
+  const query = params.toString() ? `?${params.toString()}` : '';
   const {
     items: events,
     hasMore,
@@ -96,15 +96,25 @@ export default function AuditPage() {
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-        <h1 className="sv-display text-2xl font-bold">Auditoria de prontuário</h1>
+        <h1 className="sv-display font-bold text-2xl">
+          Auditoria de prontuário
+        </h1>
         <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-sm text-ink-2">
+          <label className="flex flex-col gap-1 text-ink-2 text-sm">
             De
-            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+            <Input
+              type="date"
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+            />
           </label>
-          <label className="flex flex-col gap-1 text-sm text-ink-2">
+          <label className="flex flex-col gap-1 text-ink-2 text-sm">
             Até
-            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+            <Input
+              type="date"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+            />
           </label>
           <NativeSelect
             aria-label="Filtrar por paciente"
@@ -121,9 +131,9 @@ export default function AuditPage() {
         </div>
       </div>
 
-      <p className="mb-4 text-sm text-ink-3">
-        Trilha imutável de acessos e alterações em dados clínicos (LGPD art. 11). Somente
-        metadados — nunca conteúdo de prontuário.
+      <p className="mb-4 text-ink-3 text-sm">
+        Trilha imutável de acessos e alterações em dados clínicos (LGPD art.
+        11). Somente metadados — nunca conteúdo de prontuário.
       </p>
 
       {error && <ErrorAlert message={error} />}
@@ -135,7 +145,7 @@ export default function AuditPage() {
           render={(list) => (
             <div className="overflow-x-auto">
               <Table
-                className={`w-full text-left text-sm ${isLoading ? "opacity-60" : ""}`}
+                className={`w-full text-left text-sm ${isLoading ? 'opacity-60' : ''}`}
                 aria-busy={isLoading}
               >
                 <TableHeader>
@@ -156,18 +166,26 @@ export default function AuditPage() {
                       </TableCell>
                       <TableCell className="px-4 py-2">
                         <span className="font-medium">{event.actorRole}</span>
-                        <span className="block text-xs text-ink-3">{event.actorId}</span>
+                        <span className="block text-ink-3 text-xs">
+                          {event.actorId}
+                        </span>
                       </TableCell>
-                      <TableCell className="px-4 py-2">{ACTION_LABELS[event.action] ?? event.action}</TableCell>
                       <TableCell className="px-4 py-2">
-                        {RESOURCE_LABELS[event.resourceType] ?? event.resourceType}
+                        {ACTION_LABELS[event.action] ?? event.action}
+                      </TableCell>
+                      <TableCell className="px-4 py-2">
+                        {RESOURCE_LABELS[event.resourceType] ??
+                          event.resourceType}
                       </TableCell>
                       <TableCell className="px-4 py-2 text-ink-2">
                         {event.patientId
-                          ? (patientNames.get(event.patientId) ?? event.patientId)
-                          : "—"}
+                          ? (patientNames.get(event.patientId) ??
+                            event.patientId)
+                          : '—'}
                       </TableCell>
-                      <TableCell className="px-4 py-2 text-ink-3">{event.detail ?? "—"}</TableCell>
+                      <TableCell className="px-4 py-2 text-ink-3">
+                        {event.detail ?? '—'}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

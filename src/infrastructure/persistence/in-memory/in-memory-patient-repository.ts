@@ -1,6 +1,9 @@
-import type { Patient } from "@/domain/patient/patient";
-import type { PatientPage, PatientRepository } from "@/domain/patient/patient-repository";
-import { decodeCursor } from "@/lib/pagination";
+import type { Patient } from '@/domain/patient/patient';
+import type {
+  PatientPage,
+  PatientRepository,
+} from '@/domain/patient/patient-repository';
+import { decodeCursor } from '@/lib/pagination';
 
 export class InMemoryPatientRepository implements PatientRepository {
   private readonly patients = new Map<string, Patient>();
@@ -15,7 +18,9 @@ export class InMemoryPatientRepository implements PatientRepository {
 
   async findByEmail(email: string): Promise<Patient | null> {
     const normalized = email.trim().toLowerCase();
-    return [...this.patients.values()].find((p) => p.email === normalized) ?? null;
+    return (
+      [...this.patients.values()].find((p) => p.email === normalized) ?? null
+    );
   }
 
   /** Repositório in-memory não é tenant-aware — usado só em testes de camada de aplicação. */
@@ -25,11 +30,14 @@ export class InMemoryPatientRepository implements PatientRepository {
 
   async countByEmail(email: string): Promise<number> {
     const normalized = email.trim().toLowerCase();
-    return [...this.patients.values()].filter((p) => p.email === normalized).length;
+    return [...this.patients.values()].filter((p) => p.email === normalized)
+      .length;
   }
 
   async findByReferrer(partnerId: string): Promise<Patient[]> {
-    return [...this.patients.values()].filter((p) => p.referredByPartnerId === partnerId);
+    return [...this.patients.values()].filter(
+      (p) => p.referredByPartnerId === partnerId,
+    );
   }
 
   async findByIds(ids: string[]): Promise<Patient[]> {
@@ -45,7 +53,8 @@ export class InMemoryPatientRepository implements PatientRepository {
       return [];
     }
     const all = [...this.patients.values()].sort(
-      (a, b) => a.fullName.localeCompare(b.fullName) || a.id.localeCompare(b.id),
+      (a, b) =>
+        a.fullName.localeCompare(b.fullName) || a.id.localeCompare(b.id),
     );
     const term = search?.toLowerCase();
     const byTerm = term
@@ -56,14 +65,18 @@ export class InMemoryPatientRepository implements PatientRepository {
             p.phone.includes(term),
         )
       : all;
-    const filtered = page.ids ? byTerm.filter((p) => page.ids!.includes(p.id)) : byTerm;
+    const filtered = page.ids
+      ? byTerm.filter((p) => page.ids?.includes(p.id))
+      : byTerm;
     const decoded = decodeCursor<{ fullName: string; id: string }>(page.cursor);
     // Mesmo comparador do sort acima (localeCompare) — comparação por `>` usaria
     // ordem UTF-16 e poderia excluir/repetir itens quando os dois divergem
     // (ex.: acentos), pulando a página seguinte.
     const afterCursor = decoded
       ? filtered.filter((p) => {
-          const cmp = p.fullName.localeCompare(decoded.fullName) || p.id.localeCompare(decoded.id);
+          const cmp =
+            p.fullName.localeCompare(decoded.fullName) ||
+            p.id.localeCompare(decoded.id);
           return cmp > 0;
         })
       : filtered;

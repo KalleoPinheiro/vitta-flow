@@ -1,15 +1,15 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { CreateInvoice } from "@/application/billing/create-invoice";
-import { ListInvoices } from "@/application/billing/list-invoices";
-import { INVOICE_STATUSES } from "@/domain/billing/invoice";
-import { handleRequest } from "@/lib/api-response";
-import { toInvoiceDto } from "@/lib/dto";
-import type { InvoiceDto } from "@/lib/dto";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
-import { encodeCursor } from "@/lib/pagination";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { CreateInvoice } from '@/application/billing/create-invoice';
+import { ListInvoices } from '@/application/billing/list-invoices';
+import { INVOICE_STATUSES } from '@/domain/billing/invoice';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import type { InvoiceDto } from '@/lib/dto';
+import { toInvoiceDto } from '@/lib/dto';
+import { encodeCursor } from '@/lib/pagination';
 
 const createInvoiceSchema = z.object({
   patientId: z.string().min(1),
@@ -45,13 +45,13 @@ export async function GET(request: NextRequest) {
   return handleRequest(
     async () => {
       const params = request.nextUrl.searchParams;
-      const status = statusSchema.parse(params.get("status") ?? undefined);
-      const from = params.get("from");
-      const to = params.get("to");
-      const patientId = params.get("patientId") ?? undefined;
+      const status = statusSchema.parse(params.get('status') ?? undefined);
+      const from = params.get('from');
+      const to = params.get('to');
+      const patientId = params.get('patientId') ?? undefined;
       const parsedPage = paginationSchema.parse({
-        limit: params.get("limit") ?? undefined,
-        cursor: params.get("cursor") ?? undefined,
+        limit: params.get('limit') ?? undefined,
+        cursor: params.get('cursor') ?? undefined,
       });
       limit = parsedPage.limit;
 
@@ -67,7 +67,9 @@ export async function GET(request: NextRequest) {
         },
         { limit, cursor: parsedPage.cursor },
       );
-      return result.map(({ invoice, patientName }) => toInvoiceDto(invoice, patientName));
+      return result.map(({ invoice, patientName }) =>
+        toInvoiceDto(invoice, patientName),
+      );
     },
     (result) => ({ nextCursor: nextInvoiceCursor(result, limit) }),
   );

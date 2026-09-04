@@ -1,5 +1,5 @@
-import type { Partner } from "@/domain/partner/partner";
-import type { PartnerRepository } from "@/domain/partner/partner-repository";
+import type { Partner } from '@/domain/partner/partner';
+import type { PartnerRepository } from '@/domain/partner/partner-repository';
 
 export class InMemoryPartnerRepository implements PartnerRepository {
   private readonly partners = new Map<string, Partner>();
@@ -14,10 +14,14 @@ export class InMemoryPartnerRepository implements PartnerRepository {
 
   async findByEmail(email: string): Promise<Partner | null> {
     const normalized = email.trim().toLowerCase();
-    return [...this.partners.values()].find((p) => p.email === normalized) ?? null;
+    return (
+      [...this.partners.values()].find((p) => p.email === normalized) ?? null
+    );
   }
 
   async findAll(): Promise<Partner[]> {
-    return [...this.partners.values()].sort((a, b) => a.fullName.localeCompare(b.fullName));
+    return [...this.partners.values()].sort((a, b) =>
+      a.fullName.localeCompare(b.fullName),
+    );
   }
 }

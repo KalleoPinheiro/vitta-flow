@@ -1,6 +1,6 @@
-import { NOC_SCALE_MAX, NOC_SCALE_MIN } from "../taxonomy/noc-scale";
-import { ValidationError } from "../shared/errors";
-import { newId } from "../shared/id";
+import { ValidationError } from '../shared/errors';
+import { newId } from '../shared/id';
+import { NOC_SCALE_MAX, NOC_SCALE_MIN } from '../taxonomy/noc-scale';
 
 const SCALE_MIN = NOC_SCALE_MIN;
 const SCALE_MAX = NOC_SCALE_MAX;
@@ -23,10 +23,16 @@ export class OutcomeEvaluation {
 
   static create(props: OutcomeEvaluationProps): OutcomeEvaluation {
     if (props.outcomeId.trim().length === 0) {
-      throw new ValidationError("Resultado prescrito é obrigatório");
+      throw new ValidationError('Resultado prescrito é obrigatório');
     }
-    if (!Number.isInteger(props.score) || props.score < SCALE_MIN || props.score > SCALE_MAX) {
-      throw new ValidationError(`Pontuação deve ser um inteiro entre ${SCALE_MIN} e ${SCALE_MAX}`);
+    if (
+      !Number.isInteger(props.score) ||
+      props.score < SCALE_MIN ||
+      props.score > SCALE_MAX
+    ) {
+      throw new ValidationError(
+        `Pontuação deve ser um inteiro entre ${SCALE_MIN} e ${SCALE_MAX}`,
+      );
     }
     return new OutcomeEvaluation({
       outcomeId: props.outcomeId,

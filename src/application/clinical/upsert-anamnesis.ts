@@ -1,7 +1,7 @@
-import { Anamnesis } from "@/domain/clinical/anamnesis";
-import type { AnamnesisRepository } from "@/domain/clinical/clinical-repositories";
-import type { PatientRepository } from "@/domain/patient/patient-repository";
-import { NotFoundError } from "@/domain/shared/errors";
+import { Anamnesis } from '@/domain/clinical/anamnesis';
+import type { AnamnesisRepository } from '@/domain/clinical/clinical-repositories';
+import type { PatientRepository } from '@/domain/patient/patient-repository';
+import { NotFoundError } from '@/domain/shared/errors';
 
 export interface UpsertAnamnesisInput {
   patientId: string;
@@ -21,10 +21,12 @@ export class UpsertAnamnesis {
   async execute(input: UpsertAnamnesisInput): Promise<Anamnesis> {
     const patient = await this.patients.findById(input.patientId);
     if (!patient) {
-      throw new NotFoundError("Paciente", input.patientId);
+      throw new NotFoundError('Paciente', input.patientId);
     }
     const existing = await this.anamneses.findByPatientId(input.patientId);
-    const anamnesis = existing ? existing.update(input) : Anamnesis.create(input);
+    const anamnesis = existing
+      ? existing.update(input)
+      : Anamnesis.create(input);
     await this.anamneses.save(anamnesis);
     return anamnesis;
   }

@@ -1,5 +1,5 @@
-import { ValidationError } from "../shared/errors";
-import { newId } from "../shared/id";
+import { ValidationError } from '../shared/errors';
+import { newId } from '../shared/id';
 
 const CODE_PATTERN = /^\d{4}$/;
 
@@ -34,24 +34,32 @@ export class NursingIntervention {
     return new NursingIntervention({ ...state });
   }
 
-  private static validate(props: NursingInterventionProps): NursingInterventionProps {
+  private static validate(
+    props: NursingInterventionProps,
+  ): NursingInterventionProps {
     if (!CODE_PATTERN.test(props.code)) {
-      throw new ValidationError("Código NIC deve ter 4 dígitos (ex.: 3660)");
+      throw new ValidationError('Código NIC deve ter 4 dígitos (ex.: 3660)');
     }
     const label = props.label.trim();
     if (label.length === 0) {
-      throw new ValidationError("Rótulo da intervenção é obrigatório");
+      throw new ValidationError('Rótulo da intervenção é obrigatório');
     }
     const domain = props.domain.trim();
     const interventionClass = props.class.trim();
     if (domain.length === 0 || interventionClass.length === 0) {
-      throw new ValidationError("Domínio e classe NIC são obrigatórios");
+      throw new ValidationError('Domínio e classe NIC são obrigatórios');
     }
     const edition = props.edition.trim();
     if (edition.length === 0) {
-      throw new ValidationError("Edição da taxonomia é obrigatória");
+      throw new ValidationError('Edição da taxonomia é obrigatória');
     }
-    return { code: props.code, label, domain, class: interventionClass, edition };
+    return {
+      code: props.code,
+      label,
+      domain,
+      class: interventionClass,
+      edition,
+    };
   }
 
   deactivate(): NursingIntervention {

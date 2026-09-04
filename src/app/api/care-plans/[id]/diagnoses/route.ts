@@ -1,13 +1,13 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { AddCarePlanDiagnosis } from "@/application/clinical/add-care-plan-diagnosis";
-import { CARE_PLAN_DIAGNOSIS_TYPES } from "@/domain/clinical/care-plan-diagnosis";
-import { handleRequest } from "@/lib/api-response";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { recordAudit } from "@/lib/audit";
-import { toCarePlanDiagnosisDto } from "@/lib/dto";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { AddCarePlanDiagnosis } from '@/application/clinical/add-care-plan-diagnosis';
+import { CARE_PLAN_DIAGNOSIS_TYPES } from '@/domain/clinical/care-plan-diagnosis';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { recordAudit } from '@/lib/audit';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { toCarePlanDiagnosisDto } from '@/lib/dto';
 
 const diagnosisBodySchema = z.object({
   diagnosisCode: z.string().min(1).max(20),
@@ -18,21 +18,24 @@ const diagnosisBodySchema = z.object({
 
 type DiagnosisBody = z.infer<typeof diagnosisBodySchema>;
 
-type PesFields = Pick<DiagnosisBody, "relatedFactors" | "definingCharacteristics">;
+type PesFields = Pick<
+  DiagnosisBody,
+  'relatedFactors' | 'definingCharacteristics'
+>;
 
 function validateRiscoFields(body: PesFields, ctx: z.RefinementCtx): void {
   if (!body.relatedFactors?.trim()) {
     ctx.addIssue({
-      code: "custom",
-      path: ["relatedFactors"],
-      message: "Fator relacionado é obrigatório para este tipo de diagnóstico",
+      code: 'custom',
+      path: ['relatedFactors'],
+      message: 'Fator relacionado é obrigatório para este tipo de diagnóstico',
     });
   }
   if (body.definingCharacteristics?.trim()) {
     ctx.addIssue({
-      code: "custom",
-      path: ["definingCharacteristics"],
-      message: "Diagnóstico de risco não tem características definidoras",
+      code: 'custom',
+      path: ['definingCharacteristics'],
+      message: 'Diagnóstico de risco não tem características definidoras',
     });
   }
 }
@@ -40,42 +43,47 @@ function validateRiscoFields(body: PesFields, ctx: z.RefinementCtx): void {
 function validateRealFields(body: PesFields, ctx: z.RefinementCtx): void {
   if (!body.relatedFactors?.trim()) {
     ctx.addIssue({
-      code: "custom",
-      path: ["relatedFactors"],
-      message: "Fator relacionado é obrigatório para este tipo de diagnóstico",
+      code: 'custom',
+      path: ['relatedFactors'],
+      message: 'Fator relacionado é obrigatório para este tipo de diagnóstico',
     });
   }
   if (!body.definingCharacteristics?.trim()) {
     ctx.addIssue({
-      code: "custom",
-      path: ["definingCharacteristics"],
-      message: "Característica definidora é obrigatória para este tipo de diagnóstico",
+      code: 'custom',
+      path: ['definingCharacteristics'],
+      message:
+        'Característica definidora é obrigatória para este tipo de diagnóstico',
     });
   }
 }
 
-function validatePromocaoSaudeFields(body: PesFields, ctx: z.RefinementCtx): void {
+function validatePromocaoSaudeFields(
+  body: PesFields,
+  ctx: z.RefinementCtx,
+): void {
   if (body.relatedFactors?.trim()) {
     ctx.addIssue({
-      code: "custom",
-      path: ["relatedFactors"],
-      message: "Diagnóstico de promoção da saúde não tem fatores relacionados",
+      code: 'custom',
+      path: ['relatedFactors'],
+      message: 'Diagnóstico de promoção da saúde não tem fatores relacionados',
     });
   }
   if (!body.definingCharacteristics?.trim()) {
     ctx.addIssue({
-      code: "custom",
-      path: ["definingCharacteristics"],
-      message: "Característica definidora é obrigatória para este tipo de diagnóstico",
+      code: 'custom',
+      path: ['definingCharacteristics'],
+      message:
+        'Característica definidora é obrigatória para este tipo de diagnóstico',
     });
   }
 }
 
 /** Espelha as regras PES de `CarePlanDiagnosis` para falhar cedo, com mensagem clara. */
 function validatePesFields(body: DiagnosisBody, ctx: z.RefinementCtx): void {
-  if (body.type === "risco") {
+  if (body.type === 'risco') {
     validateRiscoFields(body, ctx);
-  } else if (body.type === "real") {
+  } else if (body.type === 'real') {
     validateRealFields(body, ctx);
   } else {
     validatePromocaoSaudeFields(body, ctx);
@@ -93,9 +101,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = diagnosisSchema.parse(await request.json());
-    const { carePlanDiagnoses, carePlans, nursingDiagnoses, auditEvents } = await getRepositories({
-      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
-    });
+    const { carePlanDiagnoses, carePlans, nursingDiagnoses, auditEvents } =
+      await getRepositories({
+        clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+      });
     const diagnosis = await new AddCarePlanDiagnosis(
       carePlanDiagnoses,
       carePlans,
@@ -112,11 +121,14 @@ export async function POST(request: NextRequest, context: RouteContext) {
       nursingDiagnoses.findByCode(body.diagnosisCode),
     ]);
     recordAudit(auditEvents, guard.session, {
-      action: "create",
-      resourceType: "care_plan_diagnosis",
+      action: 'create',
+      resourceType: 'care_plan_diagnosis',
       resourceId: diagnosis.id,
       patientId: plan?.patientId ?? null,
     });
-    return toCarePlanDiagnosisDto(diagnosis, catalogEntry?.label ?? diagnosis.diagnosisCode);
+    return toCarePlanDiagnosisDto(
+      diagnosis,
+      catalogEntry?.label ?? diagnosis.diagnosisCode,
+    );
   });
 }

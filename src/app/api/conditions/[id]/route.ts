@@ -1,14 +1,14 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { ResolveCondition } from "@/application/clinical/resolve-condition";
-import { handleRequest } from "@/lib/api-response";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { recordAudit } from "@/lib/audit";
-import { toConditionDto } from "@/lib/dto";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { ResolveCondition } from '@/application/clinical/resolve-condition';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { recordAudit } from '@/lib/audit';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { toConditionDto } from '@/lib/dto';
 
-const actionSchema = z.object({ action: z.literal("resolve") });
+const actionSchema = z.object({ action: z.literal('resolve') });
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -26,8 +26,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
       return null;
     }
     recordAudit(auditEvents, guard.session, {
-      action: "read",
-      resourceType: "condition",
+      action: 'read',
+      resourceType: 'condition',
       resourceId: condition.id,
       patientId: condition.patientId,
     });
@@ -47,11 +47,11 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     });
     const condition = await new ResolveCondition(conditions).execute({ id });
     recordAudit(auditEvents, guard.session, {
-      action: "update",
-      resourceType: "condition",
+      action: 'update',
+      resourceType: 'condition',
       resourceId: condition.id,
       patientId: condition.patientId,
-      detail: "resolvida",
+      detail: 'resolvida',
     });
     return toConditionDto(condition);
   });

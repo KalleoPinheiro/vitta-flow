@@ -1,24 +1,24 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { AddEvolutionNote } from "@/application/clinical/add-evolution-note";
-import { ListEvolutionNotes } from "@/application/clinical/list-evolution-notes";
-import { handleRequest } from "@/lib/api-response";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { assertPatientAccessibleToProfessional } from "@/lib/auth/professional-patient-scope";
-import { recordAudit } from "@/lib/audit";
-import { toEvolutionNoteDto } from "@/lib/dto";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
-import { ensureLinkBestEffort } from "@/lib/patient-link";
-import type { Session } from "@/lib/auth/session";
-import type { UserAccountRepository } from "@/domain/auth/user-account";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { AddEvolutionNote } from '@/application/clinical/add-evolution-note';
+import { ListEvolutionNotes } from '@/application/clinical/list-evolution-notes';
+import type { UserAccountRepository } from '@/domain/auth/user-account';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { recordAudit } from '@/lib/audit';
+import { assertPatientAccessibleToProfessional } from '@/lib/auth/professional-patient-scope';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import type { Session } from '@/lib/auth/session';
+import { toEvolutionNoteDto } from '@/lib/dto';
+import { ensureLinkBestEffort } from '@/lib/patient-link';
 
 const evolutionSchema = z.object({
   appointmentId: z.string().nullish(),
-  subjective: z.string().max(5000).default(""),
-  objective: z.string().max(5000).default(""),
-  assessment: z.string().max(5000).default(""),
-  plan: z.string().max(5000).default(""),
+  subjective: z.string().max(5000).default(''),
+  objective: z.string().max(5000).default(''),
+  assessment: z.string().max(5000).default(''),
+  plan: z.string().max(5000).default(''),
 });
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -34,11 +34,11 @@ async function resolveProfessionalId(
   session: Session | null | undefined,
   userAccounts: UserAccountRepository,
 ): Promise<string | null> {
-  if (session?.role === "profissional") {
+  if (session?.role === 'profissional') {
     return session.professionalId;
   }
   const subject = session?.subject;
-  if (!subject || subject === "local") {
+  if (!subject || subject === 'local') {
     return null;
   }
   const account = await userAccounts.findByEmail(subject);
@@ -54,14 +54,21 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { evolutions, auditEvents, professionalPatientLinks } = await getRepositories({
-      clinicId: guard.session?.clinicId ?? null,
+    const { evolutions, auditEvents, professionalPatientLinks } =
+      await getRepositories({
+        clinicId: guard.session?.clinicId ?? null,
+      });
+    await assertPatientAccessibleToProfessional(
+      guard.session,
+      id,
+      professionalPatientLinks,
+    );
+    const notes = await new ListEvolutionNotes(evolutions).execute({
+      patientId: id,
     });
-    await assertPatientAccessibleToProfessional(guard.session, id, professionalPatientLinks);
-    const notes = await new ListEvolutionNotes(evolutions).execute({ patientId: id });
     recordAudit(auditEvents, guard.session, {
-      action: "read",
-      resourceType: "evolutions",
+      action: 'read',
+      resourceType: 'evolutions',
       resourceId: id,
       patientId: id,
     });
@@ -77,10 +84,19 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = evolutionSchema.parse(await request.json());
-    const { evolutions, patients, auditEvents, userAccounts, professionalPatientLinks } =
-      await getRepositories({ clinicId });
+    const {
+      evolutions,
+      patients,
+      auditEvents,
+      userAccounts,
+      professionalPatientLinks,
+    } = await getRepositories({ clinicId });
     const { session } = guard;
-    await assertPatientAccessibleToProfessional(session, id, professionalPatientLinks);
+    await assertPatientAccessibleToProfessional(
+      session,
+      id,
+      professionalPatientLinks,
+    );
     const professionalId = await resolveProfessionalId(session, userAccounts);
     const note = await new AddEvolutionNote(evolutions, patients).execute({
       patientId: id,
@@ -97,8 +113,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
       await ensureLinkBestEffort(professionalPatientLinks, professionalId, id);
     }
     recordAudit(auditEvents, guard.session, {
-      action: "create",
-      resourceType: "evolution",
+      action: 'create',
+      resourceType: 'evolution',
       resourceId: note.id,
       patientId: id,
     });

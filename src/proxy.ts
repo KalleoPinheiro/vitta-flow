@@ -1,17 +1,17 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from 'next/server';
+import { fail } from '@/lib/api-response';
 import {
   AUTH_NOT_CONFIGURED_MESSAGE,
-  STAFF_ONLY_MESSAGE,
-  UNAUTHENTICATED_MESSAGE,
   isAllowedForRole,
   isPublicPath,
   resolveAuthMode,
-} from "@/lib/auth/access-policy";
-import { getRequestSession } from "@/lib/auth/request-session";
-import { RateLimiter } from "@/lib/auth/rate-limit";
-import { clientIp } from "@/lib/auth/client-ip";
-import { isStaffSessionRevoked } from "@/lib/auth/staff-revocation";
-import { fail } from "@/lib/api-response";
+  STAFF_ONLY_MESSAGE,
+  UNAUTHENTICATED_MESSAGE,
+} from '@/lib/auth/access-policy';
+import { clientIp } from '@/lib/auth/client-ip';
+import { RateLimiter } from '@/lib/auth/rate-limit';
+import { getRequestSession } from '@/lib/auth/request-session';
+import { isStaffSessionRevoked } from '@/lib/auth/staff-revocation';
 
 /**
  * Camada 1 de autorização (borda). No Next.js 16 este arquivo se chama `proxy.ts`
@@ -29,20 +29,20 @@ import { fail } from "@/lib/api-response";
 const API_RATE_LIMIT_MAX = Number(process.env.API_RATE_LIMIT_MAX) || 120;
 const API_RATE_LIMIT = new RateLimiter(API_RATE_LIMIT_MAX, 60_000);
 
-const isApiPath = (pathname: string): boolean => pathname.startsWith("/api/");
+const isApiPath = (pathname: string): boolean => pathname.startsWith('/api/');
 
 function unauthorized(request: NextRequest): NextResponse {
   if (isApiPath(request.nextUrl.pathname)) {
     return fail(UNAUTHENTICATED_MESSAGE, 401);
   }
-  return NextResponse.redirect(new URL("/login", request.url));
+  return NextResponse.redirect(new URL('/login', request.url));
 }
 
 function forbidden(request: NextRequest): NextResponse {
   if (isApiPath(request.nextUrl.pathname)) {
     return fail(STAFF_ONLY_MESSAGE, 403);
   }
-  return NextResponse.redirect(new URL("/portal", request.url));
+  return NextResponse.redirect(new URL('/portal', request.url));
 }
 
 function authNotConfiguredResponse(): NextResponse {
@@ -57,11 +57,11 @@ function authNotConfiguredResponse(): NextResponse {
  * nos scripts do próprio framework (ver `layout.tsx`: `dynamic = "force-dynamic"`).
  */
 function nextWithCsp(request: NextRequest): NextResponse {
-  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
-  const isDev = process.env.NODE_ENV === "development";
+  const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+  const isDev = process.env.NODE_ENV === 'development';
   const csp = [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ''}`,
     // unsafe-inline só em dev: HMR/overlay do Next injeta estilo inline sem nonce.
     `style-src 'self' ${isDev ? "'unsafe-inline'" : `'nonce-${nonce}'`}`,
     "img-src 'self' data:",
@@ -70,14 +70,14 @@ function nextWithCsp(request: NextRequest): NextResponse {
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-  ].join("; ");
+  ].join('; ');
 
   const requestHeaders = new Headers(request.headers);
-  requestHeaders.set("x-nonce", nonce);
-  requestHeaders.set("Content-Security-Policy", csp);
+  requestHeaders.set('x-nonce', nonce);
+  requestHeaders.set('Content-Security-Policy', csp);
 
   const response = NextResponse.next({ request: { headers: requestHeaders } });
-  response.headers.set("Content-Security-Policy", csp);
+  response.headers.set('Content-Security-Policy', csp);
   return response;
 }
 
@@ -85,7 +85,10 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
 
   if (isApiPath(pathname) && !API_RATE_LIMIT.allow(clientIp(request))) {
-    return fail("Limite de requisições excedido, tente novamente em instantes", 429);
+    return fail(
+      'Limite de requisições excedido, tente novamente em instantes',
+      429,
+    );
   }
 
   if (isPublicPath(pathname)) {
@@ -93,10 +96,10 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   }
 
   const mode = resolveAuthMode();
-  if (mode === "unconfigured") {
+  if (mode === 'unconfigured') {
     return authNotConfiguredResponse();
   }
-  if (mode === "open") {
+  if (mode === 'open') {
     return nextWithCsp(request);
   }
 
@@ -116,5 +119,5 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };

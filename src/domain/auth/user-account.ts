@@ -1,6 +1,6 @@
-import { ValidationError } from "../shared/errors";
-import { newId } from "../shared/id";
-import type { UserRole } from "./user-role";
+import { ValidationError } from '../shared/errors';
+import { newId } from '../shared/id';
+import type { UserRole } from './user-role';
 
 export interface UserAccountProps {
   email: string;
@@ -29,10 +29,10 @@ export class UserAccount {
   static create(props: UserAccountProps): UserAccount {
     const email = props.email.trim().toLowerCase();
     if (!EMAIL_PATTERN.test(email)) {
-      throw new ValidationError("Email inválido");
+      throw new ValidationError('Email inválido');
     }
-    if (!props.passwordHash.startsWith("scrypt$")) {
-      throw new ValidationError("Hash de senha em formato inválido");
+    if (!props.passwordHash.startsWith('scrypt$')) {
+      throw new ValidationError('Hash de senha em formato inválido');
     }
     return new UserAccount({
       email,
@@ -51,8 +51,8 @@ export class UserAccount {
   }
 
   withPasswordHash(passwordHash: string): UserAccount {
-    if (!passwordHash.startsWith("scrypt$")) {
-      throw new ValidationError("Hash de senha em formato inválido");
+    if (!passwordHash.startsWith('scrypt$')) {
+      throw new ValidationError('Hash de senha em formato inválido');
     }
     return new UserAccount({ ...this.state, passwordHash });
   }

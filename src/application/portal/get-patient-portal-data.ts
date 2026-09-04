@@ -1,20 +1,20 @@
-import type { Patient } from "@/domain/patient/patient";
-import type { PatientRepository } from "@/domain/patient/patient-repository";
-import type { Appointment } from "@/domain/scheduling/appointment";
-import type { AppointmentRepository } from "@/domain/scheduling/appointment-repository";
-import type { ClinicalCondition } from "@/domain/clinical/clinical-condition";
-import type { ConditionAssessment } from "@/domain/clinical/condition-assessment";
-import type { ConditionPhoto } from "@/domain/clinical/condition-photo";
+import type { Invoice } from '@/domain/billing/invoice';
+import type { InvoiceRepository } from '@/domain/billing/invoice-repository';
+import type { ClinicalCondition } from '@/domain/clinical/clinical-condition';
 import type {
   ClinicalConditionRepository,
   ConditionAssessmentRepository,
   ConditionPhotoRepository,
-} from "@/domain/clinical/clinical-repositories";
-import type { Invoice } from "@/domain/billing/invoice";
-import type { InvoiceRepository } from "@/domain/billing/invoice-repository";
-import type { FollowUp } from "@/domain/followup/follow-up";
-import type { FollowUpRepository } from "@/domain/followup/follow-up-repository";
-import { NotFoundError } from "@/domain/shared/errors";
+} from '@/domain/clinical/clinical-repositories';
+import type { ConditionAssessment } from '@/domain/clinical/condition-assessment';
+import type { ConditionPhoto } from '@/domain/clinical/condition-photo';
+import type { FollowUp } from '@/domain/followup/follow-up';
+import type { FollowUpRepository } from '@/domain/followup/follow-up-repository';
+import type { Patient } from '@/domain/patient/patient';
+import type { PatientRepository } from '@/domain/patient/patient-repository';
+import type { Appointment } from '@/domain/scheduling/appointment';
+import type { AppointmentRepository } from '@/domain/scheduling/appointment-repository';
+import { NotFoundError } from '@/domain/shared/errors';
 
 export interface ConditionWithAssessments {
   condition: ClinicalCondition;
@@ -46,8 +46,8 @@ export class GetPatientPortalData {
 
   async execute(input: { email: string }): Promise<PatientPortalData> {
     const patient = await this.patients.findByEmail(input.email);
-    if (!patient || !patient.isActive) {
-      throw new NotFoundError("Paciente", input.email);
+    if (!patient?.isActive) {
+      throw new NotFoundError('Paciente', input.email);
     }
 
     const cutoff = new Date();
@@ -57,7 +57,7 @@ export class GetPatientPortalData {
       this.appointments.findByPatientId(patient.id, { endsAfter: cutoff }),
       this.conditions.findByPatientId(patient.id),
       this.invoices.findAll({ patientId: patient.id }),
-      this.followUps.findAll({ patientId: patient.id, status: "pending" }),
+      this.followUps.findAll({ patientId: patient.id, status: 'pending' }),
     ]);
 
     // Uma query em lote para todas as avaliações e fotos (sem N+1 por condição).

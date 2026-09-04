@@ -1,16 +1,14 @@
-import { asc, desc, eq, inArray } from "drizzle-orm";
-import { CarePlan, type CarePlanStatus } from "@/domain/clinical/care-plan";
+import { asc, desc, eq, inArray } from 'drizzle-orm';
+import { CarePlan, type CarePlanStatus } from '@/domain/clinical/care-plan';
 import {
   CarePlanDiagnosis,
   type CarePlanDiagnosisType,
-} from "@/domain/clinical/care-plan-diagnosis";
-import { CarePlanOutcome } from "@/domain/clinical/care-plan-outcome";
+} from '@/domain/clinical/care-plan-diagnosis';
 import {
   CarePlanIntervention,
   type InterventionPriority,
-} from "@/domain/clinical/care-plan-intervention";
-import { OutcomeEvaluation } from "@/domain/clinical/outcome-evaluation";
-import { InterventionRecord } from "@/domain/clinical/intervention-record";
+} from '@/domain/clinical/care-plan-intervention';
+import { CarePlanOutcome } from '@/domain/clinical/care-plan-outcome';
 import type {
   CarePlanDiagnosisRepository,
   CarePlanInterventionRepository,
@@ -18,8 +16,10 @@ import type {
   CarePlanRepository,
   InterventionRecordRepository,
   OutcomeEvaluationRepository,
-} from "@/domain/clinical/clinical-repositories";
-import type { AppDb } from "./db";
+} from '@/domain/clinical/clinical-repositories';
+import { InterventionRecord } from '@/domain/clinical/intervention-record';
+import { OutcomeEvaluation } from '@/domain/clinical/outcome-evaluation';
+import type { AppDb } from './db';
 import {
   carePlanDiagnoses,
   carePlanInterventions,
@@ -27,11 +27,13 @@ import {
   carePlans,
   interventionRecords,
   outcomeEvaluations,
-} from "./schema";
-import { withTenant } from "./tenant-scope";
+} from './schema';
+import { withTenant } from './tenant-scope';
 
 const systemRoleWriteError = (entity: string): Error =>
-  new Error(`Papel de sistema não pode salvar ${entity} (somente leitura cross-empresa)`);
+  new Error(
+    `Papel de sistema não pode salvar ${entity} (somente leitura cross-empresa)`,
+  );
 
 export class DrizzleCarePlanRepository implements CarePlanRepository {
   constructor(
@@ -45,7 +47,7 @@ export class DrizzleCarePlanRepository implements CarePlanRepository {
 
   async save(carePlan: CarePlan): Promise<void> {
     if (this.clinicId === null) {
-      throw systemRoleWriteError("plano de cuidado");
+      throw systemRoleWriteError('plano de cuidado');
     }
     const values = {
       id: carePlan.id,
@@ -75,7 +77,13 @@ export class DrizzleCarePlanRepository implements CarePlanRepository {
     const rows = await this.db
       .select()
       .from(carePlans)
-      .where(withTenant(carePlans, this.clinicId, eq(carePlans.patientId, patientId)))
+      .where(
+        withTenant(
+          carePlans,
+          this.clinicId,
+          eq(carePlans.patientId, patientId),
+        ),
+      )
       .orderBy(desc(carePlans.createdAt), asc(carePlans.id));
     return rows.map((row) => this.toEntity(row));
   }
@@ -84,25 +92,38 @@ export class DrizzleCarePlanRepository implements CarePlanRepository {
     const rows = await this.db
       .select()
       .from(carePlans)
-      .where(withTenant(carePlans, this.clinicId, eq(carePlans.conditionId, conditionId)))
+      .where(
+        withTenant(
+          carePlans,
+          this.clinicId,
+          eq(carePlans.conditionId, conditionId),
+        ),
+      )
       .orderBy(desc(carePlans.createdAt), asc(carePlans.id));
     return rows.map((row) => this.toEntity(row));
   }
 }
 
-export class DrizzleCarePlanDiagnosisRepository implements CarePlanDiagnosisRepository {
+export class DrizzleCarePlanDiagnosisRepository
+  implements CarePlanDiagnosisRepository
+{
   constructor(
     private readonly db: AppDb,
     private readonly clinicId: string | null,
   ) {}
 
-  private toEntity(row: typeof carePlanDiagnoses.$inferSelect): CarePlanDiagnosis {
-    return CarePlanDiagnosis.restore({ ...row, type: row.type as CarePlanDiagnosisType });
+  private toEntity(
+    row: typeof carePlanDiagnoses.$inferSelect,
+  ): CarePlanDiagnosis {
+    return CarePlanDiagnosis.restore({
+      ...row,
+      type: row.type as CarePlanDiagnosisType,
+    });
   }
 
   async save(diagnosis: CarePlanDiagnosis): Promise<void> {
     if (this.clinicId === null) {
-      throw systemRoleWriteError("diagnóstico de plano de cuidado");
+      throw systemRoleWriteError('diagnóstico de plano de cuidado');
     }
     await this.db.insert(carePlanDiagnoses).values({
       id: diagnosis.id,
@@ -121,7 +142,11 @@ export class DrizzleCarePlanDiagnosisRepository implements CarePlanDiagnosisRepo
       .select()
       .from(carePlanDiagnoses)
       .where(
-        withTenant(carePlanDiagnoses, this.clinicId, eq(carePlanDiagnoses.carePlanId, carePlanId)),
+        withTenant(
+          carePlanDiagnoses,
+          this.clinicId,
+          eq(carePlanDiagnoses.carePlanId, carePlanId),
+        ),
       )
       .orderBy(desc(carePlanDiagnoses.createdAt), asc(carePlanDiagnoses.id));
     return rows.map((row) => this.toEntity(row));
@@ -147,7 +172,9 @@ export class DrizzleCarePlanDiagnosisRepository implements CarePlanDiagnosisRepo
   }
 }
 
-export class DrizzleCarePlanOutcomeRepository implements CarePlanOutcomeRepository {
+export class DrizzleCarePlanOutcomeRepository
+  implements CarePlanOutcomeRepository
+{
   constructor(
     private readonly db: AppDb,
     private readonly clinicId: string | null,
@@ -159,7 +186,7 @@ export class DrizzleCarePlanOutcomeRepository implements CarePlanOutcomeReposito
 
   async save(outcome: CarePlanOutcome): Promise<void> {
     if (this.clinicId === null) {
-      throw systemRoleWriteError("resultado de plano de cuidado");
+      throw systemRoleWriteError('resultado de plano de cuidado');
     }
     await this.db.insert(carePlanOutcomes).values({
       id: outcome.id,
@@ -177,7 +204,13 @@ export class DrizzleCarePlanOutcomeRepository implements CarePlanOutcomeReposito
     const rows = await this.db
       .select()
       .from(carePlanOutcomes)
-      .where(withTenant(carePlanOutcomes, this.clinicId, eq(carePlanOutcomes.id, id)))
+      .where(
+        withTenant(
+          carePlanOutcomes,
+          this.clinicId,
+          eq(carePlanOutcomes.id, id),
+        ),
+      )
       .limit(1);
     return rows[0] ? this.toEntity(rows[0]) : null;
   }
@@ -187,7 +220,11 @@ export class DrizzleCarePlanOutcomeRepository implements CarePlanOutcomeReposito
       .select()
       .from(carePlanOutcomes)
       .where(
-        withTenant(carePlanOutcomes, this.clinicId, eq(carePlanOutcomes.carePlanId, carePlanId)),
+        withTenant(
+          carePlanOutcomes,
+          this.clinicId,
+          eq(carePlanOutcomes.carePlanId, carePlanId),
+        ),
       )
       .orderBy(desc(carePlanOutcomes.createdAt), asc(carePlanOutcomes.id));
     return rows.map((row) => this.toEntity(row));
@@ -202,26 +239,37 @@ export class DrizzleCarePlanOutcomeRepository implements CarePlanOutcomeReposito
       .select()
       .from(carePlanOutcomes)
       .where(
-        withTenant(carePlanOutcomes, this.clinicId, inArray(carePlanOutcomes.carePlanId, unique)),
+        withTenant(
+          carePlanOutcomes,
+          this.clinicId,
+          inArray(carePlanOutcomes.carePlanId, unique),
+        ),
       )
       .orderBy(desc(carePlanOutcomes.createdAt), asc(carePlanOutcomes.id));
     return rows.map((row) => this.toEntity(row));
   }
 }
 
-export class DrizzleCarePlanInterventionRepository implements CarePlanInterventionRepository {
+export class DrizzleCarePlanInterventionRepository
+  implements CarePlanInterventionRepository
+{
   constructor(
     private readonly db: AppDb,
     private readonly clinicId: string | null,
   ) {}
 
-  private toEntity(row: typeof carePlanInterventions.$inferSelect): CarePlanIntervention {
-    return CarePlanIntervention.restore({ ...row, priority: row.priority as InterventionPriority });
+  private toEntity(
+    row: typeof carePlanInterventions.$inferSelect,
+  ): CarePlanIntervention {
+    return CarePlanIntervention.restore({
+      ...row,
+      priority: row.priority as InterventionPriority,
+    });
   }
 
   async save(intervention: CarePlanIntervention): Promise<void> {
     if (this.clinicId === null) {
-      throw systemRoleWriteError("intervenção de plano de cuidado");
+      throw systemRoleWriteError('intervenção de plano de cuidado');
     }
     await this.db.insert(carePlanInterventions).values({
       id: intervention.id,
@@ -238,7 +286,13 @@ export class DrizzleCarePlanInterventionRepository implements CarePlanInterventi
     const rows = await this.db
       .select()
       .from(carePlanInterventions)
-      .where(withTenant(carePlanInterventions, this.clinicId, eq(carePlanInterventions.id, id)))
+      .where(
+        withTenant(
+          carePlanInterventions,
+          this.clinicId,
+          eq(carePlanInterventions.id, id),
+        ),
+      )
       .limit(1);
     return rows[0] ? this.toEntity(rows[0]) : null;
   }
@@ -254,11 +308,16 @@ export class DrizzleCarePlanInterventionRepository implements CarePlanInterventi
           eq(carePlanInterventions.carePlanId, carePlanId),
         ),
       )
-      .orderBy(desc(carePlanInterventions.createdAt), asc(carePlanInterventions.id));
+      .orderBy(
+        desc(carePlanInterventions.createdAt),
+        asc(carePlanInterventions.id),
+      );
     return rows.map((row) => this.toEntity(row));
   }
 
-  async findByCarePlanIds(carePlanIds: string[]): Promise<CarePlanIntervention[]> {
+  async findByCarePlanIds(
+    carePlanIds: string[],
+  ): Promise<CarePlanIntervention[]> {
     const unique = [...new Set(carePlanIds)];
     if (unique.length === 0) {
       return [];
@@ -273,24 +332,31 @@ export class DrizzleCarePlanInterventionRepository implements CarePlanInterventi
           inArray(carePlanInterventions.carePlanId, unique),
         ),
       )
-      .orderBy(desc(carePlanInterventions.createdAt), asc(carePlanInterventions.id));
+      .orderBy(
+        desc(carePlanInterventions.createdAt),
+        asc(carePlanInterventions.id),
+      );
     return rows.map((row) => this.toEntity(row));
   }
 }
 
-export class DrizzleOutcomeEvaluationRepository implements OutcomeEvaluationRepository {
+export class DrizzleOutcomeEvaluationRepository
+  implements OutcomeEvaluationRepository
+{
   constructor(
     private readonly db: AppDb,
     private readonly clinicId: string | null,
   ) {}
 
-  private toEntity(row: typeof outcomeEvaluations.$inferSelect): OutcomeEvaluation {
+  private toEntity(
+    row: typeof outcomeEvaluations.$inferSelect,
+  ): OutcomeEvaluation {
     return OutcomeEvaluation.restore(row);
   }
 
   async save(evaluation: OutcomeEvaluation): Promise<void> {
     if (this.clinicId === null) {
-      throw systemRoleWriteError("avaliação de desfecho");
+      throw systemRoleWriteError('avaliação de desfecho');
     }
     await this.db.insert(outcomeEvaluations).values({
       id: evaluation.id,
@@ -307,8 +373,17 @@ export class DrizzleOutcomeEvaluationRepository implements OutcomeEvaluationRepo
     const rows = await this.db
       .select()
       .from(outcomeEvaluations)
-      .where(withTenant(outcomeEvaluations, this.clinicId, eq(outcomeEvaluations.outcomeId, outcomeId)))
-      .orderBy(desc(outcomeEvaluations.evaluatedAt), asc(outcomeEvaluations.id));
+      .where(
+        withTenant(
+          outcomeEvaluations,
+          this.clinicId,
+          eq(outcomeEvaluations.outcomeId, outcomeId),
+        ),
+      )
+      .orderBy(
+        desc(outcomeEvaluations.evaluatedAt),
+        asc(outcomeEvaluations.id),
+      );
     return rows.map((row) => this.toEntity(row));
   }
 
@@ -321,26 +396,37 @@ export class DrizzleOutcomeEvaluationRepository implements OutcomeEvaluationRepo
       .select()
       .from(outcomeEvaluations)
       .where(
-        withTenant(outcomeEvaluations, this.clinicId, inArray(outcomeEvaluations.outcomeId, unique)),
+        withTenant(
+          outcomeEvaluations,
+          this.clinicId,
+          inArray(outcomeEvaluations.outcomeId, unique),
+        ),
       )
-      .orderBy(desc(outcomeEvaluations.evaluatedAt), asc(outcomeEvaluations.id));
+      .orderBy(
+        desc(outcomeEvaluations.evaluatedAt),
+        asc(outcomeEvaluations.id),
+      );
     return rows.map((row) => this.toEntity(row));
   }
 }
 
-export class DrizzleInterventionRecordRepository implements InterventionRecordRepository {
+export class DrizzleInterventionRecordRepository
+  implements InterventionRecordRepository
+{
   constructor(
     private readonly db: AppDb,
     private readonly clinicId: string | null,
   ) {}
 
-  private toEntity(row: typeof interventionRecords.$inferSelect): InterventionRecord {
+  private toEntity(
+    row: typeof interventionRecords.$inferSelect,
+  ): InterventionRecord {
     return InterventionRecord.restore(row);
   }
 
   async save(record: InterventionRecord): Promise<void> {
     if (this.clinicId === null) {
-      throw systemRoleWriteError("registro de intervenção");
+      throw systemRoleWriteError('registro de intervenção');
     }
     await this.db.insert(interventionRecords).values({
       id: record.id,
@@ -352,7 +438,9 @@ export class DrizzleInterventionRecordRepository implements InterventionRecordRe
     });
   }
 
-  async findByInterventionId(interventionId: string): Promise<InterventionRecord[]> {
+  async findByInterventionId(
+    interventionId: string,
+  ): Promise<InterventionRecord[]> {
     const rows = await this.db
       .select()
       .from(interventionRecords)
@@ -363,11 +451,16 @@ export class DrizzleInterventionRecordRepository implements InterventionRecordRe
           eq(interventionRecords.interventionId, interventionId),
         ),
       )
-      .orderBy(desc(interventionRecords.performedAt), asc(interventionRecords.id));
+      .orderBy(
+        desc(interventionRecords.performedAt),
+        asc(interventionRecords.id),
+      );
     return rows.map((row) => this.toEntity(row));
   }
 
-  async findByInterventionIds(interventionIds: string[]): Promise<InterventionRecord[]> {
+  async findByInterventionIds(
+    interventionIds: string[],
+  ): Promise<InterventionRecord[]> {
     const unique = [...new Set(interventionIds)];
     if (unique.length === 0) {
       return [];
@@ -382,7 +475,10 @@ export class DrizzleInterventionRecordRepository implements InterventionRecordRe
           inArray(interventionRecords.interventionId, unique),
         ),
       )
-      .orderBy(desc(interventionRecords.performedAt), asc(interventionRecords.id));
+      .orderBy(
+        desc(interventionRecords.performedAt),
+        asc(interventionRecords.id),
+      );
     return rows.map((row) => this.toEntity(row));
   }
 }

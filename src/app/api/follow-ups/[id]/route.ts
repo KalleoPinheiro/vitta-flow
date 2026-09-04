@@ -1,13 +1,13 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { SetFollowUpStatus } from "@/application/followups/set-follow-up-status";
-import { handleRequest } from "@/lib/api-response";
-import { toFollowUpDto } from "@/lib/dto";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { SetFollowUpStatus } from '@/application/followups/set-follow-up-status';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { toFollowUpDto } from '@/lib/dto';
 
-const patchSchema = z.object({ status: z.enum(["done", "cancelled"]) });
+const patchSchema = z.object({ status: z.enum(['done', 'cancelled']) });
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -22,7 +22,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
     });
     return toFollowUpDto(
-      await new SetFollowUpStatus(followUps).execute({ id, status: body.status }),
+      await new SetFollowUpStatus(followUps).execute({
+        id,
+        status: body.status,
+      }),
     );
   });
 }

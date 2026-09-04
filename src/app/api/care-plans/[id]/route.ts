@@ -1,15 +1,15 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { GetCarePlan } from "@/application/clinical/get-care-plan";
-import { ResolveCarePlan } from "@/application/clinical/resolve-care-plan";
-import { handleRequest } from "@/lib/api-response";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { recordAudit } from "@/lib/audit";
-import { toCarePlanDetailDto, toCarePlanDto } from "@/lib/dto";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { GetCarePlan } from '@/application/clinical/get-care-plan';
+import { ResolveCarePlan } from '@/application/clinical/resolve-care-plan';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { recordAudit } from '@/lib/audit';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { toCarePlanDetailDto, toCarePlanDto } from '@/lib/dto';
 
-const actionSchema = z.object({ action: z.literal("resolve") });
+const actionSchema = z.object({ action: z.literal('resolve') });
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -40,17 +40,24 @@ export async function GET(request: NextRequest, context: RouteContext) {
       interventionRecords,
     ).execute({ id });
 
-    const [diagnosisCatalog, outcomeCatalog, interventionCatalog] = await Promise.all([
-      nursingDiagnoses.findByCodes(detail.diagnoses.map((d) => d.diagnosisCode)),
-      nursingOutcomes.findByCodes(detail.outcomes.map(({ outcome }) => outcome.outcomeCode)),
-      nursingInterventions.findByCodes(
-        detail.interventions.map(({ intervention }) => intervention.interventionCode),
-      ),
-    ]);
+    const [diagnosisCatalog, outcomeCatalog, interventionCatalog] =
+      await Promise.all([
+        nursingDiagnoses.findByCodes(
+          detail.diagnoses.map((d) => d.diagnosisCode),
+        ),
+        nursingOutcomes.findByCodes(
+          detail.outcomes.map(({ outcome }) => outcome.outcomeCode),
+        ),
+        nursingInterventions.findByCodes(
+          detail.interventions.map(
+            ({ intervention }) => intervention.interventionCode,
+          ),
+        ),
+      ]);
 
     recordAudit(auditEvents, guard.session, {
-      action: "read",
-      resourceType: "care_plan",
+      action: 'read',
+      resourceType: 'care_plan',
       resourceId: id,
       patientId: detail.plan.patientId,
     });
@@ -74,11 +81,11 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     });
     const plan = await new ResolveCarePlan(carePlans).execute({ id });
     recordAudit(auditEvents, guard.session, {
-      action: "update",
-      resourceType: "care_plan",
+      action: 'update',
+      resourceType: 'care_plan',
       resourceId: plan.id,
       patientId: plan.patientId,
-      detail: "resolvido",
+      detail: 'resolvido',
     });
     return toCarePlanDto(plan);
   });

@@ -1,28 +1,45 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Alert, AlertDescription, Button, Card, Hero } from "@still-void/ui/react";
-import { useToast } from "@still-void/ui/react/client";
-import { apiFetch } from "@/lib/client";
+import {
+  Alert,
+  AlertDescription,
+  Button,
+  Card,
+  Hero,
+} from '@still-void/ui/react';
+import { useToast } from '@still-void/ui/react/client';
+import { useState } from 'react';
+import {
+  EmptyState,
+  ErrorAlert,
+  LoadingIndicator,
+} from '@/components/feedback';
+import { StatusBadge } from '@/components/status-badge';
+import { apiFetch } from '@/lib/client';
 import type {
   FollowUpDto,
   InvoiceDto,
   PortalAppointmentDto,
   PortalPatientProfileDto,
-} from "@/lib/dto";
-import { useApiQuery } from "@/lib/use-api-query";
+} from '@/lib/dto';
 import {
   APPOINTMENT_STATUS_LABELS,
-  INVOICE_STATUS_LABELS,
   formatCurrency,
   formatDate,
   formatDateTime,
-} from "@/lib/format";
-import { StatusBadge } from "@/components/status-badge";
-import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
-import { ConditionProgress, type ConditionWithAssessmentsDto } from "./condition-progress";
-import { ConsentCard, PatientPhotoUpload, type ConsentStatusDto } from "./consent-card";
-import { ScheduleReturn } from "./schedule-return";
+  INVOICE_STATUS_LABELS,
+} from '@/lib/format';
+import { useApiQuery } from '@/lib/use-api-query';
+import {
+  ConditionProgress,
+  type ConditionWithAssessmentsDto,
+} from './condition-progress';
+import {
+  ConsentCard,
+  type ConsentStatusDto,
+  PatientPhotoUpload,
+} from './consent-card';
+import { ScheduleReturn } from './schedule-return';
 
 interface PatientPortalDto {
   patient: PortalPatientProfileDto;
@@ -37,12 +54,14 @@ const PAGE_LOAD_MS = Date.now();
 
 export function PatientPortalView() {
   const { toast } = useToast();
-  const { data, error, refresh } = useApiQuery<PatientPortalDto>("/api/portal/patient");
+  const { data, error, refresh } = useApiQuery<PatientPortalDto>(
+    '/api/portal/patient',
+  );
   // Fonte única do consentimento na tela: o card de aceite e o envio de foto
   // (COMP3-01) leem o mesmo status — cópias separadas divergiam após o aceite,
   // porque useApiQuery guarda estado por componente, sem cache compartilhado.
   const { data: consent, refresh: refreshConsent } =
-    useApiQuery<ConsentStatusDto>("/api/portal/patient/consent");
+    useApiQuery<ConsentStatusDto>('/api/portal/patient/consent');
   const [confirmError, setConfirmError] = useState<string | null>(null);
 
   if (error) return <ErrorAlert message={error} />;
@@ -50,30 +69,36 @@ export function PatientPortalView() {
 
   const confirmAppointment = async (appointment: PortalAppointmentDto) => {
     try {
-      await apiFetch(`/api/portal/patient/appointments/${appointment.id}/confirm`, {
-        method: "POST",
-      });
+      await apiFetch(
+        `/api/portal/patient/appointments/${appointment.id}/confirm`,
+        {
+          method: 'POST',
+        },
+      );
       setConfirmError(null);
-      toast({ description: "Presença confirmada", variant: "success" });
+      toast({ description: 'Presença confirmada', variant: 'success' });
       refresh();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Erro ao confirmar presença";
+      const message =
+        err instanceof Error ? err.message : 'Erro ao confirmar presença';
       setConfirmError(message);
-      toast({ description: message, variant: "danger" });
+      toast({ description: message, variant: 'danger' });
     }
   };
 
   const upcoming = data.appointments.filter(
     (a) =>
       new Date(a.startsAt).getTime() >= PAGE_LOAD_MS &&
-      (a.status === "scheduled" || a.status === "confirmed"),
+      (a.status === 'scheduled' || a.status === 'confirmed'),
   );
   // PORT-09: consulta cancelada pela clínica com data ainda futura fica
   // separada — antes só aparecia enterrada em "Histórico", abaixo da
   // evolução clínica, e o paciente podia aparecer presencialmente no dia
   // errado.
   const cancelledUpcoming = data.appointments.filter(
-    (a) => new Date(a.startsAt).getTime() >= PAGE_LOAD_MS && a.status === "cancelled",
+    (a) =>
+      new Date(a.startsAt).getTime() >= PAGE_LOAD_MS &&
+      a.status === 'cancelled',
   );
   const past = data.appointments.filter(
     (a) => !upcoming.includes(a) && !cancelledUpcoming.includes(a),
@@ -84,7 +109,7 @@ export function PatientPortalView() {
       <Hero
         className="pt-0 pb-2"
         eyebrow="Portal do paciente"
-        title={`Olá, ${data.patient.fullName.split(" ")[0]}!`}
+        title={`Olá, ${data.patient.fullName.split(' ')[0]}!`}
         description="Acompanhe aqui suas consultas e sua evolução clínica."
       />
 
@@ -111,9 +136,16 @@ export function PatientPortalView() {
         <Section title="Retornos recomendados">
           <ul className="flex flex-col gap-2 text-sm">
             {data.followUps.map((followUp) => (
-              <li key={followUp.id} className="rounded-lg border border-warning-soft bg-warning-soft px-3 py-2">
-                {followUp.reason} — até <strong>{formatDate(followUp.dueDate)}</strong>
-                <ScheduleReturn followUpId={followUp.id} onScheduled={refresh} />
+              <li
+                key={followUp.id}
+                className="rounded-lg border border-warning-soft bg-warning-soft px-3 py-2"
+              >
+                {followUp.reason} — até{' '}
+                <strong>{formatDate(followUp.dueDate)}</strong>
+                <ScheduleReturn
+                  followUpId={followUp.id}
+                  onScheduled={refresh}
+                />
               </li>
             ))}
           </ul>
@@ -122,13 +154,19 @@ export function PatientPortalView() {
 
       <Section title="Minha evolução clínica">
         {data.conditions.length === 0 ? (
-          <EmptyState icon="info" message="Nenhuma condição em acompanhamento." />
+          <EmptyState
+            icon="info"
+            message="Nenhuma condição em acompanhamento."
+          />
         ) : (
           <div className="flex flex-col gap-3">
             {data.conditions.map((entry) => (
               <div key={entry.condition.id}>
-                <ConditionProgress {...entry} photoUrlBase="/api/portal/patient/photos" />
-                {entry.condition.status === "active" && (
+                <ConditionProgress
+                  {...entry}
+                  photoUrlBase="/api/portal/patient/photos"
+                />
+                {entry.condition.status === 'active' && (
                   <PatientPhotoUpload
                     conditionId={entry.condition.id}
                     consentPending={consent !== null && !consent.accepted}
@@ -156,10 +194,16 @@ export function PatientPortalView() {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <section>
-      <h2 className="mb-3 text-lg font-semibold">{title}</h2>
+      <h2 className="mb-3 font-semibold text-lg">{title}</h2>
       {children}
     </section>
   );
@@ -168,15 +212,19 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 // PORT-09: consulta cancelada pela clínica com data ainda futura fica
 // destacada — antes só aparecia enterrada em "Histórico", abaixo da evolução
 // clínica, e o paciente podia aparecer presencialmente no dia errado.
-function CancelledAppointmentsAlert({ appointments }: { appointments: PortalAppointmentDto[] }) {
+function CancelledAppointmentsAlert({
+  appointments,
+}: {
+  appointments: PortalAppointmentDto[];
+}) {
   if (appointments.length === 0) return null;
   return (
     <Alert variant="warning">
       <AlertDescription>
         <strong>
           {appointments.length === 1
-            ? "Uma consulta sua foi cancelada pela clínica:"
-            : "Consultas suas foram canceladas pela clínica:"}
+            ? 'Uma consulta sua foi cancelada pela clínica:'
+            : 'Consultas suas foram canceladas pela clínica:'}
         </strong>
         <ul className="mt-1 list-inside list-disc">
           {appointments.map((appointment) => (
@@ -202,9 +250,13 @@ function InvoicesList({ invoices }: { invoices: InvoiceDto[] }) {
             <li key={invoice.id} className="flex items-center gap-3 px-4 py-3">
               <div className="min-w-0 flex-1">
                 <p className="truncate">{invoice.description}</p>
-                <p className="text-xs text-ink-3">{formatDate(invoice.issuedAt)}</p>
+                <p className="text-ink-3 text-xs">
+                  {formatDate(invoice.issuedAt)}
+                </p>
               </div>
-              <span className="font-medium">{formatCurrency(invoice.amountCents)}</span>
+              <span className="font-medium">
+                {formatCurrency(invoice.amountCents)}
+              </span>
               <StatusBadge
                 status={invoice.status}
                 label={INVOICE_STATUS_LABELS[invoice.status] ?? invoice.status}
@@ -215,7 +267,9 @@ function InvoicesList({ invoices }: { invoices: InvoiceDto[] }) {
       </Card>
       {/* PORT-13: legenda mínima — sem gateway de pagamento no sistema hoje
           (ver Assumptions do spec). */}
-      <p className="mt-2 text-xs text-ink-3">Pagamento realizado presencialmente na clínica.</p>
+      <p className="mt-2 text-ink-3 text-xs">
+        Pagamento realizado presencialmente na clínica.
+      </p>
     </>
   );
 }
@@ -228,30 +282,38 @@ interface AppointmentListProps {
 function AppointmentList({ appointments, onConfirm }: AppointmentListProps) {
   return (
     <Card>
-            <ul className="divide-y divide-border text-sm">
-      {appointments.map((appointment) => (
-        <li key={appointment.id} className="flex items-center gap-3 px-4 py-3">
-          <div className="min-w-0 flex-1">
-            <p className="font-medium">{formatDateTime(appointment.startsAt)}</p>
-            <p className="truncate text-ink-3">{appointment.procedure}</p>
-          </div>
-          {onConfirm && appointment.status === "scheduled" && (
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => onConfirm(appointment)}
-              variant="accent"
-            >
-              Confirmar presença
-            </Button>
-          )}
-          <StatusBadge
-            status={appointment.status}
-            label={APPOINTMENT_STATUS_LABELS[appointment.status] ?? appointment.status}
-          />
-        </li>
-      ))}
-    </ul>
+      <ul className="divide-y divide-border text-sm">
+        {appointments.map((appointment) => (
+          <li
+            key={appointment.id}
+            className="flex items-center gap-3 px-4 py-3"
+          >
+            <div className="min-w-0 flex-1">
+              <p className="font-medium">
+                {formatDateTime(appointment.startsAt)}
+              </p>
+              <p className="truncate text-ink-3">{appointment.procedure}</p>
+            </div>
+            {onConfirm && appointment.status === 'scheduled' && (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => onConfirm(appointment)}
+                variant="accent"
+              >
+                Confirmar presença
+              </Button>
+            )}
+            <StatusBadge
+              status={appointment.status}
+              label={
+                APPOINTMENT_STATUS_LABELS[appointment.status] ??
+                appointment.status
+              }
+            />
+          </li>
+        ))}
+      </ul>
     </Card>
   );
 }

@@ -1,12 +1,12 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { Procedure } from "@/domain/catalog/procedure";
-import { ValidationError } from "@/domain/shared/errors";
-import { handleRequest } from "@/lib/api-response";
-import { toProcedureDto } from "@/lib/dto";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { Procedure } from '@/domain/catalog/procedure';
+import { ValidationError } from '@/domain/shared/errors';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { toProcedureDto } from '@/lib/dto';
 
 const procedureSchema = z.object({
   name: z.string().min(1).max(200),
@@ -26,7 +26,9 @@ export async function GET(request: NextRequest) {
       procedures.findAll(),
       procedureKits.countByProcedure(),
     ]);
-    return result.map((procedure) => toProcedureDto(procedure, kitCounts[procedure.id] ?? 0));
+    return result.map((procedure) =>
+      toProcedureDto(procedure, kitCounts[procedure.id] ?? 0),
+    );
   });
 }
 
@@ -42,7 +44,9 @@ export async function POST(request: NextRequest) {
 
     const existing = await procedures.findByName(body.name);
     if (existing) {
-      throw new ValidationError(`Já existe procedimento com o nome "${existing.name}"`);
+      throw new ValidationError(
+        `Já existe procedimento com o nome "${existing.name}"`,
+      );
     }
 
     const procedure = Procedure.create(body);

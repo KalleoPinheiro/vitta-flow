@@ -1,34 +1,38 @@
-import type { NextRequest } from "next/server";
-import { getRepositories } from "@/infrastructure/container";
-import { ConsentRecord } from "@/domain/consent/consent-record";
-import { CONSENT_TEXT, CONSENT_TEXT_VERSION } from "@/lib/consent-text";
-import { requirePortalSession } from "@/lib/auth/require-session";
-import { clientIp } from "@/lib/auth/client-ip";
-import { handleRequest } from "@/lib/api-response";
-import { recordAudit } from "@/lib/audit";
-import { NotFoundError } from "@/domain/shared/errors";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import type { NextRequest } from 'next/server';
+import { ConsentRecord } from '@/domain/consent/consent-record';
+import { NotFoundError } from '@/domain/shared/errors';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { recordAudit } from '@/lib/audit';
+import { clientIp } from '@/lib/auth/client-ip';
+import { requirePortalSession } from '@/lib/auth/require-session';
+import { CONSENT_TEXT, CONSENT_TEXT_VERSION } from '@/lib/consent-text';
 
 /**
  * Monta o payload de status a partir do resultado de `resolveStatus` —
  * `acceptedAt`/`textVersion` sempre do último ACEITE real, nunca da
  * revogação, mesmo quando o status atual é revogado (AC-70-2).
  */
-function toConsentStatusDto(status: ReturnType<typeof ConsentRecord.resolveStatus>) {
-  const revoked = status.current?.kind === "revoke";
+function toConsentStatusDto(
+  status: ReturnType<typeof ConsentRecord.resolveStatus>,
+) {
+  const revoked = status.current?.kind === 'revoke';
   return {
     consentText: CONSENT_TEXT,
     accepted: status.accepted,
     revoked,
     acceptedAt: status.latestAccept?.acceptedAt.toISOString() ?? null,
     textVersion: status.latestAccept?.textVersion ?? null,
-    revokedAt: revoked ? (status.current?.acceptedAt.toISOString() ?? null) : null,
+    revokedAt: revoked
+      ? (status.current?.acceptedAt.toISOString() ?? null)
+      : null,
   };
 }
 
 /** Texto vigente + status do aceite do paciente logado. */
 export async function GET(request: NextRequest) {
-  const auth = requirePortalSession(request, "patient");
+  const auth = requirePortalSession(request, 'patient');
   if (!auth.ok) return auth.response;
 
   return handleRequest(async () => {
@@ -37,7 +41,7 @@ export async function GET(request: NextRequest) {
     });
     const patient = await patients.findByEmail(auth.session.subject);
     if (!patient) {
-      throw new NotFoundError("Paciente", auth.session.subject);
+      throw new NotFoundError('Paciente', auth.session.subject);
     }
     const records = await consentRecords.findByPatientId(patient.id);
     const status = ConsentRecord.resolveStatus(records, CONSENT_TEXT);
@@ -47,7 +51,7 @@ export async function GET(request: NextRequest) {
 
 /** Aceite digital: grava hash do texto exato + data + IP (evidência LGPD). */
 export async function POST(request: NextRequest) {
-  const auth = requirePortalSession(request, "patient");
+  const auth = requirePortalSession(request, 'patient');
   if (!auth.ok) return auth.response;
 
   return handleRequest(async () => {
@@ -55,14 +59,17 @@ export async function POST(request: NextRequest) {
       clinicId: auth.session.clinicId ?? LEGACY_CLINIC_ID,
     });
     const patient = await patients.findByEmail(auth.session.subject);
-    if (!patient || !patient.isActive) {
-      throw new NotFoundError("Paciente", auth.session.subject);
+    if (!patient?.isActive) {
+      throw new NotFoundError('Paciente', auth.session.subject);
     }
 
     const existing = await consentRecords.findByPatientId(patient.id);
     const status = ConsentRecord.resolveStatus(existing, CONSENT_TEXT);
     if (status.accepted && status.current) {
-      return { accepted: true, acceptedAt: status.current.acceptedAt.toISOString() };
+      return {
+        accepted: true,
+        acceptedAt: status.current.acceptedAt.toISOString(),
+      };
     }
 
     const record = ConsentRecord.create({
@@ -75,8 +82,8 @@ export async function POST(request: NextRequest) {
     await consentRecords.save(record);
 
     recordAudit(auditEvents, auth.session, {
-      action: "create",
-      resourceType: "consent",
+      action: 'create',
+      resourceType: 'consent',
       resourceId: record.id,
       patientId: patient.id,
       detail: `hash ${record.textHash.slice(0, 12)}…`,

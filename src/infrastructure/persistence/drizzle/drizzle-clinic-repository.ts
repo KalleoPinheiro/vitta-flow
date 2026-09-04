@@ -1,8 +1,8 @@
-import { eq } from "drizzle-orm";
-import { Clinic } from "@/domain/clinic/clinic";
-import type { ClinicRepository } from "@/domain/clinic/clinic-repository";
-import type { AppDb } from "./db";
-import { clinics } from "./schema";
+import { eq } from 'drizzle-orm';
+import { Clinic } from '@/domain/clinic/clinic';
+import type { ClinicRepository } from '@/domain/clinic/clinic-repository';
+import type { AppDb } from './db';
+import { clinics } from './schema';
 
 type ClinicRow = typeof clinics.$inferSelect;
 
@@ -32,7 +32,11 @@ export class DrizzleClinicRepository implements ClinicRepository {
   }
 
   async findById(id: string): Promise<Clinic | null> {
-    const rows = await this.db.select().from(clinics).where(eq(clinics.id, id)).limit(1);
+    const rows = await this.db
+      .select()
+      .from(clinics)
+      .where(eq(clinics.id, id))
+      .limit(1);
     return rows[0] ? toClinic(rows[0]) : null;
   }
 

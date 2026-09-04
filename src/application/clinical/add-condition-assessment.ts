@@ -1,12 +1,12 @@
-import {
-  ConditionAssessment,
-  type ExudateLevel,
-} from "@/domain/clinical/condition-assessment";
 import type {
   ClinicalConditionRepository,
   ConditionAssessmentRepository,
-} from "@/domain/clinical/clinical-repositories";
-import { NotFoundError, ValidationError } from "@/domain/shared/errors";
+} from '@/domain/clinical/clinical-repositories';
+import {
+  ConditionAssessment,
+  type ExudateLevel,
+} from '@/domain/clinical/condition-assessment';
+import { NotFoundError, ValidationError } from '@/domain/shared/errors';
 
 export interface AddConditionAssessmentInput {
   conditionId: string;
@@ -27,13 +27,15 @@ export class AddConditionAssessment {
     private readonly conditions: ClinicalConditionRepository,
   ) {}
 
-  async execute(input: AddConditionAssessmentInput): Promise<ConditionAssessment> {
+  async execute(
+    input: AddConditionAssessmentInput,
+  ): Promise<ConditionAssessment> {
     const condition = await this.conditions.findById(input.conditionId);
     if (!condition) {
-      throw new NotFoundError("Condição clínica", input.conditionId);
+      throw new NotFoundError('Condição clínica', input.conditionId);
     }
     if (!condition.isActive) {
-      throw new ValidationError("Não é possível avaliar condição já resolvida");
+      throw new ValidationError('Não é possível avaliar condição já resolvida');
     }
     const assessment = ConditionAssessment.create(input);
     await this.assessments.save(assessment);

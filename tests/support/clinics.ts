@@ -1,6 +1,6 @@
-import { getRepositories } from "@/infrastructure/container";
-import { Clinic } from "@/domain/clinic/clinic";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import { Clinic } from '@/domain/clinic/clinic';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
 
 /**
  * Fixture de 2 clínicas para testes de isolamento por tenant (M2-M6).
@@ -9,7 +9,7 @@ import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-cl
  * `ensureTestClinics`.
  */
 export const CLINIC_A_ID = LEGACY_CLINIC_ID;
-export const CLINIC_B_ID = "test-clinic-b";
+export const CLINIC_B_ID = 'test-clinic-b';
 
 export async function ensureTestClinics(): Promise<void> {
   const { clinics } = await getRepositories({ clinicId: null });
@@ -20,8 +20,8 @@ export async function ensureTestClinics(): Promise<void> {
   await clinics.create(
     Clinic.restore({
       id: CLINIC_B_ID,
-      name: "Clínica B (teste)",
-      createdBy: "test-fixture",
+      name: 'Clínica B (teste)',
+      createdBy: 'test-fixture',
       createdAt: new Date(),
     }),
   );

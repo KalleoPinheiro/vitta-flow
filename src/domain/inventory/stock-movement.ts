@@ -1,7 +1,7 @@
-import { ValidationError } from "../shared/errors";
-import { newId } from "../shared/id";
+import { ValidationError } from '../shared/errors';
+import { newId } from '../shared/id';
 
-export const MOVEMENT_TYPES = ["in", "out"] as const;
+export const MOVEMENT_TYPES = ['in', 'out'] as const;
 export type MovementType = (typeof MOVEMENT_TYPES)[number];
 
 export interface StockMovementProps {
@@ -25,14 +25,14 @@ export class StockMovement {
 
   static create(props: StockMovementProps): StockMovement {
     if (!Number.isInteger(props.quantity) || props.quantity <= 0) {
-      throw new ValidationError("Quantidade deve ser inteiro positivo");
+      throw new ValidationError('Quantidade deve ser inteiro positivo');
     }
     const reason = props.reason.trim();
     if (reason.length === 0) {
-      throw new ValidationError("Motivo da movimentação é obrigatório");
+      throw new ValidationError('Motivo da movimentação é obrigatório');
     }
     if (props.unitPriceCents != null && props.unitPriceCents < 0) {
-      throw new ValidationError("Preço unitário não pode ser negativo");
+      throw new ValidationError('Preço unitário não pode ser negativo');
     }
     return new StockMovement({
       supplyId: props.supplyId,
@@ -80,7 +80,9 @@ export class StockMovement {
 
   /** Custo total do movimento quando o preço foi congelado na saída. */
   get totalCostCents(): number | null {
-    return this.unitPriceCents != null ? this.unitPriceCents * this.quantity : null;
+    return this.unitPriceCents != null
+      ? this.unitPriceCents * this.quantity
+      : null;
   }
 
   get createdAt(): Date {

@@ -1,9 +1,13 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { apiFetch } from "./client";
+import { useEffect, useState } from 'react';
+import { apiFetch } from './client';
 
-export type DocumentType = "atestado" | "consentimento" | "plano-cuidados" | "relatorio";
+export type DocumentType =
+  | 'atestado'
+  | 'consentimento'
+  | 'plano-cuidados'
+  | 'relatorio';
 
 export interface DocumentIssuance {
   documentNumber: string;
@@ -30,8 +34,8 @@ export function useDocumentIssuance(
   useEffect(() => {
     if (!resourceId) return;
     let cancelled = false;
-    apiFetch<DocumentIssuance>("/api/documents/issue", {
-      method: "POST",
+    apiFetch<DocumentIssuance>('/api/documents/issue', {
+      method: 'POST',
       body: JSON.stringify({ documentType, resourceId }),
     })
       .then((result) => {
@@ -39,7 +43,9 @@ export function useDocumentIssuance(
       })
       .catch((err: unknown) => {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Erro ao emitir documento");
+          setError(
+            err instanceof Error ? err.message : 'Erro ao emitir documento',
+          );
         }
       });
     return () => {

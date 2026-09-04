@@ -1,6 +1,5 @@
-"use client";
+'use client';
 
-import type { ReactNode } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,7 +10,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@still-void/ui/react/client";
+} from '@still-void/ui/react/client';
+import type { ReactNode } from 'react';
 
 interface ConfirmActionProps {
   trigger: ReactNode;
@@ -20,7 +20,7 @@ interface ConfirmActionProps {
   confirmLabel: string;
   cancelLabel?: string;
   onConfirm: () => void | Promise<void>;
-  variant?: "default" | "danger";
+  variant?: 'default' | 'danger';
 }
 
 /**
@@ -37,9 +37,9 @@ export function ConfirmAction({
   title,
   description,
   confirmLabel,
-  cancelLabel = "Cancelar",
+  cancelLabel = 'Cancelar',
   onConfirm,
-  variant = "default",
+  variant = 'default',
 }: ConfirmActionProps) {
   return (
     <AlertDialog>
@@ -53,7 +53,11 @@ export function ConfirmAction({
           <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
           <AlertDialogAction
             onClick={() => onConfirm()}
-            className={variant === "danger" ? "bg-danger text-white hover:bg-danger/90" : undefined}
+            className={
+              variant === 'danger'
+                ? 'bg-danger text-white hover:bg-danger/90'
+                : undefined
+            }
           >
             {confirmLabel}
           </AlertDialogAction>

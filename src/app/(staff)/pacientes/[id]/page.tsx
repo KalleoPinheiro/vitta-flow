@@ -1,25 +1,6 @@
-"use client";
+'use client';
 
-import { use, useState } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import type {
-  AnamnesisDto,
-  CarePlanDto,
-  ConditionDto,
-  EvolutionNoteDto,
-  PatientDto,
-} from "@/lib/dto";
-import { useApiQuery } from "@/lib/use-api-query";
-import { formatDate } from "@/lib/format";
-import { StatusBadge } from "@/components/status-badge";
-import { ErrorAlert, LoadingIndicator } from "@/components/feedback";
-import { AnamnesisSection } from "./anamnesis-section";
-import { ConditionsSection } from "./conditions-section";
-import { EvolutionsSection } from "./evolutions-section";
-import { CarePlansSection } from "./care-plans-section";
-import { PackagesSection } from "./packages-section";
-import { Alert, AlertDescription, Card, Icon } from "@still-void/ui/react";
+import { Alert, AlertDescription, Card, Icon } from '@still-void/ui/react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,24 +14,43 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@still-void/ui/react/client";
+} from '@still-void/ui/react/client';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { use, useState } from 'react';
+import { ErrorAlert, LoadingIndicator } from '@/components/feedback';
+import { StatusBadge } from '@/components/status-badge';
+import type {
+  AnamnesisDto,
+  CarePlanDto,
+  ConditionDto,
+  EvolutionNoteDto,
+  PatientDto,
+} from '@/lib/dto';
+import { formatDate } from '@/lib/format';
+import { useApiQuery } from '@/lib/use-api-query';
+import { AnamnesisSection } from './anamnesis-section';
+import { CarePlansSection } from './care-plans-section';
+import { ConditionsSection } from './conditions-section';
+import { EvolutionsSection } from './evolutions-section';
+import { PackagesSection } from './packages-section';
 
 const TABS = [
-  { key: "anamnese", label: "Anamnese" },
-  { key: "condicoes", label: "Estomias e feridas" },
-  { key: "evolucoes", label: "Evoluções (SOAP)" },
-  { key: "planoCuidados", label: "Plano de Cuidados (SAE)" },
-  { key: "pacotes", label: "Pacotes" },
+  { key: 'anamnese', label: 'Anamnese' },
+  { key: 'condicoes', label: 'Estomias e feridas' },
+  { key: 'evolucoes', label: 'Evoluções (SOAP)' },
+  { key: 'planoCuidados', label: 'Plano de Cuidados (SAE)' },
+  { key: 'pacotes', label: 'Pacotes' },
 ] as const;
 
-type TabKey = (typeof TABS)[number]["key"];
+type TabKey = (typeof TABS)[number]['key'];
 type Tab = (typeof TABS)[number];
 
 const TAB_KEYS = TABS.map((t) => t.key);
 
 /** Só a chave válida — qualquer outro valor de `?aba=` cai no padrão "anamnese" (PRONT-04). */
 function resolveInitialTab(param: string | null): TabKey {
-  return TAB_KEYS.includes(param as TabKey) ? (param as TabKey) : "anamnese";
+  return TAB_KEYS.includes(param as TabKey) ? (param as TabKey) : 'anamnese';
 }
 
 function tabLabel(
@@ -62,9 +62,9 @@ function tabLabel(
   // Contador só de itens ativos pra condições/planos — evolução não tem
   // estado ativo/resolvido, conta o total (PRONT-01).
   const counts: Partial<Record<TabKey, number>> = {
-    condicoes: conditions.filter((c) => c.status === "active").length,
+    condicoes: conditions.filter((c) => c.status === 'active').length,
     evolucoes: evolutions.length,
-    planoCuidados: carePlans.filter((p) => p.status === "active").length,
+    planoCuidados: carePlans.filter((p) => p.status === 'active').length,
   };
   const count = counts[tab.key] ?? 0;
   return count > 0 ? `${tab.label} (${count})` : tab.label;
@@ -73,17 +73,20 @@ function tabLabel(
 function PatientHeader({ patient }: { patient: PatientDto }) {
   return (
     <div className="mb-6 flex flex-wrap items-center gap-3">
-      <h1 className="sv-display text-2xl font-bold">{patient.fullName}</h1>
+      <h1 className="sv-display font-bold text-2xl">{patient.fullName}</h1>
       <StatusBadge
-        status={patient.active ? "confirmed" : "cancelled"}
-        label={patient.active ? "Ativo" : "Inativo"}
+        status={patient.active ? 'confirmed' : 'cancelled'}
+        label={patient.active ? 'Ativo' : 'Inativo'}
       />
-      <span className="text-sm text-ink-3">
+      <span className="text-ink-3 text-sm">
         {patient.phone} · {patient.email}
-        {patient.birthDate ? ` · nasc. ${formatDate(patient.birthDate)}` : ""}
+        {patient.birthDate ? ` · nasc. ${formatDate(patient.birthDate)}` : ''}
       </span>
-      <span className="ml-auto flex gap-3 text-sm font-medium">
-        <a href={`/documentos/consentimento/${patient.id}`} className="text-accent-ink hover:underline">
+      <span className="ml-auto flex gap-3 font-medium text-sm">
+        <a
+          href={`/documentos/consentimento/${patient.id}`}
+          className="text-accent-ink hover:underline"
+        >
           Termo de consentimento
         </a>
         <a
@@ -105,7 +108,11 @@ function AllergyBanner({ allergies }: { allergies?: string }) {
     return null;
   }
   return (
-    <Alert variant="danger" className="mb-6" icon={<Icon name="alert-triangle" />}>
+    <Alert
+      variant="danger"
+      className="mb-6"
+      icon={<Icon name="alert-triangle" />}
+    >
       <AlertDescription className="font-bold">
         Alergias: {allergies}
       </AlertDescription>
@@ -124,9 +131,13 @@ function useDirtyTabGuard(tab: TabKey) {
   const [pendingTab, setPendingTab] = useState<TabKey | null>(null);
 
   const isCurrentTabDirty =
-    (tab === "evolucoes" && evolutionsDirty) || (tab === "anamnese" && anamnesisDirty);
+    (tab === 'evolucoes' && evolutionsDirty) ||
+    (tab === 'anamnese' && anamnesisDirty);
 
-  const requestTabChange = (nextTab: TabKey, setTab: (next: TabKey) => void) => {
+  const requestTabChange = (
+    nextTab: TabKey,
+    setTab: (next: TabKey) => void,
+  ) => {
     if (nextTab === tab) return;
     if (isCurrentTabDirty) {
       setPendingTab(nextTab);
@@ -152,11 +163,17 @@ function useDirtyTabGuard(tab: TabKey) {
   };
 }
 
-export default function PatientRecordPage({ params }: { params: Promise<{ id: string }> }) {
+export default function PatientRecordPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = use(params);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [tab, setTabState] = useState<TabKey>(() => resolveInitialTab(searchParams.get("aba")));
+  const [tab, setTabState] = useState<TabKey>(() =>
+    resolveInitialTab(searchParams.get('aba')),
+  );
   const setTab = (next: TabKey) => {
     setTabState(next);
     router.replace(`/pacientes/${id}?aba=${next}`, { scroll: false });
@@ -170,7 +187,9 @@ export default function PatientRecordPage({ params }: { params: Promise<{ id: st
     cancelPendingTab,
   } = useDirtyTabGuard(tab);
 
-  const { data: patient, error } = useApiQuery<PatientDto>(`/api/patients/${id}`);
+  const { data: patient, error } = useApiQuery<PatientDto>(
+    `/api/patients/${id}`,
+  );
   const {
     data: anamnesis,
     error: anamnesisError,
@@ -218,9 +237,14 @@ export default function PatientRecordPage({ params }: { params: Promise<{ id: st
             <TabsTrigger
               key={item.key}
               value={item.key}
-              className={item.key === "pacotes" ? "ml-auto" : undefined}
+              className={item.key === 'pacotes' ? 'ml-auto' : undefined}
             >
-              {tabLabel(item, conditions ?? [], evolutions ?? [], carePlans ?? [])}
+              {tabLabel(
+                item,
+                conditions ?? [],
+                evolutions ?? [],
+                carePlans ?? [],
+              )}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -253,12 +277,16 @@ export default function PatientRecordPage({ params }: { params: Promise<{ id: st
         </TabsContent>
       </Tabs>
 
-      <AlertDialog open={pendingTab !== null} onOpenChange={(open) => !open && cancelPendingTab()}>
+      <AlertDialog
+        open={pendingTab !== null}
+        onOpenChange={(open) => !open && cancelPendingTab()}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Descartar alterações?</AlertDialogTitle>
             <AlertDialogDescription>
-              Há texto não salvo nesta aba. Trocar de aba agora descarta o que foi digitado.
+              Há texto não salvo nesta aba. Trocar de aba agora descarta o que
+              foi digitado.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -318,7 +346,7 @@ function RecordTabPanel({
   refreshEvolutions,
   refreshCarePlans,
 }: RecordTabPanelProps) {
-  if (tab === "condicoes") {
+  if (tab === 'condicoes') {
     return (
       <ConditionsSection
         patientId={patientId}
@@ -330,7 +358,7 @@ function RecordTabPanel({
       />
     );
   }
-  if (tab === "evolucoes") {
+  if (tab === 'evolucoes') {
     return (
       <EvolutionsSection
         patientId={patientId}
@@ -343,10 +371,10 @@ function RecordTabPanel({
       />
     );
   }
-  if (tab === "pacotes") {
+  if (tab === 'pacotes') {
     return <PackagesSection patientId={patientId} />;
   }
-  if (tab === "planoCuidados") {
+  if (tab === 'planoCuidados') {
     return (
       <CarePlansSection
         patientId={patientId}
@@ -361,7 +389,7 @@ function RecordTabPanel({
   }
   return (
     <AnamnesisSection
-      key={anamnesis ? anamnesis.updatedAt : "empty"}
+      key={anamnesis ? anamnesis.updatedAt : 'empty'}
       patientId={patientId}
       anamnesis={anamnesis}
       error={anamnesisError}

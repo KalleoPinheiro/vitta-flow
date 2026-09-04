@@ -1,4 +1,4 @@
-import { vi, type MockInstance } from "vitest";
+import { type MockInstance, vi } from 'vitest';
 
 /**
  * A suíte roda sem credenciais de e-mail, então o container monta o
@@ -14,12 +14,14 @@ export interface EmailSpy {
 
 export function spyOnSentEmails(): EmailSpy {
   const bodies: string[] = [];
-  const spy: MockInstance = vi.spyOn(console, "info").mockImplementation((...args: unknown[]) => {
-    const line = String(args[0] ?? "");
-    if (line.startsWith("[e-mail desativado]")) {
-      bodies.push(line);
-    }
-  });
+  const spy: MockInstance = vi
+    .spyOn(console, 'info')
+    .mockImplementation((...args: unknown[]) => {
+      const line = String(args[0] ?? '');
+      if (line.startsWith('[e-mail desativado]')) {
+        bodies.push(line);
+      }
+    });
   return {
     bodies,
     restore: () => spy.mockRestore(),
@@ -32,10 +34,15 @@ export function spyOnSentEmails(): EmailSpy {
  * transformaria o tempo de resposta num oráculo de existência de conta), então
  * o e-mail chega depois que a rota já respondeu.
  */
-export async function waitForEmails(spy: EmailSpy, count: number): Promise<void> {
+export async function waitForEmails(
+  spy: EmailSpy,
+  count: number,
+): Promise<void> {
   await vi.waitFor(() => {
     if (spy.bodies.length < count) {
-      throw new Error(`Esperando ${count} e-mail(s), capturados ${spy.bodies.length}`);
+      throw new Error(
+        `Esperando ${count} e-mail(s), capturados ${spy.bodies.length}`,
+      );
     }
   });
 }
@@ -45,7 +52,9 @@ export function tokenFromLastEmail(spy: EmailSpy): string {
   const last = spy.bodies[spy.bodies.length - 1];
   const match = last?.match(/definir-senha\?token=([\w-]+)/);
   if (!match) {
-    throw new Error(`Nenhum link de definição de senha no último e-mail: ${last ?? "(nenhum)"}`);
+    throw new Error(
+      `Nenhum link de definição de senha no último e-mail: ${last ?? '(nenhum)'}`,
+    );
   }
   return match[1];
 }

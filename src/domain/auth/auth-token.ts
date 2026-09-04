@@ -1,8 +1,8 @@
-import { createHash, randomBytes } from "node:crypto";
-import { newId } from "../shared/id";
+import { createHash, randomBytes } from 'node:crypto';
+import { newId } from '../shared/id';
 
 /** Convite: primeiro acesso da conta. Reset: recuperação self-service. */
-export type AuthTokenPurpose = "invite" | "reset";
+export type AuthTokenPurpose = 'invite' | 'reset';
 
 /** Convite sobrevive a um e-mail lido no dia seguinte. */
 export const INVITE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -21,7 +21,7 @@ const TTL_BY_PURPOSE: Record<AuthTokenPurpose, number> = {
  * de leitura da tabela não vira tomada de conta.
  */
 export function hashAuthTokenSecret(secret: string): string {
-  return createHash("sha256").update(secret).digest("hex");
+  return createHash('sha256').update(secret).digest('hex');
 }
 
 export interface AuthTokenState {
@@ -44,9 +44,12 @@ export interface IssueAuthTokenProps {
 export class AuthToken {
   private constructor(private readonly state: AuthTokenState) {}
 
-  static issue(props: IssueAuthTokenProps): { token: AuthToken; secret: string } {
+  static issue(props: IssueAuthTokenProps): {
+    token: AuthToken;
+    secret: string;
+  } {
     const nowMs = props.nowMs ?? Date.now();
-    const secret = randomBytes(SECRET_BYTES).toString("base64url");
+    const secret = randomBytes(SECRET_BYTES).toString('base64url');
     const token = new AuthToken({
       id: newId(),
       accountId: props.accountId,
@@ -112,9 +115,16 @@ export interface AuthTokenRepository {
    * marcar" é uma janela TOCTOU: duas requisições simultâneas com o mesmo link
    * passariam as duas pela checagem e o uso único deixaria de valer.
    */
-  claimBySecretHash(secretHash: string, nowMs?: number): Promise<AuthToken | null>;
+  claimBySecretHash(
+    secretHash: string,
+    nowMs?: number,
+  ): Promise<AuthToken | null>;
   /** Invalida os tokens não usados de um propósito — emitir um novo mata os anteriores. */
-  markAllUnusedAsUsed(accountId: string, purpose: AuthTokenPurpose, usedAt?: Date): Promise<void>;
+  markAllUnusedAsUsed(
+    accountId: string,
+    purpose: AuthTokenPurpose,
+    usedAt?: Date,
+  ): Promise<void>;
   /**
    * Invalida os tokens não usados do mesmo propósito e persiste `token` numa
    * única unidade atômica — emissões concorrentes não podem deixar dois links

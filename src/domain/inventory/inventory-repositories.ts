@@ -1,6 +1,6 @@
-import type { Supply } from "./supply";
-import type { StockMovement } from "./stock-movement";
-import type { SupplyBatch } from "./supply-batch";
+import type { StockMovement } from './stock-movement';
+import type { Supply } from './supply';
+import type { SupplyBatch } from './supply-batch';
 
 export interface SupplyRepository {
   save(supply: Supply): Promise<void>;
@@ -32,7 +32,10 @@ export interface StockMovementRepository {
   findBySupplyId(supplyId: string): Promise<StockMovement[]>;
   findByAppointmentId(appointmentId: string): Promise<StockMovement[]>;
   /** Soma quantity × unit_price_cents das saídas no período, agrupada por consulta. */
-  getOutflowCostInRange(from: Date, to: Date): Promise<OutflowCostByAppointment[]>;
+  getOutflowCostInRange(
+    from: Date,
+    to: Date,
+  ): Promise<OutflowCostByAppointment[]>;
   /** Quantidade total de saídas por insumo no período. */
   getOutflowQtyInRange(from: Date, to: Date): Promise<OutflowBySupply[]>;
 }

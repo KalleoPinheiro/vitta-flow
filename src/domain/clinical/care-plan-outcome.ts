@@ -1,6 +1,6 @@
-import { NOC_SCALE_MAX, NOC_SCALE_MIN } from "../taxonomy/noc-scale";
-import { ValidationError } from "../shared/errors";
-import { newId } from "../shared/id";
+import { ValidationError } from '../shared/errors';
+import { newId } from '../shared/id';
+import { NOC_SCALE_MAX, NOC_SCALE_MIN } from '../taxonomy/noc-scale';
 
 const SCALE_MIN = NOC_SCALE_MIN;
 const SCALE_MAX = NOC_SCALE_MAX;
@@ -29,14 +29,14 @@ export class CarePlanOutcome {
 
   static create(props: CarePlanOutcomeProps): CarePlanOutcome {
     if (props.carePlanId.trim().length === 0) {
-      throw new ValidationError("Plano de cuidados é obrigatório");
+      throw new ValidationError('Plano de cuidados é obrigatório');
     }
     if (props.outcomeCode.trim().length === 0) {
-      throw new ValidationError("Resultado é obrigatório");
+      throw new ValidationError('Resultado é obrigatório');
     }
     for (const [label, value] of [
-      ["basal", props.baselineScore],
-      ["meta", props.targetScore],
+      ['basal', props.baselineScore],
+      ['meta', props.targetScore],
     ] as const) {
       if (!Number.isInteger(value) || value < SCALE_MIN || value > SCALE_MAX) {
         throw new ValidationError(
@@ -45,7 +45,9 @@ export class CarePlanOutcome {
       }
     }
     if (props.targetScore <= props.baselineScore) {
-      throw new ValidationError("Meta deve ser maior que a pontuação basal — a meta é progresso");
+      throw new ValidationError(
+        'Meta deve ser maior que a pontuação basal — a meta é progresso',
+      );
     }
     return new CarePlanOutcome({
       carePlanId: props.carePlanId,
@@ -62,11 +64,15 @@ export class CarePlanOutcome {
     return new CarePlanOutcome({ ...state });
   }
 
-  private latestEvaluation(evaluations: readonly ScoredEvaluation[]): ScoredEvaluation | null {
+  private latestEvaluation(
+    evaluations: readonly ScoredEvaluation[],
+  ): ScoredEvaluation | null {
     if (evaluations.length === 0) {
       return null;
     }
-    return [...evaluations].sort((a, b) => b.evaluatedAt.getTime() - a.evaluatedAt.getTime())[0];
+    return [...evaluations].sort(
+      (a, b) => b.evaluatedAt.getTime() - a.evaluatedAt.getTime(),
+    )[0];
   }
 
   /** Pontuação mais recente. Null enquanto não houver avaliação — o score nunca é chutado. */

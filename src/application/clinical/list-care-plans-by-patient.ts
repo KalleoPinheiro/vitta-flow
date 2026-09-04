@@ -1,5 +1,5 @@
-import type { CarePlan } from "@/domain/clinical/care-plan";
-import type { CarePlanRepository } from "@/domain/clinical/clinical-repositories";
+import type { CarePlan } from '@/domain/clinical/care-plan';
+import type { CarePlanRepository } from '@/domain/clinical/clinical-repositories';
 
 export class ListCarePlansByPatient {
   constructor(private readonly carePlans: CarePlanRepository) {}

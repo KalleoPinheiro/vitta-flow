@@ -1,15 +1,15 @@
-import type { NextRequest } from "next/server";
-import { getRepositories } from "@/infrastructure/container";
-import { importTaxonomyCatalog } from "@/application/taxonomy/import-taxonomy-catalog";
+import type { NextRequest } from 'next/server';
+import { importTaxonomyCatalog } from '@/application/taxonomy/import-taxonomy-catalog';
+import { getRepositories } from '@/infrastructure/container';
 import {
   STOMATHERAPY_DIAGNOSES,
   STOMATHERAPY_INTERVENTIONS,
   STOMATHERAPY_LINKAGES,
   STOMATHERAPY_OUTCOMES,
-} from "@/infrastructure/persistence/taxonomy-seed/stomatherapy-seed";
-import { handleRequest } from "@/lib/api-response";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { recordAudit } from "@/lib/audit";
+} from '@/infrastructure/persistence/taxonomy-seed/stomatherapy-seed';
+import { handleRequest } from '@/lib/api-response';
+import { recordAudit } from '@/lib/audit';
+import { requireStaffSession } from '@/lib/auth/require-session';
 
 /**
  * Bootstrap do catálogo de taxonomias com o subset curado de estomaterapia —
@@ -22,8 +22,13 @@ export async function POST(request: NextRequest) {
   const { session } = guard;
 
   return handleRequest(async () => {
-    const { nursingDiagnoses, nursingOutcomes, nursingInterventions, taxonomyLinkages, auditEvents } =
-      await getRepositories({ clinicId: null });
+    const {
+      nursingDiagnoses,
+      nursingOutcomes,
+      nursingInterventions,
+      taxonomyLinkages,
+      auditEvents,
+    } = await getRepositories({ clinicId: null });
     const result = await importTaxonomyCatalog(
       {
         diagnoses: nursingDiagnoses,
@@ -39,9 +44,9 @@ export async function POST(request: NextRequest) {
       },
     );
     recordAudit(auditEvents, session, {
-      action: "create",
-      resourceType: "taxonomy_catalog",
-      resourceId: "stomatherapy-seed",
+      action: 'create',
+      resourceType: 'taxonomy_catalog',
+      resourceId: 'stomatherapy-seed',
     });
     return result;
   });

@@ -1,5 +1,5 @@
-import { ValidationError } from "../shared/errors";
-import { newId } from "../shared/id";
+import { ValidationError } from '../shared/errors';
+import { newId } from '../shared/id';
 
 export interface EvolutionNoteProps {
   patientId: string;
@@ -28,10 +28,12 @@ export class EvolutionNote {
     const plan = props.plan.trim();
 
     if (!subjective && !objective && !assessment && !plan) {
-      throw new ValidationError("Evolução exige ao menos um campo SOAP preenchido");
+      throw new ValidationError(
+        'Evolução exige ao menos um campo SOAP preenchido',
+      );
     }
     if (props.patientId.trim().length === 0) {
-      throw new ValidationError("Paciente é obrigatório");
+      throw new ValidationError('Paciente é obrigatório');
     }
 
     return new EvolutionNote({

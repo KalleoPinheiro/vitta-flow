@@ -1,8 +1,8 @@
-import { Invoice } from "@/domain/billing/invoice";
-import type { InvoiceRepository } from "@/domain/billing/invoice-repository";
-import type { PatientRepository } from "@/domain/patient/patient-repository";
-import { Money } from "@/domain/shared/money";
-import { NotFoundError } from "@/domain/shared/errors";
+import { Invoice } from '@/domain/billing/invoice';
+import type { InvoiceRepository } from '@/domain/billing/invoice-repository';
+import type { PatientRepository } from '@/domain/patient/patient-repository';
+import { NotFoundError } from '@/domain/shared/errors';
+import { Money } from '@/domain/shared/money';
 
 export interface CreateInvoiceInput {
   patientId: string;
@@ -21,7 +21,7 @@ export class CreateInvoice {
   async execute(input: CreateInvoiceInput): Promise<Invoice> {
     const patient = await this.patients.findById(input.patientId);
     if (!patient) {
-      throw new NotFoundError("Paciente", input.patientId);
+      throw new NotFoundError('Paciente', input.patientId);
     }
     const invoice = Invoice.create({
       patientId: input.patientId,

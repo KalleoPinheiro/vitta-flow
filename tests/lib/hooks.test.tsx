@@ -1,21 +1,26 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, afterEach } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
-import { useApiQuery } from "@/lib/use-api-query";
-import { usePagedQuery } from "@/lib/use-paged-query";
-import { useCursorPagedQuery } from "@/lib/use-cursor-paged-query";
+
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { useApiQuery } from '@/lib/use-api-query';
+import { useCursorPagedQuery } from '@/lib/use-cursor-paged-query';
+import { usePagedQuery } from '@/lib/use-paged-query';
 
 const jsonResponse = (data: unknown, ok = true) => ({
   ok,
-  json: async () => ({ success: ok, data, error: ok ? null : "Erro simulado" }),
+  json: async () => ({ success: ok, data, error: ok ? null : 'Erro simulado' }),
 });
 
-const jsonPageResponse = (data: unknown, nextCursor: string | null, ok = true) => ({
+const jsonPageResponse = (
+  data: unknown,
+  nextCursor: string | null,
+  ok = true,
+) => ({
   ok,
   json: async () => ({
     success: ok,
     data,
-    error: ok ? null : "Erro simulado",
+    error: ok ? null : 'Erro simulado',
     meta: { nextCursor },
   }),
 });
@@ -24,56 +29,65 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("Feature: useApiQuery", () => {
-  it("Dado fetch bem-sucedido, Quando monta, Então preenche data", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({ id: "1" })));
+describe('Feature: useApiQuery', () => {
+  it('Dado fetch bem-sucedido, Quando monta, Então preenche data', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse({ id: '1' })),
+    );
 
-    const { result } = renderHook(() => useApiQuery<{ id: string }>("/api/x"));
+    const { result } = renderHook(() => useApiQuery<{ id: string }>('/api/x'));
 
-    await waitFor(() => expect(result.current.data).toEqual({ id: "1" }));
+    await waitFor(() => expect(result.current.data).toEqual({ id: '1' }));
     expect(result.current.error).toBeNull();
   });
 
-  it("Dado fetch com erro, Quando monta, Então preenche error", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(null, false)));
+  it('Dado fetch com erro, Quando monta, Então preenche error', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse(null, false)),
+    );
 
-    const { result } = renderHook(() => useApiQuery<unknown>("/api/x"));
+    const { result } = renderHook(() => useApiQuery<unknown>('/api/x'));
 
-    await waitFor(() => expect(result.current.error).toBe("Erro simulado"));
+    await waitFor(() => expect(result.current.error).toBe('Erro simulado'));
     expect(result.current.data).toBeNull();
   });
 
-  it("Dado refresh(), Quando chamado, Então refaz o fetch", async () => {
-    const fetchMock = vi.fn(async () => jsonResponse({ id: "1" }));
-    vi.stubGlobal("fetch", fetchMock);
+  it('Dado refresh(), Quando chamado, Então refaz o fetch', async () => {
+    const fetchMock = vi.fn(async () => jsonResponse({ id: '1' }));
+    vi.stubGlobal('fetch', fetchMock);
 
-    const { result } = renderHook(() => useApiQuery<{ id: string }>("/api/x"));
-    await waitFor(() => expect(result.current.data).toEqual({ id: "1" }));
+    const { result } = renderHook(() => useApiQuery<{ id: string }>('/api/x'));
+    await waitFor(() => expect(result.current.data).toEqual({ id: '1' }));
 
     act(() => result.current.refresh());
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
   });
 
-  it("Dado troca de url, Quando muda, Então refaz o fetch para a nova url", async () => {
-    const fetchMock = vi.fn(async () => jsonResponse({ id: "1" }));
-    vi.stubGlobal("fetch", fetchMock);
+  it('Dado troca de url, Quando muda, Então refaz o fetch para a nova url', async () => {
+    const fetchMock = vi.fn(async () => jsonResponse({ id: '1' }));
+    vi.stubGlobal('fetch', fetchMock);
 
-    const { result, rerender } = renderHook(({ url }) => useApiQuery<{ id: string }>(url), {
-      initialProps: { url: "/api/x" },
-    });
-    await waitFor(() => expect(result.current.data).toEqual({ id: "1" }));
+    const { result, rerender } = renderHook(
+      ({ url }) => useApiQuery<{ id: string }>(url),
+      {
+        initialProps: { url: '/api/x' },
+      },
+    );
+    await waitFor(() => expect(result.current.data).toEqual({ id: '1' }));
 
-    rerender({ url: "/api/y" });
+    rerender({ url: '/api/y' });
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-    expect(fetchMock).toHaveBeenLastCalledWith("/api/y", expect.anything());
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/y', expect.anything());
   });
 
-  it("Dado fetch pendente, Quando monta, Então isLoading é true até resolver", async () => {
+  it('Dado fetch pendente, Quando monta, Então isLoading é true até resolver', async () => {
     let resolveFetch!: (value: unknown) => void;
     vi.stubGlobal(
-      "fetch",
+      'fetch',
       vi.fn(
         () =>
           new Promise((resolve) => {
@@ -82,40 +96,46 @@ describe("Feature: useApiQuery", () => {
       ),
     );
 
-    const { result } = renderHook(() => useApiQuery<{ id: string }>("/api/x"));
+    const { result } = renderHook(() => useApiQuery<{ id: string }>('/api/x'));
 
     expect(result.current.isLoading).toBe(true);
     expect(result.current.data).toBeNull();
     expect(result.current.error).toBeNull();
 
     act(() => {
-      resolveFetch(jsonResponse({ id: "1" }));
+      resolveFetch(jsonResponse({ id: '1' }));
     });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
-    expect(result.current.data).toEqual({ id: "1" });
+    expect(result.current.data).toEqual({ id: '1' });
   });
 
-  it("Dado fetch bem-sucedido, Quando resolve, Então isLoading fica false", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({ id: "1" })));
+  it('Dado fetch bem-sucedido, Quando resolve, Então isLoading fica false', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse({ id: '1' })),
+    );
 
-    const { result } = renderHook(() => useApiQuery<{ id: string }>("/api/x"));
+    const { result } = renderHook(() => useApiQuery<{ id: string }>('/api/x'));
 
-    await waitFor(() => expect(result.current.data).toEqual({ id: "1" }));
+    await waitFor(() => expect(result.current.data).toEqual({ id: '1' }));
     expect(result.current.isLoading).toBe(false);
   });
 
-  it("Dado fetch com erro, Quando resolve, Então isLoading fica false", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(null, false)));
+  it('Dado fetch com erro, Quando resolve, Então isLoading fica false', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse(null, false)),
+    );
 
-    const { result } = renderHook(() => useApiQuery<unknown>("/api/x"));
+    const { result } = renderHook(() => useApiQuery<unknown>('/api/x'));
 
-    await waitFor(() => expect(result.current.error).toBe("Erro simulado"));
+    await waitFor(() => expect(result.current.error).toBe('Erro simulado'));
     expect(result.current.isLoading).toBe(false);
   });
 
-  it("Dado url null, Quando monta, Então isLoading é false (query condicional)", () => {
-    vi.stubGlobal("fetch", vi.fn());
+  it('Dado url null, Quando monta, Então isLoading é false (query condicional)', () => {
+    vi.stubGlobal('fetch', vi.fn());
 
     const { result } = renderHook(() => useApiQuery<unknown>(null));
 
@@ -125,36 +145,46 @@ describe("Feature: useApiQuery", () => {
   });
 });
 
-describe("Feature: usePagedQuery", () => {
-  it("Dado primeira página menor que pageSize, Quando monta, Então hasMore é false", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse([{ id: "1" }])));
+describe('Feature: usePagedQuery', () => {
+  it('Dado primeira página menor que pageSize, Quando monta, Então hasMore é false', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse([{ id: '1' }])),
+    );
 
-    const { result } = renderHook(() => usePagedQuery<{ id: string }>("/api/x", 10));
+    const { result } = renderHook(() =>
+      usePagedQuery<{ id: string }>('/api/x', 10),
+    );
 
-    await waitFor(() => expect(result.current.items).toEqual([{ id: "1" }]));
+    await waitFor(() => expect(result.current.items).toEqual([{ id: '1' }]));
     expect(result.current.hasMore).toBe(false);
   });
 
-  it("Dado primeira página cheia, Quando monta, Então hasMore é true", async () => {
+  it('Dado primeira página cheia, Quando monta, Então hasMore é true', async () => {
     vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => jsonResponse([{ id: "1" }, { id: "2" }])),
+      'fetch',
+      vi.fn(async () => jsonResponse([{ id: '1' }, { id: '2' }])),
     );
 
-    const { result } = renderHook(() => usePagedQuery<{ id: string }>("/api/x", 2));
+    const { result } = renderHook(() =>
+      usePagedQuery<{ id: string }>('/api/x', 2),
+    );
 
     await waitFor(() => expect(result.current.items).toHaveLength(2));
     expect(result.current.hasMore).toBe(true);
   });
 
-  it("Dado loadMore(), Quando chamado, Então anexa a página seguinte", async () => {
+  it('Dado loadMore(), Quando chamado, Então anexa a página seguinte', async () => {
     const fetchMock = vi.fn(async (url: string) => {
-      if (url.includes("offset=0")) return jsonResponse([{ id: "1" }, { id: "2" }]);
-      return jsonResponse([{ id: "3" }]);
+      if (url.includes('offset=0'))
+        return jsonResponse([{ id: '1' }, { id: '2' }]);
+      return jsonResponse([{ id: '3' }]);
     });
-    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal('fetch', fetchMock);
 
-    const { result } = renderHook(() => usePagedQuery<{ id: string }>("/api/x", 2));
+    const { result } = renderHook(() =>
+      usePagedQuery<{ id: string }>('/api/x', 2),
+    );
     await waitFor(() => expect(result.current.items).toHaveLength(2));
     expect(result.current.hasMore).toBe(true);
 
@@ -163,40 +193,47 @@ describe("Feature: usePagedQuery", () => {
     await waitFor(() => expect(result.current.items).toHaveLength(3));
     expect(result.current.hasMore).toBe(false);
     expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining("offset=2"),
+      expect.stringContaining('offset=2'),
       expect.anything(),
     );
   });
 
-  it("Dado erro no loadMore(), Quando chamado, Então preenche error mantendo itens atuais", async () => {
+  it('Dado erro no loadMore(), Quando chamado, Então preenche error mantendo itens atuais', async () => {
     const fetchMock = vi.fn(async (url: string) => {
-      if (url.includes("offset=0")) return jsonResponse([{ id: "1" }]);
+      if (url.includes('offset=0')) return jsonResponse([{ id: '1' }]);
       return jsonResponse(null, false);
     });
-    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal('fetch', fetchMock);
 
-    const { result } = renderHook(() => usePagedQuery<{ id: string }>("/api/x", 1));
+    const { result } = renderHook(() =>
+      usePagedQuery<{ id: string }>('/api/x', 1),
+    );
     await waitFor(() => expect(result.current.items).toHaveLength(1));
 
     act(() => result.current.loadMore());
 
-    await waitFor(() => expect(result.current.error).toBe("Erro simulado"));
+    await waitFor(() => expect(result.current.error).toBe('Erro simulado'));
     expect(result.current.items).toHaveLength(1);
   });
 
-  it("Dado erro na primeira página, Quando monta, Então preenche error", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(null, false)));
+  it('Dado erro na primeira página, Quando monta, Então preenche error', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse(null, false)),
+    );
 
-    const { result } = renderHook(() => usePagedQuery<unknown>("/api/x", 10));
+    const { result } = renderHook(() => usePagedQuery<unknown>('/api/x', 10));
 
-    await waitFor(() => expect(result.current.error).toBe("Erro simulado"));
+    await waitFor(() => expect(result.current.error).toBe('Erro simulado'));
   });
 
-  it("Dado refresh(), Quando chamado, Então refaz a busca da primeira página", async () => {
-    const fetchMock = vi.fn(async () => jsonResponse([{ id: "1" }]));
-    vi.stubGlobal("fetch", fetchMock);
+  it('Dado refresh(), Quando chamado, Então refaz a busca da primeira página', async () => {
+    const fetchMock = vi.fn(async () => jsonResponse([{ id: '1' }]));
+    vi.stubGlobal('fetch', fetchMock);
 
-    const { result } = renderHook(() => usePagedQuery<{ id: string }>("/api/x", 10));
+    const { result } = renderHook(() =>
+      usePagedQuery<{ id: string }>('/api/x', 10),
+    );
     await waitFor(() => expect(result.current.items).toHaveLength(1));
 
     act(() => result.current.refresh());
@@ -204,51 +241,63 @@ describe("Feature: usePagedQuery", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
   });
 
-  it("Dado baseUrl com query string, Quando monta, Então usa separador &", async () => {
+  it('Dado baseUrl com query string, Quando monta, Então usa separador &', async () => {
     const fetchMock = vi.fn(async () => jsonResponse([]));
-    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal('fetch', fetchMock);
 
-    renderHook(() => usePagedQuery<unknown>("/api/x?status=done", 10));
+    renderHook(() => usePagedQuery<unknown>('/api/x?status=done', 10));
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
-        "/api/x?status=done&limit=10&offset=0",
+        '/api/x?status=done&limit=10&offset=0',
         expect.anything(),
       ),
     );
   });
 });
 
-describe("Feature: useCursorPagedQuery (issue #75)", () => {
-  it("Dado nextCursor nulo, Quando monta, Então hasMore é false", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => jsonPageResponse([{ id: "1" }], null)));
+describe('Feature: useCursorPagedQuery (issue #75)', () => {
+  it('Dado nextCursor nulo, Quando monta, Então hasMore é false', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonPageResponse([{ id: '1' }], null)),
+    );
 
-    const { result } = renderHook(() => useCursorPagedQuery<{ id: string }>("/api/x", 10));
+    const { result } = renderHook(() =>
+      useCursorPagedQuery<{ id: string }>('/api/x', 10),
+    );
 
-    await waitFor(() => expect(result.current.items).toEqual([{ id: "1" }]));
+    await waitFor(() => expect(result.current.items).toEqual([{ id: '1' }]));
     expect(result.current.hasMore).toBe(false);
   });
 
-  it("Dado nextCursor presente, Quando monta, Então hasMore é true", async () => {
+  it('Dado nextCursor presente, Quando monta, Então hasMore é true', async () => {
     vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => jsonPageResponse([{ id: "1" }, { id: "2" }], "cursor-abc")),
+      'fetch',
+      vi.fn(async () =>
+        jsonPageResponse([{ id: '1' }, { id: '2' }], 'cursor-abc'),
+      ),
     );
 
-    const { result } = renderHook(() => useCursorPagedQuery<{ id: string }>("/api/x", 2));
+    const { result } = renderHook(() =>
+      useCursorPagedQuery<{ id: string }>('/api/x', 2),
+    );
 
     await waitFor(() => expect(result.current.items).toHaveLength(2));
     expect(result.current.hasMore).toBe(true);
   });
 
-  it("Dado loadMore(), Quando chamado, Então anexa a página seguinte usando o cursor recebido", async () => {
+  it('Dado loadMore(), Quando chamado, Então anexa a página seguinte usando o cursor recebido', async () => {
     const fetchMock = vi.fn(async (url: string) => {
-      if (!url.includes("cursor=")) return jsonPageResponse([{ id: "1" }, { id: "2" }], "cursor-abc");
-      return jsonPageResponse([{ id: "3" }], null);
+      if (!url.includes('cursor='))
+        return jsonPageResponse([{ id: '1' }, { id: '2' }], 'cursor-abc');
+      return jsonPageResponse([{ id: '3' }], null);
     });
-    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal('fetch', fetchMock);
 
-    const { result } = renderHook(() => useCursorPagedQuery<{ id: string }>("/api/x", 2));
+    const { result } = renderHook(() =>
+      useCursorPagedQuery<{ id: string }>('/api/x', 2),
+    );
     await waitFor(() => expect(result.current.items).toHaveLength(2));
     expect(result.current.hasMore).toBe(true);
 
@@ -257,16 +306,18 @@ describe("Feature: useCursorPagedQuery (issue #75)", () => {
     await waitFor(() => expect(result.current.items).toHaveLength(3));
     expect(result.current.hasMore).toBe(false);
     expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining("cursor=cursor-abc"),
+      expect.stringContaining('cursor=cursor-abc'),
       expect.anything(),
     );
   });
 
-  it("Dado loadMore() sem nextCursor, Quando chamado, Então não busca de novo", async () => {
-    const fetchMock = vi.fn(async () => jsonPageResponse([{ id: "1" }], null));
-    vi.stubGlobal("fetch", fetchMock);
+  it('Dado loadMore() sem nextCursor, Quando chamado, Então não busca de novo', async () => {
+    const fetchMock = vi.fn(async () => jsonPageResponse([{ id: '1' }], null));
+    vi.stubGlobal('fetch', fetchMock);
 
-    const { result } = renderHook(() => useCursorPagedQuery<{ id: string }>("/api/x", 10));
+    const { result } = renderHook(() =>
+      useCursorPagedQuery<{ id: string }>('/api/x', 10),
+    );
     await waitFor(() => expect(result.current.items).toHaveLength(1));
 
     act(() => result.current.loadMore());
@@ -274,35 +325,45 @@ describe("Feature: useCursorPagedQuery (issue #75)", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("Dado erro no loadMore(), Quando chamado, Então preenche error mantendo itens atuais", async () => {
+  it('Dado erro no loadMore(), Quando chamado, Então preenche error mantendo itens atuais', async () => {
     const fetchMock = vi.fn(async (url: string) => {
-      if (!url.includes("cursor=")) return jsonPageResponse([{ id: "1" }], "cursor-abc");
+      if (!url.includes('cursor='))
+        return jsonPageResponse([{ id: '1' }], 'cursor-abc');
       return jsonResponse(null, false);
     });
-    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal('fetch', fetchMock);
 
-    const { result } = renderHook(() => useCursorPagedQuery<{ id: string }>("/api/x", 1));
+    const { result } = renderHook(() =>
+      useCursorPagedQuery<{ id: string }>('/api/x', 1),
+    );
     await waitFor(() => expect(result.current.items).toHaveLength(1));
 
     act(() => result.current.loadMore());
 
-    await waitFor(() => expect(result.current.error).toBe("Erro simulado"));
+    await waitFor(() => expect(result.current.error).toBe('Erro simulado'));
     expect(result.current.items).toHaveLength(1);
   });
 
-  it("Dado erro na primeira página, Quando monta, Então preenche error", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(null, false)));
+  it('Dado erro na primeira página, Quando monta, Então preenche error', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse(null, false)),
+    );
 
-    const { result } = renderHook(() => useCursorPagedQuery<unknown>("/api/x", 10));
+    const { result } = renderHook(() =>
+      useCursorPagedQuery<unknown>('/api/x', 10),
+    );
 
-    await waitFor(() => expect(result.current.error).toBe("Erro simulado"));
+    await waitFor(() => expect(result.current.error).toBe('Erro simulado'));
   });
 
-  it("Dado refresh(), Quando chamado, Então refaz a busca da primeira página", async () => {
-    const fetchMock = vi.fn(async () => jsonPageResponse([{ id: "1" }], null));
-    vi.stubGlobal("fetch", fetchMock);
+  it('Dado refresh(), Quando chamado, Então refaz a busca da primeira página', async () => {
+    const fetchMock = vi.fn(async () => jsonPageResponse([{ id: '1' }], null));
+    vi.stubGlobal('fetch', fetchMock);
 
-    const { result } = renderHook(() => useCursorPagedQuery<{ id: string }>("/api/x", 10));
+    const { result } = renderHook(() =>
+      useCursorPagedQuery<{ id: string }>('/api/x', 10),
+    );
     await waitFor(() => expect(result.current.items).toHaveLength(1));
 
     act(() => result.current.refresh());

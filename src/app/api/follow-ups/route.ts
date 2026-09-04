@@ -1,13 +1,13 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { CreateFollowUp } from "@/application/followups/create-follow-up";
-import { ListFollowUps } from "@/application/followups/list-follow-ups";
-import { FOLLOW_UP_STATUSES } from "@/domain/followup/follow-up";
-import { handleRequest } from "@/lib/api-response";
-import { toFollowUpDto } from "@/lib/dto";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { CreateFollowUp } from '@/application/followups/create-follow-up';
+import { ListFollowUps } from '@/application/followups/list-follow-ups';
+import { FOLLOW_UP_STATUSES } from '@/domain/followup/follow-up';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { toFollowUpDto } from '@/lib/dto';
 
 const createSchema = z.object({
   patientId: z.string().min(1),
@@ -23,12 +23,18 @@ export async function GET(request: NextRequest) {
   if (!guard.ok) return guard.response;
 
   return handleRequest(async () => {
-    const status = statusSchema.parse(request.nextUrl.searchParams.get("status") ?? undefined);
-    const patientId = request.nextUrl.searchParams.get("patientId") ?? undefined;
+    const status = statusSchema.parse(
+      request.nextUrl.searchParams.get('status') ?? undefined,
+    );
+    const patientId =
+      request.nextUrl.searchParams.get('patientId') ?? undefined;
     const { followUps, patients } = await getRepositories({
       clinicId: guard.session?.clinicId ?? null,
     });
-    const result = await new ListFollowUps(followUps, patients).execute({ status, patientId });
+    const result = await new ListFollowUps(followUps, patients).execute({
+      status,
+      patientId,
+    });
     return result.map(({ followUp, patientName, isOverdue }) =>
       toFollowUpDto(followUp, patientName, isOverdue),
     );

@@ -1,11 +1,11 @@
-import type { Invoice } from "@/domain/billing/invoice";
+import type { Invoice } from '@/domain/billing/invoice';
 import type {
   InvoiceFilter,
   InvoicePage,
   InvoiceRepository,
   InvoiceSummary,
-} from "@/domain/billing/invoice-repository";
-import { decodeCursor } from "@/lib/pagination";
+} from '@/domain/billing/invoice-repository';
+import { decodeCursor } from '@/lib/pagination';
 
 export class InMemoryInvoiceRepository implements InvoiceRepository {
   private readonly invoices = new Map<string, Invoice>();
@@ -20,7 +20,9 @@ export class InMemoryInvoiceRepository implements InvoiceRepository {
 
   async findByAppointmentId(appointmentId: string): Promise<Invoice | null> {
     return (
-      [...this.invoices.values()].find((i) => i.appointmentId === appointmentId) ?? null
+      [...this.invoices.values()].find(
+        (i) => i.appointmentId === appointmentId,
+      ) ?? null
     );
   }
 
@@ -29,16 +31,26 @@ export class InMemoryInvoiceRepository implements InvoiceRepository {
       return true;
     }
     if (filter.status && invoice.status !== filter.status) return false;
-    if (filter.patientId && invoice.patientId !== filter.patientId) return false;
-    if (filter.from && invoice.issuedAt.getTime() < filter.from.getTime()) return false;
-    if (filter.to && invoice.issuedAt.getTime() >= filter.to.getTime()) return false;
+    if (filter.patientId && invoice.patientId !== filter.patientId)
+      return false;
+    if (filter.from && invoice.issuedAt.getTime() < filter.from.getTime())
+      return false;
+    if (filter.to && invoice.issuedAt.getTime() >= filter.to.getTime())
+      return false;
     return true;
   }
 
-  async findAll(filter?: InvoiceFilter, page: InvoicePage = {}): Promise<Invoice[]> {
+  async findAll(
+    filter?: InvoiceFilter,
+    page: InvoicePage = {},
+  ): Promise<Invoice[]> {
     const all = [...this.invoices.values()]
       .filter((invoice) => this.matchesFilter(invoice, filter))
-      .sort((a, b) => b.issuedAt.getTime() - a.issuedAt.getTime() || b.id.localeCompare(a.id));
+      .sort(
+        (a, b) =>
+          b.issuedAt.getTime() - a.issuedAt.getTime() ||
+          b.id.localeCompare(a.id),
+      );
     const decoded = decodeCursor<{ issuedAt: string; id: string }>(page.cursor);
     // Mesmo comparador do sort acima (localeCompare no id) — `<` usaria ordem
     // UTF-16 e poderia divergir do sort em ids com caracteres não-ASCII.
@@ -59,13 +71,18 @@ export class InMemoryInvoiceRepository implements InvoiceRepository {
     );
     return matching.reduce<InvoiceSummary>(
       (summary, invoice) => ({
-        paidCents: summary.paidCents + (invoice.status === "paid" ? invoice.amount.cents : 0),
+        paidCents:
+          summary.paidCents +
+          (invoice.status === 'paid' ? invoice.amount.cents : 0),
         pendingCents:
-          summary.pendingCents + (invoice.status === "pending" ? invoice.amount.cents : 0),
+          summary.pendingCents +
+          (invoice.status === 'pending' ? invoice.amount.cents : 0),
         totalInvoices: summary.totalInvoices + 1,
-        paidCount: summary.paidCount + (invoice.status === "paid" ? 1 : 0),
-        pendingCount: summary.pendingCount + (invoice.status === "pending" ? 1 : 0),
-        cancelledCount: summary.cancelledCount + (invoice.status === "cancelled" ? 1 : 0),
+        paidCount: summary.paidCount + (invoice.status === 'paid' ? 1 : 0),
+        pendingCount:
+          summary.pendingCount + (invoice.status === 'pending' ? 1 : 0),
+        cancelledCount:
+          summary.cancelledCount + (invoice.status === 'cancelled' ? 1 : 0),
       }),
       {
         paidCents: 0,

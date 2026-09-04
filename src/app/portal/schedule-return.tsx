@@ -1,15 +1,20 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { apiFetch } from "@/lib/client";
-import { useToast } from "@still-void/ui/react/client";
-import { useApiQuery } from "@/lib/use-api-query";
-import type { ProcedureDto } from "@/lib/dto";
-import { formatTime } from "@/lib/format";
-import { Button, Card, CardContent, Input, NativeSelect } from "@still-void/ui/react";
-import { ErrorAlert } from "@/components/feedback";
-import { ConfirmAction } from "@/components/confirm-action";
-import { formatDateTime } from "@/lib/format";
+import {
+  Button,
+  Card,
+  CardContent,
+  Input,
+  NativeSelect,
+} from '@still-void/ui/react';
+import { useToast } from '@still-void/ui/react/client';
+import { useState } from 'react';
+import { ConfirmAction } from '@/components/confirm-action';
+import { ErrorAlert } from '@/components/feedback';
+import { apiFetch } from '@/lib/client';
+import type { ProcedureDto } from '@/lib/dto';
+import { formatDateTime, formatTime } from '@/lib/format';
+import { useApiQuery } from '@/lib/use-api-query';
 
 interface AvailableSlotDto {
   startsAt: string;
@@ -18,9 +23,9 @@ interface AvailableSlotDto {
 
 /** Data local no formato aceito por <input type="date"> e pela API. */
 const dayKey = (date: Date): string =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
     date.getDate(),
-  ).padStart(2, "0")}`;
+  ).padStart(2, '0')}`;
 
 const OFFER_WINDOW_DAYS = 14;
 
@@ -34,7 +39,10 @@ interface ScheduleReturnProps {
  * procedimento e dia, vê os horários livres e confirma — sem ligar para a
  * clínica. Os horários vêm da mesma regra usada pela equipe.
  */
-export function ScheduleReturn({ followUpId, onScheduled }: ScheduleReturnProps) {
+export function ScheduleReturn({
+  followUpId,
+  onScheduled,
+}: ScheduleReturnProps) {
   const [open, setOpen] = useState(false);
 
   if (!open) {
@@ -69,31 +77,38 @@ function SchedulePanel({
   onCancel,
 }: ScheduleReturnProps & { onCancel: () => void }) {
   const { toast } = useToast();
-  const { data: procedures } = useApiQuery<ProcedureDto[]>("/api/portal/patient/procedures");
-  const [procedureId, setProcedureId] = useState("");
+  const { data: procedures } = useApiQuery<ProcedureDto[]>(
+    '/api/portal/patient/procedures',
+  );
+  const [procedureId, setProcedureId] = useState('');
   // Janela de oferta fixada na montagem (o relógio não pode ser lido em render).
   const [today] = useState(() => dayKey(new Date()));
-  const [maxDate] = useState(() => dayKey(new Date(Date.now() + OFFER_WINDOW_DAYS * 86_400_000)));
+  const [maxDate] = useState(() =>
+    dayKey(new Date(Date.now() + OFFER_WINDOW_DAYS * 86_400_000)),
+  );
   const [date, setDate] = useState(today);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-
 
   const schedule = async (slot: AvailableSlotDto) => {
     setSaving(true);
     setError(null);
     try {
-      await apiFetch("/api/portal/patient/appointments", {
-        method: "POST",
-        body: JSON.stringify({ procedureId, startsAt: slot.startsAt, followUpId }),
+      await apiFetch('/api/portal/patient/appointments', {
+        method: 'POST',
+        body: JSON.stringify({
+          procedureId,
+          startsAt: slot.startsAt,
+          followUpId,
+        }),
       });
       toast({
-        description: "Retorno agendado",
-        variant: "success",
+        description: 'Retorno agendado',
+        variant: 'success',
       });
       onScheduled();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao agendar retorno");
+      setError(err instanceof Error ? err.message : 'Erro ao agendar retorno');
       setSaving(false);
     }
   };
@@ -101,60 +116,60 @@ function SchedulePanel({
   return (
     <Card className="mt-2 border-accent">
       <CardContent className="p-3">
-      {error && <ErrorAlert message={error} />}
-      <div className="grid gap-2 sm:grid-cols-2">
-        <label className="text-sm font-medium">
-          Procedimento
-          <NativeSelect
-            value={procedureId}
-            disabled={saving}
-            onChange={(e) => setProcedureId(e.target.value)}
-            className="mt-1"
-          >
-            <option value="">Selecione…</option>
-            {(procedures ?? []).map((procedure) => (
-              <option key={procedure.id} value={procedure.id}>
-                {procedure.name}
-              </option>
-            ))}
-          </NativeSelect>
-        </label>
-        <label className="text-sm font-medium">
-          Dia
-          <Input
-            type="date"
-            value={date}
-            disabled={saving}
-            min={today}
-            max={maxDate}
-            onChange={(e) => setDate(e.target.value)}
-            className="mt-1"
-          />
-        </label>
-      </div>
-      {/* PORT-07: janela de oferta explicada — antes só existia como limite
+        {error && <ErrorAlert message={error} />}
+        <div className="grid gap-2 sm:grid-cols-2">
+          <label className="font-medium text-sm">
+            Procedimento
+            <NativeSelect
+              value={procedureId}
+              disabled={saving}
+              onChange={(e) => setProcedureId(e.target.value)}
+              className="mt-1"
+            >
+              <option value="">Selecione…</option>
+              {(procedures ?? []).map((procedure) => (
+                <option key={procedure.id} value={procedure.id}>
+                  {procedure.name}
+                </option>
+              ))}
+            </NativeSelect>
+          </label>
+          <label className="font-medium text-sm">
+            Dia
+            <Input
+              type="date"
+              value={date}
+              disabled={saving}
+              min={today}
+              max={maxDate}
+              onChange={(e) => setDate(e.target.value)}
+              className="mt-1"
+            />
+          </label>
+        </div>
+        {/* PORT-07: janela de oferta explicada — antes só existia como limite
           silencioso no `max` do input de data. */}
-      <p className="mt-2 text-xs text-ink-3">
-        Você pode agendar em até {OFFER_WINDOW_DAYS} dias a partir de hoje.
-      </p>
+        <p className="mt-2 text-ink-3 text-xs">
+          Você pode agendar em até {OFFER_WINDOW_DAYS} dias a partir de hoje.
+        </p>
 
-      {procedureId && date && (
-        <SlotPicker
-          procedureId={procedureId}
-          date={date}
-          disabled={saving}
-          onPick={(slot) => void schedule(slot)}
-        />
-      )}
+        {procedureId && date && (
+          <SlotPicker
+            procedureId={procedureId}
+            date={date}
+            disabled={saving}
+            onPick={(slot) => void schedule(slot)}
+          />
+        )}
 
-      <Button
-        type="button"
-        variant="link"
-        onClick={onCancel}
-        className="mt-3 h-auto px-0 text-xs font-medium text-ink-3"
-      >
-        Cancelar
-      </Button>
+        <Button
+          type="button"
+          variant="link"
+          onClick={onCancel}
+          className="mt-3 h-auto px-0 font-medium text-ink-3 text-xs"
+        >
+          Cancelar
+        </Button>
       </CardContent>
     </Card>
   );
@@ -182,11 +197,11 @@ function SlotPicker({
     return <ErrorAlert message={error} />;
   }
   if (!slots) {
-    return <p className="mt-3 text-xs text-ink-3">Buscando horários…</p>;
+    return <p className="mt-3 text-ink-3 text-xs">Buscando horários…</p>;
   }
   if (slots.length === 0) {
     return (
-      <p className="mt-3 text-xs text-ink-3">
+      <p className="mt-3 text-ink-3 text-xs">
         Nenhum horário livre neste dia — tente outra data.
       </p>
     );

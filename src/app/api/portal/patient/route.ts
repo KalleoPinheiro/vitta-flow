@@ -1,9 +1,9 @@
-import type { NextRequest } from "next/server";
-import { getRepositories } from "@/infrastructure/container";
-import { GetPatientPortalData } from "@/application/portal/get-patient-portal-data";
-import { requirePortalSession } from "@/lib/auth/require-session";
-import { handleRequest } from "@/lib/api-response";
-import { recordAudit } from "@/lib/audit";
+import type { NextRequest } from 'next/server';
+import { GetPatientPortalData } from '@/application/portal/get-patient-portal-data';
+import { getRepositories } from '@/infrastructure/container';
+import { handleRequest } from '@/lib/api-response';
+import { recordAudit } from '@/lib/audit';
+import { requirePortalSession } from '@/lib/auth/require-session';
 import {
   toConditionPhotoDto,
   toFollowUpDto,
@@ -12,10 +12,10 @@ import {
   toPortalAssessmentDto,
   toPortalConditionDto,
   toPortalPatientProfileDto,
-} from "@/lib/dto";
+} from '@/lib/dto';
 
 export async function GET(request: NextRequest) {
-  const guard = requirePortalSession(request, "patient");
+  const guard = requirePortalSession(request, 'patient');
   if (!guard.ok) return guard.response;
   const { session } = guard;
 
@@ -39,20 +39,26 @@ export async function GET(request: NextRequest) {
       conditionPhotos,
     ).execute({ email: session.subject });
 
-    recordAudit((await getRepositories({ clinicId: null })).auditEvents, session, {
-      action: "read",
-      resourceType: "portal-patient",
-      resourceId: data.patient.id,
-      patientId: data.patient.id,
-    });
+    recordAudit(
+      (await getRepositories({ clinicId: null })).auditEvents,
+      session,
+      {
+        action: 'read',
+        resourceType: 'portal-patient',
+        resourceId: data.patient.id,
+        patientId: data.patient.id,
+      },
+    );
     return {
       patient: toPortalPatientProfileDto(data.patient),
       appointments: data.appointments.map(toPortalAppointmentDto),
-      conditions: data.conditions.map(({ condition, assessments: list, photos }) => ({
-        condition: toPortalConditionDto(condition),
-        assessments: list.map(toPortalAssessmentDto),
-        photos: (photos ?? []).map(toConditionPhotoDto),
-      })),
+      conditions: data.conditions.map(
+        ({ condition, assessments: list, photos }) => ({
+          condition: toPortalConditionDto(condition),
+          assessments: list.map(toPortalAssessmentDto),
+          photos: (photos ?? []).map(toConditionPhotoDto),
+        }),
+      ),
       invoices: data.invoices.map((i) => toInvoiceDto(i)),
       followUps: data.followUps.map((f) => toFollowUpDto(f)),
     };

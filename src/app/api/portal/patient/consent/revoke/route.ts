@@ -1,12 +1,12 @@
-import type { NextRequest } from "next/server";
-import { getRepositories } from "@/infrastructure/container";
-import { ConsentRecord } from "@/domain/consent/consent-record";
-import { requirePortalSession } from "@/lib/auth/require-session";
-import { clientIp } from "@/lib/auth/client-ip";
-import { handleRequest } from "@/lib/api-response";
-import { recordAudit } from "@/lib/audit";
-import { NotFoundError } from "@/domain/shared/errors";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import type { NextRequest } from 'next/server';
+import { ConsentRecord } from '@/domain/consent/consent-record';
+import { NotFoundError } from '@/domain/shared/errors';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { recordAudit } from '@/lib/audit';
+import { clientIp } from '@/lib/auth/client-ip';
+import { requirePortalSession } from '@/lib/auth/require-session';
 
 /**
  * Revogação self-service do consentimento LGPD (art. 8º/18): registra evento
@@ -16,7 +16,7 @@ import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-cl
  * status final continua "revogado".
  */
 export async function POST(request: NextRequest) {
-  const auth = requirePortalSession(request, "patient");
+  const auth = requirePortalSession(request, 'patient');
   if (!auth.ok) return auth.response;
 
   return handleRequest(async () => {
@@ -24,8 +24,8 @@ export async function POST(request: NextRequest) {
       clinicId: auth.session.clinicId ?? LEGACY_CLINIC_ID,
     });
     const patient = await patients.findByEmail(auth.session.subject);
-    if (!patient || !patient.isActive) {
-      throw new NotFoundError("Paciente", auth.session.subject);
+    if (!patient?.isActive) {
+      throw new NotFoundError('Paciente', auth.session.subject);
     }
 
     const record = ConsentRecord.revoke({
@@ -35,12 +35,16 @@ export async function POST(request: NextRequest) {
     await consentRecords.save(record);
 
     recordAudit(auditEvents, auth.session, {
-      action: "update",
-      resourceType: "consent",
+      action: 'update',
+      resourceType: 'consent',
       resourceId: record.id,
       patientId: patient.id,
-      detail: "revogação de consentimento",
+      detail: 'revogação de consentimento',
     });
-    return { accepted: false, revoked: true, revokedAt: record.acceptedAt.toISOString() };
+    return {
+      accepted: false,
+      revoked: true,
+      revokedAt: record.acceptedAt.toISOString(),
+    };
   });
 }

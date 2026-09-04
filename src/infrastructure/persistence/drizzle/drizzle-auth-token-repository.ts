@@ -1,12 +1,12 @@
-import { and, eq, gt, isNull } from "drizzle-orm";
-import type { AppDb } from "./db";
-import { authTokens } from "./schema";
+import { and, eq, gt, isNull } from 'drizzle-orm';
 import {
   AuthToken,
   type AuthTokenPurpose,
   type AuthTokenRepository,
-} from "@/domain/auth/auth-token";
-import { isUniqueViolation } from "@/lib/db-errors";
+} from '@/domain/auth/auth-token';
+import { isUniqueViolation } from '@/lib/db-errors';
+import type { AppDb } from './db';
+import { authTokens } from './schema';
 
 export class DrizzleAuthTokenRepository implements AuthTokenRepository {
   constructor(private readonly db: AppDb) {}
@@ -90,7 +90,11 @@ export class DrizzleAuthTokenRepository implements AuthTokenRepository {
    * de unicidade — recomeça (reinvalida, agora vendo a linha que a outra já
    * commitou) até o próprio índice garantir que só uma sobrevive (issue #50).
    */
-  async replaceUnused(token: AuthToken, usedAt: Date = new Date(), attempt = 0): Promise<void> {
+  async replaceUnused(
+    token: AuthToken,
+    usedAt: Date = new Date(),
+    attempt = 0,
+  ): Promise<void> {
     try {
       await this.db.transaction(async (tx) => {
         await tx

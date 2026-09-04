@@ -1,11 +1,11 @@
-import type { ProcedureKitRepository } from "@/domain/catalog/procedure-kit";
+import type { ProcedureKitRepository } from '@/domain/catalog/procedure-kit';
 import type {
   StockMovementRepository,
   SupplyRepository,
-} from "@/domain/inventory/inventory-repositories";
-import type { RegisterStockMovement } from "./register-stock-movement";
+} from '@/domain/inventory/inventory-repositories';
+import type { RegisterStockMovement } from './register-stock-movement';
 
-export const KIT_REASON = "Kit do procedimento";
+export const KIT_REASON = 'Kit do procedimento';
 
 export interface DispenseKitResult {
   dispensed: number;
@@ -37,15 +37,21 @@ export class DispenseProcedureKit {
       return { dispensed: 0, warnings: [], skipped: false };
     }
 
-    const existing = await this.movements.findByAppointmentId(input.appointmentId);
+    const existing = await this.movements.findByAppointmentId(
+      input.appointmentId,
+    );
     if (existing.some((movement) => movement.reason === KIT_REASON)) {
       return { dispensed: 0, warnings: [], skipped: true };
     }
 
-    const result: DispenseKitResult = { dispensed: 0, warnings: [], skipped: false };
+    const result: DispenseKitResult = {
+      dispensed: 0,
+      warnings: [],
+      skipped: false,
+    };
     for (const item of kit) {
       const supply = await this.supplies.findById(item.supplyId);
-      if (!supply || !supply.isActive) {
+      if (!supply?.isActive) {
         result.warnings.push(`Insumo do kit indisponível (${item.supplyId})`);
         continue;
       }
@@ -57,7 +63,7 @@ export class DispenseProcedureKit {
       }
       await this.register.execute({
         supplyId: item.supplyId,
-        type: "out",
+        type: 'out',
         quantity: item.quantity,
         reason: KIT_REASON,
         appointmentId: input.appointmentId,

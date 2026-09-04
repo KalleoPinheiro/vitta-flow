@@ -1,5 +1,5 @@
-import type { Anamnesis } from "@/domain/clinical/anamnesis";
-import type { AnamnesisRepository } from "@/domain/clinical/clinical-repositories";
+import type { Anamnesis } from '@/domain/clinical/anamnesis';
+import type { AnamnesisRepository } from '@/domain/clinical/clinical-repositories';
 
 export class GetAnamnesis {
   constructor(private readonly anamneses: AnamnesisRepository) {}

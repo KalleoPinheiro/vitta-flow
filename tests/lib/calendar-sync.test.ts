@@ -1,19 +1,22 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { NullCalendarGateway, type CalendarGateway } from "@/application/ports/calendar-gateway";
-import { SyncAppointmentCalendar } from "@/application/appointments/sync-appointment-calendar";
-import type { AppointmentRepository } from "@/domain/scheduling/appointment-repository";
-import type { PatientRepository } from "@/domain/patient/patient-repository";
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { SyncAppointmentCalendar } from '@/application/appointments/sync-appointment-calendar';
+import {
+  type CalendarGateway,
+  NullCalendarGateway,
+} from '@/application/ports/calendar-gateway';
+import type { PatientRepository } from '@/domain/patient/patient-repository';
+import type { AppointmentRepository } from '@/domain/scheduling/appointment-repository';
 
 const afterTasks: Array<() => Promise<void>> = [];
 
-vi.mock("next/server", () => ({
+vi.mock('next/server', () => ({
   after: (task: () => Promise<void>) => {
     afterTasks.push(task);
   },
 }));
 
 // Import após o mock de "next/server", como exigido pelo hoisting do vi.mock.
-const { scheduleCalendarSync } = await import("@/lib/calendar-sync");
+const { scheduleCalendarSync } = await import('@/lib/calendar-sync');
 
 function buildServices(calendar: CalendarGateway) {
   return {
@@ -23,7 +26,7 @@ function buildServices(calendar: CalendarGateway) {
   };
 }
 
-describe("Feature: Agendamento da sincronização com Google Calendar (após a resposta)", () => {
+describe('Feature: Agendamento da sincronização com Google Calendar (após a resposta)', () => {
   beforeEach(() => {
     afterTasks.length = 0;
   });
@@ -32,7 +35,7 @@ describe("Feature: Agendamento da sincronização com Google Calendar (após a r
     vi.restoreAllMocks();
   });
 
-  it("Dado gateway nulo (integração desativada), Quando scheduleCalendarSync, Então não agenda nada", () => {
+  it('Dado gateway nulo (integração desativada), Quando scheduleCalendarSync, Então não agenda nada', () => {
     const services = buildServices(new NullCalendarGateway());
     const action = vi.fn().mockResolvedValue(undefined);
 
@@ -42,9 +45,9 @@ describe("Feature: Agendamento da sincronização com Google Calendar (após a r
     expect(action).not.toHaveBeenCalled();
   });
 
-  it("Dado gateway real, Quando scheduleCalendarSync, Então agenda a ação com SyncAppointmentCalendar", async () => {
+  it('Dado gateway real, Quando scheduleCalendarSync, Então agenda a ação com SyncAppointmentCalendar', async () => {
     const gateway: CalendarGateway = {
-      createEvent: vi.fn().mockResolvedValue("evt-1"),
+      createEvent: vi.fn().mockResolvedValue('evt-1'),
       updateEvent: vi.fn().mockResolvedValue(undefined),
       deleteEvent: vi.fn().mockResolvedValue(undefined),
     };
@@ -60,21 +63,21 @@ describe("Feature: Agendamento da sincronização com Google Calendar (após a r
     expect(action.mock.calls[0][0]).toBeInstanceOf(SyncAppointmentCalendar);
   });
 
-  it("Dado a ação agendada falha, Quando a tarefa roda, Então não lança e loga no console", async () => {
+  it('Dado a ação agendada falha, Quando a tarefa roda, Então não lança e loga no console', async () => {
     const gateway: CalendarGateway = {
       createEvent: vi.fn().mockResolvedValue(null),
       updateEvent: vi.fn().mockResolvedValue(undefined),
       deleteEvent: vi.fn().mockResolvedValue(undefined),
     };
     const services = buildServices(gateway);
-    const action = vi.fn().mockRejectedValue(new Error("Google fora do ar"));
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const action = vi.fn().mockRejectedValue(new Error('Google fora do ar'));
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     scheduleCalendarSync(services, action);
 
     await expect(afterTasks[0]!()).resolves.toBeUndefined();
     expect(consoleSpy).toHaveBeenCalledWith(
-      "Google Calendar: falha na sincronização pós-request",
+      'Google Calendar: falha na sincronização pós-request',
       expect.any(Error),
     );
   });

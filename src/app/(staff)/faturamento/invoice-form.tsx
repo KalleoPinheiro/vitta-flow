@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import type { PatientDto } from "@/lib/dto";
-import { ErrorAlert } from "@/components/feedback";
-import { Button, Input, NativeSelect } from "@still-void/ui/react";
+import { Button, Input, NativeSelect } from '@still-void/ui/react';
+import { useState } from 'react';
+import { ErrorAlert } from '@/components/feedback';
+import type { PatientDto } from '@/lib/dto';
 
 export interface InvoiceFormValues {
   patientId: string;
@@ -19,10 +19,10 @@ interface InvoiceFormProps {
 
 export function InvoiceForm({ patients, onSubmit }: InvoiceFormProps) {
   const [values, setValues] = useState<InvoiceFormValues>({
-    patientId: "",
-    description: "",
-    amount: "",
-    dueDate: "",
+    patientId: '',
+    description: '',
+    amount: '',
+    dueDate: '',
   });
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -34,7 +34,7 @@ export function InvoiceForm({ patients, onSubmit }: InvoiceFormProps) {
     try {
       await onSubmit(values);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao emitir fatura");
+      setError(err instanceof Error ? err.message : 'Erro ao emitir fatura');
     } finally {
       setSaving(false);
     }
@@ -43,12 +43,14 @@ export function InvoiceForm({ patients, onSubmit }: InvoiceFormProps) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       {error && <ErrorAlert message={error} />}
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Paciente *
         <NativeSelect
           required
           value={values.patientId}
-          onChange={(e) => setValues((prev) => ({ ...prev, patientId: e.target.value }))}
+          onChange={(e) =>
+            setValues((prev) => ({ ...prev, patientId: e.target.value }))
+          }
           className="mt-1"
         >
           <option value="">Selecione…</option>
@@ -59,18 +61,20 @@ export function InvoiceForm({ patients, onSubmit }: InvoiceFormProps) {
           ))}
         </NativeSelect>
       </label>
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Descrição *
         <Input
           required
           value={values.description}
-          onChange={(e) => setValues((prev) => ({ ...prev, description: e.target.value }))}
+          onChange={(e) =>
+            setValues((prev) => ({ ...prev, description: e.target.value }))
+          }
           placeholder="Ex.: Sessão de curativo especializado"
           className="mt-1"
         />
       </label>
       <div className="grid grid-cols-2 gap-3">
-        <label className="text-sm font-medium">
+        <label className="font-medium text-sm">
           Valor (R$) *
           <Input
             required
@@ -78,27 +82,26 @@ export function InvoiceForm({ patients, onSubmit }: InvoiceFormProps) {
             min="0.01"
             step="0.01"
             value={values.amount}
-            onChange={(e) => setValues((prev) => ({ ...prev, amount: e.target.value }))}
+            onChange={(e) =>
+              setValues((prev) => ({ ...prev, amount: e.target.value }))
+            }
             className="mt-1"
           />
         </label>
-        <label className="text-sm font-medium">
+        <label className="font-medium text-sm">
           Vencimento
           <Input
             type="date"
             value={values.dueDate}
-            onChange={(e) => setValues((prev) => ({ ...prev, dueDate: e.target.value }))}
+            onChange={(e) =>
+              setValues((prev) => ({ ...prev, dueDate: e.target.value }))
+            }
             className="mt-1"
           />
         </label>
       </div>
-      <Button
-        type="submit"
-        disabled={saving}
-        variant="accent"
-        className="mt-2"
-      >
-        {saving ? "Emitindo…" : "Emitir fatura"}
+      <Button type="submit" disabled={saving} variant="accent" className="mt-2">
+        {saving ? 'Emitindo…' : 'Emitir fatura'}
       </Button>
     </form>
   );

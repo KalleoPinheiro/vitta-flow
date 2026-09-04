@@ -1,13 +1,16 @@
-import { InvalidStatusTransitionError, ValidationError } from "../shared/errors";
-import { newId } from "../shared/id";
+import {
+  InvalidStatusTransitionError,
+  ValidationError,
+} from '../shared/errors';
+import { newId } from '../shared/id';
 
-export const CONDITION_KINDS = ["stoma", "wound"] as const;
+export const CONDITION_KINDS = ['stoma', 'wound'] as const;
 export type ConditionKind = (typeof CONDITION_KINDS)[number];
 
-export const STOMA_TYPES = ["colostomia", "ileostomia", "urostomia"] as const;
+export const STOMA_TYPES = ['colostomia', 'ileostomia', 'urostomia'] as const;
 export type StomaType = (typeof STOMA_TYPES)[number];
 
-export const CONDITION_STATUSES = ["active", "resolved"] as const;
+export const CONDITION_STATUSES = ['active', 'resolved'] as const;
 export type ConditionStatus = (typeof CONDITION_STATUSES)[number];
 
 export interface ClinicalConditionProps {
@@ -31,24 +34,26 @@ export class ClinicalCondition {
   static create(props: ClinicalConditionProps): ClinicalCondition {
     const title = props.title.trim();
     if (title.length === 0) {
-      throw new ValidationError("Título da condição é obrigatório");
+      throw new ValidationError('Título da condição é obrigatório');
     }
     if (props.patientId.trim().length === 0) {
-      throw new ValidationError("Paciente é obrigatório");
+      throw new ValidationError('Paciente é obrigatório');
     }
-    if (props.kind === "stoma" && !props.stomaType) {
-      throw new ValidationError("Estomia exige o tipo (colostomia, ileostomia ou urostomia)");
+    if (props.kind === 'stoma' && !props.stomaType) {
+      throw new ValidationError(
+        'Estomia exige o tipo (colostomia, ileostomia ou urostomia)',
+      );
     }
 
     return new ClinicalCondition({
       patientId: props.patientId,
       kind: props.kind,
       title,
-      stomaType: props.kind === "stoma" ? props.stomaType : null,
+      stomaType: props.kind === 'stoma' ? props.stomaType : null,
       startedAt: props.startedAt ?? null,
       notes: props.notes ?? null,
       id: newId(),
-      status: "active",
+      status: 'active',
       createdAt: new Date(),
     });
   }
@@ -58,10 +63,10 @@ export class ClinicalCondition {
   }
 
   resolve(): ClinicalCondition {
-    if (this.state.status !== "active") {
-      throw new InvalidStatusTransitionError("Condição já está resolvida");
+    if (this.state.status !== 'active') {
+      throw new InvalidStatusTransitionError('Condição já está resolvida');
     }
-    return new ClinicalCondition({ ...this.state, status: "resolved" });
+    return new ClinicalCondition({ ...this.state, status: 'resolved' });
   }
 
   get id(): string {
@@ -97,7 +102,7 @@ export class ClinicalCondition {
   }
 
   get isActive(): boolean {
-    return this.state.status === "active";
+    return this.state.status === 'active';
   }
 
   get createdAt(): Date {

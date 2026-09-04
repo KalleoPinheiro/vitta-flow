@@ -1,13 +1,18 @@
-import { describe, it, expect, beforeAll, afterEach, vi } from "vitest";
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
-process.env.VITTA_DB_DRIVER = "pglite";
+process.env.VITTA_DB_DRIVER = 'pglite';
 
-const jsonRequest = (url: string, method: string, body?: unknown, headers?: Record<string, string>) =>
+const jsonRequest = (
+  url: string,
+  method: string,
+  body?: unknown,
+  headers?: Record<string, string>,
+) =>
   new NextRequest(`http://localhost${url}`, {
     method,
     body: body === undefined ? undefined : JSON.stringify(body),
-    headers: { "Content-Type": "application/json", ...headers },
+    headers: { 'Content-Type': 'application/json', ...headers },
   });
 
 interface Envelope<T> {
@@ -16,10 +21,10 @@ interface Envelope<T> {
   error: string | null;
 }
 
-describe("Feature: Rotas de autenticação (login, logout, provedores)", () => {
-  let loginRoute: typeof import("@/app/api/auth/login/route");
-  let logoutRoute: typeof import("@/app/api/auth/logout/route");
-  let providersRoute: typeof import("@/app/api/auth/providers/route");
+describe('Feature: Rotas de autenticação (login, logout, provedores)', () => {
+  let loginRoute: typeof import('@/app/api/auth/login/route');
+  let logoutRoute: typeof import('@/app/api/auth/logout/route');
+  let providersRoute: typeof import('@/app/api/auth/providers/route');
 
   const originalEnv = { ...process.env };
 
@@ -28,118 +33,130 @@ describe("Feature: Rotas de autenticação (login, logout, provedores)", () => {
   };
 
   beforeAll(async () => {
-    loginRoute = await import("@/app/api/auth/login/route");
-    logoutRoute = await import("@/app/api/auth/logout/route");
-    providersRoute = await import("@/app/api/auth/providers/route");
+    loginRoute = await import('@/app/api/auth/login/route');
+    logoutRoute = await import('@/app/api/auth/logout/route');
+    providersRoute = await import('@/app/api/auth/providers/route');
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  describe("POST /api/auth/login", () => {
-    it("Dado AUTH_SECRET ausente, Quando POST login, Então retorna 503", async () => {
+  describe('POST /api/auth/login', () => {
+    it('Dado AUTH_SECRET ausente, Quando POST login, Então retorna 503', async () => {
       resetAuthEnv();
       const response = await loginRoute.POST(
         jsonRequest(
-          "/api/auth/login",
-          "POST",
-          { email: "alguem@clinica.com", password: "qualquer" },
-          { "x-forwarded-for": "10.0.0.1" },
+          '/api/auth/login',
+          'POST',
+          { email: 'alguem@clinica.com', password: 'qualquer' },
+          { 'x-forwarded-for': '10.0.0.1' },
         ),
       );
       const body = (await response.json()) as Envelope<null>;
 
       expect(response.status).toBe(503);
-      expect(body.error).toContain("Autenticação não configurada");
+      expect(body.error).toContain('Autenticação não configurada');
     });
 
     it("Dado requisição sem x-forwarded-for, Quando POST login, Então usa IP 'unknown' e responde normalmente", async () => {
       resetAuthEnv();
-      process.env.AUTH_SECRET = "test-secret-e2e";
-  
+      process.env.AUTH_SECRET = 'test-secret-e2e';
+
       const response = await loginRoute.POST(
-        jsonRequest("/api/auth/login", "POST", {
-          email: "ninguem@clinica.com",
-          password: "senha-errada",
+        jsonRequest('/api/auth/login', 'POST', {
+          email: 'ninguem@clinica.com',
+          password: 'senha-errada',
         }),
       );
 
       expect(response.status).toBe(401);
     });
 
-    it("Dado uma requisição sem email, Quando POST login, Então retorna 401 e nenhum cookie de sessão", async () => {
+    it('Dado uma requisição sem email, Quando POST login, Então retorna 401 e nenhum cookie de sessão', async () => {
       resetAuthEnv();
-      process.env.AUTH_SECRET = "test-secret-e2e";
+      process.env.AUTH_SECRET = 'test-secret-e2e';
 
       const response = await loginRoute.POST(
-        jsonRequest("/api/auth/login", "POST", { password: "qualquer-senha" }, {
-          "x-forwarded-for": "10.0.0.3",
-        }),
+        jsonRequest(
+          '/api/auth/login',
+          'POST',
+          { password: 'qualquer-senha' },
+          {
+            'x-forwarded-for': '10.0.0.3',
+          },
+        ),
       );
       const body = (await response.json()) as Envelope<null>;
 
       expect(response.status).toBe(401);
-      expect(body.error).toContain("Credenciais inválidas");
-      expect(response.headers.get("set-cookie")).toBeNull();
+      expect(body.error).toContain('Credenciais inválidas');
+      expect(response.headers.get('set-cookie')).toBeNull();
     });
 
-    it("Dado uma senha que era a mestre e nenhum email, Quando POST login, Então continua 401 (senha mestre não existe mais)", async () => {
+    it('Dado uma senha que era a mestre e nenhum email, Quando POST login, Então continua 401 (senha mestre não existe mais)', async () => {
       resetAuthEnv();
-      process.env.AUTH_SECRET = "test-secret-e2e";
-      process.env.AUTH_PASSWORD_LEGADO = "senha-correta"; // gitleaks:allow — fixture de teste, não é credencial
+      process.env.AUTH_SECRET = 'test-secret-e2e';
+      process.env.AUTH_PASSWORD_LEGADO = 'senha-correta'; // gitleaks:allow — fixture de teste, não é credencial
 
       const response = await loginRoute.POST(
-        jsonRequest("/api/auth/login", "POST", { password: "senha-correta" }, {
-          "x-forwarded-for": "10.0.0.4",
-        }),
+        jsonRequest(
+          '/api/auth/login',
+          'POST',
+          { password: 'senha-correta' },
+          {
+            'x-forwarded-for': '10.0.0.4',
+          },
+        ),
       );
 
       expect(response.status).toBe(401);
       delete process.env.AUTH_PASSWORD_LEGADO;
     });
 
-    it("Dado conta individual inexistente, Quando POST login com email, Então retorna 401", async () => {
+    it('Dado conta individual inexistente, Quando POST login com email, Então retorna 401', async () => {
       resetAuthEnv();
-      process.env.AUTH_SECRET = "test-secret-e2e";
-  
+      process.env.AUTH_SECRET = 'test-secret-e2e';
+
       const response = await loginRoute.POST(
         jsonRequest(
-          "/api/auth/login",
-          "POST",
-          { password: "abc123", email: "fulano@clinica.com" },
-          { "x-forwarded-for": "10.0.0.5" },
+          '/api/auth/login',
+          'POST',
+          { password: 'abc123', email: 'fulano@clinica.com' },
+          { 'x-forwarded-for': '10.0.0.5' },
         ),
       );
       const body = (await response.json()) as Envelope<null>;
 
       expect(response.status).toBe(401);
-      expect(body.error).toContain("Email ou senha incorretos");
+      expect(body.error).toContain('Email ou senha incorretos');
     });
 
-    it("Dado conta individual ativa com senha correta, Quando POST login com email, Então cria sessão", async () => {
+    it('Dado conta individual ativa com senha correta, Quando POST login com email, Então cria sessão', async () => {
       resetAuthEnv();
-      process.env.AUTH_SECRET = "test-secret-e2e";
-  
-      const { getRepositories } = await import("@/infrastructure/container");
-      const { hashPassword } = await import("@/lib/auth/password");
-      const { UserAccount } = await import("@/domain/auth/user-account");
-      const { userAccounts } = await getRepositories({ clinicId: "legacy-clinic" });
+      process.env.AUTH_SECRET = 'test-secret-e2e';
+
+      const { getRepositories } = await import('@/infrastructure/container');
+      const { hashPassword } = await import('@/lib/auth/password');
+      const { UserAccount } = await import('@/domain/auth/user-account');
+      const { userAccounts } = await getRepositories({
+        clinicId: 'legacy-clinic',
+      });
       await userAccounts.save(
         UserAccount.create({
-          email: "equipe@clinica.com",
-          passwordHash: await hashPassword("s3nh@individual"),
-          role: "company_admin",
-          clinicId: "legacy-clinic",
+          email: 'equipe@clinica.com',
+          passwordHash: await hashPassword('s3nh@individual'),
+          role: 'company_admin',
+          clinicId: 'legacy-clinic',
         }),
       );
 
       const response = await loginRoute.POST(
         jsonRequest(
-          "/api/auth/login",
-          "POST",
-          { password: "s3nh@individual", email: "equipe@clinica.com" },
-          { "x-forwarded-for": "10.0.0.6" },
+          '/api/auth/login',
+          'POST',
+          { password: 's3nh@individual', email: 'equipe@clinica.com' },
+          { 'x-forwarded-for': '10.0.0.6' },
         ),
       );
       const body = (await response.json()) as Envelope<{ ok: boolean }>;
@@ -148,63 +165,75 @@ describe("Feature: Rotas de autenticação (login, logout, provedores)", () => {
       expect(body.data.ok).toBe(true);
     });
 
-    it("Dado conta com papel profissional, Quando POST login com email, Então sessão usa o papel e a empresa da própria conta (fix RBAC-02/RBAC-04)", async () => {
+    it('Dado conta com papel profissional, Quando POST login com email, Então sessão usa o papel e a empresa da própria conta (fix RBAC-02/RBAC-04)', async () => {
       resetAuthEnv();
-      process.env.AUTH_SECRET = "test-secret-role-fix";
-  
-      const { getRepositories } = await import("@/infrastructure/container");
-      const { hashPassword } = await import("@/lib/auth/password");
-      const { UserAccount } = await import("@/domain/auth/user-account");
-      const { verifySessionToken } = await import("@/lib/auth/session");
-      const { userAccounts } = await getRepositories({ clinicId: "legacy-clinic" });
+      process.env.AUTH_SECRET = 'test-secret-role-fix';
+
+      const { getRepositories } = await import('@/infrastructure/container');
+      const { hashPassword } = await import('@/lib/auth/password');
+      const { UserAccount } = await import('@/domain/auth/user-account');
+      const { verifySessionToken } = await import('@/lib/auth/session');
+      const { userAccounts } = await getRepositories({
+        clinicId: 'legacy-clinic',
+      });
       await userAccounts.save(
         UserAccount.create({
-          email: "profissional@clinica.com",
-          passwordHash: await hashPassword("s3nh@profissional"),
-          role: "profissional",
-          clinicId: "legacy-clinic",
+          email: 'profissional@clinica.com',
+          passwordHash: await hashPassword('s3nh@profissional'),
+          role: 'profissional',
+          clinicId: 'legacy-clinic',
         }),
       );
 
       const response = await loginRoute.POST(
         jsonRequest(
-          "/api/auth/login",
-          "POST",
-          { password: "s3nh@profissional", email: "profissional@clinica.com" },
-          { "x-forwarded-for": "10.0.0.60" },
+          '/api/auth/login',
+          'POST',
+          { password: 's3nh@profissional', email: 'profissional@clinica.com' },
+          { 'x-forwarded-for': '10.0.0.60' },
         ),
       );
-      const cookie = response.headers.get("set-cookie") ?? "";
-      const token = cookie.match(/vitta_session=([^;]+)/)?.[1] ?? "";
+      const cookie = response.headers.get('set-cookie') ?? '';
+      const token = cookie.match(/vitta_session=([^;]+)/)?.[1] ?? '';
 
-      const session = verifySessionToken("test-secret-role-fix", token);
-      expect(session?.role).toBe("profissional");
-      expect(session?.role).not.toBe("admin");
-      expect(session?.clinicId).toBe("legacy-clinic");
+      const session = verifySessionToken('test-secret-role-fix', token);
+      expect(session?.role).toBe('profissional');
+      expect(session?.role).not.toBe('admin');
+      expect(session?.clinicId).toBe('legacy-clinic');
     });
 
-    it("Dado body inválido (sem password), Quando POST login, Então retorna 401", async () => {
+    it('Dado body inválido (sem password), Quando POST login, Então retorna 401', async () => {
       resetAuthEnv();
-      process.env.AUTH_SECRET = "test-secret-e2e";
-  
+      process.env.AUTH_SECRET = 'test-secret-e2e';
+
       const response = await loginRoute.POST(
-        jsonRequest("/api/auth/login", "POST", {}, { "x-forwarded-for": "10.0.0.7" }),
+        jsonRequest(
+          '/api/auth/login',
+          'POST',
+          {},
+          { 'x-forwarded-for': '10.0.0.7' },
+        ),
       );
 
       expect(response.status).toBe(401);
     });
 
-    it("Dado múltiplas tentativas seguidas do mesmo IP, Quando excede o limite, Então retorna 429", async () => {
+    it('Dado múltiplas tentativas seguidas do mesmo IP, Quando excede o limite, Então retorna 429', async () => {
       resetAuthEnv();
-      process.env.AUTH_SECRET = "test-secret-e2e";
-        const ip = "10.0.0.100";
+      process.env.AUTH_SECRET = 'test-secret-e2e';
+      const ip = '10.0.0.100';
 
       let lastStatus = 0;
       for (let attempt = 0; attempt < 6; attempt += 1) {
         const response = await loginRoute.POST(
-          jsonRequest("/api/auth/login", "POST", { password: "errada" }, {
-            "x-forwarded-for": ip,
-          }),
+          jsonRequest(
+            '/api/auth/login',
+            'POST',
+            { password: 'errada' },
+            {
+              'x-forwarded-for': ip,
+            },
+          ),
         );
         lastStatus = response.status;
       }
@@ -212,66 +241,75 @@ describe("Feature: Rotas de autenticação (login, logout, provedores)", () => {
       expect(lastStatus).toBe(429);
     });
 
-    it("Dado login válido, Quando POST login, Então registra evento de auditoria com ator e empresa da conta (#71)", async () => {
+    it('Dado login válido, Quando POST login, Então registra evento de auditoria com ator e empresa da conta (#71)', async () => {
       resetAuthEnv();
-      process.env.AUTH_SECRET = "test-secret-audit-ok";
+      process.env.AUTH_SECRET = 'test-secret-audit-ok';
 
-      const { getRepositories } = await import("@/infrastructure/container");
-      const { hashPassword } = await import("@/lib/auth/password");
-      const { UserAccount } = await import("@/domain/auth/user-account");
-      const { userAccounts, auditEvents } = await getRepositories({ clinicId: "legacy-clinic" });
+      const { getRepositories } = await import('@/infrastructure/container');
+      const { hashPassword } = await import('@/lib/auth/password');
+      const { UserAccount } = await import('@/domain/auth/user-account');
+      const { userAccounts, auditEvents } = await getRepositories({
+        clinicId: 'legacy-clinic',
+      });
       await userAccounts.save(
         UserAccount.create({
-          email: "auditoria-ok@clinica.com",
-          passwordHash: await hashPassword("s3nh@auditoria"),
-          role: "company_admin",
-          clinicId: "legacy-clinic",
+          email: 'auditoria-ok@clinica.com',
+          passwordHash: await hashPassword('s3nh@auditoria'),
+          role: 'company_admin',
+          clinicId: 'legacy-clinic',
         }),
       );
 
       const response = await loginRoute.POST(
         jsonRequest(
-          "/api/auth/login",
-          "POST",
-          { password: "s3nh@auditoria", email: "auditoria-ok@clinica.com" },
-          { "x-forwarded-for": "10.0.0.61" },
+          '/api/auth/login',
+          'POST',
+          { password: 's3nh@auditoria', email: 'auditoria-ok@clinica.com' },
+          { 'x-forwarded-for': '10.0.0.61' },
         ),
       );
 
       expect(response.status).toBe(200);
       const events = await auditEvents.findAll();
       const loginEvent = events.find(
-        (event) => event.resourceType === "session" && event.actorId === "auditoria-ok@clinica.com",
+        (event) =>
+          event.resourceType === 'session' &&
+          event.actorId === 'auditoria-ok@clinica.com',
       );
       expect(loginEvent).toBeDefined();
-      expect(loginEvent?.action).toBe("read");
-      expect(loginEvent?.actorRole).toBe("company_admin");
-      expect(loginEvent?.clinicId).toBe("legacy-clinic");
+      expect(loginEvent?.action).toBe('read');
+      expect(loginEvent?.actorRole).toBe('company_admin');
+      expect(loginEvent?.clinicId).toBe('legacy-clinic');
     });
 
-    it("Dado senha errada para conta existente, Quando POST login, Então registra evento de falha com detail invalid_credentials (#71)", async () => {
+    it('Dado senha errada para conta existente, Quando POST login, Então registra evento de falha com detail invalid_credentials (#71)', async () => {
       resetAuthEnv();
-      process.env.AUTH_SECRET = "test-secret-audit-fail";
+      process.env.AUTH_SECRET = 'test-secret-audit-fail';
 
-      const { getRepositories } = await import("@/infrastructure/container");
-      const { hashPassword } = await import("@/lib/auth/password");
-      const { UserAccount } = await import("@/domain/auth/user-account");
-      const { userAccounts, auditEvents } = await getRepositories({ clinicId: "legacy-clinic" });
+      const { getRepositories } = await import('@/infrastructure/container');
+      const { hashPassword } = await import('@/lib/auth/password');
+      const { UserAccount } = await import('@/domain/auth/user-account');
+      const { userAccounts, auditEvents } = await getRepositories({
+        clinicId: 'legacy-clinic',
+      });
       await userAccounts.save(
         UserAccount.create({
-          email: "auditoria-falha-senha@clinica.com",
-          passwordHash: await hashPassword("s3nh@correta"),
-          role: "company_admin",
-          clinicId: "legacy-clinic",
+          email: 'auditoria-falha-senha@clinica.com',
+          passwordHash: await hashPassword('s3nh@correta'),
+          role: 'company_admin',
+          clinicId: 'legacy-clinic',
         }),
       );
 
       const response = await loginRoute.POST(
         jsonRequest(
-          "/api/auth/login",
-          "POST",
-          { password: "senha-errada", email: "auditoria-falha-senha@clinica.com" },
-          { "x-forwarded-for": "10.0.0.62" },
+          '/api/auth/login',
+          'POST',
+          {
+            password: 'senha-errada',
+            email: 'auditoria-falha-senha@clinica.com',
+          },
+          { 'x-forwarded-for': '10.0.0.62' },
         ),
       );
 
@@ -279,27 +317,32 @@ describe("Feature: Rotas de autenticação (login, logout, provedores)", () => {
       const events = await auditEvents.findAll();
       const failEvent = events.find(
         (event) =>
-          event.resourceType === "session" &&
-          event.actorId === "auditoria-falha-senha@clinica.com",
+          event.resourceType === 'session' &&
+          event.actorId === 'auditoria-falha-senha@clinica.com',
       );
       expect(failEvent).toBeDefined();
-      expect(failEvent?.detail).toBe("invalid_credentials");
-      expect(failEvent?.actorRole).toBe("anonymous");
+      expect(failEvent?.detail).toBe('invalid_credentials');
+      expect(failEvent?.actorRole).toBe('anonymous');
     });
 
-    it("Dado conta inexistente, Quando POST login, Então registra evento de falha sem revelar se a conta existe além da resposta HTTP (#71)", async () => {
+    it('Dado conta inexistente, Quando POST login, Então registra evento de falha sem revelar se a conta existe além da resposta HTTP (#71)', async () => {
       resetAuthEnv();
-      process.env.AUTH_SECRET = "test-secret-audit-inexistente";
+      process.env.AUTH_SECRET = 'test-secret-audit-inexistente';
 
-      const { getRepositories } = await import("@/infrastructure/container");
-      const { auditEvents } = await getRepositories({ clinicId: "legacy-clinic" });
+      const { getRepositories } = await import('@/infrastructure/container');
+      const { auditEvents } = await getRepositories({
+        clinicId: 'legacy-clinic',
+      });
 
       const response = await loginRoute.POST(
         jsonRequest(
-          "/api/auth/login",
-          "POST",
-          { password: "qualquer-senha", email: "nao-existe-auditoria@clinica.com" },
-          { "x-forwarded-for": "10.0.0.63" },
+          '/api/auth/login',
+          'POST',
+          {
+            password: 'qualquer-senha',
+            email: 'nao-existe-auditoria@clinica.com',
+          },
+          { 'x-forwarded-for': '10.0.0.63' },
         ),
       );
 
@@ -307,29 +350,34 @@ describe("Feature: Rotas de autenticação (login, logout, provedores)", () => {
       const events = await auditEvents.findAll();
       const failEvent = events.find(
         (event) =>
-          event.resourceType === "session" &&
-          event.actorId === "nao-existe-auditoria@clinica.com",
+          event.resourceType === 'session' &&
+          event.actorId === 'nao-existe-auditoria@clinica.com',
       );
       expect(failEvent).toBeDefined();
-      expect(failEvent?.detail).toBe("invalid_credentials");
-      expect(failEvent?.actorRole).toBe("anonymous");
+      expect(failEvent?.detail).toBe('invalid_credentials');
+      expect(failEvent?.actorRole).toBe('anonymous');
     });
 
-    it("Dado bloqueio por rate limit (429), Quando POST login, Então não registra evento de auditoria adicional (edge case)", async () => {
+    it('Dado bloqueio por rate limit (429), Quando POST login, Então não registra evento de auditoria adicional (edge case)', async () => {
       resetAuthEnv();
-      process.env.AUTH_SECRET = "test-secret-audit-rate-limit";
-      const ip = "10.0.0.101";
-      const { getRepositories } = await import("@/infrastructure/container");
-      const { auditEvents } = await getRepositories({ clinicId: "legacy-clinic" });
+      process.env.AUTH_SECRET = 'test-secret-audit-rate-limit';
+      const ip = '10.0.0.101';
+      const { getRepositories } = await import('@/infrastructure/container');
+      const { auditEvents } = await getRepositories({
+        clinicId: 'legacy-clinic',
+      });
 
       const responses: number[] = [];
       for (let attempt = 0; attempt < 6; attempt += 1) {
         const response = await loginRoute.POST(
           jsonRequest(
-            "/api/auth/login",
-            "POST",
-            { password: "errada", email: `rate-limit-audit-${attempt}@clinica.com` },
-            { "x-forwarded-for": ip },
+            '/api/auth/login',
+            'POST',
+            {
+              password: 'errada',
+              email: `rate-limit-audit-${attempt}@clinica.com`,
+            },
+            { 'x-forwarded-for': ip },
           ),
         );
         responses.push(response.status);
@@ -339,75 +387,83 @@ describe("Feature: Rotas de autenticação (login, logout, provedores)", () => {
       const events = await auditEvents.findAll();
       // As 5 primeiras tentativas (não bloqueadas) geram evento; a 6ª (429) não.
       const rateLimitEvents = events.filter((event) =>
-        event.actorId.startsWith("rate-limit-audit-"),
+        event.actorId.startsWith('rate-limit-audit-'),
       );
       expect(rateLimitEvents).toHaveLength(5);
     });
   });
 
-  describe("POST /api/auth/logout", () => {
-    it("Dado sessão ativa, Quando POST logout, Então limpa o cookie de sessão", async () => {
+  describe('POST /api/auth/logout', () => {
+    it('Dado sessão ativa, Quando POST logout, Então limpa o cookie de sessão', async () => {
       const response = await logoutRoute.POST(
-        jsonRequest("/api/auth/logout", "POST", undefined, { "x-forwarded-for": "10.0.0.70" }),
+        jsonRequest('/api/auth/logout', 'POST', undefined, {
+          'x-forwarded-for': '10.0.0.70',
+        }),
       );
       const body = (await response.json()) as Envelope<{ ok: boolean }>;
 
       expect(response.status).toBe(200);
       expect(body.data.ok).toBe(true);
-      const cookie = response.headers.get("set-cookie") ?? "";
-      expect(cookie).toContain("vitta_session=");
+      const cookie = response.headers.get('set-cookie') ?? '';
+      expect(cookie).toContain('vitta_session=');
       expect(cookie).toMatch(/max-age=0/i);
     });
 
-    it("Dado sessão válida, Quando POST logout, Então registra evento de auditoria com ator da sessão antes de limpar o cookie (#71)", async () => {
+    it('Dado sessão válida, Quando POST logout, Então registra evento de auditoria com ator da sessão antes de limpar o cookie (#71)', async () => {
       resetAuthEnv();
-      process.env.AUTH_SECRET = "test-secret-logout-audit";
+      process.env.AUTH_SECRET = 'test-secret-logout-audit';
 
-      const { getRepositories } = await import("@/infrastructure/container");
-      const { hashPassword } = await import("@/lib/auth/password");
-      const { UserAccount } = await import("@/domain/auth/user-account");
-      const { userAccounts, auditEvents } = await getRepositories({ clinicId: "legacy-clinic" });
+      const { getRepositories } = await import('@/infrastructure/container');
+      const { hashPassword } = await import('@/lib/auth/password');
+      const { UserAccount } = await import('@/domain/auth/user-account');
+      const { userAccounts, auditEvents } = await getRepositories({
+        clinicId: 'legacy-clinic',
+      });
       await userAccounts.save(
         UserAccount.create({
-          email: "logout-audit@clinica.com",
-          passwordHash: await hashPassword("s3nh@logout"),
-          role: "company_admin",
-          clinicId: "legacy-clinic",
+          email: 'logout-audit@clinica.com',
+          passwordHash: await hashPassword('s3nh@logout'),
+          role: 'company_admin',
+          clinicId: 'legacy-clinic',
         }),
       );
       const loginResponse = await loginRoute.POST(
         jsonRequest(
-          "/api/auth/login",
-          "POST",
-          { password: "s3nh@logout", email: "logout-audit@clinica.com" },
-          { "x-forwarded-for": "10.0.0.71" },
+          '/api/auth/login',
+          'POST',
+          { password: 's3nh@logout', email: 'logout-audit@clinica.com' },
+          { 'x-forwarded-for': '10.0.0.71' },
         ),
       );
-      const cookie = loginResponse.headers.get("set-cookie") ?? "";
-      const sessionCookie = cookie.match(/vitta_session=[^;]+/)?.[0] ?? "";
+      const cookie = loginResponse.headers.get('set-cookie') ?? '';
+      const sessionCookie = cookie.match(/vitta_session=[^;]+/)?.[0] ?? '';
 
       const response = await logoutRoute.POST(
-        jsonRequest("/api/auth/logout", "POST", undefined, { cookie: sessionCookie }),
+        jsonRequest('/api/auth/logout', 'POST', undefined, {
+          cookie: sessionCookie,
+        }),
       );
 
       expect(response.status).toBe(200);
       const events = await auditEvents.findAll();
       const logoutEvent = events.find(
         (event) =>
-          event.resourceType === "session" &&
-          event.actorId === "logout-audit@clinica.com" &&
-          event.action === "delete",
+          event.resourceType === 'session' &&
+          event.actorId === 'logout-audit@clinica.com' &&
+          event.action === 'delete',
       );
       expect(logoutEvent).toBeDefined();
-      expect(logoutEvent?.actorRole).toBe("company_admin");
+      expect(logoutEvent?.actorRole).toBe('company_admin');
     });
 
-    it("Dado sem sessão (cookie ausente), Quando POST logout, Então não lança erro e apenas não audita (#71)", async () => {
+    it('Dado sem sessão (cookie ausente), Quando POST logout, Então não lança erro e apenas não audita (#71)', async () => {
       resetAuthEnv();
-      process.env.AUTH_SECRET = "test-secret-logout-sem-sessao";
+      process.env.AUTH_SECRET = 'test-secret-logout-sem-sessao';
 
       const response = await logoutRoute.POST(
-        jsonRequest("/api/auth/logout", "POST", undefined, { "x-forwarded-for": "10.0.0.72" }),
+        jsonRequest('/api/auth/logout', 'POST', undefined, {
+          'x-forwarded-for': '10.0.0.72',
+        }),
       );
       const body = (await response.json()) as Envelope<{ ok: boolean }>;
 
@@ -416,8 +472,8 @@ describe("Feature: Rotas de autenticação (login, logout, provedores)", () => {
     });
   });
 
-  describe("GET /api/auth/providers", () => {
-    it("Dado nenhuma configuração de auth, Quando GET providers, Então retorna senha desativada", async () => {
+  describe('GET /api/auth/providers', () => {
+    it('Dado nenhuma configuração de auth, Quando GET providers, Então retorna senha desativada', async () => {
       resetAuthEnv();
       const response = await providersRoute.GET();
       const body = (await response.json()) as Envelope<{ password: boolean }>;
@@ -426,9 +482,9 @@ describe("Feature: Rotas de autenticação (login, logout, provedores)", () => {
       expect(body.data.password).toBe(false);
     });
 
-    it("Dado AUTH_SECRET configurado, Quando GET providers, Então retorna senha ativa", async () => {
+    it('Dado AUTH_SECRET configurado, Quando GET providers, Então retorna senha ativa', async () => {
       resetAuthEnv();
-      process.env.AUTH_SECRET = "test-secret-e2e";
+      process.env.AUTH_SECRET = 'test-secret-e2e';
 
       const response = await providersRoute.GET();
       const body = (await response.json()) as Envelope<{ password: boolean }>;
@@ -437,19 +493,19 @@ describe("Feature: Rotas de autenticação (login, logout, provedores)", () => {
       resetAuthEnv();
     });
 
-    it("Dado AUTH_SECRET configurado e nenhuma variável do Google, Quando GET providers, Então a resposta não anuncia provedor Google", async () => {
+    it('Dado AUTH_SECRET configurado e nenhuma variável do Google, Quando GET providers, Então a resposta não anuncia provedor Google', async () => {
       resetAuthEnv();
-      process.env.AUTH_SECRET = "test-secret-e2e";
+      process.env.AUTH_SECRET = 'test-secret-e2e';
 
       const response = await providersRoute.GET();
       const body = (await response.json()) as Envelope<Record<string, boolean>>;
 
-      expect(Object.keys(body.data)).toEqual(["password"]);
+      expect(Object.keys(body.data)).toEqual(['password']);
       resetAuthEnv();
     });
   });
 
-  it("Ao final, restaura variáveis de ambiente originais", () => {
+  it('Ao final, restaura variáveis de ambiente originais', () => {
     process.env = { ...originalEnv };
     expect(true).toBe(true);
   });

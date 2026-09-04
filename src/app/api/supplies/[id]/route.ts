@@ -1,11 +1,11 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { UpdateSupply } from "@/application/inventory/update-supply";
-import { handleRequest } from "@/lib/api-response";
-import { toSupplyDto } from "@/lib/dto";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { UpdateSupply } from '@/application/inventory/update-supply';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { toSupplyDto } from '@/lib/dto';
 
 const updateSchema = z.object({
   name: z.string().min(1).max(200).optional(),
@@ -27,6 +27,8 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     const { supplies } = await getRepositories({
       clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
     });
-    return toSupplyDto(await new UpdateSupply(supplies).execute({ id, ...body }));
+    return toSupplyDto(
+      await new UpdateSupply(supplies).execute({ id, ...body }),
+    );
   });
 }

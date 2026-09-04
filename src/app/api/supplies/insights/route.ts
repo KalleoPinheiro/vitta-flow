@@ -1,8 +1,8 @@
-import type { NextRequest } from "next/server";
-import { getRepositories } from "@/infrastructure/container";
-import { GetSupplyInsights } from "@/application/inventory/get-supply-insights";
-import { handleRequest } from "@/lib/api-response";
-import { requireStaffSession } from "@/lib/auth/require-session";
+import type { NextRequest } from 'next/server';
+import { GetSupplyInsights } from '@/application/inventory/get-supply-insights';
+import { getRepositories } from '@/infrastructure/container';
+import { handleRequest } from '@/lib/api-response';
+import { requireStaffSession } from '@/lib/auth/require-session';
 
 export async function GET(request: NextRequest) {
   const guard = requireStaffSession(request);

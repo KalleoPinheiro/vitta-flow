@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
-import Image from "next/image";
-import { useToast } from "@still-void/ui/react/client";
-import { apiFetch } from "@/lib/client";
-import type { ConditionPhotoDto } from "@/lib/dto";
-import { formatDate } from "@/lib/format";
-import { ErrorAlert } from "@/components/feedback";
-import { ConfirmAction } from "@/components/confirm-action";
-import { Button, FileInput } from "@still-void/ui/react";
+import { Button, FileInput } from '@still-void/ui/react';
+import { useToast } from '@still-void/ui/react/client';
+import Image from 'next/image';
+import { useCallback, useEffect, useState } from 'react';
+import { ConfirmAction } from '@/components/confirm-action';
+import { ErrorAlert } from '@/components/feedback';
+import { apiFetch } from '@/lib/client';
+import type { ConditionPhotoDto } from '@/lib/dto';
+import { formatDate } from '@/lib/format';
 
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
@@ -18,7 +18,10 @@ interface ConditionPhotosProps {
 }
 
 /** Galeria de fotos de evolução da condição: upload, comparação primeira × última, exclusão. */
-export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps) {
+export function ConditionPhotos({
+  conditionId,
+  canUpload,
+}: ConditionPhotosProps) {
   const { toast } = useToast();
   const [photos, setPhotos] = useState<ConditionPhotoDto[] | null>(null);
   const [listError, setListError] = useState<string | null>(null);
@@ -26,6 +29,7 @@ export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps
   const [uploading, setUploading] = useState(false);
   const [version, setVersion] = useState(0);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: version não é lido no corpo — é só o gatilho de refetch usado por load() (retry/upload/remove).
   useEffect(() => {
     let cancelled = false;
     apiFetch<ConditionPhotoDto[]>(`/api/conditions/${conditionId}/photos`)
@@ -37,7 +41,9 @@ export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps
       })
       .catch((err: unknown) => {
         if (!cancelled) {
-          setListError(err instanceof Error ? err.message : "Erro ao carregar fotos");
+          setListError(
+            err instanceof Error ? err.message : 'Erro ao carregar fotos',
+          );
         }
       });
     return () => {
@@ -49,26 +55,30 @@ export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps
 
   const upload = async (file: File) => {
     if (file.size > MAX_UPLOAD_BYTES) {
-      setActionError("Imagem excede o limite de 5 MB");
+      setActionError('Imagem excede o limite de 5 MB');
       return;
     }
     setUploading(true);
     try {
       const body = new FormData();
-      body.append("file", file);
+      body.append('file', file);
       const response = await fetch(`/api/conditions/${conditionId}/photos`, {
-        method: "POST",
+        method: 'POST',
         body,
       });
       if (!response.ok) {
-        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(payload?.error ?? "Erro ao enviar foto");
+        const payload = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(payload?.error ?? 'Erro ao enviar foto');
       }
-      toast({ description: "Foto enviada", variant: "success" });
+      toast({ description: 'Foto enviada', variant: 'success' });
       setActionError(null);
       load();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Erro ao enviar foto");
+      setActionError(
+        err instanceof Error ? err.message : 'Erro ao enviar foto',
+      );
     } finally {
       setUploading(false);
     }
@@ -76,12 +86,14 @@ export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps
 
   const remove = async (photo: ConditionPhotoDto) => {
     try {
-      await apiFetch(`/api/photos/${photo.id}`, { method: "DELETE" });
-      toast({ description: "Foto excluída", variant: "success" });
+      await apiFetch(`/api/photos/${photo.id}`, { method: 'DELETE' });
+      toast({ description: 'Foto excluída', variant: 'success' });
       setActionError(null);
       load();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Erro ao excluir foto");
+      setActionError(
+        err instanceof Error ? err.message : 'Erro ao excluir foto',
+      );
     }
   };
 
@@ -96,7 +108,9 @@ export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps
   return (
     <div className="mt-3">
       <div className="mb-2 flex items-center justify-between">
-        <h4 className="text-xs font-semibold uppercase text-ink-3">Fotos de evolução</h4>
+        <h4 className="font-semibold text-ink-3 text-xs uppercase">
+          Fotos de evolução
+        </h4>
         {canUpload && (
           <FileInput
             accept="image/jpeg,image/png,image/webp"
@@ -104,7 +118,7 @@ export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) void upload(file);
-              e.target.value = "";
+              e.target.value = '';
             }}
           />
         )}
@@ -115,22 +129,28 @@ export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps
 
       {photos === null ? (
         listError ? null : (
-          <p className="text-xs text-ink-3">Carregando fotos…</p>
+          <p className="text-ink-3 text-xs">Carregando fotos…</p>
         )
       ) : list.length === 0 ? (
-        <p className="text-xs text-ink-3">Nenhuma foto registrada.</p>
+        <p className="text-ink-3 text-xs">Nenhuma foto registrada.</p>
       ) : (
         <>
           {showCompare && (
             <div className="mb-3 grid grid-cols-2 gap-3">
-              <ComparePane label={`Primeira — ${formatDate(first.createdAt)}`} photoId={first.id} />
-              <ComparePane label={`Atual — ${formatDate(last.createdAt)}`} photoId={last.id} />
+              <ComparePane
+                label={`Primeira — ${formatDate(first.createdAt)}`}
+                photoId={first.id}
+              />
+              <ComparePane
+                label={`Atual — ${formatDate(last.createdAt)}`}
+                photoId={last.id}
+              />
             </div>
           )}
           <div className="flex flex-wrap gap-2">
             {chronological.map((photo) => (
               <figure key={photo.id} className="w-24">
-                <div className="relative h-24 w-24 rounded border border-border overflow-hidden">
+                <div className="relative h-24 w-24 overflow-hidden rounded border border-border">
                   <Image
                     src={`/api/photos/${photo.id}`}
                     alt={`Foto de ${formatDate(photo.createdAt)}`}
@@ -143,7 +163,11 @@ export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps
                   {canUpload && (
                     <ConfirmAction
                       trigger={
-                        <Button type="button" variant="link" className="h-auto p-0 text-danger">
+                        <Button
+                          type="button"
+                          variant="link"
+                          className="h-auto p-0 text-danger"
+                        >
                           excluir
                         </Button>
                       }
@@ -167,8 +191,10 @@ export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps
 function ComparePane({ label, photoId }: { label: string; photoId: string }) {
   return (
     <figure>
-      <figcaption className="mb-1 text-xs font-medium text-ink-3">{label}</figcaption>
-      <div className="relative w-full aspect-square rounded border border-border overflow-hidden">
+      <figcaption className="mb-1 font-medium text-ink-3 text-xs">
+        {label}
+      </figcaption>
+      <div className="relative aspect-square w-full overflow-hidden rounded border border-border">
         <Image
           src={`/api/photos/${photoId}`}
           alt={label}

@@ -1,19 +1,19 @@
-import { NextResponse, type NextRequest } from "next/server";
-import { z } from "zod";
+import { type NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+import type { UserRole } from '@/domain/auth/user-role';
+import { getRepositories } from '@/infrastructure/container';
+import { fail } from '@/lib/api-response';
+import { recordAuditNow } from '@/lib/audit';
+import { clientIp } from '@/lib/auth/client-ip';
+import { verifyPassword } from '@/lib/auth/password';
+import { RateLimiter } from '@/lib/auth/rate-limit';
 import {
   createSessionToken,
   getAuthConfig,
-  sessionCookieOptions,
   SESSION_COOKIE,
   SESSION_TTL_MS,
-} from "@/lib/auth/session";
-import { RateLimiter } from "@/lib/auth/rate-limit";
-import { clientIp } from "@/lib/auth/client-ip";
-import { verifyPassword } from "@/lib/auth/password";
-import { getRepositories } from "@/infrastructure/container";
-import { fail } from "@/lib/api-response";
-import { recordAuditNow } from "@/lib/audit";
-import type { UserRole } from "@/domain/auth/user-role";
+  sessionCookieOptions,
+} from '@/lib/auth/session';
 
 const LOGIN_RATE_LIMIT = new RateLimiter(5, 60_000);
 
@@ -29,43 +29,58 @@ const loginSchema = z.object({
 export async function POST(request: NextRequest) {
   const ip = clientIp(request);
   if (!LOGIN_RATE_LIMIT.allow(ip)) {
-    return fail("Muitas tentativas de login, aguarde um minuto", 429);
+    return fail('Muitas tentativas de login, aguarde um minuto', 429);
   }
 
   const auth = getAuthConfig();
   if (!auth) {
-    return fail("Autenticação não configurada no servidor", 503);
+    return fail('Autenticação não configurada no servidor', 503);
   }
 
   const parsed = loginSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return fail("Credenciais inválidas", 401);
+    return fail('Credenciais inválidas', 401);
   }
 
   const { auditEvents } = await getRepositories({ clinicId: null });
-  const identity = await authenticateAccount(parsed.data.email, parsed.data.password);
-  if ("error" in identity) {
+  const identity = await authenticateAccount(
+    parsed.data.email,
+    parsed.data.password,
+  );
+  if ('error' in identity) {
     // Ator anônimo pré-sessão: nunca revela no evento se a conta existe além
     // do que a própria resposta HTTP já revela (AC-02).
     await recordAuditNow(auditEvents, null, {
-      action: "read",
-      resourceType: "session",
+      action: 'read',
+      resourceType: 'session',
       resourceId: parsed.data.email,
-      detail: "invalid_credentials",
-      actorOverride: { role: "anonymous", id: parsed.data.email, clinicId: null },
+      detail: 'invalid_credentials',
+      actorOverride: {
+        role: 'anonymous',
+        id: parsed.data.email,
+        clinicId: null,
+      },
     });
     return fail(identity.error, identity.status);
   }
 
   await recordAuditNow(auditEvents, null, {
-    action: "read",
-    resourceType: "session",
+    action: 'read',
+    resourceType: 'session',
     resourceId: identity.subject,
-    actorOverride: { role: identity.role, id: identity.subject, clinicId: identity.clinicId },
+    actorOverride: {
+      role: identity.role,
+      id: identity.subject,
+      clinicId: identity.clinicId,
+    },
   });
 
   const expiresAtMs = Date.now() + SESSION_TTL_MS;
-  const response = NextResponse.json({ success: true, data: { ok: true }, error: null });
+  const response = NextResponse.json({
+    success: true,
+    data: { ok: true },
+    error: null,
+  });
   response.cookies.set(
     SESSION_COOKIE,
     createSessionToken(
@@ -82,16 +97,25 @@ export async function POST(request: NextRequest) {
 }
 
 type AuthResult =
-  | { subject: string; role: UserRole; clinicId: string | null; professionalId: string | null }
+  | {
+      subject: string;
+      role: UserRole;
+      clinicId: string | null;
+      professionalId: string | null;
+    }
   | { error: string; status: number };
 
-async function authenticateAccount(email: string, password: string): Promise<AuthResult> {
+async function authenticateAccount(
+  email: string,
+  password: string,
+): Promise<AuthResult> {
   const { userAccounts } = await getRepositories({ clinicId: null });
   const account = await userAccounts.findByEmail(email);
   const isValid =
-    account?.isActive === true && (await verifyPassword(password, account.passwordHash));
+    account?.isActive === true &&
+    (await verifyPassword(password, account.passwordHash));
   if (!isValid || !account) {
-    return { error: "Email ou senha incorretos", status: 401 };
+    return { error: 'Email ou senha incorretos', status: 401 };
   }
   // O papel e a empresa vêm sempre da própria conta — nunca um valor fixo por
   // padrão (fix do bug "senha sempre vira admin", RBAC-02/RBAC-04).

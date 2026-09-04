@@ -1,13 +1,13 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { PrescribeIntervention } from "@/application/clinical/prescribe-intervention";
-import { INTERVENTION_PRIORITIES } from "@/domain/clinical/care-plan-intervention";
-import { handleRequest } from "@/lib/api-response";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { recordAudit } from "@/lib/audit";
-import { toCarePlanInterventionDto } from "@/lib/dto";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { PrescribeIntervention } from '@/application/clinical/prescribe-intervention';
+import { INTERVENTION_PRIORITIES } from '@/domain/clinical/care-plan-intervention';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { recordAudit } from '@/lib/audit';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { toCarePlanInterventionDto } from '@/lib/dto';
 
 const interventionSchema = z.object({
   interventionCode: z.string().min(1).max(20),
@@ -24,8 +24,14 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = interventionSchema.parse(await request.json());
-    const { carePlanInterventions, carePlans, nursingInterventions, auditEvents } =
-      await getRepositories({ clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID });
+    const {
+      carePlanInterventions,
+      carePlans,
+      nursingInterventions,
+      auditEvents,
+    } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+    });
     const intervention = await new PrescribeIntervention(
       carePlanInterventions,
       carePlans,
@@ -41,8 +47,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
       nursingInterventions.findByCode(body.interventionCode),
     ]);
     recordAudit(auditEvents, guard.session, {
-      action: "create",
-      resourceType: "care_plan_intervention",
+      action: 'create',
+      resourceType: 'care_plan_intervention',
       resourceId: intervention.id,
       patientId: plan?.patientId ?? null,
     });

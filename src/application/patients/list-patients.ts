@@ -1,5 +1,5 @@
-import type { Patient } from "@/domain/patient/patient";
-import type { PatientRepository } from "@/domain/patient/patient-repository";
+import type { Patient } from '@/domain/patient/patient';
+import type { PatientRepository } from '@/domain/patient/patient-repository';
 
 export interface ListPatientsInput {
   search?: string;

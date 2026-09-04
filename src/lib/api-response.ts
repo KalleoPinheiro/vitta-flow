@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { ZodError } from "zod";
+import { NextResponse } from 'next/server';
+import { ZodError } from 'zod';
 import {
   ConsentRequiredError,
   DomainError,
@@ -7,7 +7,7 @@ import {
   NotFoundError,
   ProvisioningDeniedError,
   SchedulingConflictError,
-} from "@/domain/shared/errors";
+} from '@/domain/shared/errors';
 
 export interface ApiEnvelope<T> {
   success: boolean;
@@ -22,11 +22,20 @@ export function ok<T>(
   status = 200,
   meta?: { nextCursor: string | null },
 ): NextResponse<ApiEnvelope<T>> {
-  return NextResponse.json({ success: true, data, error: null, meta }, { status });
+  return NextResponse.json(
+    { success: true, data, error: null, meta },
+    { status },
+  );
 }
 
-export function fail(message: string, status: number): NextResponse<ApiEnvelope<never>> {
-  return NextResponse.json({ success: false, data: null, error: message }, { status });
+export function fail(
+  message: string,
+  status: number,
+): NextResponse<ApiEnvelope<never>> {
+  return NextResponse.json(
+    { success: false, data: null, error: message },
+    { status },
+  );
 }
 
 function statusForDomainError(error: DomainError): number {
@@ -48,14 +57,14 @@ export async function handleRequest<T>(
   } catch (error) {
     if (error instanceof ZodError) {
       const detail = error.issues
-        .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
-        .join("; ");
+        .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+        .join('; ');
       return fail(`Dados inválidos: ${detail}`, 400);
     }
     if (error instanceof DomainError) {
       return fail(error.message, statusForDomainError(error));
     }
-    console.error("Erro inesperado na API:", error);
-    return fail("Erro interno do servidor", 500);
+    console.error('Erro inesperado na API:', error);
+    return fail('Erro interno do servidor', 500);
   }
 }

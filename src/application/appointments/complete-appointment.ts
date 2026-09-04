@@ -1,11 +1,11 @@
-import type { Appointment } from "@/domain/scheduling/appointment";
-import type { AppointmentRepository } from "@/domain/scheduling/appointment-repository";
-import type { InvoiceRepository } from "@/domain/billing/invoice-repository";
-import { Invoice } from "@/domain/billing/invoice";
-import { FollowUp } from "@/domain/followup/follow-up";
-import type { FollowUpRepository } from "@/domain/followup/follow-up-repository";
-import type { SessionPackageRepository } from "@/domain/billing/package";
-import { NotFoundError } from "@/domain/shared/errors";
+import { Invoice } from '@/domain/billing/invoice';
+import type { InvoiceRepository } from '@/domain/billing/invoice-repository';
+import type { SessionPackageRepository } from '@/domain/billing/package';
+import { FollowUp } from '@/domain/followup/follow-up';
+import type { FollowUpRepository } from '@/domain/followup/follow-up-repository';
+import type { Appointment } from '@/domain/scheduling/appointment';
+import type { AppointmentRepository } from '@/domain/scheduling/appointment-repository';
+import { NotFoundError } from '@/domain/shared/errors';
 
 const MS_PER_DAY = 86_400_000;
 
@@ -31,10 +31,10 @@ export class CompleteAppointment {
   async execute(input: CompleteAppointmentInput): Promise<Appointment> {
     const appointment = await this.appointments.findById(input.id);
     if (!appointment) {
-      throw new NotFoundError("Consulta", input.id);
+      throw new NotFoundError('Consulta', input.id);
     }
 
-    const isRepairRun = appointment.status === "completed";
+    const isRepairRun = appointment.status === 'completed';
     const completed = isRepairRun ? appointment : appointment.complete();
     if (!isRepairRun) {
       await this.appointments.save(completed);
@@ -45,7 +45,9 @@ export class CompleteAppointment {
     // consome duas vezes nem fatura consulta já coberta por pacote.
     const coveredByPackage = await this.consumePackageIfAvailable(completed);
 
-    const existingInvoice = await this.invoices.findByAppointmentId(completed.id);
+    const existingInvoice = await this.invoices.findByAppointmentId(
+      completed.id,
+    );
     if (!existingInvoice && !coveredByPackage) {
       const invoice = Invoice.create({
         patientId: completed.patientId,
@@ -61,7 +63,9 @@ export class CompleteAppointment {
       const followUp = FollowUp.create({
         patientId: completed.patientId,
         appointmentId: completed.id,
-        dueDate: new Date(completed.slot.end.getTime() + input.followUpInDays * MS_PER_DAY),
+        dueDate: new Date(
+          completed.slot.end.getTime() + input.followUpInDays * MS_PER_DAY,
+        ),
         reason: `Retorno: ${completed.procedure}`,
       });
       await this.followUps.save(followUp);
@@ -70,14 +74,19 @@ export class CompleteAppointment {
     return completed;
   }
 
-  private async consumePackageIfAvailable(completed: Appointment): Promise<boolean> {
+  private async consumePackageIfAvailable(
+    completed: Appointment,
+  ): Promise<boolean> {
     if (!this.packages || !completed.procedureId) {
       return false;
     }
     if (await this.packages.wasConsumedBy(completed.id)) {
       return true;
     }
-    const pkg = await this.packages.findUsable(completed.patientId, completed.procedureId);
+    const pkg = await this.packages.findUsable(
+      completed.patientId,
+      completed.procedureId,
+    );
     if (!pkg) {
       return false;
     }

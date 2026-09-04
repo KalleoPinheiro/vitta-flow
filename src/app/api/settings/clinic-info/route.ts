@@ -1,11 +1,11 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { fail, handleRequest } from "@/lib/api-response";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
-import { toClinicInfoDto } from "@/lib/dto";
-import { recordAudit } from "@/lib/audit";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { fail, handleRequest } from '@/lib/api-response';
+import { recordAudit } from '@/lib/audit';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { toClinicInfoDto } from '@/lib/dto';
 
 const infoSchema = z.object({
   name: z.string().min(1).max(200).optional(),
@@ -18,7 +18,7 @@ const infoSchema = z.object({
 
 /** Só quem administra a empresa edita os dados cadastrais da clínica (#61). */
 const canEditClinicInfo = (role: string | undefined): boolean =>
-  role === "company_admin" || role === "super_admin";
+  role === 'company_admin' || role === 'super_admin';
 
 export async function GET(request: NextRequest) {
   const guard = requireStaffSession(request);
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     const { clinics } = await getRepositories({ clinicId });
     const clinic = await clinics.findById(clinicId);
     if (!clinic) {
-      throw new Error("Clínica não encontrada");
+      throw new Error('Clínica não encontrada');
     }
     return { info: toClinicInfoDto(clinic) };
   });
@@ -39,7 +39,7 @@ export async function PUT(request: NextRequest) {
   const guard = requireStaffSession(request);
   if (!guard.ok) return guard.response;
   if (!canEditClinicInfo(guard.session?.role)) {
-    return fail("Apenas Admin de Empresa pode editar os dados da clínica", 403);
+    return fail('Apenas Admin de Empresa pode editar os dados da clínica', 403);
   }
   const clinicId = guard.session?.clinicId ?? LEGACY_CLINIC_ID;
 
@@ -48,13 +48,13 @@ export async function PUT(request: NextRequest) {
     const { clinics, auditEvents } = await getRepositories({ clinicId });
     const clinic = await clinics.findById(clinicId);
     if (!clinic) {
-      throw new Error("Clínica não encontrada");
+      throw new Error('Clínica não encontrada');
     }
     const updated = clinic.updateInfo(body);
     await clinics.update(updated);
     recordAudit(auditEvents, guard.session, {
-      action: "update",
-      resourceType: "clinic-info",
+      action: 'update',
+      resourceType: 'clinic-info',
       resourceId: clinicId,
     });
     return { info: toClinicInfoDto(updated) };

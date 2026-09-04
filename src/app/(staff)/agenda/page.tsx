@@ -1,17 +1,29 @@
-"use client";
+'use client';
 
-import { useMemo, useState } from "react";
-import { apiFetch } from "@/lib/client";
-import type { AppointmentDto, PatientDto, ProfessionalDto } from "@/lib/dto";
-import { useApiQuery } from "@/lib/use-api-query";
-import { useToast } from "@still-void/ui/react/client";
-import { Modal } from "@/components/modal";
-import { ErrorAlert, LoadingIndicator } from "@/components/feedback";
-import { CalendarGrid } from "./calendar-grid";
-import { AppointmentForm, type AppointmentFormValues } from "./appointment-form";
-import { AppointmentDetail } from "./appointment-detail";
-import { Alert, AlertDescription, Button, Icon, NativeSelect } from "@still-void/ui/react";
-import { DEFAULT_SCHEDULE_CONFIG, type ScheduleConfig } from "@/domain/scheduling/schedule-config";
+import {
+  Alert,
+  AlertDescription,
+  Button,
+  Icon,
+  NativeSelect,
+} from '@still-void/ui/react';
+import { useToast } from '@still-void/ui/react/client';
+import { useMemo, useState } from 'react';
+import { ErrorAlert, LoadingIndicator } from '@/components/feedback';
+import { Modal } from '@/components/modal';
+import {
+  DEFAULT_SCHEDULE_CONFIG,
+  type ScheduleConfig,
+} from '@/domain/scheduling/schedule-config';
+import { apiFetch } from '@/lib/client';
+import type { AppointmentDto, PatientDto, ProfessionalDto } from '@/lib/dto';
+import { useApiQuery } from '@/lib/use-api-query';
+import { AppointmentDetail } from './appointment-detail';
+import {
+  AppointmentForm,
+  type AppointmentFormValues,
+} from './appointment-form';
+import { CalendarGrid } from './calendar-grid';
 
 function ProfessionalFilter({
   professionals,
@@ -26,7 +38,11 @@ function ProfessionalFilter({
     return null;
   }
   return (
-    <NativeSelect value={value} onChange={(e) => onChange(e.target.value)} className="max-w-56">
+    <NativeSelect
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="max-w-56"
+    >
       <option value="">Todos os profissionais</option>
       {professionals.map((professional) => (
         <option key={professional.id} value={professional.id}>
@@ -43,7 +59,7 @@ function AgendaNotices({
   onDismissSeriesNotice,
 }: {
   error: string | null;
-  seriesNotice: { text: string; variant: "success" | "warning" } | null;
+  seriesNotice: { text: string; variant: 'success' | 'warning' } | null;
   onDismissSeriesNotice: () => void;
 }) {
   return (
@@ -54,7 +70,12 @@ function AgendaNotices({
           variant={seriesNotice.variant}
           className="mb-4"
           action={
-            <Button type="button" variant="link" className="h-auto p-0" onClick={onDismissSeriesNotice}>
+            <Button
+              type="button"
+              variant="link"
+              className="h-auto p-0"
+              onClick={onDismissSeriesNotice}
+            >
               Dispensar
             </Button>
           }
@@ -69,26 +90,31 @@ function AgendaNotices({
 /** Só a primeira letra maiúscula ("Agosto de 2026") — a classe Tailwind
  * `capitalize` maiusculiza cada palavra, incluindo a preposição "de". */
 const monthLabel = (date: Date): string => {
-  const raw = date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  const raw = date.toLocaleDateString('pt-BR', {
+    month: 'long',
+    year: 'numeric',
+  });
   return raw.charAt(0).toUpperCase() + raw.slice(1);
 };
 
-function resolveScheduleConfig(data: { config: ScheduleConfig } | null): ScheduleConfig {
+function resolveScheduleConfig(
+  data: { config: ScheduleConfig } | null,
+): ScheduleConfig {
   return data?.config ?? DEFAULT_SCHEDULE_CONFIG;
 }
 
 /** Parâmetros do recall de 1 clique (?followUpId&patientId&procedure). */
 function readRecallParams() {
-  if (typeof window === "undefined") {
+  if (typeof window === 'undefined') {
     return null;
   }
   const params = new URLSearchParams(window.location.search);
-  const followUpId = params.get("followUpId");
+  const followUpId = params.get('followUpId');
   return followUpId
     ? {
         followUpId,
-        patientId: params.get("patientId") ?? "",
-        procedure: params.get("procedure") ?? "",
+        patientId: params.get('patientId') ?? '',
+        procedure: params.get('procedure') ?? '',
       }
     : null;
 }
@@ -104,33 +130,46 @@ export default function AgendaPage() {
     readRecallParams() ? new Date() : null,
   );
   const [selected, setSelected] = useState<AppointmentDto | null>(null);
-  const [professionalFilter, setProfessionalFilter] = useState("");
+  const [professionalFilter, setProfessionalFilter] = useState('');
 
   const appointmentsUrl = useMemo(() => {
     const from = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
     const to = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 1);
     const filter = professionalFilter
       ? `&professionalId=${encodeURIComponent(professionalFilter)}`
-      : "";
+      : '';
     return `/api/appointments?from=${from.toISOString()}&to=${to.toISOString()}${filter}`;
   }, [monthDate, professionalFilter]);
 
-  const { data: appointments, error, refresh } = useApiQuery<AppointmentDto[]>(appointmentsUrl);
-  const { data: patients } = useApiQuery<PatientDto[]>("/api/patients");
-  const { data: professionals } = useApiQuery<ProfessionalDto[]>("/api/professionals");
-  const { data: scheduleData } = useApiQuery<{ config: ScheduleConfig; isDefault: boolean }>(
-    "/api/settings/schedule",
-  );
+  const {
+    data: appointments,
+    error,
+    refresh,
+  } = useApiQuery<AppointmentDto[]>(appointmentsUrl);
+  const { data: patients } = useApiQuery<PatientDto[]>('/api/patients');
+  const { data: professionals } =
+    useApiQuery<ProfessionalDto[]>('/api/professionals');
+  const { data: scheduleData } = useApiQuery<{
+    config: ScheduleConfig;
+    isDefault: boolean;
+  }>('/api/settings/schedule');
   const scheduleConfig = resolveScheduleConfig(scheduleData);
 
   const changeMonth = (delta: number) =>
-    setMonthDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
+    setMonthDate(
+      (prev) => new Date(prev.getFullYear(), prev.getMonth() + delta, 1),
+    );
 
-  const [seriesNotice, setSeriesNotice] = useState<{ text: string; variant: "success" | "warning" } | null>(null);
+  const [seriesNotice, setSeriesNotice] = useState<{
+    text: string;
+    variant: 'success' | 'warning';
+  } | null>(null);
 
   const handleCreate = async (values: AppointmentFormValues) => {
     const startsAt = new Date(`${values.date}T${values.startTime}:00`);
-    const endsAt = new Date(startsAt.getTime() + values.durationMinutes * 60_000);
+    const endsAt = new Date(
+      startsAt.getTime() + values.durationMinutes * 60_000,
+    );
     const payload = {
       patientId: values.patientId,
       startsAt: startsAt.toISOString(),
@@ -145,18 +184,19 @@ export default function AgendaPage() {
       const result = await apiFetch<{
         created: AppointmentDto[];
         skipped: Array<{ startsAt: string; reason: string }>;
-      }>("/api/appointments/recurring", {
-        method: "POST",
+      }>('/api/appointments/recurring', {
+        method: 'POST',
         body: JSON.stringify({ ...payload, occurrences: values.occurrences }),
       });
       setSeriesNotice({
-        text: result.skipped.length > 0
-          ? `Série criada: ${result.created.length} sessão(ões); ${result.skipped.length} pulada(s) — ` +
+        text:
+          result.skipped.length > 0
+            ? `Série criada: ${result.created.length} sessão(ões); ${result.skipped.length} pulada(s) — ` +
               result.skipped
-                .map((s) => new Date(s.startsAt).toLocaleDateString("pt-BR"))
-                .join(", ")
-          : `Série criada: ${result.created.length} sessões.`,
-        variant: result.skipped.length > 0 ? "warning" : "success",
+                .map((s) => new Date(s.startsAt).toLocaleDateString('pt-BR'))
+                .join(', ')
+            : `Série criada: ${result.created.length} sessões.`,
+        variant: result.skipped.length > 0 ? 'warning' : 'success',
       });
       setCreatingFor(null);
       refresh();
@@ -165,13 +205,16 @@ export default function AgendaPage() {
       // onSubmit no próprio catch (mostra ErrorAlert inline e mantém o modal
       // aberto) — interceptar o erro aqui engoliria essa mensagem antes dela
       // chegar lá (ex.: "Horário indisponível", "fora da grade").
-      await apiFetch<AppointmentDto>("/api/appointments", {
-        method: "POST",
-        body: JSON.stringify({ ...payload, followUpId: recall?.followUpId ?? null }),
+      await apiFetch<AppointmentDto>('/api/appointments', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...payload,
+          followUpId: recall?.followUpId ?? null,
+        }),
       });
       toast({
-        description: "Consulta criada",
-        variant: "success",
+        description: 'Consulta criada',
+        variant: 'success',
       });
       setSeriesNotice(null);
       setCreatingFor(null);
@@ -180,14 +223,16 @@ export default function AgendaPage() {
   };
 
   const handleAction = async (
-    action: "confirm" | "cancel" | "no_show" | "complete",
+    action: 'confirm' | 'cancel' | 'no_show' | 'complete',
     followUpInDays?: number | null,
   ) => {
     if (!selected) return;
     await apiFetch<AppointmentDto>(`/api/appointments/${selected.id}`, {
-      method: "PATCH",
+      method: 'PATCH',
       body: JSON.stringify(
-        action === "complete" ? { action, followUpInDays: followUpInDays ?? null } : { action },
+        action === 'complete'
+          ? { action, followUpInDays: followUpInDays ?? null }
+          : { action },
       ),
     });
     setSelected(null);
@@ -197,9 +242,9 @@ export default function AgendaPage() {
   const handleReschedule = async (startsAt: Date, endsAt: Date) => {
     if (!selected) return;
     await apiFetch<AppointmentDto>(`/api/appointments/${selected.id}`, {
-      method: "PATCH",
+      method: 'PATCH',
       body: JSON.stringify({
-        action: "reschedule",
+        action: 'reschedule',
         startsAt: startsAt.toISOString(),
         endsAt: endsAt.toISOString(),
       }),
@@ -211,7 +256,7 @@ export default function AgendaPage() {
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="sv-display text-2xl font-bold">Agenda</h1>
+        <h1 className="sv-display font-bold text-2xl">Agenda</h1>
         <Button
           type="button"
           onClick={() => setCreatingFor(new Date())}
@@ -237,7 +282,7 @@ export default function AgendaPage() {
         >
           <Icon name="chevron-left" />
         </Button>
-        <span className="min-w-48 text-center text-lg font-semibold">
+        <span className="min-w-48 text-center font-semibold text-lg">
           {monthLabel(monthDate)}
         </span>
         <Button

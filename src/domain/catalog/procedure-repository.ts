@@ -1,4 +1,4 @@
-import type { Procedure } from "./procedure";
+import type { Procedure } from './procedure';
 
 export interface ProcedureRepository {
   save(procedure: Procedure): Promise<void>;

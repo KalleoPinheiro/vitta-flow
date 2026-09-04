@@ -1,16 +1,25 @@
-import { NursingDiagnosis, type NursingDiagnosisProps } from "@/domain/taxonomy/nursing-diagnosis";
-import { NursingOutcome, type NursingOutcomeProps } from "@/domain/taxonomy/nursing-outcome";
+import {
+  NursingDiagnosis,
+  type NursingDiagnosisProps,
+} from '@/domain/taxonomy/nursing-diagnosis';
 import {
   NursingIntervention,
   type NursingInterventionProps,
-} from "@/domain/taxonomy/nursing-intervention";
-import { TaxonomyLinkage, type TaxonomyLinkageProps } from "@/domain/taxonomy/taxonomy-linkage";
+} from '@/domain/taxonomy/nursing-intervention';
+import {
+  NursingOutcome,
+  type NursingOutcomeProps,
+} from '@/domain/taxonomy/nursing-outcome';
+import {
+  TaxonomyLinkage,
+  type TaxonomyLinkageProps,
+} from '@/domain/taxonomy/taxonomy-linkage';
 import type {
   NursingDiagnosisRepository,
   NursingInterventionRepository,
   NursingOutcomeRepository,
   TaxonomyLinkageRepository,
-} from "@/domain/taxonomy/taxonomy-repositories";
+} from '@/domain/taxonomy/taxonomy-repositories';
 
 export interface TaxonomyCatalog {
   diagnoses: NursingDiagnosisProps[];
@@ -71,7 +80,10 @@ export async function importTaxonomyCatalog(
 
   let linkagesImported = 0;
   for (const props of catalog.linkages) {
-    const existing = await deps.linkages.findByDiagnosisCode(props.diagnosisCode, props.role);
+    const existing = await deps.linkages.findByDiagnosisCode(
+      props.diagnosisCode,
+      props.role,
+    );
     if (existing.some((linkage) => linkage.targetCode === props.targetCode)) {
       continue;
     }

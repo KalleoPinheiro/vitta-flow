@@ -1,14 +1,14 @@
-import type { Anamnesis } from "./anamnesis";
-import type { ConditionPhoto } from "./condition-photo";
-import type { EvolutionNote } from "./evolution-note";
-import type { ClinicalCondition } from "./clinical-condition";
-import type { ConditionAssessment } from "./condition-assessment";
-import type { CarePlan } from "./care-plan";
-import type { CarePlanDiagnosis } from "./care-plan-diagnosis";
-import type { CarePlanOutcome } from "./care-plan-outcome";
-import type { CarePlanIntervention } from "./care-plan-intervention";
-import type { OutcomeEvaluation } from "./outcome-evaluation";
-import type { InterventionRecord } from "./intervention-record";
+import type { Anamnesis } from './anamnesis';
+import type { CarePlan } from './care-plan';
+import type { CarePlanDiagnosis } from './care-plan-diagnosis';
+import type { CarePlanIntervention } from './care-plan-intervention';
+import type { CarePlanOutcome } from './care-plan-outcome';
+import type { ClinicalCondition } from './clinical-condition';
+import type { ConditionAssessment } from './condition-assessment';
+import type { ConditionPhoto } from './condition-photo';
+import type { EvolutionNote } from './evolution-note';
+import type { InterventionRecord } from './intervention-record';
+import type { OutcomeEvaluation } from './outcome-evaluation';
 
 export interface AnamnesisRepository {
   save(anamnesis: Anamnesis): Promise<void>;
@@ -83,5 +83,7 @@ export interface OutcomeEvaluationRepository {
 export interface InterventionRecordRepository {
   save(record: InterventionRecord): Promise<void>;
   findByInterventionId(interventionId: string): Promise<InterventionRecord[]>;
-  findByInterventionIds(interventionIds: string[]): Promise<InterventionRecord[]>;
+  findByInterventionIds(
+    interventionIds: string[],
+  ): Promise<InterventionRecord[]>;
 }

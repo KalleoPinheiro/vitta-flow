@@ -2,14 +2,14 @@ import {
   APPOINTMENT_STATUSES,
   type Appointment,
   type AppointmentStatus,
-} from "@/domain/scheduling/appointment";
+} from '@/domain/scheduling/appointment';
 import type {
   AppointmentRangeStats,
   AppointmentRepository,
   FindByPatientOptions,
   ProcedureRevenue,
-} from "@/domain/scheduling/appointment-repository";
-import type { TimeSlot } from "@/domain/shared/time-slot";
+} from '@/domain/scheduling/appointment-repository';
+import type { TimeSlot } from '@/domain/shared/time-slot';
 
 export class InMemoryAppointmentRepository implements AppointmentRepository {
   private readonly appointments = new Map<string, Appointment>();
@@ -30,8 +30,14 @@ export class InMemoryAppointmentRepository implements AppointmentRepository {
     });
   }
 
-  private matchesPatientOptions(appointment: Appointment, options?: FindByPatientOptions) {
-    return !options?.endsAfter || appointment.slot.end.getTime() >= options.endsAfter.getTime();
+  private matchesPatientOptions(
+    appointment: Appointment,
+    options?: FindByPatientOptions,
+  ) {
+    return (
+      !options?.endsAfter ||
+      appointment.slot.end.getTime() >= options.endsAfter.getTime()
+    );
   }
 
   async findByPatientId(
@@ -39,7 +45,10 @@ export class InMemoryAppointmentRepository implements AppointmentRepository {
     options?: FindByPatientOptions,
   ): Promise<Appointment[]> {
     return [...this.appointments.values()]
-      .filter((a) => a.patientId === patientId && this.matchesPatientOptions(a, options))
+      .filter(
+        (a) =>
+          a.patientId === patientId && this.matchesPatientOptions(a, options),
+      )
       .sort((a, b) => a.slot.start.getTime() - b.slot.start.getTime());
   }
 
@@ -49,14 +58,20 @@ export class InMemoryAppointmentRepository implements AppointmentRepository {
   ): Promise<Appointment[]> {
     const ids = new Set(patientIds);
     return [...this.appointments.values()]
-      .filter((a) => ids.has(a.patientId) && this.matchesPatientOptions(a, options))
+      .filter(
+        (a) => ids.has(a.patientId) && this.matchesPatientOptions(a, options),
+      )
       .sort((a, b) => a.slot.start.getTime() - b.slot.start.getTime());
   }
 
-  async getStatsInRange(start: Date, end: Date): Promise<AppointmentRangeStats> {
+  async getStatsInRange(
+    start: Date,
+    end: Date,
+  ): Promise<AppointmentRangeStats> {
     const inRange = [...this.appointments.values()].filter(
       (a) =>
-        a.slot.start.getTime() < end.getTime() && a.slot.end.getTime() > start.getTime(),
+        a.slot.start.getTime() < end.getTime() &&
+        a.slot.end.getTime() > start.getTime(),
     );
 
     const byStatus = Object.fromEntries(
@@ -68,7 +83,7 @@ export class InMemoryAppointmentRepository implements AppointmentRepository {
 
     const revenueMap = new Map<string, ProcedureRevenue>();
     for (const appointment of inRange) {
-      if (appointment.status !== "completed") continue;
+      if (appointment.status !== 'completed') continue;
       const current = revenueMap.get(appointment.procedure) ?? {
         procedure: appointment.procedure,
         count: 0,
@@ -97,7 +112,8 @@ export class InMemoryAppointmentRepository implements AppointmentRepository {
         (a) =>
           a.slot.start.getTime() < end.getTime() &&
           a.slot.end.getTime() > start.getTime() &&
-          (!options?.professionalId || a.professionalId === options.professionalId),
+          (!options?.professionalId ||
+            a.professionalId === options.professionalId),
       )
       .sort((a, b) => a.slot.start.getTime() - b.slot.start.getTime());
   }
@@ -105,13 +121,22 @@ export class InMemoryAppointmentRepository implements AppointmentRepository {
   async getProductionInRange(
     start: Date,
     end: Date,
-  ): Promise<Array<{ professionalId: string | null; count: number; totalCents: number }>> {
-    const totals = new Map<string | null, { count: number; totalCents: number }>();
+  ): Promise<
+    Array<{ professionalId: string | null; count: number; totalCents: number }>
+  > {
+    const totals = new Map<
+      string | null,
+      { count: number; totalCents: number }
+    >();
     for (const a of this.appointments.values()) {
       const inRange =
-        a.slot.start.getTime() < end.getTime() && a.slot.end.getTime() > start.getTime();
-      if (!inRange || a.status !== "completed") continue;
-      const current = totals.get(a.professionalId) ?? { count: 0, totalCents: 0 };
+        a.slot.start.getTime() < end.getTime() &&
+        a.slot.end.getTime() > start.getTime();
+      if (!inRange || a.status !== 'completed') continue;
+      const current = totals.get(a.professionalId) ?? {
+        count: 0,
+        totalCents: 0,
+      };
       totals.set(a.professionalId, {
         count: current.count + 1,
         totalCents: current.totalCents + a.price.cents,
@@ -133,7 +158,11 @@ export class InMemoryAppointmentRepository implements AppointmentRepository {
         return false;
       }
       // Profissionais distintos e ambos definidos → sem conflito.
-      if (professionalId && a.professionalId && a.professionalId !== professionalId) {
+      if (
+        professionalId &&
+        a.professionalId &&
+        a.professionalId !== professionalId
+      ) {
         return false;
       }
       return true;

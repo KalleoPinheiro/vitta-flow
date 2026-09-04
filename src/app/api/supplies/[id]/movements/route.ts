@@ -1,12 +1,12 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { RegisterStockMovement } from "@/application/inventory/register-stock-movement";
-import { MOVEMENT_TYPES } from "@/domain/inventory/stock-movement";
-import { handleRequest } from "@/lib/api-response";
-import { toStockMovementDto, toSupplyDto } from "@/lib/dto";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { RegisterStockMovement } from '@/application/inventory/register-stock-movement';
+import { MOVEMENT_TYPES } from '@/domain/inventory/stock-movement';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { toStockMovementDto, toSupplyDto } from '@/lib/dto';
 
 const movementSchema = z.object({
   type: z.enum(MOVEMENT_TYPES),
@@ -40,9 +40,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = movementSchema.parse(await request.json());
-    const { supplies, stockMovements, appointments, supplyBatches } = await getRepositories({
-      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
-    });
+    const { supplies, stockMovements, appointments, supplyBatches } =
+      await getRepositories({
+        clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+      });
     const supply = await new RegisterStockMovement(
       supplies,
       stockMovements,

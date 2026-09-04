@@ -1,13 +1,13 @@
-import type { AppointmentRepository } from "@/domain/scheduling/appointment-repository";
-import type { FollowUpRepository } from "@/domain/followup/follow-up-repository";
-import type { PatientRepository } from "@/domain/patient/patient-repository";
+import type { MessagingGateway } from '@/application/ports/messaging-gateway';
+import type { FollowUpRepository } from '@/domain/followup/follow-up-repository';
 import {
-  ReminderLog,
   dateKey,
   type ReminderKind,
+  ReminderLog,
   type ReminderLogRepository,
-} from "@/domain/messaging/reminder-log";
-import type { MessagingGateway } from "@/application/ports/messaging-gateway";
+} from '@/domain/messaging/reminder-log';
+import type { PatientRepository } from '@/domain/patient/patient-repository';
+import type { AppointmentRepository } from '@/domain/scheduling/appointment-repository';
 
 export interface ReminderRunSummary {
   sent: number;
@@ -24,15 +24,15 @@ interface PendingReminder {
 }
 
 const formatTime = (date: Date): string =>
-  date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
-const formatDay = (date: Date): string => date.toLocaleDateString("pt-BR");
+const formatDay = (date: Date): string => date.toLocaleDateString('pt-BR');
 
 /**
  * Recall precisa de destino (PORT4-09): com o portal publicado, o paciente
  * agenda sozinho; sem APP_URL configurada, mantém a orientação anterior.
  */
-const FALLBACK_CALL_TO_ACTION = "Entre em contato com a clínica para agendar.";
+const FALLBACK_CALL_TO_ACTION = 'Entre em contato com a clínica para agendar.';
 
 const schedulingCallToAction = (): string => {
   const appUrl = process.env.APP_URL?.trim();
@@ -43,13 +43,13 @@ const schedulingCallToAction = (): string => {
   // viraria link quebrado. Sem URL absoluta http(s), mantém a orientação antiga.
   try {
     const parsed = new URL(appUrl);
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
       return FALLBACK_CALL_TO_ACTION;
     }
   } catch {
     return FALLBACK_CALL_TO_ACTION;
   }
-  return `Agende seu retorno no portal: ${appUrl.replace(/\/+$/, "")}/portal.`;
+  return `Agende seu retorno no portal: ${appUrl.replace(/\/+$/, '')}/portal.`;
 };
 
 /**
@@ -73,7 +73,9 @@ export class SendReminders {
     ];
 
     const patientsById = new Map(
-      (await this.patients.findByIds(pending.map((r) => r.patientId))).map((p) => [p.id, p]),
+      (await this.patients.findByIds(pending.map((r) => r.patientId))).map(
+        (p) => [p.id, p],
+      ),
     );
 
     const summary: ReminderRunSummary = {
@@ -86,11 +88,17 @@ export class SendReminders {
 
     for (const reminder of pending) {
       const patient = patientsById.get(reminder.patientId);
-      if (!patient || !patient.isActive) {
+      if (!patient?.isActive) {
         summary.skipped += 1;
         continue;
       }
-      if (await this.reminderLog.wasSent(reminder.kind, reminder.referenceId, today)) {
+      if (
+        await this.reminderLog.wasSent(
+          reminder.kind,
+          reminder.referenceId,
+          today,
+        )
+      ) {
         summary.skipped += 1;
         continue;
       }
@@ -98,7 +106,7 @@ export class SendReminders {
         // Dry-run: loga o que enviaria e não marca como enviado.
         await this.messaging.sendText(
           patient.phone,
-          reminder.message(patient.fullName.split(" ")[0]),
+          reminder.message(patient.fullName.split(' ')[0]),
         );
         summary.skipped += 1;
         continue;
@@ -106,9 +114,11 @@ export class SendReminders {
       try {
         await this.messaging.sendText(
           patient.phone,
-          reminder.message(patient.fullName.split(" ")[0]),
+          reminder.message(patient.fullName.split(' ')[0]),
         );
-        await this.reminderLog.save(ReminderLog.create(reminder.kind, reminder.referenceId, now));
+        await this.reminderLog.save(
+          ReminderLog.create(reminder.kind, reminder.referenceId, now),
+        );
         summary.sent += 1;
       } catch (error) {
         console.error(
@@ -123,14 +133,25 @@ export class SendReminders {
   }
 
   private async confirmationReminders(now: Date): Promise<PendingReminder[]> {
-    const startOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-    const endOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
-    const appointments = await this.appointments.findInRange(startOfTomorrow, endOfTomorrow);
+    const startOfTomorrow = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + 1,
+    );
+    const endOfTomorrow = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + 2,
+    );
+    const appointments = await this.appointments.findInRange(
+      startOfTomorrow,
+      endOfTomorrow,
+    );
 
     return appointments
-      .filter((a) => a.status === "scheduled")
+      .filter((a) => a.status === 'scheduled')
       .map((appointment) => ({
-        kind: "confirmation" as const,
+        kind: 'confirmation' as const,
         referenceId: appointment.id,
         patientId: appointment.patientId,
         message: (name: string) =>
@@ -141,11 +162,18 @@ export class SendReminders {
   }
 
   private async recallReminders(now: Date): Promise<PendingReminder[]> {
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const overdue = await this.followUps.findAll({ status: "pending", dueBefore: startOfToday });
+    const startOfToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+    const overdue = await this.followUps.findAll({
+      status: 'pending',
+      dueBefore: startOfToday,
+    });
 
     return overdue.map((followUp) => ({
-      kind: "recall" as const,
+      kind: 'recall' as const,
       referenceId: followUp.id,
       patientId: followUp.patientId,
       message: (name: string) =>

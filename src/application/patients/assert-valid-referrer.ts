@@ -1,5 +1,5 @@
-import type { PartnerRepository } from "@/domain/partner/partner-repository";
-import { ValidationError } from "@/domain/shared/errors";
+import type { PartnerRepository } from '@/domain/partner/partner-repository';
+import { ValidationError } from '@/domain/shared/errors';
 
 /** Indicação só é aceita para parceiro cadastrado e ativo. */
 export async function assertValidReferrer(
@@ -10,7 +10,9 @@ export async function assertValidReferrer(
     return;
   }
   const partner = await partners.findById(referredByPartnerId);
-  if (!partner || !partner.isActive) {
-    throw new ValidationError("Parceiro da indicação não encontrado ou inativo");
+  if (!partner?.isActive) {
+    throw new ValidationError(
+      'Parceiro da indicação não encontrado ou inativo',
+    );
   }
 }

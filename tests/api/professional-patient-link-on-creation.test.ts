@@ -1,11 +1,11 @@
-import { describe, it, expect, vi } from "vitest";
-import { jsonRequest } from "../support/request";
-import { cookieHeaderFor } from "../support/session";
-import { ensureTestClinics, CLINIC_A_ID } from "../support/clinics";
-import { getRepositories } from "@/infrastructure/container";
-import { DrizzleProfessionalPatientLinkRepository } from "@/infrastructure/persistence/drizzle/professional-patient-link-repository";
+import { describe, expect, it, vi } from 'vitest';
+import { getRepositories } from '@/infrastructure/container';
+import { DrizzleProfessionalPatientLinkRepository } from '@/infrastructure/persistence/drizzle/professional-patient-link-repository';
+import { CLINIC_A_ID, ensureTestClinics } from '../support/clinics';
+import { jsonRequest } from '../support/request';
+import { cookieHeaderFor } from '../support/session';
 
-process.env.VITTA_DB_DRIVER = "pglite";
+process.env.VITTA_DB_DRIVER = 'pglite';
 
 interface Envelope<T> {
   success: boolean;
@@ -13,49 +13,73 @@ interface Envelope<T> {
   error: string | null;
 }
 
-describe("Feature: Profissional que cadastra paciente ganha vínculo imediato (RBAC-17/18)", () => {
-  it("Dado profissional autenticado, Quando POST /api/patients, Então o vínculo é gravado imediatamente", async () => {
+describe('Feature: Profissional que cadastra paciente ganha vínculo imediato (RBAC-17/18)', () => {
+  it('Dado profissional autenticado, Quando POST /api/patients, Então o vínculo é gravado imediatamente', async () => {
     await ensureTestClinics();
-    const patientsRoute = await import("@/app/api/patients/route");
-    const headers = cookieHeaderFor("profissional", "dra.ana@x.com", CLINIC_A_ID, "prof-link-1");
+    const patientsRoute = await import('@/app/api/patients/route');
+    const headers = cookieHeaderFor(
+      'profissional',
+      'dra.ana@x.com',
+      CLINIC_A_ID,
+      'prof-link-1',
+    );
 
     const { professionals } = await getRepositories({ clinicId: CLINIC_A_ID });
     await professionals.save(
-      (await import("@/domain/professional/professional")).Professional.restore({
-        id: "prof-link-1",
-        fullName: "Dra. Ana",
-        registry: null,
-        commissionPct: null,
-        active: true,
-        createdAt: new Date(),
-      }),
+      (await import('@/domain/professional/professional')).Professional.restore(
+        {
+          id: 'prof-link-1',
+          fullName: 'Dra. Ana',
+          registry: null,
+          commissionPct: null,
+          active: true,
+          createdAt: new Date(),
+        },
+      ),
     );
 
     const response = await patientsRoute.POST(
       jsonRequest(
-        "/api/patients",
-        "POST",
-        { fullName: "Paciente Vinculado", email: "vinculado@x.com", phone: "11999990000" },
+        '/api/patients',
+        'POST',
+        {
+          fullName: 'Paciente Vinculado',
+          email: 'vinculado@x.com',
+          phone: '11999990000',
+        },
         headers,
       ),
     );
     const body = (await response.json()) as Envelope<{ id: string }>;
     expect(response.status).toBe(200);
 
-    const { professionalPatientLinks } = await getRepositories({ clinicId: CLINIC_A_ID });
-    expect(await professionalPatientLinks.hasLink("prof-link-1", body.data.id)).toBe(true);
+    const { professionalPatientLinks } = await getRepositories({
+      clinicId: CLINIC_A_ID,
+    });
+    expect(
+      await professionalPatientLinks.hasLink('prof-link-1', body.data.id),
+    ).toBe(true);
   });
 
-  it("Dado profissional sem professionalId na sessão, Quando POST /api/patients, Então cria paciente sem lançar (sem vínculo)", async () => {
+  it('Dado profissional sem professionalId na sessão, Quando POST /api/patients, Então cria paciente sem lançar (sem vínculo)', async () => {
     await ensureTestClinics();
-    const patientsRoute = await import("@/app/api/patients/route");
-    const headers = cookieHeaderFor("profissional", "dr.sem-vinculo@x.com", CLINIC_A_ID, null);
+    const patientsRoute = await import('@/app/api/patients/route');
+    const headers = cookieHeaderFor(
+      'profissional',
+      'dr.sem-vinculo@x.com',
+      CLINIC_A_ID,
+      null,
+    );
 
     const response = await patientsRoute.POST(
       jsonRequest(
-        "/api/patients",
-        "POST",
-        { fullName: "Paciente Sem Vínculo", email: "sem-vinculo-prof@x.com", phone: "11988887777" },
+        '/api/patients',
+        'POST',
+        {
+          fullName: 'Paciente Sem Vínculo',
+          email: 'sem-vinculo-prof@x.com',
+          phone: '11988887777',
+        },
         headers,
       ),
     );
@@ -63,34 +87,47 @@ describe("Feature: Profissional que cadastra paciente ganha vínculo imediato (R
     expect(response.status).toBe(200);
   });
 
-  it("Dado ensureLink falhando, Quando POST /api/patients, Então ainda cria o paciente e responde 200 (issue #42)", async () => {
+  it('Dado ensureLink falhando, Quando POST /api/patients, Então ainda cria o paciente e responde 200 (issue #42)', async () => {
     await ensureTestClinics();
-    const patientsRoute = await import("@/app/api/patients/route");
-    const headers = cookieHeaderFor("profissional", "dra.bea@x.com", CLINIC_A_ID, "prof-link-2");
+    const patientsRoute = await import('@/app/api/patients/route');
+    const headers = cookieHeaderFor(
+      'profissional',
+      'dra.bea@x.com',
+      CLINIC_A_ID,
+      'prof-link-2',
+    );
 
     const { professionals } = await getRepositories({ clinicId: CLINIC_A_ID });
     await professionals.save(
-      (await import("@/domain/professional/professional")).Professional.restore({
-        id: "prof-link-2",
-        fullName: "Dra. Bea",
-        registry: null,
-        commissionPct: null,
-        active: true,
-        createdAt: new Date(),
-      }),
+      (await import('@/domain/professional/professional')).Professional.restore(
+        {
+          id: 'prof-link-2',
+          fullName: 'Dra. Bea',
+          registry: null,
+          commissionPct: null,
+          active: true,
+          createdAt: new Date(),
+        },
+      ),
     );
 
-    const errorLog = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const errorLog = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
     const ensureLinkSpy = vi
-      .spyOn(DrizzleProfessionalPatientLinkRepository.prototype, "ensureLink")
-      .mockRejectedValueOnce(new Error("banco indisponível"));
+      .spyOn(DrizzleProfessionalPatientLinkRepository.prototype, 'ensureLink')
+      .mockRejectedValueOnce(new Error('banco indisponível'));
 
     try {
       const response = await patientsRoute.POST(
         jsonRequest(
-          "/api/patients",
-          "POST",
-          { fullName: "Paciente Resiliente", email: "resiliente@x.com", phone: "11977776666" },
+          '/api/patients',
+          'POST',
+          {
+            fullName: 'Paciente Resiliente',
+            email: 'resiliente@x.com',
+            phone: '11977776666',
+          },
           headers,
         ),
       );

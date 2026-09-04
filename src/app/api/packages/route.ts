@@ -1,13 +1,13 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { SessionPackage } from "@/domain/billing/package";
-import { Invoice } from "@/domain/billing/invoice";
-import { Money } from "@/domain/shared/money";
-import { NotFoundError } from "@/domain/shared/errors";
-import { handleRequest } from "@/lib/api-response";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { Invoice } from '@/domain/billing/invoice';
+import { SessionPackage } from '@/domain/billing/package';
+import { NotFoundError } from '@/domain/shared/errors';
+import { Money } from '@/domain/shared/money';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { requireStaffSession } from '@/lib/auth/require-session';
 
 const createSchema = z.object({
   patientId: z.string().min(1),
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
   if (!guard.ok) return guard.response;
 
   return handleRequest(async () => {
-    const patientId = request.nextUrl.searchParams.get("patientId");
+    const patientId = request.nextUrl.searchParams.get('patientId');
     if (!patientId) {
       return [];
     }
@@ -47,7 +47,9 @@ export async function GET(request: NextRequest) {
     const packages = await sessionPackages.findByPatientId(patientId);
     const catalog = await procedures.findAll();
     const nameById = new Map(catalog.map((p) => [p.id, p.name]));
-    return packages.map((pkg) => toPackageDto(pkg, nameById.get(pkg.procedureId)));
+    return packages.map((pkg) =>
+      toPackageDto(pkg, nameById.get(pkg.procedureId)),
+    );
   });
 }
 
@@ -57,19 +59,20 @@ export async function POST(request: NextRequest) {
 
   return handleRequest(async () => {
     const body = createSchema.parse(await request.json());
-    const { sessionPackages, patients, procedures, invoices } = await getRepositories({
-      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
-    });
+    const { sessionPackages, patients, procedures, invoices } =
+      await getRepositories({
+        clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+      });
 
     const [patient, procedure] = await Promise.all([
       patients.findById(body.patientId),
       procedures.findById(body.procedureId),
     ]);
     if (!patient) {
-      throw new NotFoundError("Paciente", body.patientId);
+      throw new NotFoundError('Paciente', body.patientId);
     }
     if (!procedure) {
-      throw new NotFoundError("Procedimento", body.procedureId);
+      throw new NotFoundError('Procedimento', body.procedureId);
     }
 
     const pkg = SessionPackage.create({

@@ -1,12 +1,12 @@
-import type { NextRequest } from "next/server";
-import { getRepositories } from "@/infrastructure/container";
-import { NotFoundError, ValidationError } from "@/domain/shared/errors";
-import { UNSET_PASSWORD_HASH } from "@/lib/auth/password";
-import { IssueAuthToken } from "@/application/auth/auth-token-flow";
-import { appUrlFromEnv } from "@/application/auth/send-invite";
-import { handleRequest } from "@/lib/api-response";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import type { NextRequest } from 'next/server';
+import { IssueAuthToken } from '@/application/auth/auth-token-flow';
+import { appUrlFromEnv } from '@/application/auth/send-invite';
+import { NotFoundError, ValidationError } from '@/domain/shared/errors';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { UNSET_PASSWORD_HASH } from '@/lib/auth/password';
+import { requireStaffSession } from '@/lib/auth/require-session';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -29,14 +29,18 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const all = await userAccounts.findAll();
     const account = all.find((existing) => existing.id === id);
     if (!account) {
-      throw new NotFoundError("Conta", id);
+      throw new NotFoundError('Conta', id);
     }
     if (!account.isActive) {
-      throw new ValidationError("Conta desativada não pode receber convite");
+      throw new ValidationError('Conta desativada não pode receber convite');
     }
 
-    const purpose = account.passwordHash === UNSET_PASSWORD_HASH ? "invite" : "reset";
-    const { delivered } = await new IssueAuthToken(authTokens, email).issueAndTryDeliver({
+    const purpose =
+      account.passwordHash === UNSET_PASSWORD_HASH ? 'invite' : 'reset';
+    const { delivered } = await new IssueAuthToken(
+      authTokens,
+      email,
+    ).issueAndTryDeliver({
       account,
       purpose,
       appUrl: appUrlFromEnv(),

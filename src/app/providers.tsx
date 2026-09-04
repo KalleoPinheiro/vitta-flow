@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { ToastProvider, TooltipProvider } from "@still-void/ui/react/client";
-import type { ReactNode } from "react";
+import { ToastProvider, TooltipProvider } from '@still-void/ui/react/client';
+import type { ReactNode } from 'react';
 
 export function Providers({ children }: { children: ReactNode }) {
   return (

@@ -1,14 +1,14 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories, type Services } from "@/infrastructure/container";
-import { ScheduleAppointment } from "@/application/appointments/schedule-appointment";
-import { ListAppointments } from "@/application/appointments/list-appointments";
-import { handleRequest, fail } from "@/lib/api-response";
-import { scheduleCalendarSync } from "@/lib/calendar-sync";
-import { toAppointmentDto } from "@/lib/dto";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
-import { ensureLinkBestEffort } from "@/lib/patient-link";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { ListAppointments } from '@/application/appointments/list-appointments';
+import { ScheduleAppointment } from '@/application/appointments/schedule-appointment';
+import { getRepositories, type Services } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { fail, handleRequest } from '@/lib/api-response';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { scheduleCalendarSync } from '@/lib/calendar-sync';
+import { toAppointmentDto } from '@/lib/dto';
+import { ensureLinkBestEffort } from '@/lib/patient-link';
 
 const scheduleSchema = z.object({
   patientId: z.string().min(1),
@@ -27,21 +27,24 @@ export async function GET(request: NextRequest) {
   const guard = requireStaffSession(request);
   if (!guard.ok) return guard.response;
 
-  const from = request.nextUrl.searchParams.get("from");
-  const to = request.nextUrl.searchParams.get("to");
+  const from = request.nextUrl.searchParams.get('from');
+  const to = request.nextUrl.searchParams.get('to');
   if (!from || !to) {
-    return fail("Parâmetros obrigatórios: from, to (ISO 8601)", 400);
+    return fail('Parâmetros obrigatórios: from, to (ISO 8601)', 400);
   }
   // Escopo dinâmico do Profissional (R4/RBAC-19): a sessão profissional só
   // pode ver a própria agenda — ignora professionalId vindo da query string.
   const professionalId =
-    guard.session?.role === "profissional"
+    guard.session?.role === 'profissional'
       ? (guard.session.professionalId ?? undefined)
-      : (request.nextUrl.searchParams.get("professionalId") ?? undefined);
+      : (request.nextUrl.searchParams.get('professionalId') ?? undefined);
   return handleRequest(async () => {
     // Profissional sem vínculo de conta (dado legado/corrompido) nunca vê
     // agenda alheia por ausência de filtro — nunca cai no "sem filtro = tudo".
-    if (guard.session?.role === "profissional" && !guard.session.professionalId) {
+    if (
+      guard.session?.role === 'profissional' &&
+      !guard.session.professionalId
+    ) {
       return [];
     }
     const { appointments, patients } = await getRepositories({
@@ -65,7 +68,7 @@ async function markFollowUpScheduled(
 ): Promise<void> {
   if (!followUpId) return;
   const followUp = await services.followUps.findById(followUpId);
-  if (followUp?.status === "pending" && followUp.patientId === patientId) {
+  if (followUp?.status === 'pending' && followUp.patientId === patientId) {
     await services.followUps.save(followUp.markScheduled());
   }
 }
@@ -77,7 +80,11 @@ async function linkProfessionalToPatient(
   patientId: string,
 ): Promise<void> {
   if (!professionalId) return;
-  await ensureLinkBestEffort(services.professionalPatientLinks, professionalId, patientId);
+  await ensureLinkBestEffort(
+    services.professionalPatientLinks,
+    professionalId,
+    patientId,
+  );
 }
 
 export async function POST(request: NextRequest) {
@@ -103,8 +110,16 @@ export async function POST(request: NextRequest) {
       professionalId: body.professionalId ?? null,
       procedureId: body.procedureId ?? null,
     });
-    await markFollowUpScheduled(services, body.followUpId, appointment.patientId);
-    await linkProfessionalToPatient(services, body.professionalId, appointment.patientId);
+    await markFollowUpScheduled(
+      services,
+      body.followUpId,
+      appointment.patientId,
+    );
+    await linkProfessionalToPatient(
+      services,
+      body.professionalId,
+      appointment.patientId,
+    );
     scheduleCalendarSync(services, (sync) => sync.created(appointment.id));
     return toAppointmentDto(appointment);
   });

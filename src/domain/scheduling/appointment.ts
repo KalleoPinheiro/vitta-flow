@@ -1,14 +1,17 @@
-import { InvalidStatusTransitionError, ValidationError } from "../shared/errors";
-import { newId } from "../shared/id";
-import type { Money } from "../shared/money";
-import type { TimeSlot } from "../shared/time-slot";
+import {
+  InvalidStatusTransitionError,
+  ValidationError,
+} from '../shared/errors';
+import { newId } from '../shared/id';
+import type { Money } from '../shared/money';
+import type { TimeSlot } from '../shared/time-slot';
 
 export const APPOINTMENT_STATUSES = [
-  "scheduled",
-  "confirmed",
-  "completed",
-  "cancelled",
-  "no_show",
+  'scheduled',
+  'confirmed',
+  'completed',
+  'cancelled',
+  'no_show',
 ] as const;
 
 export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number];
@@ -32,7 +35,10 @@ export interface AppointmentState extends AppointmentProps {
   googleEventId?: string | null;
 }
 
-const ACTIVE_STATUSES: readonly AppointmentStatus[] = ["scheduled", "confirmed"];
+const ACTIVE_STATUSES: readonly AppointmentStatus[] = [
+  'scheduled',
+  'confirmed',
+];
 
 export class Appointment {
   private constructor(private readonly state: AppointmentState) {}
@@ -40,10 +46,10 @@ export class Appointment {
   static create(props: AppointmentProps): Appointment {
     const procedure = props.procedure.trim();
     if (procedure.length === 0) {
-      throw new ValidationError("Procedimento é obrigatório");
+      throw new ValidationError('Procedimento é obrigatório');
     }
     if (props.patientId.trim().length === 0) {
-      throw new ValidationError("Paciente é obrigatório");
+      throw new ValidationError('Paciente é obrigatório');
     }
     return new Appointment({
       ...props,
@@ -52,7 +58,7 @@ export class Appointment {
       professionalId: props.professionalId ?? null,
       procedureId: props.procedureId ?? null,
       id: newId(),
-      status: "scheduled",
+      status: 'scheduled',
       createdAt: new Date(),
       googleEventId: null,
     });
@@ -62,7 +68,10 @@ export class Appointment {
     return new Appointment({ ...state });
   }
 
-  private transitionTo(status: AppointmentStatus, allowedFrom: readonly AppointmentStatus[]): Appointment {
+  private transitionTo(
+    status: AppointmentStatus,
+    allowedFrom: readonly AppointmentStatus[],
+  ): Appointment {
     if (!allowedFrom.includes(this.state.status)) {
       throw new InvalidStatusTransitionError(
         `Não é possível mudar consulta de "${this.state.status}" para "${status}"`,
@@ -72,19 +81,19 @@ export class Appointment {
   }
 
   confirm(): Appointment {
-    return this.transitionTo("confirmed", ["scheduled"]);
+    return this.transitionTo('confirmed', ['scheduled']);
   }
 
   complete(): Appointment {
-    return this.transitionTo("completed", ACTIVE_STATUSES);
+    return this.transitionTo('completed', ACTIVE_STATUSES);
   }
 
   cancel(): Appointment {
-    return this.transitionTo("cancelled", ACTIVE_STATUSES);
+    return this.transitionTo('cancelled', ACTIVE_STATUSES);
   }
 
   markNoShow(): Appointment {
-    return this.transitionTo("no_show", ACTIVE_STATUSES);
+    return this.transitionTo('no_show', ACTIVE_STATUSES);
   }
 
   reschedule(newSlot: TimeSlot): Appointment {
@@ -93,13 +102,21 @@ export class Appointment {
         `Não é possível remarcar consulta com status "${this.state.status}"`,
       );
     }
-    return new Appointment({ ...this.state, slot: newSlot, status: "scheduled" });
+    return new Appointment({
+      ...this.state,
+      slot: newSlot,
+      status: 'scheduled',
+    });
   }
 
-  updateDetails(changes: { procedure?: string; price?: Money; notes?: string | null }): Appointment {
+  updateDetails(changes: {
+    procedure?: string;
+    price?: Money;
+    notes?: string | null;
+  }): Appointment {
     const procedure = (changes.procedure ?? this.state.procedure).trim();
     if (procedure.length === 0) {
-      throw new ValidationError("Procedimento é obrigatório");
+      throw new ValidationError('Procedimento é obrigatório');
     }
     return new Appointment({
       ...this.state,

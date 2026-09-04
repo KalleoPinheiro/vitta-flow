@@ -1,16 +1,16 @@
-import { ValidationError } from "../shared/errors";
-import type { TimeSlot } from "../shared/time-slot";
+import { ValidationError } from '../shared/errors';
+import type { TimeSlot } from '../shared/time-slot';
 import {
   DEFAULT_SCHEDULE_CONFIG,
   describeSchedule,
   type ScheduleConfig,
-} from "./schedule-config";
+} from './schedule-config';
 
 /** Compatibilidade com telas que exibem a grade padrão. */
 export const BUSINESS_HOURS = {
   startHour: DEFAULT_SCHEDULE_CONFIG.startHour,
   endHour: DEFAULT_SCHEDULE_CONFIG.endHour,
-  weekDays: "segunda a sexta",
+  weekDays: 'segunda a sexta',
 } as const;
 
 export const MIN_GAP_MINUTES = DEFAULT_SCHEDULE_CONFIG.minGapMinutes;
@@ -20,7 +20,8 @@ const isSameLocalDay = (a: Date, b: Date): boolean =>
   a.getMonth() === b.getMonth() &&
   a.getDate() === b.getDate();
 
-const minutesOfDay = (date: Date): number => date.getHours() * 60 + date.getMinutes();
+const minutesOfDay = (date: Date): number =>
+  date.getHours() * 60 + date.getMinutes();
 
 /** Valida o slot contra a grade configurada (default = comportamento histórico). */
 export function assertWithinBusinessHours(

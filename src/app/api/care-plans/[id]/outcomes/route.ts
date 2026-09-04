@@ -1,12 +1,12 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { PrescribeOutcome } from "@/application/clinical/prescribe-outcome";
-import { handleRequest } from "@/lib/api-response";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { recordAudit } from "@/lib/audit";
-import { toCarePlanOutcomeDto } from "@/lib/dto";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { PrescribeOutcome } from '@/application/clinical/prescribe-outcome';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { recordAudit } from '@/lib/audit';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { toCarePlanOutcomeDto } from '@/lib/dto';
 
 const outcomeSchema = z
   .object({
@@ -16,8 +16,8 @@ const outcomeSchema = z
     deadline: z.iso.datetime().nullish(),
   })
   .refine((body) => body.targetScore > body.baselineScore, {
-    error: "Meta deve ser maior que a pontuação basal",
-    path: ["targetScore"],
+    error: 'Meta deve ser maior que a pontuação basal',
+    path: ['targetScore'],
   });
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -29,10 +29,15 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = outcomeSchema.parse(await request.json());
-    const { carePlanOutcomes, carePlans, nursingOutcomes, auditEvents } = await getRepositories({
-      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
-    });
-    const outcome = await new PrescribeOutcome(carePlanOutcomes, carePlans, nursingOutcomes).execute({
+    const { carePlanOutcomes, carePlans, nursingOutcomes, auditEvents } =
+      await getRepositories({
+        clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+      });
+    const outcome = await new PrescribeOutcome(
+      carePlanOutcomes,
+      carePlans,
+      nursingOutcomes,
+    ).execute({
       carePlanId: id,
       outcomeCode: body.outcomeCode,
       baselineScore: body.baselineScore,
@@ -44,8 +49,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
       nursingOutcomes.findByCode(body.outcomeCode),
     ]);
     recordAudit(auditEvents, guard.session, {
-      action: "create",
-      resourceType: "care_plan_outcome",
+      action: 'create',
+      resourceType: 'care_plan_outcome',
       resourceId: outcome.id,
       patientId: plan?.patientId ?? null,
     });

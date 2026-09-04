@@ -1,14 +1,14 @@
-import { Appointment } from "@/domain/scheduling/appointment";
-import type { AppointmentRepository } from "@/domain/scheduling/appointment-repository";
-import type { PatientRepository } from "@/domain/patient/patient-repository";
-import { Money } from "@/domain/shared/money";
-import { TimeSlot } from "@/domain/shared/time-slot";
-import { NotFoundError, ValidationError } from "@/domain/shared/errors";
+import type { PatientRepository } from '@/domain/patient/patient-repository';
+import { Appointment } from '@/domain/scheduling/appointment';
+import type { AppointmentRepository } from '@/domain/scheduling/appointment-repository';
 import {
   DEFAULT_SCHEDULE_CONFIG,
   type ScheduleConfigRepository,
-} from "@/domain/scheduling/schedule-config";
-import { assertSlotAvailable } from "./assert-slot-available";
+} from '@/domain/scheduling/schedule-config';
+import { NotFoundError, ValidationError } from '@/domain/shared/errors';
+import { Money } from '@/domain/shared/money';
+import { TimeSlot } from '@/domain/shared/time-slot';
+import { assertSlotAvailable } from './assert-slot-available';
 
 export interface ScheduleAppointmentInput {
   patientId: string;
@@ -31,14 +31,17 @@ export class ScheduleAppointment {
   async execute(input: ScheduleAppointmentInput): Promise<Appointment> {
     const patient = await this.patients.findById(input.patientId);
     if (!patient) {
-      throw new NotFoundError("Paciente", input.patientId);
+      throw new NotFoundError('Paciente', input.patientId);
     }
     if (!patient.isActive) {
-      throw new ValidationError("Não é possível agendar consulta para paciente inativo");
+      throw new ValidationError(
+        'Não é possível agendar consulta para paciente inativo',
+      );
     }
 
     const slot = TimeSlot.create(input.startsAt, input.endsAt);
-    const config = (await this.scheduleConfig?.get()) ?? DEFAULT_SCHEDULE_CONFIG;
+    const config =
+      (await this.scheduleConfig?.get()) ?? DEFAULT_SCHEDULE_CONFIG;
     await assertSlotAvailable(
       this.appointments,
       slot,

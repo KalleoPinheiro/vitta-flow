@@ -1,7 +1,15 @@
-import { InvalidStatusTransitionError, ValidationError } from "../shared/errors";
-import { newId } from "../shared/id";
+import {
+  InvalidStatusTransitionError,
+  ValidationError,
+} from '../shared/errors';
+import { newId } from '../shared/id';
 
-export const FOLLOW_UP_STATUSES = ["pending", "scheduled", "done", "cancelled"] as const;
+export const FOLLOW_UP_STATUSES = [
+  'pending',
+  'scheduled',
+  'done',
+  'cancelled',
+] as const;
 export type FollowUpStatus = (typeof FOLLOW_UP_STATUSES)[number];
 
 export interface FollowUpProps {
@@ -23,10 +31,10 @@ export class FollowUp {
   static create(props: FollowUpProps): FollowUp {
     const reason = props.reason.trim();
     if (reason.length === 0) {
-      throw new ValidationError("Motivo do retorno é obrigatório");
+      throw new ValidationError('Motivo do retorno é obrigatório');
     }
     if (props.patientId.trim().length === 0) {
-      throw new ValidationError("Paciente é obrigatório");
+      throw new ValidationError('Paciente é obrigatório');
     }
     return new FollowUp({
       patientId: props.patientId,
@@ -34,7 +42,7 @@ export class FollowUp {
       dueDate: props.dueDate,
       reason,
       id: newId(),
-      status: "pending",
+      status: 'pending',
       createdAt: new Date(),
     });
   }
@@ -43,7 +51,10 @@ export class FollowUp {
     return new FollowUp({ ...state });
   }
 
-  private transitionTo(status: FollowUpStatus, allowedFrom: FollowUpStatus[]): FollowUp {
+  private transitionTo(
+    status: FollowUpStatus,
+    allowedFrom: FollowUpStatus[],
+  ): FollowUp {
     if (!allowedFrom.includes(this.state.status)) {
       throw new InvalidStatusTransitionError(
         `Retorno já está "${this.state.status}", não pode mudar para "${status}"`,
@@ -54,19 +65,22 @@ export class FollowUp {
 
   /** Retorno virou agendamento (recall de 1 clique) — sai da pendência. */
   markScheduled(): FollowUp {
-    return this.transitionTo("scheduled", ["pending"]);
+    return this.transitionTo('scheduled', ['pending']);
   }
 
   markDone(): FollowUp {
-    return this.transitionTo("done", ["pending", "scheduled"]);
+    return this.transitionTo('done', ['pending', 'scheduled']);
   }
 
   cancel(): FollowUp {
-    return this.transitionTo("cancelled", ["pending", "scheduled"]);
+    return this.transitionTo('cancelled', ['pending', 'scheduled']);
   }
 
   isOverdue(now: Date): boolean {
-    return this.state.status === "pending" && this.state.dueDate.getTime() < now.getTime();
+    return (
+      this.state.status === 'pending' &&
+      this.state.dueDate.getTime() < now.getTime()
+    );
   }
 
   get id(): string {

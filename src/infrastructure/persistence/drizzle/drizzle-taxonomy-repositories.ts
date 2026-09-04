@@ -1,24 +1,36 @@
-import { and, asc, eq, ilike, inArray, or } from "drizzle-orm";
-import { NursingDiagnosis } from "@/domain/taxonomy/nursing-diagnosis";
-import { NursingOutcome } from "@/domain/taxonomy/nursing-outcome";
-import { NursingIntervention } from "@/domain/taxonomy/nursing-intervention";
-import { NocScale, type NocScaleAnchors } from "@/domain/taxonomy/noc-scale";
-import { TaxonomyLinkage, type LinkageRole } from "@/domain/taxonomy/taxonomy-linkage";
+import { and, asc, eq, ilike, inArray, or } from 'drizzle-orm';
+import { NocScale, type NocScaleAnchors } from '@/domain/taxonomy/noc-scale';
+import { NursingDiagnosis } from '@/domain/taxonomy/nursing-diagnosis';
+import { NursingIntervention } from '@/domain/taxonomy/nursing-intervention';
+import { NursingOutcome } from '@/domain/taxonomy/nursing-outcome';
+import {
+  type LinkageRole,
+  TaxonomyLinkage,
+} from '@/domain/taxonomy/taxonomy-linkage';
 import type {
   NursingDiagnosisRepository,
   NursingInterventionRepository,
   NursingOutcomeRepository,
   TaxonomyLinkageRepository,
-} from "@/domain/taxonomy/taxonomy-repositories";
-import type { AppDb } from "./db";
-import { nursingDiagnoses, nursingInterventions, nursingOutcomes, taxonomyLinkages } from "./schema";
+} from '@/domain/taxonomy/taxonomy-repositories';
+import type { AppDb } from './db';
+import {
+  nursingDiagnoses,
+  nursingInterventions,
+  nursingOutcomes,
+  taxonomyLinkages,
+} from './schema';
 
 const DEFAULT_SEARCH_LIMIT = 20;
 
-export class DrizzleNursingDiagnosisRepository implements NursingDiagnosisRepository {
+export class DrizzleNursingDiagnosisRepository
+  implements NursingDiagnosisRepository
+{
   constructor(private readonly db: AppDb) {}
 
-  private toEntity(row: typeof nursingDiagnoses.$inferSelect): NursingDiagnosis {
+  private toEntity(
+    row: typeof nursingDiagnoses.$inferSelect,
+  ): NursingDiagnosis {
     return NursingDiagnosis.restore(row);
   }
 
@@ -61,18 +73,28 @@ export class DrizzleNursingDiagnosisRepository implements NursingDiagnosisReposi
     return rows.map((row) => this.toEntity(row));
   }
 
-  async search(term: string, options?: { limit?: number }): Promise<NursingDiagnosis[]> {
+  async search(
+    term: string,
+    options?: { limit?: number },
+  ): Promise<NursingDiagnosis[]> {
     const rows = await this.db
       .select()
       .from(nursingDiagnoses)
-      .where(or(ilike(nursingDiagnoses.label, `%${term}%`), ilike(nursingDiagnoses.code, `%${term}%`)))
+      .where(
+        or(
+          ilike(nursingDiagnoses.label, `%${term}%`),
+          ilike(nursingDiagnoses.code, `%${term}%`),
+        ),
+      )
       .orderBy(asc(nursingDiagnoses.label))
       .limit(options?.limit ?? DEFAULT_SEARCH_LIMIT);
     return rows.map((row) => this.toEntity(row));
   }
 }
 
-export class DrizzleNursingOutcomeRepository implements NursingOutcomeRepository {
+export class DrizzleNursingOutcomeRepository
+  implements NursingOutcomeRepository
+{
   constructor(private readonly db: AppDb) {}
 
   private toEntity(row: typeof nursingOutcomes.$inferSelect): NursingOutcome {
@@ -140,21 +162,33 @@ export class DrizzleNursingOutcomeRepository implements NursingOutcomeRepository
     return rows.map((row) => this.toEntity(row));
   }
 
-  async search(term: string, options?: { limit?: number }): Promise<NursingOutcome[]> {
+  async search(
+    term: string,
+    options?: { limit?: number },
+  ): Promise<NursingOutcome[]> {
     const rows = await this.db
       .select()
       .from(nursingOutcomes)
-      .where(or(ilike(nursingOutcomes.label, `%${term}%`), ilike(nursingOutcomes.code, `%${term}%`)))
+      .where(
+        or(
+          ilike(nursingOutcomes.label, `%${term}%`),
+          ilike(nursingOutcomes.code, `%${term}%`),
+        ),
+      )
       .orderBy(asc(nursingOutcomes.label))
       .limit(options?.limit ?? DEFAULT_SEARCH_LIMIT);
     return rows.map((row) => this.toEntity(row));
   }
 }
 
-export class DrizzleNursingInterventionRepository implements NursingInterventionRepository {
+export class DrizzleNursingInterventionRepository
+  implements NursingInterventionRepository
+{
   constructor(private readonly db: AppDb) {}
 
-  private toEntity(row: typeof nursingInterventions.$inferSelect): NursingIntervention {
+  private toEntity(
+    row: typeof nursingInterventions.$inferSelect,
+  ): NursingIntervention {
     return NursingIntervention.restore(row);
   }
 
@@ -196,12 +230,18 @@ export class DrizzleNursingInterventionRepository implements NursingIntervention
     return rows.map((row) => this.toEntity(row));
   }
 
-  async search(term: string, options?: { limit?: number }): Promise<NursingIntervention[]> {
+  async search(
+    term: string,
+    options?: { limit?: number },
+  ): Promise<NursingIntervention[]> {
     const rows = await this.db
       .select()
       .from(nursingInterventions)
       .where(
-        or(ilike(nursingInterventions.label, `%${term}%`), ilike(nursingInterventions.code, `%${term}%`)),
+        or(
+          ilike(nursingInterventions.label, `%${term}%`),
+          ilike(nursingInterventions.code, `%${term}%`),
+        ),
       )
       .orderBy(asc(nursingInterventions.label))
       .limit(options?.limit ?? DEFAULT_SEARCH_LIMIT);
@@ -209,7 +249,9 @@ export class DrizzleNursingInterventionRepository implements NursingIntervention
   }
 }
 
-export class DrizzleTaxonomyLinkageRepository implements TaxonomyLinkageRepository {
+export class DrizzleTaxonomyLinkageRepository
+  implements TaxonomyLinkageRepository
+{
   constructor(private readonly db: AppDb) {}
 
   async save(linkage: TaxonomyLinkage): Promise<void> {
@@ -223,13 +265,19 @@ export class DrizzleTaxonomyLinkageRepository implements TaxonomyLinkageReposito
       .onConflictDoNothing();
   }
 
-  async findByDiagnosisCode(diagnosisCode: string, role?: LinkageRole): Promise<TaxonomyLinkage[]> {
+  async findByDiagnosisCode(
+    diagnosisCode: string,
+    role?: LinkageRole,
+  ): Promise<TaxonomyLinkage[]> {
     const rows = await this.db
       .select()
       .from(taxonomyLinkages)
       .where(
         role
-          ? and(eq(taxonomyLinkages.diagnosisCode, diagnosisCode), eq(taxonomyLinkages.role, role))
+          ? and(
+              eq(taxonomyLinkages.diagnosisCode, diagnosisCode),
+              eq(taxonomyLinkages.role, role),
+            )
           : eq(taxonomyLinkages.diagnosisCode, diagnosisCode),
       );
     return rows.map((row) =>

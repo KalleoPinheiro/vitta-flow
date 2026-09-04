@@ -1,4 +1,4 @@
-import type { ProfessionalPatientLinkRepository } from "@/domain/clinical/professional-patient-link";
+import type { ProfessionalPatientLinkRepository } from '@/domain/clinical/professional-patient-link';
 
 /**
  * Concede/renova o vínculo profissional-paciente em melhor esforço (issue

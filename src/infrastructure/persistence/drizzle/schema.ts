@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { sql } from 'drizzle-orm';
 import {
   boolean,
   check,
@@ -9,114 +9,135 @@ import {
   text,
   timestamp,
   uniqueIndex,
-} from "drizzle-orm/pg-core";
+} from 'drizzle-orm/pg-core';
 
-export const clinics = pgTable("clinics", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
-  createdBy: text("created_by").notNull(),
+export const clinics = pgTable('clinics', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  createdAt: timestamp('created_at', {
+    withTimezone: true,
+    mode: 'date',
+  }).notNull(),
+  createdBy: text('created_by').notNull(),
   // Dados cadastrais (issue #61) — usados no cabeçalho/rodapé de documentos
   // clínicos emitidos (issue #62). Nullable: nem toda instalação os preencheu ainda.
-  cnpj: text("cnpj"),
-  address: text("address"),
-  city: text("city"),
-  professionalName: text("professional_name"),
-  professionalRegistry: text("professional_registry"),
+  cnpj: text('cnpj'),
+  address: text('address'),
+  city: text('city'),
+  professionalName: text('professional_name'),
+  professionalRegistry: text('professional_registry'),
 });
 
 export const partners = pgTable(
-  "partners",
+  'partners',
   {
-    id: text("id").primaryKey(),
-    clinicId: text("clinic_id")
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    fullName: text("full_name").notNull(),
-    email: text("email").notNull().unique(),
-    phone: text("phone").notNull(),
-    crm: text("crm"),
-    specialty: text("specialty"),
-    active: boolean("active").notNull().default(true),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    fullName: text('full_name').notNull(),
+    email: text('email').notNull().unique(),
+    phone: text('phone').notNull(),
+    crm: text('crm'),
+    specialty: text('specialty'),
+    active: boolean('active').notNull().default(true),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
-  (table) => [index("idx_partners_clinic").on(table.clinicId)],
+  (table) => [index('idx_partners_clinic').on(table.clinicId)],
 );
 
 export const professionals = pgTable(
-  "professionals",
+  'professionals',
   {
-    id: text("id").primaryKey(),
-    clinicId: text("clinic_id")
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    fullName: text("full_name").notNull(),
-    registry: text("registry"),
+    fullName: text('full_name').notNull(),
+    registry: text('registry'),
     // Repasse (O3.4): % da receita das consultas concluídas do profissional.
-    commissionPct: integer("commission_pct"),
-    active: boolean("active").notNull().default(true),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    commissionPct: integer('commission_pct'),
+    active: boolean('active').notNull().default(true),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
-  (table) => [index("idx_professionals_clinic").on(table.clinicId)],
+  (table) => [index('idx_professionals_clinic').on(table.clinicId)],
 );
 
 export const procedures = pgTable(
-  "procedures",
+  'procedures',
   {
-    id: text("id").primaryKey(),
-    clinicId: text("clinic_id")
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    name: text("name").notNull(),
-    priceCents: integer("price_cents").notNull(),
-    durationMinutes: integer("duration_minutes").notNull(),
-    active: boolean("active").notNull().default(true),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    name: text('name').notNull(),
+    priceCents: integer('price_cents').notNull(),
+    durationMinutes: integer('duration_minutes').notNull(),
+    active: boolean('active').notNull().default(true),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
     // Unicidade case-insensitive do catálogo, composta por empresa (MT-06).
-    uniqueIndex("uq_procedures_name").on(table.clinicId, sql`lower(${table.name})`),
-    index("idx_procedures_clinic").on(table.clinicId),
+    uniqueIndex('uq_procedures_name').on(
+      table.clinicId,
+      sql`lower(${table.name})`,
+    ),
+    index('idx_procedures_clinic').on(table.clinicId),
   ],
 );
 
 export const procedureSupplies = pgTable(
-  "procedure_supplies",
+  'procedure_supplies',
   {
-    procedureId: text("procedure_id")
+    procedureId: text('procedure_id')
       .notNull()
       .references(() => procedures.id),
-    supplyId: text("supply_id").notNull(),
-    quantity: integer("quantity").notNull(),
+    supplyId: text('supply_id').notNull(),
+    quantity: integer('quantity').notNull(),
   },
   (table) => [
-    uniqueIndex("uq_procedure_supplies").on(table.procedureId, table.supplyId),
+    uniqueIndex('uq_procedure_supplies').on(table.procedureId, table.supplyId),
   ],
 );
 
 export const userAccounts = pgTable(
-  "user_accounts",
+  'user_accounts',
   {
-    id: text("id").primaryKey(),
+    id: text('id').primaryKey(),
     // Nulo somente para o papel de sistema (super_admin — cross-empresa, RBAC-01/ADR-003).
-    clinicId: text("clinic_id").references(() => clinics.id),
-    email: text("email").notNull(),
+    clinicId: text('clinic_id').references(() => clinics.id),
+    email: text('email').notNull(),
     // Formato scrypt$custo$salt$hash — nunca a senha em claro.
-    passwordHash: text("password_hash").notNull(),
+    passwordHash: text('password_hash').notNull(),
     // Um dos 6 valores de UserRole (RBAC-01).
-    role: text("role").notNull(),
-    professionalId: text("professional_id").references(() => professionals.id),
-    active: boolean("active").notNull().default(true),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    role: text('role').notNull(),
+    professionalId: text('professional_id').references(() => professionals.id),
+    active: boolean('active').notNull().default(true),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
     // E-mail de login único por empresa, não globalmente (MT-06, ADR-003).
-    uniqueIndex("uq_user_accounts_clinic_email").on(table.clinicId, table.email),
+    uniqueIndex('uq_user_accounts_clinic_email').on(
+      table.clinicId,
+      table.email,
+    ),
     // Postgres trata NULL como distinto em índice único composto — sem este
     // índice parcial, duas contas super_admin (clinic_id NULL) poderiam ter
     // o mesmo email, e o login (findByEmail + LIMIT 1) escolheria uma
     // identidade de forma ambígua.
-    uniqueIndex("uq_user_accounts_super_admin_email")
+    uniqueIndex('uq_user_accounts_super_admin_email')
       .on(table.email)
       .where(sql`${table.clinicId} IS NULL`),
     // No máximo UMA conta com clinic_id nulo pode existir (hoje só o Super
@@ -124,91 +145,120 @@ export const userAccounts = pgTable(
     // concorrentes em /api/auth/bootstrap numa instalação vazia (issue #51).
     // `role` é sempre "super_admin" nessas linhas; o índice só precisa de uma
     // coluna para expressar "no máximo uma linha bate neste predicado".
-    uniqueIndex("uq_user_accounts_single_system_account")
+    uniqueIndex('uq_user_accounts_single_system_account')
       .on(table.role)
       .where(sql`${table.clinicId} IS NULL`),
-    index("idx_user_accounts_clinic").on(table.clinicId),
+    index('idx_user_accounts_clinic').on(table.clinicId),
   ],
 );
 
 export const scheduleSettings = pgTable(
-  "schedule_settings",
+  'schedule_settings',
   {
     // Uma linha por clínica (era linha única "default" antes da M3 — MT-17).
-    id: text("id").primaryKey(),
-    clinicId: text("clinic_id")
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    weekdays: text("weekdays").notNull(),
-    startHour: integer("start_hour").notNull(),
-    endHour: integer("end_hour").notNull(),
-    minGapMinutes: integer("min_gap_minutes").notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull(),
+    weekdays: text('weekdays').notNull(),
+    startHour: integer('start_hour').notNull(),
+    endHour: integer('end_hour').notNull(),
+    minGapMinutes: integer('min_gap_minutes').notNull(),
+    updatedAt: timestamp('updated_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
-  (table) => [uniqueIndex("uq_schedule_settings_clinic").on(table.clinicId)],
+  (table) => [uniqueIndex('uq_schedule_settings_clinic').on(table.clinicId)],
 );
 
 export const patients = pgTable(
-  "patients",
+  'patients',
   {
-    id: text("id").primaryKey(),
-    clinicId: text("clinic_id")
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    fullName: text("full_name").notNull(),
-    email: text("email").notNull(),
-    phone: text("phone").notNull(),
-    birthDate: timestamp("birth_date", { withTimezone: true, mode: "date" }),
-    notes: text("notes"),
-    referredByPartnerId: text("referred_by_partner_id").references(() => partners.id),
-    active: boolean("active").notNull().default(true),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    fullName: text('full_name').notNull(),
+    email: text('email').notNull(),
+    phone: text('phone').notNull(),
+    birthDate: timestamp('birth_date', { withTimezone: true, mode: 'date' }),
+    notes: text('notes'),
+    referredByPartnerId: text('referred_by_partner_id').references(
+      () => partners.id,
+    ),
+    active: boolean('active').notNull().default(true),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
-    index("idx_patients_referrer").on(table.referredByPartnerId),
+    index('idx_patients_referrer').on(table.referredByPartnerId),
     // Ordenação padrão das listagens.
-    index("idx_patients_full_name").on(table.fullName),
+    index('idx_patients_full_name').on(table.fullName),
     // Busca com ILIKE '%termo%' — GIN + pg_trgm evita full scan.
-    index("idx_patients_full_name_trgm").using("gin", table.fullName.op("gin_trgm_ops")),
-    index("idx_patients_email_trgm").using("gin", table.email.op("gin_trgm_ops")),
-    index("idx_patients_phone_trgm").using("gin", table.phone.op("gin_trgm_ops")),
-    index("idx_patients_clinic").on(table.clinicId),
+    index('idx_patients_full_name_trgm').using(
+      'gin',
+      table.fullName.op('gin_trgm_ops'),
+    ),
+    index('idx_patients_email_trgm').using(
+      'gin',
+      table.email.op('gin_trgm_ops'),
+    ),
+    index('idx_patients_phone_trgm').using(
+      'gin',
+      table.phone.op('gin_trgm_ops'),
+    ),
+    index('idx_patients_clinic').on(table.clinicId),
     // E-mail único por empresa, não globalmente (MT-06).
-    uniqueIndex("uq_patients_clinic_email").on(table.clinicId, table.email),
+    uniqueIndex('uq_patients_clinic_email').on(table.clinicId, table.email),
   ],
 );
 
 export const appointments = pgTable(
-  "appointments",
+  'appointments',
   {
-    id: text("id").primaryKey(),
-    clinicId: text("clinic_id")
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    patientId: text("patient_id")
+    patientId: text('patient_id')
       .notNull()
       .references(() => patients.id),
-    startsAt: timestamp("starts_at", { withTimezone: true, mode: "date" }).notNull(),
-    endsAt: timestamp("ends_at", { withTimezone: true, mode: "date" }).notNull(),
+    startsAt: timestamp('starts_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
+    endsAt: timestamp('ends_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
     // Mantida por trigger (migração 0002) para a constraint de exclusão anti-double-booking.
-    endsAtBuffered: timestamp("ends_at_buffered", { withTimezone: true, mode: "date" }),
-    procedure: text("procedure").notNull(),
-    priceCents: integer("price_cents").notNull(),
-    notes: text("notes"),
-    status: text("status").notNull(),
-    googleEventId: text("google_event_id"),
+    endsAtBuffered: timestamp('ends_at_buffered', {
+      withTimezone: true,
+      mode: 'date',
+    }),
+    procedure: text('procedure').notNull(),
+    priceCents: integer('price_cents').notNull(),
+    notes: text('notes'),
+    status: text('status').notNull(),
+    googleEventId: text('google_event_id'),
     // Profissional responsável (F9) — nullable, retrocompatível.
-    professionalId: text("professional_id").references(() => professionals.id),
+    professionalId: text('professional_id').references(() => professionals.id),
     // Procedimento do catálogo (O1.1) — nullable, histórico intacto.
-    procedureId: text("procedure_id").references(() => procedures.id),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    procedureId: text('procedure_id').references(() => procedures.id),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
-    index("idx_appointments_starts_at").on(table.startsAt),
-    index("idx_appointments_professional").on(table.professionalId),
+    index('idx_appointments_starts_at').on(table.startsAt),
+    index('idx_appointments_professional').on(table.professionalId),
     // Composto cobre findByPatientId com ORDER BY starts_at.
-    index("idx_appointments_patient").on(table.patientId, table.startsAt),
-    index("idx_appointments_clinic").on(table.clinicId),
+    index('idx_appointments_patient').on(table.patientId, table.startsAt),
+    index('idx_appointments_clinic').on(table.clinicId),
   ],
 );
 
@@ -219,613 +269,718 @@ export const appointments = pgTable(
  * por listagem que pudesse cruzar empresas.
  */
 export const authTokens = pgTable(
-  "auth_tokens",
+  'auth_tokens',
   {
-    id: text("id").primaryKey(),
-    accountId: text("account_id")
+    id: text('id').primaryKey(),
+    accountId: text('account_id')
       .notNull()
       .references(() => userAccounts.id),
     // "invite" | "reset" (AuthTokenPurpose).
-    purpose: text("purpose").notNull(),
+    purpose: text('purpose').notNull(),
     // SHA-256 hex do segredo entregue no link — o segredo em si nunca é persistido.
-    secretHash: text("secret_hash").notNull(),
-    expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }).notNull(),
-    usedAt: timestamp("used_at", { withTimezone: true, mode: "date" }),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    secretHash: text('secret_hash').notNull(),
+    expiresAt: timestamp('expires_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
+    usedAt: timestamp('used_at', { withTimezone: true, mode: 'date' }),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
     // Única chave de busca no consumo do link.
-    uniqueIndex("uq_auth_tokens_secret_hash").on(table.secretHash),
+    uniqueIndex('uq_auth_tokens_secret_hash').on(table.secretHash),
     // Invalidação em lote dos tokens anteriores do mesmo propósito.
-    index("idx_auth_tokens_account_purpose").on(table.accountId, table.purpose),
+    index('idx_auth_tokens_account_purpose').on(table.accountId, table.purpose),
     // No máximo um token não-usado por conta+propósito: força emissões
     // concorrentes a serializar no índice (issue #50) em vez de deixar duas
     // linhas "não usadas" nascerem da mesma janela de corrida.
-    uniqueIndex("uq_auth_tokens_account_purpose_unused")
+    uniqueIndex('uq_auth_tokens_account_purpose_unused')
       .on(table.accountId, table.purpose)
       .where(sql`${table.usedAt} IS NULL`),
   ],
 );
 
-export const googleAccounts = pgTable("google_accounts", {
-  email: text("email").primaryKey(),
+export const googleAccounts = pgTable('google_accounts', {
+  email: text('email').primaryKey(),
   // Refresh token do OAuth cifrado com AES-256-GCM (chave derivada de AUTH_SECRET).
-  encryptedRefreshToken: text("encrypted_refresh_token").notNull(),
-  connectedAt: timestamp("connected_at", { withTimezone: true, mode: "date" }).notNull(),
+  encryptedRefreshToken: text('encrypted_refresh_token').notNull(),
+  connectedAt: timestamp('connected_at', {
+    withTimezone: true,
+    mode: 'date',
+  }).notNull(),
 });
 
 export const anamneses = pgTable(
-  "anamneses",
+  'anamneses',
   {
-    patientId: text("patient_id")
+    patientId: text('patient_id')
       .primaryKey()
       .references(() => patients.id),
-    clinicId: text("clinic_id")
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    comorbidities: text("comorbidities").notNull().default(""),
-    allergies: text("allergies").notNull().default(""),
-    medications: text("medications").notNull().default(""),
-    surgicalHistory: text("surgical_history").notNull().default(""),
-    notes: text("notes").notNull().default(""),
-    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull(),
+    comorbidities: text('comorbidities').notNull().default(''),
+    allergies: text('allergies').notNull().default(''),
+    medications: text('medications').notNull().default(''),
+    surgicalHistory: text('surgical_history').notNull().default(''),
+    notes: text('notes').notNull().default(''),
+    updatedAt: timestamp('updated_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
-  (table) => [index("idx_anamneses_clinic").on(table.clinicId)],
+  (table) => [index('idx_anamneses_clinic').on(table.clinicId)],
 );
 
 export const evolutionNotes = pgTable(
-  "evolution_notes",
+  'evolution_notes',
   {
-    id: text("id").primaryKey(),
-    clinicId: text("clinic_id")
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    patientId: text("patient_id")
+    patientId: text('patient_id')
       .notNull()
       .references(() => patients.id),
-    appointmentId: text("appointment_id"),
+    appointmentId: text('appointment_id'),
     // Autor da evolução (F9) — nullable, retrocompatível.
-    professionalId: text("professional_id").references(() => professionals.id),
-    subjective: text("subjective").notNull().default(""),
-    objective: text("objective").notNull().default(""),
-    assessment: text("assessment").notNull().default(""),
-    plan: text("plan").notNull().default(""),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    professionalId: text('professional_id').references(() => professionals.id),
+    subjective: text('subjective').notNull().default(''),
+    objective: text('objective').notNull().default(''),
+    assessment: text('assessment').notNull().default(''),
+    plan: text('plan').notNull().default(''),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
-    index("idx_evolution_notes_patient").on(table.patientId),
-    index("idx_evolution_notes_clinic").on(table.clinicId),
+    index('idx_evolution_notes_patient').on(table.patientId),
+    index('idx_evolution_notes_clinic').on(table.clinicId),
   ],
 );
 
 export const clinicalConditions = pgTable(
-  "clinical_conditions",
+  'clinical_conditions',
   {
-    id: text("id").primaryKey(),
-    clinicId: text("clinic_id")
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    patientId: text("patient_id")
+    patientId: text('patient_id')
       .notNull()
       .references(() => patients.id),
-    kind: text("kind").notNull(),
-    title: text("title").notNull(),
-    stomaType: text("stoma_type"),
-    startedAt: timestamp("started_at", { withTimezone: true, mode: "date" }),
-    notes: text("notes"),
-    status: text("status").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    kind: text('kind').notNull(),
+    title: text('title').notNull(),
+    stomaType: text('stoma_type'),
+    startedAt: timestamp('started_at', { withTimezone: true, mode: 'date' }),
+    notes: text('notes'),
+    status: text('status').notNull(),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
-    index("idx_clinical_conditions_patient").on(table.patientId),
-    index("idx_clinical_conditions_clinic").on(table.clinicId),
+    index('idx_clinical_conditions_patient').on(table.patientId),
+    index('idx_clinical_conditions_clinic').on(table.clinicId),
   ],
 );
 
 export const conditionAssessments = pgTable(
-  "condition_assessments",
+  'condition_assessments',
   {
-    id: text("id").primaryKey(),
-    clinicId: text("clinic_id")
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    conditionId: text("condition_id")
+    conditionId: text('condition_id')
       .notNull()
       .references(() => clinicalConditions.id),
-    lengthMm: integer("length_mm"),
-    widthMm: integer("width_mm"),
-    depthMm: integer("depth_mm"),
-    tissueType: text("tissue_type"),
-    exudate: text("exudate"),
-    painScale: integer("pain_scale"),
-    skinCondition: text("skin_condition"),
-    complications: text("complications"),
+    lengthMm: integer('length_mm'),
+    widthMm: integer('width_mm'),
+    depthMm: integer('depth_mm'),
+    tissueType: text('tissue_type'),
+    exudate: text('exudate'),
+    painScale: integer('pain_scale'),
+    skinCondition: text('skin_condition'),
+    complications: text('complications'),
     // Complicações canônicas (CSV de enum) — O2.2; texto livre legado preservado acima.
-    complicationCodes: text("complication_codes"),
+    complicationCodes: text('complication_codes'),
     // Escala DET (estomias): área 0–3 e severidade 0–2 por domínio — O2.2.
-    detDiscolorationArea: integer("det_discoloration_area"),
-    detDiscolorationSeverity: integer("det_discoloration_severity"),
-    detErosionArea: integer("det_erosion_area"),
-    detErosionSeverity: integer("det_erosion_severity"),
-    detOvergrowthArea: integer("det_overgrowth_area"),
-    detOvergrowthSeverity: integer("det_overgrowth_severity"),
-    notes: text("notes"),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    detDiscolorationArea: integer('det_discoloration_area'),
+    detDiscolorationSeverity: integer('det_discoloration_severity'),
+    detErosionArea: integer('det_erosion_area'),
+    detErosionSeverity: integer('det_erosion_severity'),
+    detOvergrowthArea: integer('det_overgrowth_area'),
+    detOvergrowthSeverity: integer('det_overgrowth_severity'),
+    notes: text('notes'),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
-    index("idx_condition_assessments_condition").on(table.conditionId),
-    index("idx_condition_assessments_clinic").on(table.clinicId),
+    index('idx_condition_assessments_condition').on(table.conditionId),
+    index('idx_condition_assessments_clinic').on(table.clinicId),
   ],
 );
 
 export const conditionPhotos = pgTable(
-  "condition_photos",
+  'condition_photos',
   {
-    id: text("id").primaryKey(),
-    clinicId: text("clinic_id")
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    conditionId: text("condition_id")
+    conditionId: text('condition_id')
       .notNull()
       .references(() => clinicalConditions.id),
-    assessmentId: text("assessment_id"),
-    contentType: text("content_type").notNull(),
-    sizeBytes: integer("size_bytes").notNull(),
+    assessmentId: text('assessment_id'),
+    contentType: text('content_type').notNull(),
+    sizeBytes: integer('size_bytes').notNull(),
     // Monitoramento remoto (O4.2): origem, observação do paciente e triagem.
-    origin: text("origin").notNull().default("staff"),
-    patientNote: text("patient_note"),
-    triageStatus: text("triage_status"),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    origin: text('origin').notNull().default('staff'),
+    patientNote: text('patient_note'),
+    triageStatus: text('triage_status'),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
-    index("idx_condition_photos_condition").on(table.conditionId),
-    index("idx_condition_photos_triage").on(table.triageStatus),
-    index("idx_condition_photos_clinic").on(table.clinicId),
+    index('idx_condition_photos_condition').on(table.conditionId),
+    index('idx_condition_photos_triage').on(table.triageStatus),
+    index('idx_condition_photos_clinic').on(table.clinicId),
   ],
 );
 
 export const consentRecords = pgTable(
-  "consent_records",
+  'consent_records',
   {
-    id: text("id").primaryKey(),
-    clinicId: text("clinic_id")
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    patientId: text("patient_id")
+    patientId: text('patient_id')
       .notNull()
       .references(() => patients.id),
-    kind: text("kind").notNull().default("accept"),
-    textHash: text("text_hash").notNull(),
-    textVersion: text("text_version"),
-    ipAddress: text("ip_address"),
-    acceptedAt: timestamp("accepted_at", { withTimezone: true, mode: "date" }).notNull(),
+    kind: text('kind').notNull().default('accept'),
+    textHash: text('text_hash').notNull(),
+    textVersion: text('text_version'),
+    ipAddress: text('ip_address'),
+    acceptedAt: timestamp('accepted_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
-    index("idx_consent_records_patient").on(table.patientId),
-    index("idx_consent_records_clinic").on(table.clinicId),
+    index('idx_consent_records_patient').on(table.patientId),
+    index('idx_consent_records_clinic').on(table.clinicId),
   ],
 );
 
 export const supplies = pgTable(
-  "supplies",
+  'supplies',
   {
-    id: text("id").primaryKey(),
-    clinicId: text("clinic_id")
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    name: text("name").notNull(),
-    unit: text("unit").notNull(),
-    minQty: integer("min_qty").notNull(),
-    priceCents: integer("price_cents").notNull(),
-    stockQty: integer("stock_qty").notNull().default(0),
-    active: boolean("active").notNull().default(true),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    name: text('name').notNull(),
+    unit: text('unit').notNull(),
+    minQty: integer('min_qty').notNull(),
+    priceCents: integer('price_cents').notNull(),
+    stockQty: integer('stock_qty').notNull().default(0),
+    active: boolean('active').notNull().default(true),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
-  (table) => [index("idx_supplies_clinic").on(table.clinicId)],
+  (table) => [index('idx_supplies_clinic').on(table.clinicId)],
 );
 
 export const supplyBatches = pgTable(
-  "supply_batches",
+  'supply_batches',
   {
-    id: text("id").primaryKey(),
-    clinicId: text("clinic_id")
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    supplyId: text("supply_id")
+    supplyId: text('supply_id')
       .notNull()
       .references(() => supplies.id),
-    label: text("label"),
-    expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }),
-    quantity: integer("quantity").notNull(),
-    remaining: integer("remaining").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    label: text('label'),
+    expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }),
+    quantity: integer('quantity').notNull(),
+    remaining: integer('remaining').notNull(),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
-    index("idx_supply_batches_supply").on(table.supplyId),
-    index("idx_supply_batches_expires_at").on(table.expiresAt),
-    index("idx_supply_batches_clinic").on(table.clinicId),
+    index('idx_supply_batches_supply').on(table.supplyId),
+    index('idx_supply_batches_expires_at').on(table.expiresAt),
+    index('idx_supply_batches_clinic').on(table.clinicId),
   ],
 );
 
 export const stockMovements = pgTable(
-  "stock_movements",
+  'stock_movements',
   {
-    id: text("id").primaryKey(),
-    clinicId: text("clinic_id")
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    supplyId: text("supply_id")
+    supplyId: text('supply_id')
       .notNull()
       .references(() => supplies.id),
-    type: text("type").notNull(),
-    quantity: integer("quantity").notNull(),
-    reason: text("reason").notNull(),
+    type: text('type').notNull(),
+    quantity: integer('quantity').notNull(),
+    reason: text('reason').notNull(),
     // Consulta atendida com este material (custo por atendimento).
-    appointmentId: text("appointment_id").references(() => appointments.id),
+    appointmentId: text('appointment_id').references(() => appointments.id),
     // Preço unitário congelado na saída — histórico imune a reajustes.
-    unitPriceCents: integer("unit_price_cents"),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    unitPriceCents: integer('unit_price_cents'),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
-    index("idx_stock_movements_supply").on(table.supplyId),
-    index("idx_stock_movements_appointment").on(table.appointmentId),
-    index("idx_stock_movements_created_at").on(table.createdAt),
-    index("idx_stock_movements_clinic").on(table.clinicId),
+    index('idx_stock_movements_supply').on(table.supplyId),
+    index('idx_stock_movements_appointment').on(table.appointmentId),
+    index('idx_stock_movements_created_at').on(table.createdAt),
+    index('idx_stock_movements_clinic').on(table.clinicId),
   ],
 );
 
 export const followUps = pgTable(
-  "follow_ups",
+  'follow_ups',
   {
-    id: text("id").primaryKey(),
-    clinicId: text("clinic_id")
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    patientId: text("patient_id")
+    patientId: text('patient_id')
       .notNull()
       .references(() => patients.id),
-    appointmentId: text("appointment_id"),
-    dueDate: timestamp("due_date", { withTimezone: true, mode: "date" }).notNull(),
-    reason: text("reason").notNull(),
-    status: text("status").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    appointmentId: text('appointment_id'),
+    dueDate: timestamp('due_date', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
+    reason: text('reason').notNull(),
+    status: text('status').notNull(),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
-    index("idx_follow_ups_status").on(table.status),
-    index("idx_follow_ups_due_date").on(table.dueDate),
-    index("idx_follow_ups_clinic").on(table.clinicId),
+    index('idx_follow_ups_status').on(table.status),
+    index('idx_follow_ups_due_date').on(table.dueDate),
+    index('idx_follow_ups_clinic').on(table.clinicId),
   ],
 );
 
 export const reminderLogs = pgTable(
-  "reminder_logs",
+  'reminder_logs',
   {
-    id: text("id").primaryKey(),
-    clinicId: text("clinic_id")
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    kind: text("kind").notNull(),
-    referenceId: text("reference_id").notNull(),
-    sentOn: text("sent_on").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    kind: text('kind').notNull(),
+    referenceId: text('reference_id').notNull(),
+    sentOn: text('sent_on').notNull(),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
     // Idempotência diária: um lembrete por (tipo, referência, dia). referenceId já é
     // um id de linha (uuid) globalmente único, então não precisa de clinic_id na chave.
-    uniqueIndex("uq_reminder_logs_daily").on(table.kind, table.referenceId, table.sentOn),
-    index("idx_reminder_logs_clinic").on(table.clinicId),
+    uniqueIndex('uq_reminder_logs_daily').on(
+      table.kind,
+      table.referenceId,
+      table.sentOn,
+    ),
+    index('idx_reminder_logs_clinic').on(table.clinicId),
   ],
 );
 
 export const auditEvents = pgTable(
-  "audit_events",
+  'audit_events',
   {
-    id: text("id").primaryKey(),
+    id: text('id').primaryKey(),
     // Empresa a que o evento pertence, ou empresa acessada em acesso cross-empresa
     // do papel de sistema — sempre concreto, resolvido em src/lib/audit.ts (MT-13, MT-29).
-    clinicId: text("clinic_id")
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    actorRole: text("actor_role").notNull(),
-    actorId: text("actor_id").notNull(),
-    action: text("action").notNull(),
-    resourceType: text("resource_type").notNull(),
-    resourceId: text("resource_id").notNull(),
-    patientId: text("patient_id"),
-    detail: text("detail"),
-    occurredAt: timestamp("occurred_at", { withTimezone: true, mode: "date" }).notNull(),
+    actorRole: text('actor_role').notNull(),
+    actorId: text('actor_id').notNull(),
+    action: text('action').notNull(),
+    resourceType: text('resource_type').notNull(),
+    resourceId: text('resource_id').notNull(),
+    patientId: text('patient_id'),
+    detail: text('detail'),
+    occurredAt: timestamp('occurred_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
-    index("idx_audit_events_patient").on(table.patientId),
-    index("idx_audit_events_occurred_at").on(table.occurredAt),
-    index("idx_audit_events_clinic").on(table.clinicId),
+    index('idx_audit_events_patient').on(table.patientId),
+    index('idx_audit_events_occurred_at').on(table.occurredAt),
+    index('idx_audit_events_clinic').on(table.clinicId),
   ],
 );
 
 export const sessionPackages = pgTable(
-  "session_packages",
+  'session_packages',
   {
-    id: text("id").primaryKey(),
-    clinicId: text("clinic_id")
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    patientId: text("patient_id")
+    patientId: text('patient_id')
       .notNull()
       .references(() => patients.id),
-    procedureId: text("procedure_id")
+    procedureId: text('procedure_id')
       .notNull()
       .references(() => procedures.id),
-    totalSessions: integer("total_sessions").notNull(),
-    usedSessions: integer("used_sessions").notNull().default(0),
-    priceCents: integer("price_cents").notNull(),
+    totalSessions: integer('total_sessions').notNull(),
+    usedSessions: integer('used_sessions').notNull().default(0),
+    priceCents: integer('price_cents').notNull(),
     // Validade opcional (COMP3-07) — null = sem validade (histórico preservado).
-    expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }),
-    active: boolean("active").notNull().default(true),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }),
+    active: boolean('active').notNull().default(true),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
-    index("idx_session_packages_patient").on(table.patientId),
-    index("idx_session_packages_clinic").on(table.clinicId),
+    index('idx_session_packages_patient').on(table.patientId),
+    index('idx_session_packages_clinic').on(table.clinicId),
   ],
 );
 
 export const packageConsumptions = pgTable(
-  "package_consumptions",
+  'package_consumptions',
   {
-    packageId: text("package_id")
+    packageId: text('package_id')
       .notNull()
       .references(() => sessionPackages.id),
-    clinicId: text("clinic_id")
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    appointmentId: text("appointment_id").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    appointmentId: text('appointment_id').notNull(),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
     // Uma consulta consome no máximo uma sessão (idempotência da conclusão reparadora).
-    uniqueIndex("uq_package_consumption_appointment").on(table.appointmentId),
-    index("idx_package_consumptions_clinic").on(table.clinicId),
+    uniqueIndex('uq_package_consumption_appointment').on(table.appointmentId),
+    index('idx_package_consumptions_clinic').on(table.clinicId),
   ],
 );
 
 export const invoices = pgTable(
-  "invoices",
+  'invoices',
   {
-    id: text("id").primaryKey(),
-    clinicId: text("clinic_id")
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    patientId: text("patient_id")
+    patientId: text('patient_id')
       .notNull()
       .references(() => patients.id),
-    appointmentId: text("appointment_id"),
-    description: text("description").notNull(),
-    amountCents: integer("amount_cents").notNull(),
-    status: text("status").notNull(),
-    issuedAt: timestamp("issued_at", { withTimezone: true, mode: "date" }).notNull(),
-    dueDate: timestamp("due_date", { withTimezone: true, mode: "date" }),
-    paidAt: timestamp("paid_at", { withTimezone: true, mode: "date" }),
-    paymentMethod: text("payment_method"),
+    appointmentId: text('appointment_id'),
+    description: text('description').notNull(),
+    amountCents: integer('amount_cents').notNull(),
+    status: text('status').notNull(),
+    issuedAt: timestamp('issued_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
+    dueDate: timestamp('due_date', { withTimezone: true, mode: 'date' }),
+    paidAt: timestamp('paid_at', { withTimezone: true, mode: 'date' }),
+    paymentMethod: text('payment_method'),
   },
   (table) => [
-    index("idx_invoices_status").on(table.status),
-    index("idx_invoices_issued_at").on(table.issuedAt),
+    index('idx_invoices_status').on(table.status),
+    index('idx_invoices_issued_at').on(table.issuedAt),
     // Portal do paciente e filtros por paciente.
-    index("idx_invoices_patient").on(table.patientId),
-    index("idx_invoices_clinic").on(table.clinicId),
+    index('idx_invoices_patient').on(table.patientId),
+    index('idx_invoices_clinic').on(table.clinicId),
   ],
 );
 
 // Catálogo de taxonomias de enfermagem (NANDA-I/NOC/NIC) — populado por importação
 // licenciada (scripts/import-taxonomy.ts), unicidade por (code, edition).
 export const nursingDiagnoses = pgTable(
-  "nursing_diagnoses",
+  'nursing_diagnoses',
   {
-    id: text("id").primaryKey(),
-    code: text("code").notNull(),
-    label: text("label").notNull(),
-    domain: text("domain").notNull(),
-    class: text("class").notNull(),
-    definition: text("definition"),
-    edition: text("edition").notNull(),
-    active: boolean("active").notNull().default(true),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    id: text('id').primaryKey(),
+    code: text('code').notNull(),
+    label: text('label').notNull(),
+    domain: text('domain').notNull(),
+    class: text('class').notNull(),
+    definition: text('definition'),
+    edition: text('edition').notNull(),
+    active: boolean('active').notNull().default(true),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
-    uniqueIndex("uq_nursing_diagnoses_code_edition").on(table.code, table.edition),
-    index("idx_nursing_diagnoses_label").on(table.label),
+    uniqueIndex('uq_nursing_diagnoses_code_edition').on(
+      table.code,
+      table.edition,
+    ),
+    index('idx_nursing_diagnoses_label').on(table.label),
   ],
 );
 
 export const nursingOutcomes = pgTable(
-  "nursing_outcomes",
+  'nursing_outcomes',
   {
-    id: text("id").primaryKey(),
-    code: text("code").notNull(),
-    label: text("label").notNull(),
-    domain: text("domain").notNull(),
-    class: text("class").notNull(),
-    edition: text("edition").notNull(),
+    id: text('id').primaryKey(),
+    code: text('code').notNull(),
+    label: text('label').notNull(),
+    domain: text('domain').notNull(),
+    class: text('class').notNull(),
+    edition: text('edition').notNull(),
     // Escala Likert 1–5 do resultado, âncoras 1→5 (ver NocScale).
-    scaleAnchor1: text("scale_anchor_1").notNull(),
-    scaleAnchor2: text("scale_anchor_2").notNull(),
-    scaleAnchor3: text("scale_anchor_3").notNull(),
-    scaleAnchor4: text("scale_anchor_4").notNull(),
-    scaleAnchor5: text("scale_anchor_5").notNull(),
-    active: boolean("active").notNull().default(true),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    scaleAnchor1: text('scale_anchor_1').notNull(),
+    scaleAnchor2: text('scale_anchor_2').notNull(),
+    scaleAnchor3: text('scale_anchor_3').notNull(),
+    scaleAnchor4: text('scale_anchor_4').notNull(),
+    scaleAnchor5: text('scale_anchor_5').notNull(),
+    active: boolean('active').notNull().default(true),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
-    uniqueIndex("uq_nursing_outcomes_code_edition").on(table.code, table.edition),
-    index("idx_nursing_outcomes_label").on(table.label),
+    uniqueIndex('uq_nursing_outcomes_code_edition').on(
+      table.code,
+      table.edition,
+    ),
+    index('idx_nursing_outcomes_label').on(table.label),
   ],
 );
 
 export const nursingInterventions = pgTable(
-  "nursing_interventions",
+  'nursing_interventions',
   {
-    id: text("id").primaryKey(),
-    code: text("code").notNull(),
-    label: text("label").notNull(),
-    domain: text("domain").notNull(),
-    class: text("class").notNull(),
-    edition: text("edition").notNull(),
-    active: boolean("active").notNull().default(true),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    id: text('id').primaryKey(),
+    code: text('code').notNull(),
+    label: text('label').notNull(),
+    domain: text('domain').notNull(),
+    class: text('class').notNull(),
+    edition: text('edition').notNull(),
+    active: boolean('active').notNull().default(true),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
-    uniqueIndex("uq_nursing_interventions_code_edition").on(table.code, table.edition),
-    index("idx_nursing_interventions_label").on(table.label),
+    uniqueIndex('uq_nursing_interventions_code_edition').on(
+      table.code,
+      table.edition,
+    ),
+    index('idx_nursing_interventions_label').on(table.label),
   ],
 );
 
 // Ligações sugeridas NANDA→NOC/NIC — priorizam o subset curado na busca, não restringem.
 export const taxonomyLinkages = pgTable(
-  "taxonomy_linkages",
+  'taxonomy_linkages',
   {
-    diagnosisCode: text("diagnosis_code").notNull(),
-    role: text("role").notNull(),
-    targetCode: text("target_code").notNull(),
+    diagnosisCode: text('diagnosis_code').notNull(),
+    role: text('role').notNull(),
+    targetCode: text('target_code').notNull(),
   },
   (table) => [
-    primaryKey({ columns: [table.diagnosisCode, table.role, table.targetCode] }),
-    index("idx_taxonomy_linkages_diagnosis").on(table.diagnosisCode),
+    primaryKey({
+      columns: [table.diagnosisCode, table.role, table.targetCode],
+    }),
+    index('idx_taxonomy_linkages_diagnosis').on(table.diagnosisCode),
   ],
 );
 
 // Plano de cuidados (SAE) — raiz do agregado diagnóstico→resultado→intervenção.
 export const carePlans = pgTable(
-  "care_plans",
+  'care_plans',
   {
-    id: text("id").primaryKey(),
-    clinicId: text("clinic_id")
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    patientId: text("patient_id")
+    patientId: text('patient_id')
       .notNull()
       .references(() => patients.id),
-    conditionId: text("condition_id").references(() => clinicalConditions.id),
-    professionalId: text("professional_id").references(() => professionals.id),
-    status: text("status").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    conditionId: text('condition_id').references(() => clinicalConditions.id),
+    professionalId: text('professional_id').references(() => professionals.id),
+    status: text('status').notNull(),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
-    index("idx_care_plans_patient").on(table.patientId),
-    index("idx_care_plans_condition").on(table.conditionId),
-    index("idx_care_plans_clinic").on(table.clinicId),
+    index('idx_care_plans_patient').on(table.patientId),
+    index('idx_care_plans_condition').on(table.conditionId),
+    index('idx_care_plans_clinic').on(table.clinicId),
   ],
 );
 
 export const carePlanDiagnoses = pgTable(
-  "care_plan_diagnoses",
+  'care_plan_diagnoses',
   {
-    id: text("id").primaryKey(),
-    clinicId: text("clinic_id")
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    carePlanId: text("care_plan_id")
+    carePlanId: text('care_plan_id')
       .notNull()
       .references(() => carePlans.id),
-    diagnosisCode: text("diagnosis_code").notNull(),
-    type: text("type").notNull(),
+    diagnosisCode: text('diagnosis_code').notNull(),
+    type: text('type').notNull(),
     // Etiologia ("relacionado a").
-    relatedFactors: text("related_factors"),
+    relatedFactors: text('related_factors'),
     // Sinais/sintomas ("evidenciado por") — ausente em diagnóstico de risco.
-    definingCharacteristics: text("defining_characteristics"),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    definingCharacteristics: text('defining_characteristics'),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
-    index("idx_care_plan_diagnoses_plan").on(table.carePlanId),
-    index("idx_care_plan_diagnoses_clinic").on(table.clinicId),
+    index('idx_care_plan_diagnoses_plan').on(table.carePlanId),
+    index('idx_care_plan_diagnoses_clinic').on(table.clinicId),
   ],
 );
 
 export const carePlanOutcomes = pgTable(
-  "care_plan_outcomes",
+  'care_plan_outcomes',
   {
-    id: text("id").primaryKey(),
-    clinicId: text("clinic_id")
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    carePlanId: text("care_plan_id")
+    carePlanId: text('care_plan_id')
       .notNull()
       .references(() => carePlans.id),
-    outcomeCode: text("outcome_code").notNull(),
-    baselineScore: integer("baseline_score").notNull(),
-    targetScore: integer("target_score").notNull(),
-    deadline: timestamp("deadline", { withTimezone: true, mode: "date" }),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    outcomeCode: text('outcome_code').notNull(),
+    baselineScore: integer('baseline_score').notNull(),
+    targetScore: integer('target_score').notNull(),
+    deadline: timestamp('deadline', { withTimezone: true, mode: 'date' }),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
-    index("idx_care_plan_outcomes_plan").on(table.carePlanId),
-    check("chk_care_plan_outcomes_baseline_score", sql`${table.baselineScore} BETWEEN 1 AND 5`),
-    check("chk_care_plan_outcomes_target_score", sql`${table.targetScore} BETWEEN 1 AND 5`),
-    index("idx_care_plan_outcomes_clinic").on(table.clinicId),
+    index('idx_care_plan_outcomes_plan').on(table.carePlanId),
+    check(
+      'chk_care_plan_outcomes_baseline_score',
+      sql`${table.baselineScore} BETWEEN 1 AND 5`,
+    ),
+    check(
+      'chk_care_plan_outcomes_target_score',
+      sql`${table.targetScore} BETWEEN 1 AND 5`,
+    ),
+    index('idx_care_plan_outcomes_clinic').on(table.clinicId),
   ],
 );
 
 export const carePlanInterventions = pgTable(
-  "care_plan_interventions",
+  'care_plan_interventions',
   {
-    id: text("id").primaryKey(),
-    clinicId: text("clinic_id")
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    carePlanId: text("care_plan_id")
+    carePlanId: text('care_plan_id')
       .notNull()
       .references(() => carePlans.id),
-    interventionCode: text("intervention_code").notNull(),
-    frequency: text("frequency").notNull(),
-    priority: text("priority").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    interventionCode: text('intervention_code').notNull(),
+    frequency: text('frequency').notNull(),
+    priority: text('priority').notNull(),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
-    index("idx_care_plan_interventions_plan").on(table.carePlanId),
-    index("idx_care_plan_interventions_clinic").on(table.clinicId),
+    index('idx_care_plan_interventions_plan').on(table.carePlanId),
+    index('idx_care_plan_interventions_clinic').on(table.clinicId),
   ],
 );
 
 // Reavaliação de resultado NOC — append-only (integridade de prontuário).
 export const outcomeEvaluations = pgTable(
-  "outcome_evaluations",
+  'outcome_evaluations',
   {
-    id: text("id").primaryKey(),
-    clinicId: text("clinic_id")
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    outcomeId: text("outcome_id")
+    outcomeId: text('outcome_id')
       .notNull()
       .references(() => carePlanOutcomes.id),
-    score: integer("score").notNull(),
-    professionalId: text("professional_id").references(() => professionals.id),
-    notes: text("notes"),
-    evaluatedAt: timestamp("evaluated_at", { withTimezone: true, mode: "date" }).notNull(),
+    score: integer('score').notNull(),
+    professionalId: text('professional_id').references(() => professionals.id),
+    notes: text('notes'),
+    evaluatedAt: timestamp('evaluated_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
-    index("idx_outcome_evaluations_outcome").on(table.outcomeId),
-    check("chk_outcome_evaluations_score", sql`${table.score} BETWEEN 1 AND 5`),
-    index("idx_outcome_evaluations_clinic").on(table.clinicId),
+    index('idx_outcome_evaluations_outcome').on(table.outcomeId),
+    check('chk_outcome_evaluations_score', sql`${table.score} BETWEEN 1 AND 5`),
+    index('idx_outcome_evaluations_clinic').on(table.clinicId),
   ],
 );
 
 // Execução de intervenção NIC prescrita — append-only.
 export const interventionRecords = pgTable(
-  "intervention_records",
+  'intervention_records',
   {
-    id: text("id").primaryKey(),
-    clinicId: text("clinic_id")
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    interventionId: text("intervention_id")
+    interventionId: text('intervention_id')
       .notNull()
       .references(() => carePlanInterventions.id),
-    professionalId: text("professional_id").references(() => professionals.id),
-    notes: text("notes"),
-    performedAt: timestamp("performed_at", { withTimezone: true, mode: "date" }).notNull(),
+    professionalId: text('professional_id').references(() => professionals.id),
+    notes: text('notes'),
+    performedAt: timestamp('performed_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
-    index("idx_intervention_records_intervention").on(table.interventionId),
-    index("idx_intervention_records_clinic").on(table.clinicId),
+    index('idx_intervention_records_intervention').on(table.interventionId),
+    index('idx_intervention_records_clinic').on(table.clinicId),
   ],
 );
 
@@ -835,23 +990,31 @@ export const interventionRecords = pgTable(
  * agendamento ou de nota de evolução com esse profissional.
  */
 export const professionalPatientLinks = pgTable(
-  "professional_patient_links",
+  'professional_patient_links',
   {
-    id: text("id").primaryKey(),
-    clinicId: text("clinic_id")
+    id: text('id').primaryKey(),
+    clinicId: text('clinic_id')
       .notNull()
       .references(() => clinics.id),
-    professionalId: text("professional_id")
+    professionalId: text('professional_id')
       .notNull()
       .references(() => professionals.id),
-    patientId: text("patient_id")
+    patientId: text('patient_id')
       .notNull()
       .references(() => patients.id),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
   },
   (table) => [
-    uniqueIndex("uq_professional_patient_links").on(table.professionalId, table.patientId),
-    index("idx_professional_patient_links_professional").on(table.professionalId),
-    index("idx_professional_patient_links_clinic").on(table.clinicId),
+    uniqueIndex('uq_professional_patient_links').on(
+      table.professionalId,
+      table.patientId,
+    ),
+    index('idx_professional_patient_links_professional').on(
+      table.professionalId,
+    ),
+    index('idx_professional_patient_links_clinic').on(table.clinicId),
   ],
 );

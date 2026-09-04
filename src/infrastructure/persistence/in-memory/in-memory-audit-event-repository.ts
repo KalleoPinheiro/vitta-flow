@@ -1,15 +1,17 @@
-import type { AuditEvent } from "@/domain/audit/audit-event";
+import type { AuditEvent } from '@/domain/audit/audit-event';
 import type {
   AuditEventFilter,
   AuditEventPage,
   AuditEventRepository,
-} from "@/domain/audit/audit-event-repository";
+} from '@/domain/audit/audit-event-repository';
 
 function violatesFilter(event: AuditEvent, filter: AuditEventFilter): boolean {
   const checks: boolean[] = [
     Boolean(filter.patientId) && event.patientId !== filter.patientId,
-    Boolean(filter.from) && event.occurredAt.getTime() < (filter.from as Date).getTime(),
-    Boolean(filter.to) && event.occurredAt.getTime() >= (filter.to as Date).getTime(),
+    Boolean(filter.from) &&
+      event.occurredAt.getTime() < (filter.from as Date).getTime(),
+    Boolean(filter.to) &&
+      event.occurredAt.getTime() >= (filter.to as Date).getTime(),
     Boolean(filter.resourceType) && event.resourceType !== filter.resourceType,
     Boolean(filter.resourceId) && event.resourceId !== filter.resourceId,
   ];

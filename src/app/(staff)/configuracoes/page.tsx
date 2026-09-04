@@ -1,14 +1,5 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useToast } from "@still-void/ui/react/client";
-import { apiFetch } from "@/lib/client";
-import type { ClinicInfoDto, ProfessionalDto, UserAccountDto } from "@/lib/dto";
-import { useApiQuery } from "@/lib/use-api-query";
-import { Modal } from "@/components/modal";
-import { ConfirmAction } from "@/components/confirm-action";
-import { StatusBadge } from "@/components/status-badge";
-import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import {
   Alert,
   AlertDescription,
@@ -22,28 +13,46 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@still-void/ui/react";
+} from '@still-void/ui/react';
+import { useToast } from '@still-void/ui/react/client';
+import { useState } from 'react';
+import { ConfirmAction } from '@/components/confirm-action';
+import {
+  EmptyState,
+  ErrorAlert,
+  LoadingIndicator,
+} from '@/components/feedback';
+import { Modal } from '@/components/modal';
+import { StatusBadge } from '@/components/status-badge';
+import { apiFetch } from '@/lib/client';
+import type { ClinicInfoDto, ProfessionalDto, UserAccountDto } from '@/lib/dto';
+import { useApiQuery } from '@/lib/use-api-query';
 
 // Papéis que uma conta Admin de Empresa pode cadastrar (PROVISIONING_MATRIX.company_admin,
 // src/domain/auth/role-hierarchy.ts) — super_admin fica fora desta tela por design.
-type AccountRole = "company_admin" | "atendente" | "profissional" | "patient" | "partner";
+type AccountRole =
+  | 'company_admin'
+  | 'atendente'
+  | 'profissional'
+  | 'patient'
+  | 'partner';
 
 const ACCOUNT_ROLE_OPTIONS: { value: AccountRole; label: string }[] = [
-  { value: "company_admin", label: "Admin de Empresa" },
-  { value: "atendente", label: "Atendente" },
-  { value: "profissional", label: "Profissional" },
-  { value: "patient", label: "Paciente" },
-  { value: "partner", label: "Parceiro" },
+  { value: 'company_admin', label: 'Admin de Empresa' },
+  { value: 'atendente', label: 'Atendente' },
+  { value: 'profissional', label: 'Profissional' },
+  { value: 'patient', label: 'Paciente' },
+  { value: 'partner', label: 'Parceiro' },
 ];
 
 const WEEKDAYS = [
-  { value: 0, label: "Dom" },
-  { value: 1, label: "Seg" },
-  { value: 2, label: "Ter" },
-  { value: 3, label: "Qua" },
-  { value: 4, label: "Qui" },
-  { value: 5, label: "Sex" },
-  { value: 6, label: "Sáb" },
+  { value: 0, label: 'Dom' },
+  { value: 1, label: 'Seg' },
+  { value: 2, label: 'Ter' },
+  { value: 3, label: 'Qua' },
+  { value: 4, label: 'Qui' },
+  { value: 5, label: 'Sex' },
+  { value: 6, label: 'Sáb' },
 ];
 
 interface ScheduleConfigDto {
@@ -56,7 +65,7 @@ interface ScheduleConfigDto {
 export default function SettingsPage() {
   return (
     <div className="flex flex-col gap-8">
-      <h1 className="sv-display text-2xl font-bold">Configurações</h1>
+      <h1 className="sv-display font-bold text-2xl">Configurações</h1>
       <ClinicInfoSection />
       <ScheduleSection />
       <CalendarIntegrationSection />
@@ -67,13 +76,25 @@ export default function SettingsPage() {
 
 type ClinicInfoDraft = ClinicInfoDto;
 
-const CLINIC_INFO_FIELDS: { key: keyof ClinicInfoDraft; label: string; placeholder: string }[] = [
-  { key: "name", label: "Razão social", placeholder: "Nome da clínica" },
-  { key: "cnpj", label: "CNPJ", placeholder: "00.000.000/0001-00" },
-  { key: "professionalName", label: "Responsável técnico", placeholder: "Nome completo" },
-  { key: "professionalRegistry", label: "Registro profissional", placeholder: "COREN-SP 000000" },
-  { key: "address", label: "Endereço", placeholder: "Rua, número, bairro" },
-  { key: "city", label: "Cidade", placeholder: "Cidade/UF" },
+const CLINIC_INFO_FIELDS: {
+  key: keyof ClinicInfoDraft;
+  label: string;
+  placeholder: string;
+}[] = [
+  { key: 'name', label: 'Razão social', placeholder: 'Nome da clínica' },
+  { key: 'cnpj', label: 'CNPJ', placeholder: '00.000.000/0001-00' },
+  {
+    key: 'professionalName',
+    label: 'Responsável técnico',
+    placeholder: 'Nome completo',
+  },
+  {
+    key: 'professionalRegistry',
+    label: 'Registro profissional',
+    placeholder: 'COREN-SP 000000',
+  },
+  { key: 'address', label: 'Endereço', placeholder: 'Rua, número, bairro' },
+  { key: 'city', label: 'Cidade', placeholder: 'Cidade/UF' },
 ];
 
 /**
@@ -83,7 +104,9 @@ const CLINIC_INFO_FIELDS: { key: keyof ClinicInfoDraft; label: string; placehold
  */
 function ClinicInfoSection() {
   const { toast } = useToast();
-  const { data, error } = useApiQuery<{ info: ClinicInfoDto }>("/api/settings/clinic-info");
+  const { data, error } = useApiQuery<{ info: ClinicInfoDto }>(
+    '/api/settings/clinic-info',
+  );
   const [edits, setEdits] = useState<ClinicInfoDraft | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -95,39 +118,50 @@ function ClinicInfoSection() {
   const save = async () => {
     setSaveError(null);
     try {
-      await apiFetch("/api/settings/clinic-info", { method: "PUT", body: JSON.stringify(draft) });
-      toast({ description: "Dados da clínica salvos", variant: "success" });
+      await apiFetch('/api/settings/clinic-info', {
+        method: 'PUT',
+        body: JSON.stringify(draft),
+      });
+      toast({ description: 'Dados da clínica salvos', variant: 'success' });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Erro ao salvar dados da clínica";
+      const message =
+        err instanceof Error ? err.message : 'Erro ao salvar dados da clínica';
       setSaveError(message);
-      toast({ description: message, variant: "danger" });
+      toast({ description: message, variant: 'danger' });
     }
   };
 
   return (
     <Card as="section" className="p-5">
-      <h2 className="mb-1 text-lg font-semibold">Dados da clínica</h2>
-      <p className="mb-4 text-sm text-ink-3">
-        Razão social, CNPJ e responsável técnico aparecem em todo documento clínico emitido
-        (atestado, relatório, plano de cuidados).
+      <h2 className="mb-1 font-semibold text-lg">Dados da clínica</h2>
+      <p className="mb-4 text-ink-3 text-sm">
+        Razão social, CNPJ e responsável técnico aparecem em todo documento
+        clínico emitido (atestado, relatório, plano de cuidados).
       </p>
       {saveError && <ErrorAlert message={saveError} />}
 
       <div className="grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-2">
         {CLINIC_INFO_FIELDS.map((field) => (
-          <label key={field.key} className="text-sm font-medium">
+          <label key={field.key} className="font-medium text-sm">
             {field.label}
             <Input
-              value={draft[field.key] ?? ""}
+              value={draft[field.key] ?? ''}
               placeholder={field.placeholder}
-              onChange={(e) => setEdits({ ...draft, [field.key]: e.target.value })}
+              onChange={(e) =>
+                setEdits({ ...draft, [field.key]: e.target.value })
+              }
               className="mt-1"
             />
           </label>
         ))}
       </div>
 
-      <Button type="button" onClick={() => void save()} variant="accent" className="mt-4">
+      <Button
+        type="button"
+        onClick={() => void save()}
+        variant="accent"
+        className="mt-4"
+      >
         Salvar dados da clínica
       </Button>
     </Card>
@@ -136,19 +170,20 @@ function ClinicInfoSection() {
 
 function validateScheduleDraft(draft: ScheduleConfigDto): string | null {
   if (draft.startHour >= draft.endHour) {
-    return "Horário de abertura deve ser antes do fechamento";
+    return 'Horário de abertura deve ser antes do fechamento';
   }
   if (draft.minGapMinutes < 15 || draft.minGapMinutes > 120) {
-    return "Intervalo mínimo deve estar entre 15 e 120 minutos";
+    return 'Intervalo mínimo deve estar entre 15 e 120 minutos';
   }
   return null;
 }
 
 function ScheduleSection() {
   const { toast } = useToast();
-  const { data, error, refresh } = useApiQuery<{ config: ScheduleConfigDto; isDefault: boolean }>(
-    "/api/settings/schedule",
-  );
+  const { data, error, refresh } = useApiQuery<{
+    config: ScheduleConfigDto;
+    isDefault: boolean;
+  }>('/api/settings/schedule');
   const [edits, setEdits] = useState<ScheduleConfigDto | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -158,8 +193,10 @@ function ScheduleSection() {
   // Sem edição local, exibe o que veio do servidor — nada de setState em effect.
   const draft = edits ?? data.config;
   const setDraft = (
-    update: ScheduleConfigDto | ((prev: ScheduleConfigDto | null) => ScheduleConfigDto | null),
-  ) => setEdits(typeof update === "function" ? update(draft) : update);
+    update:
+      | ScheduleConfigDto
+      | ((prev: ScheduleConfigDto | null) => ScheduleConfigDto | null),
+  ) => setEdits(typeof update === 'function' ? update(draft) : update);
 
   const toggleDay = (day: number) =>
     setDraft((prev) =>
@@ -181,25 +218,30 @@ function ScheduleSection() {
     }
     setSaveError(null);
     try {
-      await apiFetch("/api/settings/schedule", { method: "PUT", body: JSON.stringify(draft) });
+      await apiFetch('/api/settings/schedule', {
+        method: 'PUT',
+        body: JSON.stringify(draft),
+      });
       refresh();
       toast({
-        description: "Grade salva — vale imediatamente para novos agendamentos.",
-        variant: "success",
+        description:
+          'Grade salva — vale imediatamente para novos agendamentos.',
+        variant: 'success',
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Erro ao salvar grade";
+      const message =
+        err instanceof Error ? err.message : 'Erro ao salvar grade';
       setSaveError(message);
-      toast({ description: message, variant: "danger" });
+      toast({ description: message, variant: 'danger' });
     }
   };
 
   return (
     <Card as="section" className="p-5">
-      <h2 className="mb-1 text-lg font-semibold">Grade de horários</h2>
-      <p className="mb-4 text-sm text-ink-3">
+      <h2 className="mb-1 font-semibold text-lg">Grade de horários</h2>
+      <p className="mb-4 text-ink-3 text-sm">
         Define dias e janela de atendimento usados na validação da agenda.
-        {data.isDefault && " (usando padrão — nada salvo ainda)"}
+        {data.isDefault && ' (usando padrão — nada salvo ainda)'}
       </p>
       {saveError && <ErrorAlert message={saveError} />}
 
@@ -210,7 +252,7 @@ function ScheduleSection() {
             type="button"
             onClick={() => toggleDay(day.value)}
             size="sm"
-            variant={draft.weekdays.includes(day.value) ? "accent" : "outline"}
+            variant={draft.weekdays.includes(day.value) ? 'accent' : 'outline'}
             aria-pressed={draft.weekdays.includes(day.value)}
             className="rounded-full"
           >
@@ -220,36 +262,42 @@ function ScheduleSection() {
       </div>
 
       <div className="grid max-w-md grid-cols-3 gap-3">
-        <label className="text-sm font-medium">
+        <label className="font-medium text-sm">
           Abre (h)
           <Input
             type="number"
             min="0"
             max="23"
             value={draft.startHour}
-            onChange={(e) => setDraft({ ...draft, startHour: Number(e.target.value) })}
+            onChange={(e) =>
+              setDraft({ ...draft, startHour: Number(e.target.value) })
+            }
             className="mt-1"
           />
         </label>
-        <label className="text-sm font-medium">
+        <label className="font-medium text-sm">
           Fecha (h)
           <Input
             type="number"
             min="1"
             max="24"
             value={draft.endHour}
-            onChange={(e) => setDraft({ ...draft, endHour: Number(e.target.value) })}
+            onChange={(e) =>
+              setDraft({ ...draft, endHour: Number(e.target.value) })
+            }
             className="mt-1"
           />
         </label>
-        <label className="text-sm font-medium">
+        <label className="font-medium text-sm">
           Intervalo (min)
           <Input
             type="number"
             min="15"
             max="120"
             value={draft.minGapMinutes}
-            onChange={(e) => setDraft({ ...draft, minGapMinutes: Number(e.target.value) })}
+            onChange={(e) =>
+              setDraft({ ...draft, minGapMinutes: Number(e.target.value) })
+            }
             className="mt-1"
           />
         </label>
@@ -276,14 +324,14 @@ function ScheduleSection() {
 function CalendarIntegrationSection() {
   return (
     <Card as="section" className="p-5">
-      <h2 className="text-lg font-semibold">Google Agenda</h2>
-      <p className="mb-4 mt-1 text-sm text-ink-3">
-        Conecte a agenda do Google da clínica para sincronizar os agendamentos. A conexão é
-        independente do login — sua sessão continua a mesma.
+      <h2 className="font-semibold text-lg">Google Agenda</h2>
+      <p className="mt-1 mb-4 text-ink-3 text-sm">
+        Conecte a agenda do Google da clínica para sincronizar os agendamentos.
+        A conexão é independente do login — sua sessão continua a mesma.
       </p>
       <a
         href="/api/integrations/google-calendar"
-        className="text-sm text-accent-ink hover:underline"
+        className="text-accent-ink text-sm hover:underline"
       >
         Conectar Google Agenda
       </a>
@@ -293,32 +341,38 @@ function CalendarIntegrationSection() {
 
 function AccountsSection() {
   const { toast } = useToast();
-  const { data: accounts, error, refresh } = useApiQuery<UserAccountDto[]>("/api/accounts");
-  const { data: professionals } = useApiQuery<ProfessionalDto[]>("/api/professionals");
+  const {
+    data: accounts,
+    error,
+    refresh,
+  } = useApiQuery<UserAccountDto[]>('/api/accounts');
+  const { data: professionals } =
+    useApiQuery<ProfessionalDto[]>('/api/professionals');
   const [creating, setCreating] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [undelivered, setUndelivered] = useState<string | null>(null);
 
   const professionalName = (id: string | null) =>
-    (professionals ?? []).find((p) => p.id === id)?.fullName ?? "—";
+    (professionals ?? []).find((p) => p.id === id)?.fullName ?? '—';
 
   const toggleActive = async (account: UserAccountDto) => {
     try {
       await apiFetch(`/api/accounts/${account.id}`, {
-        method: "PATCH",
+        method: 'PATCH',
         body: JSON.stringify({ active: !account.active }),
       });
       setActionError(null);
       toast({
-        description: account.active ? "Conta desativada" : "Conta reativada",
-        variant: "success",
+        description: account.active ? 'Conta desativada' : 'Conta reativada',
+        variant: 'success',
       });
       refresh();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Erro ao atualizar conta";
+      const message =
+        err instanceof Error ? err.message : 'Erro ao atualizar conta';
       setActionError(message);
-      toast({ description: message, variant: "danger" });
+      toast({ description: message, variant: 'danger' });
     }
   };
 
@@ -326,7 +380,7 @@ function AccountsSection() {
     try {
       const result = await apiFetch<{ delivered: boolean }>(
         `/api/accounts/${account.id}/resend-invite`,
-        { method: "POST" },
+        { method: 'POST' },
       );
       setActionError(null);
       if (result.delivered && account.email === undelivered) {
@@ -336,19 +390,23 @@ function AccountsSection() {
         ? `Convite reenviado para ${account.email}.`
         : `Não foi possível enviar o e-mail para ${account.email} — tente novamente mais tarde.`;
       setActionNotice(notice);
-      toast({ description: notice, variant: result.delivered ? "success" : "danger" });
+      toast({
+        description: notice,
+        variant: result.delivered ? 'success' : 'danger',
+      });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Erro ao reenviar convite";
+      const message =
+        err instanceof Error ? err.message : 'Erro ao reenviar convite';
       setActionNotice(null);
       setActionError(message);
-      toast({ description: message, variant: "danger" });
+      toast({ description: message, variant: 'danger' });
     }
   };
 
   return (
     <Card as="section" className="p-5">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Contas de acesso da equipe</h2>
+        <h2 className="font-semibold text-lg">Contas de acesso da equipe</h2>
         <Button
           type="button"
           onClick={() => setCreating(true)}
@@ -357,9 +415,9 @@ function AccountsSection() {
           + Nova conta
         </Button>
       </div>
-      <p className="mb-4 text-sm text-ink-3">
-        Cada pessoa com sua senha: auditoria identifica quem acessou o prontuário e a
-        evolução assume o autor automaticamente.
+      <p className="mb-4 text-ink-3 text-sm">
+        Cada pessoa com sua senha: auditoria identifica quem acessou o
+        prontuário e a evolução assume o autor automaticamente.
       </p>
       <AccountAlerts
         error={error}
@@ -383,7 +441,7 @@ function AccountsSection() {
               setCreating(false);
               setUndelivered(delivered ? null : email);
               setActionNotice(null);
-              toast({ description: "Conta criada", variant: "success" });
+              toast({ description: 'Conta criada', variant: 'success' });
               refresh();
             }}
           />
@@ -416,8 +474,8 @@ function AccountAlerts({
       {undelivered && (
         <Alert variant="warning" className="mb-4">
           <AlertDescription>
-            Conta criada, mas o convite não foi enviado para {undelivered} — reenvie pela
-            tabela abaixo.
+            Conta criada, mas o convite não foi enviado para {undelivered} —
+            reenvie pela tabela abaixo.
           </AlertDescription>
         </Alert>
       )}
@@ -437,7 +495,8 @@ function AccountsTable({
   onResendInvite: (account: UserAccountDto) => void;
 }) {
   if (!accounts) return <LoadingIndicator />;
-  if (accounts.length === 0) return <EmptyState message="Nenhuma conta cadastrada nesta empresa." />;
+  if (accounts.length === 0)
+    return <EmptyState message="Nenhuma conta cadastrada nesta empresa." />;
 
   return (
     <div className="overflow-x-auto">
@@ -478,13 +537,13 @@ function AccountRow({
   onResendInvite: () => void;
 }) {
   return (
-    <TableRow className={account.active ? "" : "bg-surface-2/60"}>
+    <TableRow className={account.active ? '' : 'bg-surface-2/60'}>
       <TableCell className="py-2 pr-3 font-medium">{account.email}</TableCell>
       <TableCell className="py-2 pr-3 text-ink-2">{professionalName}</TableCell>
       <TableCell className="py-2 pr-3">
         <StatusBadge
-          status={account.active ? "confirmed" : "cancelled"}
-          label={account.active ? "Ativa" : "Desativada"}
+          status={account.active ? 'confirmed' : 'cancelled'}
+          label={account.active ? 'Ativa' : 'Desativada'}
         />
       </TableCell>
       <TableCell className="py-2 text-right">
@@ -501,7 +560,11 @@ function AccountRow({
         {account.active ? (
           <ConfirmAction
             trigger={
-              <Button type="button" variant="link" className="h-auto p-0 text-ink-3">
+              <Button
+                type="button"
+                variant="link"
+                className="h-auto p-0 text-ink-3"
+              >
                 Desativar
               </Button>
             }
@@ -512,7 +575,12 @@ function AccountRow({
             onConfirm={onToggleActive}
           />
         ) : (
-          <Button type="button" onClick={onToggleActive} variant="link" className="h-auto p-0 text-ink-3">
+          <Button
+            type="button"
+            onClick={onToggleActive}
+            variant="link"
+            className="h-auto p-0 text-ink-3"
+          >
             Reativar
           </Button>
         )}
@@ -529,36 +597,40 @@ function AccountForm({
   onSaved: (created: { email: string; delivered: boolean }) => void;
 }) {
   const { toast } = useToast();
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<AccountRole>("company_admin");
-  const [professionalId, setProfessionalId] = useState("");
+  const [email, setEmail] = useState('');
+  const [role, setRole] = useState<AccountRole>('company_admin');
+  const [professionalId, setProfessionalId] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const requiresProfessional = role === "profissional";
+  const requiresProfessional = role === 'profissional';
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (requiresProfessional && !professionalId) {
-      setError("Selecione o profissional vinculado a esta conta");
+      setError('Selecione o profissional vinculado a esta conta');
       return;
     }
     setSaving(true);
     setError(null);
     try {
-      const created = await apiFetch<UserAccountDto & { delivered: boolean }>("/api/accounts", {
-        method: "POST",
-        body: JSON.stringify({
-          email,
-          role,
-          professionalId: professionalId || null,
-        }),
-      });
+      const created = await apiFetch<UserAccountDto & { delivered: boolean }>(
+        '/api/accounts',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            email,
+            role,
+            professionalId: professionalId || null,
+          }),
+        },
+      );
       onSaved({ email: created.email, delivered: created.delivered });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Erro ao criar conta";
+      const message =
+        err instanceof Error ? err.message : 'Erro ao criar conta';
       setError(message);
-      toast({ description: message, variant: "danger" });
+      toast({ description: message, variant: 'danger' });
     } finally {
       setSaving(false);
     }
@@ -567,7 +639,7 @@ function AccountForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       {error && <ErrorAlert message={error} />}
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Email *
         <Input
           required
@@ -577,11 +649,11 @@ function AccountForm({
           className="mt-1"
         />
       </label>
-      <p className="text-sm text-ink-3">
-        A pessoa recebe um e-mail de convite e define a própria senha — ninguém digita
-        senha por ela.
+      <p className="text-ink-3 text-sm">
+        A pessoa recebe um e-mail de convite e define a própria senha — ninguém
+        digita senha por ela.
       </p>
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Papel *
         <NativeSelect
           value={role}
@@ -595,8 +667,8 @@ function AccountForm({
           ))}
         </NativeSelect>
       </label>
-      <label className="text-sm font-medium">
-        Profissional vinculado{requiresProfessional ? " *" : ""}
+      <label className="font-medium text-sm">
+        Profissional vinculado{requiresProfessional ? ' *' : ''}
         <NativeSelect
           required={requiresProfessional}
           value={professionalId}
@@ -604,7 +676,7 @@ function AccountForm({
           className="mt-1"
         >
           <option value="">
-            {requiresProfessional ? "— selecione —" : "— nenhum —"}
+            {requiresProfessional ? '— selecione —' : '— nenhum —'}
           </option>
           {professionals.map((professional) => (
             <option key={professional.id} value={professional.id}>
@@ -613,13 +685,8 @@ function AccountForm({
           ))}
         </NativeSelect>
       </label>
-      <Button
-        type="submit"
-        disabled={saving}
-        variant="accent"
-        className="mt-1"
-      >
-        {saving ? "Criando…" : "Criar conta"}
+      <Button type="submit" disabled={saving} variant="accent" className="mt-1">
+        {saving ? 'Criando…' : 'Criar conta'}
       </Button>
     </form>
   );

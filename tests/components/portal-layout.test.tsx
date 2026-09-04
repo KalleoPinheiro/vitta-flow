@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
-import PortalLayout from "@/app/portal/layout";
 
-vi.mock("next/navigation", () => ({
+import { cleanup, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import PortalLayout from '@/app/portal/layout';
+
+vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }));
 
@@ -27,29 +28,31 @@ afterEach(() => {
  * propósito, forçando quem mexer a acrescentar a cobertura real de
  * hrefs/`<summary>` que o AC4 pede.
  */
-describe("Feature: Header do portal (SV3-03)", () => {
-  it("Dado o layout do portal, Quando renderizar, Então mantém marca, subtítulo e ação de logout sem regressão", () => {
+describe('Feature: Header do portal (SV3-03)', () => {
+  it('Dado o layout do portal, Quando renderizar, Então mantém marca, subtítulo e ação de logout sem regressão', () => {
     render(
       <PortalLayout>
         <p>Conteúdo da página</p>
       </PortalLayout>,
     );
 
-    expect(screen.getByRole("link", { name: /VittaFlow/ })).toBeInTheDocument();
-    expect(screen.getByText("Portal do paciente e do parceiro")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Sair" })).toBeInTheDocument();
-    expect(screen.getByText("Conteúdo da página")).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /VittaFlow/ })).toBeInTheDocument();
+    expect(
+      screen.getByText('Portal do paciente e do parceiro'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sair' })).toBeInTheDocument();
+    expect(screen.getByText('Conteúdo da página')).toBeInTheDocument();
   });
 
-  it("Dado nenhum item de navegação configurado (nunca houve, pré ou pós-migração), Então o Header não renderiza <nav>/<summary>/<details> algum", () => {
+  it('Dado nenhum item de navegação configurado (nunca houve, pré ou pós-migração), Então o Header não renderiza <nav>/<summary>/<details> algum', () => {
     render(
       <PortalLayout>
         <p>Conteúdo da página</p>
       </PortalLayout>,
     );
 
-    expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
-    expect(document.querySelector("summary")).toBeNull();
-    expect(document.querySelector("details")).toBeNull();
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+    expect(document.querySelector('summary')).toBeNull();
+    expect(document.querySelector('details')).toBeNull();
   });
 });

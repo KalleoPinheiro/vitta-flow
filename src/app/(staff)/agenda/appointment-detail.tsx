@@ -1,47 +1,74 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import type { AppointmentDto } from "@/lib/dto";
+import { Button, Input, NativeSelect } from '@still-void/ui/react';
+import { useState } from 'react';
+import { ErrorAlert } from '@/components/feedback';
+import { StatusBadge } from '@/components/status-badge';
+import type { AppointmentDto } from '@/lib/dto';
 import {
   APPOINTMENT_STATUS_LABELS,
   formatCurrency,
   formatDate,
   formatTime,
-} from "@/lib/format";
-import { StatusBadge } from "@/components/status-badge";
-import { ErrorAlert } from "@/components/feedback";
-import { Button, Input, NativeSelect } from "@still-void/ui/react";
+} from '@/lib/format';
 
-type AppointmentAction = "confirm" | "cancel" | "no_show" | "complete";
+type AppointmentAction = 'confirm' | 'cancel' | 'no_show' | 'complete';
 
 interface AppointmentDetailProps {
   appointment: AppointmentDto;
-  onAction: (action: AppointmentAction, followUpInDays?: number | null) => Promise<void>;
+  onAction: (
+    action: AppointmentAction,
+    followUpInDays?: number | null,
+  ) => Promise<void>;
   onReschedule: (startsAt: Date, endsAt: Date) => Promise<void>;
 }
 
 const FOLLOW_UP_OPTIONS = [
-  { value: 0, label: "Sem retorno" },
-  { value: 7, label: "Retorno em 7 dias" },
-  { value: 15, label: "Retorno em 15 dias" },
-  { value: 30, label: "Retorno em 30 dias" },
-  { value: 60, label: "Retorno em 60 dias" },
-  { value: 90, label: "Retorno em 90 dias" },
+  { value: 0, label: 'Sem retorno' },
+  { value: 7, label: 'Retorno em 7 dias' },
+  { value: 15, label: 'Retorno em 15 dias' },
+  { value: 30, label: 'Retorno em 30 dias' },
+  { value: 60, label: 'Retorno em 60 dias' },
+  { value: 90, label: 'Retorno em 90 dias' },
 ];
 
-const ACTION_BUTTONS: Array<{ action: AppointmentAction; label: string; className: string }> = [
-  { action: "confirm", label: "Confirmar", className: "bg-accent-ink hover:bg-accent-strong" },
-  { action: "complete", label: "Concluir + faturar", className: "bg-success hover:bg-success" },
-  { action: "no_show", label: "Registrar falta", className: "bg-warning hover:bg-warning" },
-  { action: "cancel", label: "Cancelar", className: "bg-danger hover:bg-danger" },
+const ACTION_BUTTONS: Array<{
+  action: AppointmentAction;
+  label: string;
+  className: string;
+}> = [
+  {
+    action: 'confirm',
+    label: 'Confirmar',
+    className: 'bg-accent-ink hover:bg-accent-strong',
+  },
+  {
+    action: 'complete',
+    label: 'Concluir + faturar',
+    className: 'bg-success hover:bg-success',
+  },
+  {
+    action: 'no_show',
+    label: 'Registrar falta',
+    className: 'bg-warning hover:bg-warning',
+  },
+  {
+    action: 'cancel',
+    label: 'Cancelar',
+    className: 'bg-danger hover:bg-danger',
+  },
 ];
 
 const VISIBLE_ACTIONS: Record<string, AppointmentAction[]> = {
-  scheduled: ["confirm", "complete", "no_show", "cancel"],
-  confirmed: ["complete", "no_show", "cancel"],
+  scheduled: ['confirm', 'complete', 'no_show', 'cancel'],
+  confirmed: ['complete', 'no_show', 'cancel'],
 };
 
-export function AppointmentDetail({ appointment, onAction, onReschedule }: AppointmentDetailProps) {
+export function AppointmentDetail({
+  appointment,
+  onAction,
+  onReschedule,
+}: AppointmentDetailProps) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
@@ -50,7 +77,8 @@ export function AppointmentDetail({ appointment, onAction, onReschedule }: Appoi
   const [newTime, setNewTime] = useState(formatTime(appointment.startsAt));
 
   const durationMs =
-    new Date(appointment.endsAt).getTime() - new Date(appointment.startsAt).getTime();
+    new Date(appointment.endsAt).getTime() -
+    new Date(appointment.startsAt).getTime();
   const visibleActions = VISIBLE_ACTIONS[appointment.status] ?? [];
 
   const run = async (fn: () => Promise<void>) => {
@@ -59,7 +87,9 @@ export function AppointmentDetail({ appointment, onAction, onReschedule }: Appoi
     try {
       await fn();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao atualizar consulta");
+      setError(
+        err instanceof Error ? err.message : 'Erro ao atualizar consulta',
+      );
     } finally {
       setBusy(false);
     }
@@ -76,10 +106,12 @@ export function AppointmentDetail({ appointment, onAction, onReschedule }: Appoi
     <div className="flex flex-col gap-3 text-sm">
       {error && <ErrorAlert message={error} />}
       <div className="flex items-center justify-between">
-        <p className="text-base font-semibold">{appointment.patientName}</p>
+        <p className="font-semibold text-base">{appointment.patientName}</p>
         <StatusBadge
           status={appointment.status}
-          label={APPOINTMENT_STATUS_LABELS[appointment.status] ?? appointment.status}
+          label={
+            APPOINTMENT_STATUS_LABELS[appointment.status] ?? appointment.status
+          }
         />
       </div>
       <p>
@@ -104,13 +136,13 @@ export function AppointmentDetail({ appointment, onAction, onReschedule }: Appoi
 
       <a
         href={`/documentos/atestado/${appointment.id}`}
-        className="text-xs font-medium text-accent-ink hover:underline"
+        className="font-medium text-accent-ink text-xs hover:underline"
       >
         Declaração de comparecimento
       </a>
 
-      {visibleActions.includes("complete") && (
-        <label className="mt-1 text-xs font-medium text-ink-2">
+      {visibleActions.includes('complete') && (
+        <label className="mt-1 font-medium text-ink-2 text-xs">
           Ao concluir, programar retorno:
           <NativeSelect
             value={followUpInDays}
@@ -127,27 +159,29 @@ export function AppointmentDetail({ appointment, onAction, onReschedule }: Appoi
 
       {visibleActions.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-2">
-          {ACTION_BUTTONS.filter((button) => visibleActions.includes(button.action)).map(
-            (button) => (
-              <Button
-                key={button.action}
-                type="button"
-                disabled={busy}
-                onClick={() =>
-                  void run(() =>
-                    onAction(
-                      button.action,
-                      button.action === "complete" && followUpInDays > 0 ? followUpInDays : null,
-                    ),
-                  )
-                }
-                variant="ghost"
-                className={button.className}
-              >
-                {button.label}
-              </Button>
-            ),
-          )}
+          {ACTION_BUTTONS.filter((button) =>
+            visibleActions.includes(button.action),
+          ).map((button) => (
+            <Button
+              key={button.action}
+              type="button"
+              disabled={busy}
+              onClick={() =>
+                void run(() =>
+                  onAction(
+                    button.action,
+                    button.action === 'complete' && followUpInDays > 0
+                      ? followUpInDays
+                      : null,
+                  ),
+                )
+              }
+              variant="ghost"
+              className={button.className}
+            >
+              {button.label}
+            </Button>
+          ))}
           <Button
             type="button"
             disabled={busy}
@@ -162,7 +196,7 @@ export function AppointmentDetail({ appointment, onAction, onReschedule }: Appoi
 
       {rescheduling && (
         <div className="mt-2 flex flex-wrap items-end gap-2 rounded-lg border border-border bg-bg p-3">
-          <label className="text-xs font-medium">
+          <label className="font-medium text-xs">
             Nova data
             <Input
               type="date"
@@ -171,7 +205,7 @@ export function AppointmentDetail({ appointment, onAction, onReschedule }: Appoi
               className="mt-1"
             />
           </label>
-          <label className="text-xs font-medium">
+          <label className="font-medium text-xs">
             Novo horário
             <Input
               type="time"

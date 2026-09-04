@@ -1,35 +1,43 @@
-import { AuthToken, hashAuthTokenSecret, type AuthTokenPurpose } from "@/domain/auth/auth-token";
-import type { AuthTokenRepository } from "@/domain/auth/auth-token";
-import type { UserAccount, UserAccountRepository } from "@/domain/auth/user-account";
-import type { UserRole } from "@/domain/auth/user-role";
-import type { EmailGateway } from "@/application/ports/email-gateway";
-import { ValidationError } from "@/domain/shared/errors";
-import { hashPassword } from "@/lib/auth/password";
+import type { EmailGateway } from '@/application/ports/email-gateway';
+import type { AuthTokenRepository } from '@/domain/auth/auth-token';
+import {
+  AuthToken,
+  type AuthTokenPurpose,
+  hashAuthTokenSecret,
+} from '@/domain/auth/auth-token';
+import type {
+  UserAccount,
+  UserAccountRepository,
+} from '@/domain/auth/user-account';
+import type { UserRole } from '@/domain/auth/user-role';
+import { ValidationError } from '@/domain/shared/errors';
+import { hashPassword } from '@/lib/auth/password';
 
 /**
  * Mensagem única para link inexistente, expirado, já usado ou de conta inativa.
  * Distinguir os casos revelaria a quem tem o link se ele já foi usado por outra
  * pessoa, ou se um endereço corresponde a uma conta.
  */
-export const INVALID_TOKEN_MESSAGE = "Link inválido ou expirado — solicite um novo";
+export const INVALID_TOKEN_MESSAGE =
+  'Link inválido ou expirado — solicite um novo';
 
 export const MIN_PASSWORD_LENGTH = 8;
 
 const SUBJECT_BY_PURPOSE: Record<AuthTokenPurpose, string> = {
-  invite: "VittaFlow — defina sua senha de acesso",
-  reset: "VittaFlow — redefinição de senha",
+  invite: 'VittaFlow — defina sua senha de acesso',
+  reset: 'VittaFlow — redefinição de senha',
 };
 
 const INTRO_BY_PURPOSE: Record<AuthTokenPurpose, string> = {
   invite:
-    "Sua conta no VittaFlow foi criada. Use o link abaixo para definir sua senha e acessar o sistema pela primeira vez.",
+    'Sua conta no VittaFlow foi criada. Use o link abaixo para definir sua senha e acessar o sistema pela primeira vez.',
   reset:
-    "Recebemos um pedido de redefinição de senha para sua conta no VittaFlow. Use o link abaixo para definir uma nova senha.",
+    'Recebemos um pedido de redefinição de senha para sua conta no VittaFlow. Use o link abaixo para definir uma nova senha.',
 };
 
 const VALIDITY_BY_PURPOSE: Record<AuthTokenPurpose, string> = {
-  invite: "O link vale por 24 horas e só pode ser usado uma vez.",
-  reset: "O link vale por 1 hora e só pode ser usado uma vez.",
+  invite: 'O link vale por 24 horas e só pode ser usado uma vez.',
+  reset: 'O link vale por 1 hora e só pode ser usado uma vez.',
 };
 
 export interface IssueAuthTokenInput {
@@ -70,7 +78,10 @@ export class IssueAuthToken {
       return { inviteUrl, delivered: this.email.enabled };
     } catch (error) {
       // Só o id: o endereço é dado pessoal e log não é lugar para ele (CWE-532).
-      console.error(`Convite: falha ao enviar e-mail (conta ${input.account.id})`, error);
+      console.error(
+        `Convite: falha ao enviar e-mail (conta ${input.account.id})`,
+        error,
+      );
       return { inviteUrl, delivered: false };
     }
   }
@@ -94,11 +105,14 @@ export class IssueAuthToken {
     // (issue #50) — duas emissões concorrentes não deixam dois links válidos.
     await this.tokens.replaceUnused(token, new Date(nowMs));
 
-    const base = input.appUrl.replace(/\/$/, "");
+    const base = input.appUrl.replace(/\/$/, '');
     return `${base}/definir-senha?token=${secret}`;
   }
 
-  private async deliver(input: IssueAuthTokenInput, link: string): Promise<void> {
+  private async deliver(
+    input: IssueAuthTokenInput,
+    link: string,
+  ): Promise<void> {
     await this.email.send({
       to: input.account.email,
       subject: SUBJECT_BY_PURPOSE[input.purpose],
@@ -138,13 +152,18 @@ export class ConsumeAuthToken {
 
   async execute(input: ConsumeAuthTokenInput): Promise<ConsumeAuthTokenResult> {
     if (input.newPassword.length < MIN_PASSWORD_LENGTH) {
-      throw new ValidationError(`A senha precisa ter ao menos ${MIN_PASSWORD_LENGTH} caracteres`);
+      throw new ValidationError(
+        `A senha precisa ter ao menos ${MIN_PASSWORD_LENGTH} caracteres`,
+      );
     }
     const nowMs = input.nowMs ?? Date.now();
     // Reivindica ANTES de qualquer outra coisa: o token é queimado no mesmo
     // comando que o valida, então duas requisições simultâneas com o mesmo link
     // não conseguem as duas trocar a senha (TOCTOU).
-    const token = await this.tokens.claimBySecretHash(hashAuthTokenSecret(input.secret), nowMs);
+    const token = await this.tokens.claimBySecretHash(
+      hashAuthTokenSecret(input.secret),
+      nowMs,
+    );
     if (!token) {
       throw new ValidationError(INVALID_TOKEN_MESSAGE);
     }
@@ -154,7 +173,7 @@ export class ConsumeAuthToken {
     }
 
     const account = await this.accounts.findById(token.accountId);
-    if (!account || !account.isActive) {
+    if (!account?.isActive) {
       // O token já foi queimado pela reivindicação. É o comportamento correto:
       // um link de conta desativada não deve continuar valendo.
       throw new ValidationError(INVALID_TOKEN_MESSAGE);
@@ -163,8 +182,15 @@ export class ConsumeAuthToken {
     // Invalida os irmãos do mesmo propósito: consumir um link precisa queimar
     // todos os outros por conta própria, sem depender da invariante de que a
     // emissão já os invalidou.
-    await this.tokens.markAllUnusedAsUsed(account.id, token.purpose, new Date(nowMs));
-    await this.accounts.updatePasswordHash(account.id, await hashPassword(input.newPassword));
+    await this.tokens.markAllUnusedAsUsed(
+      account.id,
+      token.purpose,
+      new Date(nowMs),
+    );
+    await this.accounts.updatePasswordHash(
+      account.id,
+      await hashPassword(input.newPassword),
+    );
 
     return {
       accountId: account.id,

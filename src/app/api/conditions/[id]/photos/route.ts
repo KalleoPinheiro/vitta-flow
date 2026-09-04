@@ -1,12 +1,12 @@
-import type { NextRequest } from "next/server";
-import { getRepositories } from "@/infrastructure/container";
-import { AddConditionPhoto } from "@/application/clinical/add-condition-photo";
-import { MAX_PHOTO_BYTES } from "@/domain/clinical/condition-photo";
-import { handleRequest, fail } from "@/lib/api-response";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { recordAudit } from "@/lib/audit";
-import { toConditionPhotoDto } from "@/lib/dto";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import type { NextRequest } from 'next/server';
+import { AddConditionPhoto } from '@/application/clinical/add-condition-photo';
+import { MAX_PHOTO_BYTES } from '@/domain/clinical/condition-photo';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { fail, handleRequest } from '@/lib/api-response';
+import { recordAudit } from '@/lib/audit';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { toConditionPhotoDto } from '@/lib/dto';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -24,8 +24,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
       conditions.findById(id),
     ]);
     recordAudit(auditEvents, guard.session, {
-      action: "read",
-      resourceType: "photos",
+      action: 'read',
+      resourceType: 'photos',
       resourceId: id,
       patientId: condition?.patientId ?? null,
     });
@@ -40,28 +40,34 @@ export async function POST(request: NextRequest, context: RouteContext) {
   const { id } = await context.params;
 
   const form = await request.formData().catch(() => null);
-  const file = form?.get("file");
+  const file = form?.get('file');
   if (!(file instanceof File)) {
     return fail("Envie o arquivo no campo 'file' (multipart/form-data)", 400);
   }
   if (file.size > MAX_PHOTO_BYTES) {
-    return fail("Imagem excede o limite de 5 MB", 400);
+    return fail('Imagem excede o limite de 5 MB', 400);
   }
-  const assessmentId = form?.get("assessmentId");
+  const assessmentId = form?.get('assessmentId');
 
   return handleRequest(async () => {
-    const { conditionPhotos, conditions, photoStorage, auditEvents } = await getRepositories({
-      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
-    });
-    const photo = await new AddConditionPhoto(conditionPhotos, conditions, photoStorage).execute({
+    const { conditionPhotos, conditions, photoStorage, auditEvents } =
+      await getRepositories({
+        clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+      });
+    const photo = await new AddConditionPhoto(
+      conditionPhotos,
+      conditions,
+      photoStorage,
+    ).execute({
       conditionId: id,
       data: new Uint8Array(await file.arrayBuffer()),
-      assessmentId: typeof assessmentId === "string" && assessmentId ? assessmentId : null,
+      assessmentId:
+        typeof assessmentId === 'string' && assessmentId ? assessmentId : null,
     });
     const condition = await conditions.findById(id);
     recordAudit(auditEvents, guard.session, {
-      action: "create",
-      resourceType: "photo",
+      action: 'create',
+      resourceType: 'photo',
       resourceId: photo.id,
       patientId: condition?.patientId ?? null,
     });

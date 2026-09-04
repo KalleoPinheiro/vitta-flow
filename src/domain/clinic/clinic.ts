@@ -1,5 +1,5 @@
-import { ValidationError } from "../shared/errors";
-import { newId } from "../shared/id";
+import { ValidationError } from '../shared/errors';
+import { newId } from '../shared/id';
 
 export interface ClinicProps {
   name: string;
@@ -25,9 +25,16 @@ export interface ClinicState extends ClinicProps, ClinicInfoFields {
  * um documento estão presentes — `address`/`city` continuam opcionais (#62).
  */
 export function isClinicInfoComplete(
-  info: Pick<ClinicInfoFields, "cnpj" | "professionalName" | "professionalRegistry"> | null,
+  info: Pick<
+    ClinicInfoFields,
+    'cnpj' | 'professionalName' | 'professionalRegistry'
+  > | null,
 ): boolean {
-  return Boolean(info?.cnpj?.trim() && info?.professionalName?.trim() && info?.professionalRegistry?.trim());
+  return Boolean(
+    info?.cnpj?.trim() &&
+      info?.professionalName?.trim() &&
+      info?.professionalRegistry?.trim(),
+  );
 }
 
 const normalizeField = (value: string | null | undefined): string | null => {
@@ -35,7 +42,13 @@ const normalizeField = (value: string | null | undefined): string | null => {
   return trimmed ? trimmed : null;
 };
 
-const INFO_KEYS = ["cnpj", "address", "city", "professionalName", "professionalRegistry"] as const;
+const INFO_KEYS = [
+  'cnpj',
+  'address',
+  'city',
+  'professionalName',
+  'professionalRegistry',
+] as const;
 
 /** Aplica só os campos presentes em `fields` (chave `in` do objeto) — os demais preservam o valor atual. */
 function resolveInfoFields(
@@ -44,7 +57,8 @@ function resolveInfoFields(
 ): Required<ClinicInfoFields> {
   const resolved = {} as Required<ClinicInfoFields>;
   for (const key of INFO_KEYS) {
-    resolved[key] = key in fields ? normalizeField(fields[key]) : (state[key] ?? null);
+    resolved[key] =
+      key in fields ? normalizeField(fields[key]) : (state[key] ?? null);
   }
   return resolved;
 }
@@ -55,10 +69,10 @@ export class Clinic {
 
   static create(props: ClinicProps): Clinic {
     if (!props.name.trim()) {
-      throw new ValidationError("Nome da clínica é obrigatório");
+      throw new ValidationError('Nome da clínica é obrigatório');
     }
     if (!props.createdBy.trim()) {
-      throw new ValidationError("Criador da clínica é obrigatório");
+      throw new ValidationError('Criador da clínica é obrigatório');
     }
     return new Clinic({
       name: props.name.trim(),
@@ -122,8 +136,8 @@ export class Clinic {
 
   /** Retorna uma nova instância com os campos cadastrais atualizados (imutável). */
   updateInfo(fields: ClinicInfoFields & { name?: string }): Clinic {
-    if ("name" in fields && !fields.name?.trim()) {
-      throw new ValidationError("Nome da clínica é obrigatório");
+    if ('name' in fields && !fields.name?.trim()) {
+      throw new ValidationError('Nome da clínica é obrigatório');
     }
     return new Clinic({
       ...this.state,

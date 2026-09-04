@@ -1,6 +1,11 @@
-import type { SessionPackage, SessionPackageRepository } from "@/domain/billing/package";
+import type {
+  SessionPackage,
+  SessionPackageRepository,
+} from '@/domain/billing/package';
 
-export class InMemorySessionPackageRepository implements SessionPackageRepository {
+export class InMemorySessionPackageRepository
+  implements SessionPackageRepository
+{
   private readonly items = new Map<string, SessionPackage>();
   private readonly consumptions = new Map<string, string>();
 
@@ -26,13 +31,20 @@ export class InMemorySessionPackageRepository implements SessionPackageRepositor
     return (
       [...this.items.values()]
         .filter(
-          (p) => p.patientId === patientId && p.procedureId === procedureId && p.isUsableAt(now),
+          (p) =>
+            p.patientId === patientId &&
+            p.procedureId === procedureId &&
+            p.isUsableAt(now),
         )
-        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())[0] ?? null
+        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())[0] ??
+      null
     );
   }
 
-  async recordConsumption(packageId: string, appointmentId: string): Promise<void> {
+  async recordConsumption(
+    packageId: string,
+    appointmentId: string,
+  ): Promise<void> {
     if (!this.consumptions.has(appointmentId)) {
       this.consumptions.set(appointmentId, packageId);
     }

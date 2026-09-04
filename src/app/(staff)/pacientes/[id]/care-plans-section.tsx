@@ -1,30 +1,5 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useToast } from "@still-void/ui/react/client";
-import { apiFetch } from "@/lib/client";
-import { useApiQuery } from "@/lib/use-api-query";
-import type {
-  CarePlanDetailDto,
-  CarePlanDto,
-  CarePlanOutcomeDto,
-  ConditionDto,
-  NursingDiagnosisDto,
-  NursingInterventionDto,
-  NursingOutcomeDto,
-} from "@/lib/dto";
-import {
-  CARE_PLAN_DIAGNOSIS_TYPE_LABELS,
-  CARE_PLAN_STATUS_LABELS,
-  INTERVENTION_PRIORITY_LABELS,
-  formatDateTime,
-  outcomeStatusLabel,
-  pesSentence,
-} from "@/lib/format";
-import { Modal } from "@/components/modal";
-import { ConfirmAction } from "@/components/confirm-action";
-import { StatusBadge } from "@/components/status-badge";
-import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import {
   Button,
   Card,
@@ -33,7 +8,36 @@ import {
   RadioGroup,
   RadioGroupItem,
   Textarea,
-} from "@still-void/ui/react";
+} from '@still-void/ui/react';
+import { useToast } from '@still-void/ui/react/client';
+import { useState } from 'react';
+import { ConfirmAction } from '@/components/confirm-action';
+import {
+  EmptyState,
+  ErrorAlert,
+  LoadingIndicator,
+} from '@/components/feedback';
+import { Modal } from '@/components/modal';
+import { StatusBadge } from '@/components/status-badge';
+import { apiFetch } from '@/lib/client';
+import type {
+  CarePlanDetailDto,
+  CarePlanDto,
+  CarePlanOutcomeDto,
+  ConditionDto,
+  NursingDiagnosisDto,
+  NursingInterventionDto,
+  NursingOutcomeDto,
+} from '@/lib/dto';
+import {
+  CARE_PLAN_DIAGNOSIS_TYPE_LABELS,
+  CARE_PLAN_STATUS_LABELS,
+  formatDateTime,
+  INTERVENTION_PRIORITY_LABELS,
+  outcomeStatusLabel,
+  pesSentence,
+} from '@/lib/format';
+import { useApiQuery } from '@/lib/use-api-query';
 
 interface CarePlansSectionProps {
   patientId: string;
@@ -60,8 +64,9 @@ export function CarePlansSection({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-ink-3">
-          Processo de Enfermagem: diagnóstico (NANDA-I) → resultado esperado (NOC) → intervenção (NIC).
+        <p className="text-ink-3 text-sm">
+          Processo de Enfermagem: diagnóstico (NANDA-I) → resultado esperado
+          (NOC) → intervenção (NIC).
         </p>
         <Button
           type="button"
@@ -81,17 +86,21 @@ export function CarePlansSection({
       ) : (
         <ul className="flex flex-col gap-3">
           {plans.map((plan) => {
-            const condition = conditions.find((item) => item.id === plan.conditionId);
+            const condition = conditions.find(
+              (item) => item.id === plan.conditionId,
+            );
             const isOpen = expanded === plan.id;
             return (
               <Card as="li" key={plan.id} className="p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <span className="mr-2 font-medium">
-                      {condition ? condition.title : "Plano geral do paciente"}
+                      {condition ? condition.title : 'Plano geral do paciente'}
                     </span>
                     <StatusBadge
-                      status={plan.status === "active" ? "confirmed" : "completed"}
+                      status={
+                        plan.status === 'active' ? 'confirmed' : 'completed'
+                      }
                       label={CARE_PLAN_STATUS_LABELS[plan.status]}
                     />
                   </div>
@@ -102,7 +111,7 @@ export function CarePlansSection({
                       variant="link"
                       className="h-auto p-0 text-accent-ink"
                     >
-                      {isOpen ? "Ocultar plano" : "Ver plano"}
+                      {isOpen ? 'Ocultar plano' : 'Ver plano'}
                     </Button>
                     <a
                       href={`/documentos/plano-cuidados/${plan.id}`}
@@ -112,7 +121,9 @@ export function CarePlansSection({
                     </a>
                   </div>
                 </div>
-                {isOpen && <CarePlanPanel planId={plan.id} onChanged={onChanged} />}
+                {isOpen && (
+                  <CarePlanPanel planId={plan.id} onChanged={onChanged} />
+                )}
               </Card>
             );
           })}
@@ -120,7 +131,10 @@ export function CarePlansSection({
       )}
 
       {creating && (
-        <Modal title="Novo plano de cuidados" onClose={() => setCreating(false)}>
+        <Modal
+          title="Novo plano de cuidados"
+          onClose={() => setCreating(false)}
+        >
           <OpenCarePlanForm
             patientId={patientId}
             conditions={conditions}
@@ -145,7 +159,7 @@ function OpenCarePlanForm({
   onSaved: () => void;
 }) {
   const { toast } = useToast();
-  const [conditionId, setConditionId] = useState("");
+  const [conditionId, setConditionId] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -155,13 +169,13 @@ function OpenCarePlanForm({
     setError(null);
     try {
       await apiFetch(`/api/patients/${patientId}/care-plans`, {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify({ conditionId: conditionId || null }),
       });
-      toast({ description: "Plano de cuidados aberto", variant: "success" });
+      toast({ description: 'Plano de cuidados aberto', variant: 'success' });
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao abrir plano");
+      setError(err instanceof Error ? err.message : 'Erro ao abrir plano');
     } finally {
       setSaving(false);
     }
@@ -170,7 +184,7 @@ function OpenCarePlanForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       {error && <ErrorAlert message={error} />}
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Condição associada
         <NativeSelect
           value={conditionId}
@@ -185,21 +199,26 @@ function OpenCarePlanForm({
           ))}
         </NativeSelect>
       </label>
-      <Button
-        type="submit"
-        disabled={saving}
-        variant="accent"
-        className="mt-1"
-      >
-        {saving ? "Abrindo…" : "Abrir plano"}
+      <Button type="submit" disabled={saving} variant="accent" className="mt-1">
+        {saving ? 'Abrindo…' : 'Abrir plano'}
       </Button>
     </form>
   );
 }
 
-function CarePlanPanel({ planId, onChanged }: { planId: string; onChanged: () => void }) {
+function CarePlanPanel({
+  planId,
+  onChanged,
+}: {
+  planId: string;
+  onChanged: () => void;
+}) {
   const { toast } = useToast();
-  const { data: detail, error, refresh } = useApiQuery<CarePlanDetailDto>(`/api/care-plans/${planId}`);
+  const {
+    data: detail,
+    error,
+    refresh,
+  } = useApiQuery<CarePlanDetailDto>(`/api/care-plans/${planId}`);
   const [addingDiagnosis, setAddingDiagnosis] = useState(false);
   const [addingOutcome, setAddingOutcome] = useState(false);
   const [addingIntervention, setAddingIntervention] = useState(false);
@@ -208,25 +227,27 @@ function CarePlanPanel({ planId, onChanged }: { planId: string; onChanged: () =>
   if (error) return <ErrorAlert message={error} />;
   if (!detail) return null;
 
-  const isActive = detail.plan.status === "active";
+  const isActive = detail.plan.status === 'active';
   const firstDiagnosisCode = detail.diagnoses[0]?.diagnosisCode ?? null;
 
   const resolvePlan = async () => {
     try {
       await apiFetch(`/api/care-plans/${planId}`, {
-        method: "PATCH",
-        body: JSON.stringify({ action: "resolve" }),
+        method: 'PATCH',
+        body: JSON.stringify({ action: 'resolve' }),
       });
-      toast({ description: "Plano de cuidados encerrado", variant: "success" });
+      toast({ description: 'Plano de cuidados encerrado', variant: 'success' });
       refresh();
       onChanged();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Erro ao resolver plano");
+      setActionError(
+        err instanceof Error ? err.message : 'Erro ao resolver plano',
+      );
     }
   };
 
   return (
-    <div className="mt-3 flex flex-col gap-4 border-t border-border pt-3">
+    <div className="mt-3 flex flex-col gap-4 border-border border-t pt-3">
       {actionError && <ErrorAlert message={actionError} />}
 
       <DiagnosesSection
@@ -235,7 +256,12 @@ function CarePlanPanel({ planId, onChanged }: { planId: string; onChanged: () =>
         onAdd={() => setAddingDiagnosis(true)}
       />
 
-      <OutcomesSection outcomes={detail.outcomes} isActive={isActive} onAdd={() => setAddingOutcome(true)} onEvaluated={refresh} />
+      <OutcomesSection
+        outcomes={detail.outcomes}
+        isActive={isActive}
+        onAdd={() => setAddingOutcome(true)}
+        onEvaluated={refresh}
+      />
 
       <InterventionsSection
         interventions={detail.interventions}
@@ -247,7 +273,11 @@ function CarePlanPanel({ planId, onChanged }: { planId: string; onChanged: () =>
       {isActive && (
         <ConfirmAction
           trigger={
-            <Button type="button" variant="link" className="h-auto p-0 self-start text-ink-3">
+            <Button
+              type="button"
+              variant="link"
+              className="h-auto self-start p-0 text-ink-3"
+            >
               Resolver plano
             </Button>
           }
@@ -260,7 +290,10 @@ function CarePlanPanel({ planId, onChanged }: { planId: string; onChanged: () =>
       )}
 
       {addingDiagnosis && (
-        <Modal title="Prescrever diagnóstico" onClose={() => setAddingDiagnosis(false)}>
+        <Modal
+          title="Prescrever diagnóstico"
+          onClose={() => setAddingDiagnosis(false)}
+        >
           <AddDiagnosisForm
             carePlanId={planId}
             onSaved={() => {
@@ -271,7 +304,10 @@ function CarePlanPanel({ planId, onChanged }: { planId: string; onChanged: () =>
         </Modal>
       )}
       {addingOutcome && (
-        <Modal title="Prescrever resultado esperado" onClose={() => setAddingOutcome(false)}>
+        <Modal
+          title="Prescrever resultado esperado"
+          onClose={() => setAddingOutcome(false)}
+        >
           <PrescribeOutcomeForm
             carePlanId={planId}
             diagnosisCode={firstDiagnosisCode}
@@ -283,7 +319,10 @@ function CarePlanPanel({ planId, onChanged }: { planId: string; onChanged: () =>
         </Modal>
       )}
       {addingIntervention && (
-        <Modal title="Prescrever intervenção" onClose={() => setAddingIntervention(false)}>
+        <Modal
+          title="Prescrever intervenção"
+          onClose={() => setAddingIntervention(false)}
+        >
           <PrescribeInterventionForm
             carePlanId={planId}
             diagnosisCode={firstDiagnosisCode}
@@ -303,16 +342,20 @@ function DiagnosesSection({
   isActive,
   onAdd,
 }: {
-  diagnoses: CarePlanDetailDto["diagnoses"];
+  diagnoses: CarePlanDetailDto['diagnoses'];
   isActive: boolean;
   onAdd: () => void;
 }) {
   return (
     <section>
       <div className="mb-2 flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-ink">Diagnósticos (NANDA-I)</h4>
+        <h4 className="font-semibold text-ink text-sm">
+          Diagnósticos (NANDA-I)
+        </h4>
         {isActive && (
-          <Button type="button" onClick={onAdd}
+          <Button
+            type="button"
+            onClick={onAdd}
             variant="link"
             className="h-auto p-0 text-accent-ink"
           >
@@ -326,8 +369,9 @@ function DiagnosesSection({
         <ul className="flex flex-col gap-2">
           {diagnoses.map((diagnosis) => (
             <li key={diagnosis.id} className="rounded-lg bg-bg p-3 text-sm">
-              <span className="mr-2 rounded-full bg-accent-soft px-2 py-0.5 text-xs font-medium text-accent-ink">
-                {diagnosis.diagnosisCode} · {CARE_PLAN_DIAGNOSIS_TYPE_LABELS[diagnosis.type]}
+              <span className="mr-2 rounded-full bg-accent-soft px-2 py-0.5 font-medium text-accent-ink text-xs">
+                {diagnosis.diagnosisCode} ·{' '}
+                {CARE_PLAN_DIAGNOSIS_TYPE_LABELS[diagnosis.type]}
               </span>
               <p className="mt-1">{pesSentence(diagnosis)}</p>
             </li>
@@ -352,9 +396,13 @@ function OutcomesSection({
   return (
     <section>
       <div className="mb-2 flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-ink">Resultados esperados (NOC)</h4>
+        <h4 className="font-semibold text-ink text-sm">
+          Resultados esperados (NOC)
+        </h4>
         {isActive && (
-          <Button type="button" onClick={onAdd}
+          <Button
+            type="button"
+            onClick={onAdd}
             variant="link"
             className="h-auto p-0 text-accent-ink"
           >
@@ -367,7 +415,12 @@ function OutcomesSection({
       ) : (
         <ul className="flex flex-col gap-2">
           {outcomes.map((outcome) => (
-            <OutcomeRow key={outcome.id} outcome={outcome} canEvaluate={isActive} onEvaluated={onEvaluated} />
+            <OutcomeRow
+              key={outcome.id}
+              outcome={outcome}
+              canEvaluate={isActive}
+              onEvaluated={onEvaluated}
+            />
           ))}
         </ul>
       )}
@@ -380,7 +433,7 @@ function InterventionRow({
   isActive,
   onRecorded,
 }: {
-  intervention: CarePlanDetailDto["interventions"][number];
+  intervention: CarePlanDetailDto['interventions'][number];
   isActive: boolean;
   onRecorded: () => void;
 }) {
@@ -389,16 +442,22 @@ function InterventionRow({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <span className="font-medium">{intervention.interventionLabel}</span>
-          <span className="ml-2 text-xs text-ink-3">
-            {intervention.frequency} · prioridade {INTERVENTION_PRIORITY_LABELS[intervention.priority]}
+          <span className="ml-2 text-ink-3 text-xs">
+            {intervention.frequency} · prioridade{' '}
+            {INTERVENTION_PRIORITY_LABELS[intervention.priority]}
           </span>
         </div>
-        {isActive && <RecordInterventionButton interventionId={intervention.id} onRecorded={onRecorded} />}
+        {isActive && (
+          <RecordInterventionButton
+            interventionId={intervention.id}
+            onRecorded={onRecorded}
+          />
+        )}
       </div>
       {intervention.records.length > 0 && (
-        <p className="mt-1 text-xs text-ink-3">
-          Última execução: {formatDateTime(intervention.records[0].performedAt)} · total{" "}
-          {intervention.records.length}
+        <p className="mt-1 text-ink-3 text-xs">
+          Última execução: {formatDateTime(intervention.records[0].performedAt)}{' '}
+          · total {intervention.records.length}
         </p>
       )}
     </li>
@@ -411,7 +470,7 @@ function InterventionsSection({
   onAdd,
   onRecorded,
 }: {
-  interventions: CarePlanDetailDto["interventions"];
+  interventions: CarePlanDetailDto['interventions'];
   isActive: boolean;
   onAdd: () => void;
   onRecorded: () => void;
@@ -419,9 +478,11 @@ function InterventionsSection({
   return (
     <section>
       <div className="mb-2 flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-ink">Intervenções (NIC)</h4>
+        <h4 className="font-semibold text-ink text-sm">Intervenções (NIC)</h4>
         {isActive && (
-          <Button type="button" onClick={onAdd}
+          <Button
+            type="button"
+            onClick={onAdd}
             variant="link"
             className="h-auto p-0 text-accent-ink"
           >
@@ -448,9 +509,9 @@ function InterventionsSection({
 }
 
 function scoreBadgeClass(current: number | null, target: number): string {
-  if (current == null) return "bg-surface-2 text-ink-2";
-  if (current >= target) return "bg-success-soft text-success";
-  return "bg-warning-soft text-warning";
+  if (current == null) return 'bg-surface-2 text-ink-2';
+  if (current >= target) return 'bg-success-soft text-success';
+  return 'bg-warning-soft text-warning';
 }
 
 function OutcomeRow({
@@ -479,26 +540,33 @@ function OutcomeRow({
           </Button>
         )}
       </div>
-      <div className="mt-1 flex items-center gap-2 text-xs text-ink-2">
+      <div className="mt-1 flex items-center gap-2 text-ink-2 text-xs">
         <span>Basal {outcome.baselineScore}</span>
         <span aria-hidden="true">→</span>
-        <span className={`rounded-full px-2 py-0.5 font-medium ${scoreBadgeClass(outcome.currentScore, outcome.targetScore)}`}>
-          Atual {outcome.currentScore ?? "—"}
+        <span
+          className={`rounded-full px-2 py-0.5 font-medium ${scoreBadgeClass(outcome.currentScore, outcome.targetScore)}`}
+        >
+          Atual {outcome.currentScore ?? '—'}
         </span>
         <span aria-hidden="true">→</span>
         <span>Meta {outcome.targetScore}</span>
         {outcome.isAchieved != null && (
-          <span className="ml-1 font-medium">{outcomeStatusLabel(outcome)}</span>
+          <span className="ml-1 font-medium">
+            {outcomeStatusLabel(outcome)}
+          </span>
         )}
       </div>
       {outcome.evaluations.length > 0 && (
-        <p className="mt-1 text-xs text-ink-3">
-          Última avaliação: {formatDateTime(outcome.evaluations[0].evaluatedAt)} · {outcome.evaluations.length}{" "}
-          avaliação(ões) no histórico
+        <p className="mt-1 text-ink-3 text-xs">
+          Última avaliação: {formatDateTime(outcome.evaluations[0].evaluatedAt)}{' '}
+          · {outcome.evaluations.length} avaliação(ões) no histórico
         </p>
       )}
       {evaluating && (
-        <Modal title={`Avaliar — ${outcome.outcomeLabel}`} onClose={() => setEvaluating(false)}>
+        <Modal
+          title={`Avaliar — ${outcome.outcomeLabel}`}
+          onClose={() => setEvaluating(false)}
+        >
           <EvaluateOutcomeForm
             outcome={outcome}
             onSaved={() => {
@@ -528,13 +596,15 @@ function RecordInterventionButton({
     setError(null);
     try {
       await apiFetch(`/api/care-plan-interventions/${interventionId}/records`, {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify({}),
       });
-      toast({ description: "Execução registrada", variant: "success" });
+      toast({ description: 'Execução registrada', variant: 'success' });
       onRecorded();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao registrar execução");
+      setError(
+        err instanceof Error ? err.message : 'Erro ao registrar execução',
+      );
     } finally {
       setSaving(false);
     }
@@ -549,17 +619,22 @@ function RecordInterventionButton({
         variant="link"
         className="h-auto p-0 text-accent-ink"
       >
-        {saving ? "Registrando…" : "Registrar execução"}
+        {saving ? 'Registrando…' : 'Registrar execução'}
       </Button>
-      {error && <span className="ml-2 text-xs text-danger">{error}</span>}
+      {error && <span className="ml-2 text-danger text-xs">{error}</span>}
     </span>
   );
 }
 
 /** Busca no catálogo com preview dos termos ligados ao primeiro diagnóstico do plano, quando houver. */
-function useTaxonomySearch<T>(kind: "diagnoses" | "outcomes" | "interventions") {
-  const [term, setTerm] = useState("");
-  const query = term.trim().length >= 2 ? `/api/taxonomy/${kind}?q=${encodeURIComponent(term)}` : null;
+function useTaxonomySearch<T>(
+  kind: 'diagnoses' | 'outcomes' | 'interventions',
+) {
+  const [term, setTerm] = useState('');
+  const query =
+    term.trim().length >= 2
+      ? `/api/taxonomy/${kind}?q=${encodeURIComponent(term)}`
+      : null;
   const { data } = useApiQuery<T[]>(query);
   return { term, setTerm, results: data ?? [] };
 }
@@ -574,7 +649,10 @@ function pickOptions<T>(term: string, searched: T[], suggested: T[]): T[] {
   return term.trim().length >= 2 ? searched : suggested;
 }
 
-function searchInputValue(selected: TaxonomyOption | null, term: string): string {
+function searchInputValue(
+  selected: TaxonomyOption | null,
+  term: string,
+): string {
   return selected ? `${selected.code} — ${selected.label}` : term;
 }
 
@@ -601,7 +679,9 @@ function TaxonomyOptionList<T extends TaxonomyOption>({
             className="w-full text-left hover:bg-accent-soft"
           >
             <span className="font-medium">{item.code}</span> — {item.label}
-            {linkedHint && <span className="ml-2 text-xs text-accent-ink">{linkedHint}</span>}
+            {linkedHint && (
+              <span className="ml-2 text-accent-ink text-xs">{linkedHint}</span>
+            )}
           </Button>
         </li>
       ))}
@@ -609,27 +689,34 @@ function TaxonomyOptionList<T extends TaxonomyOption>({
   );
 }
 
-function AddDiagnosisForm({ carePlanId, onSaved }: { carePlanId: string; onSaved: () => void }) {
+function AddDiagnosisForm({
+  carePlanId,
+  onSaved,
+}: {
+  carePlanId: string;
+  onSaved: () => void;
+}) {
   const { toast } = useToast();
-  const { term, setTerm, results } = useTaxonomySearch<NursingDiagnosisDto>("diagnoses");
+  const { term, setTerm, results } =
+    useTaxonomySearch<NursingDiagnosisDto>('diagnoses');
   const [selected, setSelected] = useState<NursingDiagnosisDto | null>(null);
-  const [type, setType] = useState<"real" | "risco" | "promocao-saude">("real");
-  const [relatedFactors, setRelatedFactors] = useState("");
-  const [definingCharacteristics, setDefiningCharacteristics] = useState("");
+  const [type, setType] = useState<'real' | 'risco' | 'promocao-saude'>('real');
+  const [relatedFactors, setRelatedFactors] = useState('');
+  const [definingCharacteristics, setDefiningCharacteristics] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!selected) {
-      setError("Selecione um diagnóstico do catálogo");
+      setError('Selecione um diagnóstico do catálogo');
       return;
     }
     setSaving(true);
     setError(null);
     try {
       await apiFetch(`/api/care-plans/${carePlanId}/diagnoses`, {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify({
           diagnosisCode: selected.code,
           type,
@@ -637,10 +724,12 @@ function AddDiagnosisForm({ carePlanId, onSaved }: { carePlanId: string; onSaved
           definingCharacteristics: definingCharacteristics || null,
         }),
       });
-      toast({ description: "Diagnóstico adicionado", variant: "success" });
+      toast({ description: 'Diagnóstico adicionado', variant: 'success' });
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao prescrever diagnóstico");
+      setError(
+        err instanceof Error ? err.message : 'Erro ao prescrever diagnóstico',
+      );
     } finally {
       setSaving(false);
     }
@@ -649,7 +738,7 @@ function AddDiagnosisForm({ carePlanId, onSaved }: { carePlanId: string; onSaved
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       {error && <ErrorAlert message={error} />}
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Buscar diagnóstico (NANDA-I)
         <Input
           value={searchInputValue(selected, term)}
@@ -661,11 +750,22 @@ function AddDiagnosisForm({ carePlanId, onSaved }: { carePlanId: string; onSaved
           className="mt-1"
         />
       </label>
-      {!selected && <TaxonomyOptionList options={results} linkedHint={null} onSelect={setSelected} />}
+      {!selected && (
+        <TaxonomyOptionList
+          options={results}
+          linkedHint={null}
+          onSelect={setSelected}
+        />
+      )}
       {selected && (
         <>
-          <RadioGroup legend="Tipo de diagnóstico" legendHidden name="diagnosis-type" orientation="horizontal">
-            {(["real", "risco", "promocao-saude"] as const).map((option) => (
+          <RadioGroup
+            legend="Tipo de diagnóstico"
+            legendHidden
+            name="diagnosis-type"
+            orientation="horizontal"
+          >
+            {(['real', 'risco', 'promocao-saude'] as const).map((option) => (
               <RadioGroupItem
                 key={option}
                 value={option}
@@ -676,8 +776,8 @@ function AddDiagnosisForm({ carePlanId, onSaved }: { carePlanId: string; onSaved
               </RadioGroupItem>
             ))}
           </RadioGroup>
-          {type !== "promocao-saude" && (
-            <label className="text-sm font-medium">
+          {type !== 'promocao-saude' && (
+            <label className="font-medium text-sm">
               Relacionado a (etiologia)
               <Input
                 value={relatedFactors}
@@ -687,16 +787,16 @@ function AddDiagnosisForm({ carePlanId, onSaved }: { carePlanId: string; onSaved
               />
             </label>
           )}
-          {(type === "real" || type === "promocao-saude") && (
-            <label className="text-sm font-medium">
+          {(type === 'real' || type === 'promocao-saude') && (
+            <label className="font-medium text-sm">
               Evidenciado por (características definidoras)
               <Input
                 value={definingCharacteristics}
                 onChange={(e) => setDefiningCharacteristics(e.target.value)}
                 placeholder={
-                  type === "promocao-saude"
-                    ? "Motivação/desejo expresso pelo paciente"
-                    : "Sinais e sintomas observados"
+                  type === 'promocao-saude'
+                    ? 'Motivação/desejo expresso pelo paciente'
+                    : 'Sinais e sintomas observados'
                 }
                 className="mt-1"
               />
@@ -704,13 +804,8 @@ function AddDiagnosisForm({ carePlanId, onSaved }: { carePlanId: string; onSaved
           )}
         </>
       )}
-      <Button
-        type="submit"
-        disabled={saving}
-        variant="accent"
-        className="mt-1"
-      >
-        {saving ? "Salvando…" : "Prescrever diagnóstico"}
+      <Button type="submit" disabled={saving} variant="accent" className="mt-1">
+        {saving ? 'Salvando…' : 'Prescrever diagnóstico'}
       </Button>
     </form>
   );
@@ -727,12 +822,15 @@ function PrescribeOutcomeForm({
 }) {
   const { toast } = useToast();
   const { data: linked } = useApiQuery<{ outcomes: NursingOutcomeDto[] }>(
-    diagnosisCode ? `/api/taxonomy/diagnoses/${diagnosisCode}/linked-terms` : null,
+    diagnosisCode
+      ? `/api/taxonomy/diagnoses/${diagnosisCode}/linked-terms`
+      : null,
   );
-  const { term, setTerm, results } = useTaxonomySearch<NursingOutcomeDto>("outcomes");
+  const { term, setTerm, results } =
+    useTaxonomySearch<NursingOutcomeDto>('outcomes');
   const [selected, setSelected] = useState<NursingOutcomeDto | null>(null);
-  const [baselineScore, setBaselineScore] = useState("1");
-  const [targetScore, setTargetScore] = useState("3");
+  const [baselineScore, setBaselineScore] = useState('1');
+  const [targetScore, setTargetScore] = useState('3');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -742,24 +840,26 @@ function PrescribeOutcomeForm({
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!selected) {
-      setError("Selecione um resultado do catálogo");
+      setError('Selecione um resultado do catálogo');
       return;
     }
     setSaving(true);
     setError(null);
     try {
       await apiFetch(`/api/care-plans/${carePlanId}/outcomes`, {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify({
           outcomeCode: selected.code,
           baselineScore: Number(baselineScore),
           targetScore: Number(targetScore),
         }),
       });
-      toast({ description: "Resultado prescrito", variant: "success" });
+      toast({ description: 'Resultado prescrito', variant: 'success' });
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao prescrever resultado");
+      setError(
+        err instanceof Error ? err.message : 'Erro ao prescrever resultado',
+      );
     } finally {
       setSaving(false);
     }
@@ -768,7 +868,7 @@ function PrescribeOutcomeForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       {error && <ErrorAlert message={error} />}
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Buscar resultado (NOC)
         <Input
           value={searchInputValue(selected, term)}
@@ -783,13 +883,13 @@ function PrescribeOutcomeForm({
       {!selected && (
         <TaxonomyOptionList
           options={options}
-          linkedHint={term.trim().length < 2 ? "(ligado ao diagnóstico)" : null}
+          linkedHint={term.trim().length < 2 ? '(ligado ao diagnóstico)' : null}
           onSelect={setSelected}
         />
       )}
       {selected && (
         <div className="grid grid-cols-2 gap-3">
-          <label className="text-sm font-medium">
+          <label className="font-medium text-sm">
             Pontuação basal (1–5)
             <Input
               type="number"
@@ -801,9 +901,11 @@ function PrescribeOutcomeForm({
               onChange={(e) => setBaselineScore(e.target.value)}
               className="mt-1"
             />
-            <span className="mt-1 block text-xs text-ink-3">{selected.scaleAnchors[Number(baselineScore) - 1]}</span>
+            <span className="mt-1 block text-ink-3 text-xs">
+              {selected.scaleAnchors[Number(baselineScore) - 1]}
+            </span>
           </label>
-          <label className="text-sm font-medium">
+          <label className="font-medium text-sm">
             Meta (1–5)
             <Input
               type="number"
@@ -815,17 +917,14 @@ function PrescribeOutcomeForm({
               onChange={(e) => setTargetScore(e.target.value)}
               className="mt-1"
             />
-            <span className="mt-1 block text-xs text-ink-3">{selected.scaleAnchors[Number(targetScore) - 1]}</span>
+            <span className="mt-1 block text-ink-3 text-xs">
+              {selected.scaleAnchors[Number(targetScore) - 1]}
+            </span>
           </label>
         </div>
       )}
-      <Button
-        type="submit"
-        disabled={saving}
-        variant="accent"
-        className="mt-1"
-      >
-        {saving ? "Salvando…" : "Prescrever resultado"}
+      <Button type="submit" disabled={saving} variant="accent" className="mt-1">
+        {saving ? 'Salvando…' : 'Prescrever resultado'}
       </Button>
     </form>
   );
@@ -841,13 +940,18 @@ function PrescribeInterventionForm({
   onSaved: () => void;
 }) {
   const { toast } = useToast();
-  const { data: linked } = useApiQuery<{ interventions: NursingInterventionDto[] }>(
-    diagnosisCode ? `/api/taxonomy/diagnoses/${diagnosisCode}/linked-terms` : null,
+  const { data: linked } = useApiQuery<{
+    interventions: NursingInterventionDto[];
+  }>(
+    diagnosisCode
+      ? `/api/taxonomy/diagnoses/${diagnosisCode}/linked-terms`
+      : null,
   );
-  const { term, setTerm, results } = useTaxonomySearch<NursingInterventionDto>("interventions");
+  const { term, setTerm, results } =
+    useTaxonomySearch<NursingInterventionDto>('interventions');
   const [selected, setSelected] = useState<NursingInterventionDto | null>(null);
-  const [frequency, setFrequency] = useState("");
-  const [priority, setPriority] = useState<"baixa" | "media" | "alta">("media");
+  const [frequency, setFrequency] = useState('');
+  const [priority, setPriority] = useState<'baixa' | 'media' | 'alta'>('media');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -857,20 +961,26 @@ function PrescribeInterventionForm({
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!selected) {
-      setError("Selecione uma intervenção do catálogo");
+      setError('Selecione uma intervenção do catálogo');
       return;
     }
     setSaving(true);
     setError(null);
     try {
       await apiFetch(`/api/care-plans/${carePlanId}/interventions`, {
-        method: "POST",
-        body: JSON.stringify({ interventionCode: selected.code, frequency, priority }),
+        method: 'POST',
+        body: JSON.stringify({
+          interventionCode: selected.code,
+          frequency,
+          priority,
+        }),
       });
-      toast({ description: "Intervenção prescrita", variant: "success" });
+      toast({ description: 'Intervenção prescrita', variant: 'success' });
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao prescrever intervenção");
+      setError(
+        err instanceof Error ? err.message : 'Erro ao prescrever intervenção',
+      );
     } finally {
       setSaving(false);
     }
@@ -879,7 +989,7 @@ function PrescribeInterventionForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       {error && <ErrorAlert message={error} />}
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Buscar intervenção (NIC)
         <Input
           value={searchInputValue(selected, term)}
@@ -894,13 +1004,13 @@ function PrescribeInterventionForm({
       {!selected && (
         <TaxonomyOptionList
           options={options}
-          linkedHint={term.trim().length < 2 ? "(ligada ao diagnóstico)" : null}
+          linkedHint={term.trim().length < 2 ? '(ligada ao diagnóstico)' : null}
           onSelect={setSelected}
         />
       )}
       {selected && (
         <>
-          <label className="text-sm font-medium">
+          <label className="font-medium text-sm">
             Frequência *
             <Input
               required
@@ -910,8 +1020,13 @@ function PrescribeInterventionForm({
               className="mt-1"
             />
           </label>
-          <RadioGroup legend="Prioridade da intervenção" legendHidden name="intervention-priority" orientation="horizontal">
-            {(["baixa", "media", "alta"] as const).map((option) => (
+          <RadioGroup
+            legend="Prioridade da intervenção"
+            legendHidden
+            name="intervention-priority"
+            orientation="horizontal"
+          >
+            {(['baixa', 'media', 'alta'] as const).map((option) => (
               <RadioGroupItem
                 key={option}
                 value={option}
@@ -924,22 +1039,25 @@ function PrescribeInterventionForm({
           </RadioGroup>
         </>
       )}
-      <Button
-        type="submit"
-        disabled={saving}
-        variant="accent"
-        className="mt-1"
-      >
-        {saving ? "Salvando…" : "Prescrever intervenção"}
+      <Button type="submit" disabled={saving} variant="accent" className="mt-1">
+        {saving ? 'Salvando…' : 'Prescrever intervenção'}
       </Button>
     </form>
   );
 }
 
-function EvaluateOutcomeForm({ outcome, onSaved }: { outcome: CarePlanOutcomeDto; onSaved: () => void }) {
+function EvaluateOutcomeForm({
+  outcome,
+  onSaved,
+}: {
+  outcome: CarePlanOutcomeDto;
+  onSaved: () => void;
+}) {
   const { toast } = useToast();
-  const [score, setScore] = useState(outcome.currentScore ?? outcome.baselineScore);
-  const [notes, setNotes] = useState("");
+  const [score, setScore] = useState(
+    outcome.currentScore ?? outcome.baselineScore,
+  );
+  const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -949,13 +1067,18 @@ function EvaluateOutcomeForm({ outcome, onSaved }: { outcome: CarePlanOutcomeDto
     setError(null);
     try {
       await apiFetch(`/api/care-plan-outcomes/${outcome.id}/evaluations`, {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify({ score, notes: notes || null }),
       });
-      toast({ description: "Avaliação de resultado registrada", variant: "success" });
+      toast({
+        description: 'Avaliação de resultado registrada',
+        variant: 'success',
+      });
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao registrar avaliação");
+      setError(
+        err instanceof Error ? err.message : 'Erro ao registrar avaliação',
+      );
     } finally {
       setSaving(false);
     }
@@ -968,23 +1091,28 @@ function EvaluateOutcomeForm({ outcome, onSaved }: { outcome: CarePlanOutcomeDto
         {outcome.scaleAnchors.map((anchor, index) => {
           const value = index + 1;
           return (
-            <RadioGroupItem key={value} value={value} checked={score === value} onChange={() => setScore(value)}>
+            <RadioGroupItem
+              key={value}
+              value={value}
+              checked={score === value}
+              onChange={() => setScore(value)}
+            >
               <span className="font-medium">{value}</span> — {anchor}
             </RadioGroupItem>
           );
         })}
       </RadioGroup>
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Observações
-        <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className="mt-1" />
+        <Textarea
+          rows={2}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          className="mt-1"
+        />
       </label>
-      <Button
-        type="submit"
-        disabled={saving}
-        variant="accent"
-        className="mt-1"
-      >
-        {saving ? "Salvando…" : "Registrar avaliação"}
+      <Button type="submit" disabled={saving} variant="accent" className="mt-1">
+        {saving ? 'Salvando…' : 'Registrar avaliação'}
       </Button>
     </form>
   );

@@ -1,7 +1,7 @@
-import { EvolutionNote } from "@/domain/clinical/evolution-note";
-import type { EvolutionNoteRepository } from "@/domain/clinical/clinical-repositories";
-import type { PatientRepository } from "@/domain/patient/patient-repository";
-import { NotFoundError } from "@/domain/shared/errors";
+import type { EvolutionNoteRepository } from '@/domain/clinical/clinical-repositories';
+import { EvolutionNote } from '@/domain/clinical/evolution-note';
+import type { PatientRepository } from '@/domain/patient/patient-repository';
+import { NotFoundError } from '@/domain/shared/errors';
 
 export interface AddEvolutionNoteInput {
   patientId: string;
@@ -22,7 +22,7 @@ export class AddEvolutionNote {
   async execute(input: AddEvolutionNoteInput): Promise<EvolutionNote> {
     const patient = await this.patients.findById(input.patientId);
     if (!patient) {
-      throw new NotFoundError("Paciente", input.patientId);
+      throw new NotFoundError('Paciente', input.patientId);
     }
     const note = EvolutionNote.create(input);
     await this.evolutions.save(note);

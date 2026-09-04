@@ -1,5 +1,5 @@
-import { ValidationError } from "../shared/errors";
-import { newId } from "../shared/id";
+import { ValidationError } from '../shared/errors';
+import { newId } from '../shared/id';
 
 export interface SupplyBatchProps {
   supplyId: string;
@@ -23,7 +23,7 @@ export class SupplyBatch {
 
   static create(props: SupplyBatchProps): SupplyBatch {
     if (!Number.isInteger(props.quantity) || props.quantity <= 0) {
-      throw new ValidationError("Quantidade do lote deve ser inteiro positivo");
+      throw new ValidationError('Quantidade do lote deve ser inteiro positivo');
     }
     return new SupplyBatch({
       supplyId: props.supplyId,
@@ -43,11 +43,16 @@ export class SupplyBatch {
   /** Consome até `qty` unidades; retorna o lote atualizado e o que faltou consumir. */
   consume(qty: number): { batch: SupplyBatch; leftover: number } {
     if (!Number.isInteger(qty) || qty <= 0) {
-      throw new ValidationError("Quantidade a consumir deve ser inteiro positivo");
+      throw new ValidationError(
+        'Quantidade a consumir deve ser inteiro positivo',
+      );
     }
     const consumed = Math.min(this.state.remaining, qty);
     return {
-      batch: new SupplyBatch({ ...this.state, remaining: this.state.remaining - consumed }),
+      batch: new SupplyBatch({
+        ...this.state,
+        remaining: this.state.remaining - consumed,
+      }),
       leftover: qty - consumed,
     };
   }

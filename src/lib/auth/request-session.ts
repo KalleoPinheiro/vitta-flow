@@ -1,10 +1,10 @@
-import type { NextRequest } from "next/server";
+import type { NextRequest } from 'next/server';
 import {
-  SESSION_COOKIE,
   getAuthConfig,
-  verifySessionToken,
+  SESSION_COOKIE,
   type Session,
-} from "./session";
+  verifySessionToken,
+} from './session';
 
 /** Sessão da requisição (o proxy já barrou não autenticados; aqui é defesa em profundidade). */
 export function getRequestSession(request: NextRequest): Session | null {
@@ -12,5 +12,8 @@ export function getRequestSession(request: NextRequest): Session | null {
   if (!auth) {
     return null;
   }
-  return verifySessionToken(auth.secret, request.cookies.get(SESSION_COOKIE)?.value);
+  return verifySessionToken(
+    auth.secret,
+    request.cookies.get(SESSION_COOKIE)?.value,
+  );
 }

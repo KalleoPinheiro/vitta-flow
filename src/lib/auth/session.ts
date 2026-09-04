@@ -1,23 +1,23 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual } from 'node:crypto';
 
-export const SESSION_COOKIE = "vitta_session";
+export const SESSION_COOKIE = 'vitta_session';
 export const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 
 /** Atributos padrão do cookie de sessão (única fonte para login por senha e OAuth). */
 export function sessionCookieOptions() {
   return {
     httpOnly: true,
-    sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
+    sameSite: 'lax' as const,
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
     maxAge: Math.floor(SESSION_TTL_MS / 1000),
   };
 }
 
 const sign = (secret: string, payload: string): string =>
-  createHmac("sha256", secret).update(payload).digest("hex");
+  createHmac('sha256', secret).update(payload).digest('hex');
 
-import { USER_ROLES, type UserRole } from "@/domain/auth/user-role";
+import { USER_ROLES, type UserRole } from '@/domain/auth/user-role';
 
 export type { UserRole };
 export { USER_ROLES };
@@ -37,18 +37,28 @@ export interface Session {
 export function createSessionToken(
   secret: string,
   expiresAtMs: number,
-  subject = "local",
-  role: UserRole = "company_admin",
+  subject = 'local',
+  role: UserRole = 'company_admin',
   clinicId: string | null = null,
   professionalId: string | null = null,
 ): string {
   const payload = Buffer.from(
-    JSON.stringify({ exp: expiresAtMs, sub: subject, role, clinicId, professionalId }),
-  ).toString("base64url");
+    JSON.stringify({
+      exp: expiresAtMs,
+      sub: subject,
+      role,
+      clinicId,
+      professionalId,
+    }),
+  ).toString('base64url');
   return `${payload}.${sign(secret, payload)}`;
 }
 
-function hasValidSignature(secret: string, payload: string, signature: string): boolean {
+function hasValidSignature(
+  secret: string,
+  payload: string,
+  signature: string,
+): boolean {
   const expectedBuffer = Buffer.from(sign(secret, payload));
   const signatureBuffer = Buffer.from(signature);
   return (
@@ -59,25 +69,30 @@ function hasValidSignature(secret: string, payload: string, signature: string): 
 
 /** Nulo/ausente é válido (compat com tokens antigos); string é o único outro valor aceito. */
 function isNullableString(value: unknown): value is string | null | undefined {
-  return value === null || value === undefined || typeof value === "string";
+  return value === null || value === undefined || typeof value === 'string';
 }
 
 function parsePayload(payload: string): Session | null {
   try {
-    const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as {
+    const parsed = JSON.parse(
+      Buffer.from(payload, 'base64url').toString('utf8'),
+    ) as {
       exp?: unknown;
       sub?: unknown;
       role?: unknown;
       clinicId?: unknown;
       professionalId?: unknown;
     };
-    if (typeof parsed.exp !== "number" || typeof parsed.sub !== "string") {
+    if (typeof parsed.exp !== 'number' || typeof parsed.sub !== 'string') {
       return null;
     }
     if (!USER_ROLES.includes(parsed.role as UserRole)) {
       return null;
     }
-    if (!isNullableString(parsed.clinicId) || !isNullableString(parsed.professionalId)) {
+    if (
+      !isNullableString(parsed.clinicId) ||
+      !isNullableString(parsed.professionalId)
+    ) {
       return null;
     }
     return {
@@ -85,7 +100,8 @@ function parsePayload(payload: string): Session | null {
       subject: parsed.sub,
       role: parsed.role as UserRole,
       clinicId: parsed.clinicId ?? null,
-      professionalId: (parsed.professionalId as string | null | undefined) ?? null,
+      professionalId:
+        (parsed.professionalId as string | null | undefined) ?? null,
     };
   } catch {
     return null;
@@ -100,7 +116,7 @@ export function verifySessionToken(
   if (!token) {
     return null;
   }
-  const separator = token.indexOf(".");
+  const separator = token.indexOf('.');
   if (separator <= 0) {
     return null;
   }

@@ -1,4 +1,4 @@
-import { ValidationError } from "../shared/errors";
+import { ValidationError } from '../shared/errors';
 
 /** Item do kit padrão de um procedimento: insumo + quantidade consumida por atendimento. */
 export interface ProcedureKitItem {
@@ -6,17 +6,21 @@ export interface ProcedureKitItem {
   quantity: number;
 }
 
-export function validateKitItems(items: ProcedureKitItem[]): ProcedureKitItem[] {
+export function validateKitItems(
+  items: ProcedureKitItem[],
+): ProcedureKitItem[] {
   const seen = new Set<string>();
   for (const item of items) {
     if (!item.supplyId.trim()) {
-      throw new ValidationError("Item do kit sem insumo");
+      throw new ValidationError('Item do kit sem insumo');
     }
     if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
-      throw new ValidationError("Quantidade do item do kit deve ser inteiro positivo");
+      throw new ValidationError(
+        'Quantidade do item do kit deve ser inteiro positivo',
+      );
     }
     if (seen.has(item.supplyId)) {
-      throw new ValidationError("Insumo repetido no kit");
+      throw new ValidationError('Insumo repetido no kit');
     }
     seen.add(item.supplyId);
   }

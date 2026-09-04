@@ -1,8 +1,8 @@
-import { after } from "next/server";
-import { AuditEvent, type AuditAction } from "@/domain/audit/audit-event";
-import type { AuditEventRepository } from "@/domain/audit/audit-event-repository";
-import type { Session } from "@/lib/auth/session";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import { after } from 'next/server';
+import { type AuditAction, AuditEvent } from '@/domain/audit/audit-event';
+import type { AuditEventRepository } from '@/domain/audit/audit-event-repository';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import type { Session } from '@/lib/auth/session';
 
 export interface AuditActorOverride {
   role: string;
@@ -44,7 +44,7 @@ export function recordAudit(
     try {
       await persistAuditEvent(auditEvents, session, input);
     } catch (error) {
-      console.error("Auditoria: falha ao registrar evento", error);
+      console.error('Auditoria: falha ao registrar evento', error);
     }
   });
 }
@@ -94,8 +94,8 @@ function resolveActor(
     };
   }
   return {
-    role: session?.role ?? "anonymous",
-    id: session?.subject ?? "anonymous",
+    role: session?.role ?? 'anonymous',
+    id: session?.subject ?? 'anonymous',
     clinicId: session?.clinicId ?? LEGACY_CLINIC_ID,
   };
 }

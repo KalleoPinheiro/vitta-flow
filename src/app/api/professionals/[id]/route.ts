@@ -1,11 +1,11 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { NotFoundError } from "@/domain/shared/errors";
-import { handleRequest } from "@/lib/api-response";
-import { toProfessionalDto } from "@/lib/dto";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { NotFoundError } from '@/domain/shared/errors';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { toProfessionalDto } from '@/lib/dto';
 
 const updateSchema = z.object({
   fullName: z.string().min(1).max(200).optional(),
@@ -29,13 +29,14 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
     const existing = await professionals.findById(id);
     if (!existing) {
-      throw new NotFoundError("Profissional", id);
+      throw new NotFoundError('Profissional', id);
     }
 
     let updated = existing.update({
       fullName: body.fullName,
       registry: body.registry !== undefined ? body.registry : undefined,
-      commissionPct: body.commissionPct !== undefined ? body.commissionPct : undefined,
+      commissionPct:
+        body.commissionPct !== undefined ? body.commissionPct : undefined,
     });
     if (body.active === true) updated = updated.reactivate();
     if (body.active === false) updated = updated.deactivate();

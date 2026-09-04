@@ -1,7 +1,7 @@
-import { ValidationError } from "../shared/errors";
-import { newId } from "../shared/id";
+import { ValidationError } from '../shared/errors';
+import { newId } from '../shared/id';
 
-export const INTERVENTION_PRIORITIES = ["baixa", "media", "alta"] as const;
+export const INTERVENTION_PRIORITIES = ['baixa', 'media', 'alta'] as const;
 export type InterventionPriority = (typeof INTERVENTION_PRIORITIES)[number];
 
 export interface CarePlanInterventionProps {
@@ -23,17 +23,17 @@ export class CarePlanIntervention {
 
   static create(props: CarePlanInterventionProps): CarePlanIntervention {
     if (props.carePlanId.trim().length === 0) {
-      throw new ValidationError("Plano de cuidados é obrigatório");
+      throw new ValidationError('Plano de cuidados é obrigatório');
     }
     if (props.interventionCode.trim().length === 0) {
-      throw new ValidationError("Intervenção é obrigatória");
+      throw new ValidationError('Intervenção é obrigatória');
     }
     if (!INTERVENTION_PRIORITIES.includes(props.priority)) {
-      throw new ValidationError("Prioridade da intervenção inválida");
+      throw new ValidationError('Prioridade da intervenção inválida');
     }
     const frequency = props.frequency.trim();
     if (frequency.length === 0) {
-      throw new ValidationError("Frequência da intervenção é obrigatória");
+      throw new ValidationError('Frequência da intervenção é obrigatória');
     }
     return new CarePlanIntervention({
       carePlanId: props.carePlanId,

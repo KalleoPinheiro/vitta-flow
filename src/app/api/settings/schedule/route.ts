@@ -1,14 +1,14 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
 import {
   DEFAULT_SCHEDULE_CONFIG,
   validateScheduleConfig,
-} from "@/domain/scheduling/schedule-config";
-import { handleRequest } from "@/lib/api-response";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
-import { recordAudit } from "@/lib/audit";
+} from '@/domain/scheduling/schedule-config';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { recordAudit } from '@/lib/audit';
+import { requireStaffSession } from '@/lib/auth/require-session';
 
 const configSchema = z.object({
   weekdays: z.array(z.number().int().min(0).max(6)).min(1).max(7),
@@ -26,7 +26,10 @@ export async function GET(request: NextRequest) {
       clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
     });
     const config = await scheduleConfig.get();
-    return { config: config ?? DEFAULT_SCHEDULE_CONFIG, isDefault: config === null };
+    return {
+      config: config ?? DEFAULT_SCHEDULE_CONFIG,
+      isDefault: config === null,
+    };
   });
 }
 
@@ -41,8 +44,8 @@ export async function PUT(request: NextRequest) {
     const validated = validateScheduleConfig(body);
     await scheduleConfig.save(validated);
     recordAudit(auditEvents, guard.session, {
-      action: "update",
-      resourceType: "clinic-schedule",
+      action: 'update',
+      resourceType: 'clinic-schedule',
       resourceId: clinicId,
     });
     return { config: validated, isDefault: false };

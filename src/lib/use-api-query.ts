@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
-import { apiFetch } from "./client";
+import { useCallback, useEffect, useState } from 'react';
+import { apiFetch } from './client';
 
 export interface ApiQueryResult<T> {
   data: T | null;
@@ -19,7 +19,7 @@ export function useApiQuery<T>(url: string | null): ApiQueryResult<T> {
   // deriva `isLoading` sem precisar de um `setState` síncrono no corpo do
   // efeito (proibido por `react-hooks/set-state-in-effect`).
   const [settledKey, setSettledKey] = useState<string | null>(null);
-  const requestKey = `${url ?? ""}:${version}`;
+  const requestKey = `${url ?? ''}:${version}`;
   const isLoading = url != null && settledKey !== requestKey;
 
   useEffect(() => {
@@ -37,14 +37,16 @@ export function useApiQuery<T>(url: string | null): ApiQueryResult<T> {
       })
       .catch((err: unknown) => {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Erro ao carregar dados");
+          setError(
+            err instanceof Error ? err.message : 'Erro ao carregar dados',
+          );
           setSettledKey(requestKey);
         }
       });
     return () => {
       cancelled = true;
     };
-  }, [url, version, requestKey]);
+  }, [url, requestKey]);
 
   const refresh = useCallback(() => setVersion((current) => current + 1), []);
 

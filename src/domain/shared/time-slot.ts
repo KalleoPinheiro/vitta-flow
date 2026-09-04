@@ -1,4 +1,4 @@
-import { InvalidTimeSlotError } from "./errors";
+import { InvalidTimeSlotError } from './errors';
 
 const MS_PER_MINUTE = 60_000;
 
@@ -10,10 +10,12 @@ export class TimeSlot {
 
   static create(start: Date, end: Date): TimeSlot {
     if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-      throw new InvalidTimeSlotError("Datas do horário são inválidas");
+      throw new InvalidTimeSlotError('Datas do horário são inválidas');
     }
     if (end.getTime() <= start.getTime()) {
-      throw new InvalidTimeSlotError("Fim do horário deve ser depois do início");
+      throw new InvalidTimeSlotError(
+        'Fim do horário deve ser depois do início',
+      );
     }
     return new TimeSlot(new Date(start), new Date(end));
   }
@@ -30,6 +32,9 @@ export class TimeSlot {
   }
 
   overlaps(other: TimeSlot): boolean {
-    return this.start.getTime() < other.end.getTime() && other.start.getTime() < this.end.getTime();
+    return (
+      this.start.getTime() < other.end.getTime() &&
+      other.start.getTime() < this.end.getTime()
+    );
   }
 }

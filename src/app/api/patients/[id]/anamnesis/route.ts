@@ -1,14 +1,14 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { GetAnamnesis } from "@/application/clinical/get-anamnesis";
-import { UpsertAnamnesis } from "@/application/clinical/upsert-anamnesis";
-import { handleRequest } from "@/lib/api-response";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { assertPatientAccessibleToProfessional } from "@/lib/auth/professional-patient-scope";
-import { recordAudit } from "@/lib/audit";
-import { toAnamnesisDto } from "@/lib/dto";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { GetAnamnesis } from '@/application/clinical/get-anamnesis';
+import { UpsertAnamnesis } from '@/application/clinical/upsert-anamnesis';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { recordAudit } from '@/lib/audit';
+import { assertPatientAccessibleToProfessional } from '@/lib/auth/professional-patient-scope';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { toAnamnesisDto } from '@/lib/dto';
 
 const anamnesisSchema = z.object({
   comorbidities: z.string().max(5000).optional(),
@@ -26,14 +26,21 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { anamneses, auditEvents, professionalPatientLinks } = await getRepositories({
-      clinicId: guard.session?.clinicId ?? null,
+    const { anamneses, auditEvents, professionalPatientLinks } =
+      await getRepositories({
+        clinicId: guard.session?.clinicId ?? null,
+      });
+    await assertPatientAccessibleToProfessional(
+      guard.session,
+      id,
+      professionalPatientLinks,
+    );
+    const anamnesis = await new GetAnamnesis(anamneses).execute({
+      patientId: id,
     });
-    await assertPatientAccessibleToProfessional(guard.session, id, professionalPatientLinks);
-    const anamnesis = await new GetAnamnesis(anamneses).execute({ patientId: id });
     recordAudit(auditEvents, guard.session, {
-      action: "read",
-      resourceType: "anamnesis",
+      action: 'read',
+      resourceType: 'anamnesis',
       resourceId: id,
       patientId: id,
     });
@@ -48,17 +55,22 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = anamnesisSchema.parse(await request.json());
-    const { anamneses, patients, auditEvents, professionalPatientLinks } = await getRepositories({
-      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
-    });
-    await assertPatientAccessibleToProfessional(guard.session, id, professionalPatientLinks);
+    const { anamneses, patients, auditEvents, professionalPatientLinks } =
+      await getRepositories({
+        clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+      });
+    await assertPatientAccessibleToProfessional(
+      guard.session,
+      id,
+      professionalPatientLinks,
+    );
     const anamnesis = await new UpsertAnamnesis(anamneses, patients).execute({
       patientId: id,
       ...body,
     });
     recordAudit(auditEvents, guard.session, {
-      action: "update",
-      resourceType: "anamnesis",
+      action: 'update',
+      resourceType: 'anamnesis',
       resourceId: id,
       patientId: id,
     });

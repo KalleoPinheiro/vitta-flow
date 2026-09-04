@@ -1,17 +1,17 @@
-import type { NextRequest, NextResponse } from "next/server";
-import type { UserRole } from "@/domain/auth/user-role";
-import { fail } from "@/lib/api-response";
+import type { NextRequest, NextResponse } from 'next/server';
+import type { UserRole } from '@/domain/auth/user-role';
+import { fail } from '@/lib/api-response';
 import {
   AUTH_NOT_CONFIGURED_MESSAGE,
   isAllowedForRole,
   ROLE_FAMILY_DENIED_MESSAGE,
+  resolveAuthMode,
   STAFF_ONLY_MESSAGE,
   UNAUTHENTICATED_MESSAGE,
-  resolveAuthMode,
-} from "./access-policy";
-import { getRequestSession } from "./request-session";
-import type { Session } from "./session";
-import { isStaffRole } from "./staff-roles";
+} from './access-policy';
+import { getRequestSession } from './request-session';
+import type { Session } from './session';
+import { isStaffRole } from './staff-roles';
 
 /**
  * Camada 2 de autorização: guarda executada DENTRO de cada route handler.
@@ -31,7 +31,9 @@ import { isStaffRole } from "./staff-roles";
  *     ...
  *   }
  */
-export type Guard<S> = { ok: true; session: S } | { ok: false; response: NextResponse };
+export type Guard<S> =
+  | { ok: true; session: S }
+  | { ok: false; response: NextResponse };
 
 const denied = (message: string, status: number): Guard<never> => ({
   ok: false,
@@ -39,11 +41,11 @@ const denied = (message: string, status: number): Guard<never> => ({
 });
 
 const roleMessage = (roles: readonly UserRole[]): string => {
-  if (roles.length === 1 && roles[0] === "patient") {
-    return "Rota exclusiva do portal do paciente";
+  if (roles.length === 1 && roles[0] === 'patient') {
+    return 'Rota exclusiva do portal do paciente';
   }
-  if (roles.length === 1 && roles[0] === "partner") {
-    return "Rota exclusiva do portal do parceiro";
+  if (roles.length === 1 && roles[0] === 'partner') {
+    return 'Rota exclusiva do portal do parceiro';
   }
   return STAFF_ONLY_MESSAGE;
 };
@@ -66,12 +68,14 @@ const roleMessage = (roles: readonly UserRole[]): string => {
  * e com `VITTA_ALLOW_OPEN_MODE=true`, nunca em produção) a rota executa com
  * `session: null` — a auditoria registra o ator `anonymous`, como já fazia.
  */
-export function requireStaffSession(request: NextRequest): Guard<Session | null> {
+export function requireStaffSession(
+  request: NextRequest,
+): Guard<Session | null> {
   const mode = resolveAuthMode();
-  if (mode === "unconfigured") {
+  if (mode === 'unconfigured') {
     return denied(AUTH_NOT_CONFIGURED_MESSAGE, 503);
   }
-  if (mode === "open") {
+  if (mode === 'open') {
     return { ok: true, session: null };
   }
 
@@ -97,9 +101,9 @@ export function requirePortalSession(
   request: NextRequest,
   roles: UserRole | readonly UserRole[],
 ): Guard<Session> {
-  const allowed = typeof roles === "string" ? ([roles] as const) : roles;
+  const allowed = typeof roles === 'string' ? ([roles] as const) : roles;
 
-  if (resolveAuthMode() === "unconfigured") {
+  if (resolveAuthMode() === 'unconfigured') {
     return denied(AUTH_NOT_CONFIGURED_MESSAGE, 503);
   }
 

@@ -1,7 +1,13 @@
-import { UserAccount, type UserAccountRepository } from "@/domain/auth/user-account";
-import { canProvision } from "@/domain/auth/role-hierarchy";
-import { ProvisioningDeniedError, ValidationError } from "@/domain/shared/errors";
-import type { UserRole } from "@/domain/auth/user-role";
+import { canProvision } from '@/domain/auth/role-hierarchy';
+import {
+  UserAccount,
+  type UserAccountRepository,
+} from '@/domain/auth/user-account';
+import type { UserRole } from '@/domain/auth/user-role';
+import {
+  ProvisioningDeniedError,
+  ValidationError,
+} from '@/domain/shared/errors';
 
 export interface CreateAccountActor {
   role: UserRole;
@@ -27,27 +33,32 @@ export interface CreateAccountInput {
 export class CreateAccount {
   constructor(private readonly accounts: UserAccountRepository) {}
 
-  async execute(actor: CreateAccountActor, input: CreateAccountInput): Promise<UserAccount> {
+  async execute(
+    actor: CreateAccountActor,
+    input: CreateAccountInput,
+  ): Promise<UserAccount> {
     if (!canProvision(actor.role, input.role)) {
       throw new ProvisioningDeniedError(
         `Papel "${actor.role}" não pode cadastrar contas com papel "${input.role}"`,
       );
     }
-    if (actor.role !== "super_admin" && input.clinicId !== actor.clinicId) {
+    if (actor.role !== 'super_admin' && input.clinicId !== actor.clinicId) {
       throw new ProvisioningDeniedError(
-        "Não é possível cadastrar conta em uma empresa diferente da própria",
+        'Não é possível cadastrar conta em uma empresa diferente da própria',
       );
     }
-    if (input.role === "profissional" && !input.professionalId) {
+    if (input.role === 'profissional' && !input.professionalId) {
       // Sem professionalId, a sessão nasce com vínculo nulo e o escopo
       // dinâmico (R4, professional-patient-scope.ts) nega acesso a todo
       // paciente — conta inutilizável por construção.
-      throw new ValidationError("professionalId é obrigatório para o papel profissional");
+      throw new ValidationError(
+        'professionalId é obrigatório para o papel profissional',
+      );
     }
 
     const existing = await this.accounts.findByEmail(input.email);
     if (existing) {
-      throw new ValidationError("Já existe conta com este email");
+      throw new ValidationError('Já existe conta com este email');
     }
 
     const account = UserAccount.create({

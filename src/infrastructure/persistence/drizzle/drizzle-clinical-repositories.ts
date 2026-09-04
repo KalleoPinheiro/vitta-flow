@@ -1,35 +1,36 @@
-import { desc, eq, inArray } from "drizzle-orm";
-import { Anamnesis } from "@/domain/clinical/anamnesis";
-import { EvolutionNote } from "@/domain/clinical/evolution-note";
+import { desc, eq, inArray } from 'drizzle-orm';
+import { Anamnesis } from '@/domain/clinical/anamnesis';
 import {
   ClinicalCondition,
   type ConditionKind,
   type ConditionStatus,
   type StomaType,
-} from "@/domain/clinical/clinical-condition";
-import {
-  ConditionAssessment,
-  type ExudateLevel,
-} from "@/domain/clinical/condition-assessment";
+} from '@/domain/clinical/clinical-condition';
 import type {
   AnamnesisRepository,
   ClinicalConditionRepository,
   ConditionAssessmentRepository,
   ConditionPhotoRepository,
   EvolutionNoteRepository,
-} from "@/domain/clinical/clinical-repositories";
+} from '@/domain/clinical/clinical-repositories';
+import {
+  ConditionAssessment,
+  type ExudateLevel,
+} from '@/domain/clinical/condition-assessment';
 import {
   ConditionPhoto,
   type PhotoContentType,
   type PhotoOrigin,
   type TriageStatus,
-} from "@/domain/clinical/condition-photo";
+} from '@/domain/clinical/condition-photo';
+import { EvolutionNote } from '@/domain/clinical/evolution-note';
 import {
   ConsentRecord,
   type ConsentRecordKind,
   type ConsentRecordRepository,
-} from "@/domain/consent/consent-record";
-import type { AppDb } from "./db";
+} from '@/domain/consent/consent-record';
+import { decryptField, encryptField } from '@/lib/auth/crypto';
+import type { AppDb } from './db';
 import {
   anamneses,
   clinicalConditions,
@@ -37,9 +38,8 @@ import {
   conditionPhotos,
   consentRecords,
   evolutionNotes,
-} from "./schema";
-import { withTenant } from "./tenant-scope";
-import { decryptField, encryptField } from "@/lib/auth/crypto";
+} from './schema';
+import { withTenant } from './tenant-scope';
 
 export class DrizzleAnamnesisRepository implements AnamnesisRepository {
   constructor(
@@ -50,7 +50,7 @@ export class DrizzleAnamnesisRepository implements AnamnesisRepository {
   async save(anamnesis: Anamnesis): Promise<void> {
     if (this.clinicId === null) {
       throw new Error(
-        "Papel de sistema não pode salvar anamnese (somente leitura cross-empresa)",
+        'Papel de sistema não pode salvar anamnese (somente leitura cross-empresa)',
       );
     }
     const values = {
@@ -73,7 +73,13 @@ export class DrizzleAnamnesisRepository implements AnamnesisRepository {
     const rows = await this.db
       .select()
       .from(anamneses)
-      .where(withTenant(anamneses, this.clinicId, eq(anamneses.patientId, patientId)))
+      .where(
+        withTenant(
+          anamneses,
+          this.clinicId,
+          eq(anamneses.patientId, patientId),
+        ),
+      )
       .limit(1);
     return rows[0] ? Anamnesis.restore(rows[0]) : null;
   }
@@ -89,17 +95,17 @@ export class DrizzleEvolutionNoteRepository implements EvolutionNoteRepository {
   private toEntity(row: typeof evolutionNotes.$inferSelect): EvolutionNote {
     return EvolutionNote.restore({
       ...row,
-      subjective: decryptField(row.subjective, this.secret) ?? "",
-      objective: decryptField(row.objective, this.secret) ?? "",
-      assessment: decryptField(row.assessment, this.secret) ?? "",
-      plan: decryptField(row.plan, this.secret) ?? "",
+      subjective: decryptField(row.subjective, this.secret) ?? '',
+      objective: decryptField(row.objective, this.secret) ?? '',
+      assessment: decryptField(row.assessment, this.secret) ?? '',
+      plan: decryptField(row.plan, this.secret) ?? '',
     });
   }
 
   async save(note: EvolutionNote): Promise<void> {
     if (this.clinicId === null) {
       throw new Error(
-        "Papel de sistema não pode salvar nota de evolução (somente leitura cross-empresa)",
+        'Papel de sistema não pode salvar nota de evolução (somente leitura cross-empresa)',
       );
     }
     await this.db.insert(evolutionNotes).values({
@@ -108,10 +114,10 @@ export class DrizzleEvolutionNoteRepository implements EvolutionNoteRepository {
       patientId: note.patientId,
       appointmentId: note.appointmentId,
       professionalId: note.professionalId,
-      subjective: encryptField(note.subjective, this.secret) ?? "",
-      objective: encryptField(note.objective, this.secret) ?? "",
-      assessment: encryptField(note.assessment, this.secret) ?? "",
-      plan: encryptField(note.plan, this.secret) ?? "",
+      subjective: encryptField(note.subjective, this.secret) ?? '',
+      objective: encryptField(note.objective, this.secret) ?? '',
+      assessment: encryptField(note.assessment, this.secret) ?? '',
+      plan: encryptField(note.plan, this.secret) ?? '',
       createdAt: note.createdAt,
     });
   }
@@ -120,20 +126,30 @@ export class DrizzleEvolutionNoteRepository implements EvolutionNoteRepository {
     const rows = await this.db
       .select()
       .from(evolutionNotes)
-      .where(withTenant(evolutionNotes, this.clinicId, eq(evolutionNotes.patientId, patientId)))
+      .where(
+        withTenant(
+          evolutionNotes,
+          this.clinicId,
+          eq(evolutionNotes.patientId, patientId),
+        ),
+      )
       .orderBy(desc(evolutionNotes.createdAt), desc(evolutionNotes.id));
     return rows.map((row) => this.toEntity(row));
   }
 }
 
-export class DrizzleClinicalConditionRepository implements ClinicalConditionRepository {
+export class DrizzleClinicalConditionRepository
+  implements ClinicalConditionRepository
+{
   constructor(
     private readonly db: AppDb,
     private readonly clinicId: string | null,
     private readonly secret: string,
   ) {}
 
-  private toEntity(row: typeof clinicalConditions.$inferSelect): ClinicalCondition {
+  private toEntity(
+    row: typeof clinicalConditions.$inferSelect,
+  ): ClinicalCondition {
     return ClinicalCondition.restore({
       ...row,
       notes: decryptField(row.notes, this.secret),
@@ -146,7 +162,7 @@ export class DrizzleClinicalConditionRepository implements ClinicalConditionRepo
   async save(condition: ClinicalCondition): Promise<void> {
     if (this.clinicId === null) {
       throw new Error(
-        "Papel de sistema não pode salvar condição clínica (somente leitura cross-empresa)",
+        'Papel de sistema não pode salvar condição clínica (somente leitura cross-empresa)',
       );
     }
     const values = {
@@ -171,7 +187,13 @@ export class DrizzleClinicalConditionRepository implements ClinicalConditionRepo
     const rows = await this.db
       .select()
       .from(clinicalConditions)
-      .where(withTenant(clinicalConditions, this.clinicId, eq(clinicalConditions.id, id)))
+      .where(
+        withTenant(
+          clinicalConditions,
+          this.clinicId,
+          eq(clinicalConditions.id, id),
+        ),
+      )
       .limit(1);
     return rows[0] ? this.toEntity(rows[0]) : null;
   }
@@ -181,7 +203,11 @@ export class DrizzleClinicalConditionRepository implements ClinicalConditionRepo
       .select()
       .from(clinicalConditions)
       .where(
-        withTenant(clinicalConditions, this.clinicId, eq(clinicalConditions.patientId, patientId)),
+        withTenant(
+          clinicalConditions,
+          this.clinicId,
+          eq(clinicalConditions.patientId, patientId),
+        ),
       )
       .orderBy(desc(clinicalConditions.createdAt));
     return rows.map((row) => this.toEntity(row));
@@ -195,7 +221,13 @@ export class DrizzleClinicalConditionRepository implements ClinicalConditionRepo
     const rows = await this.db
       .select()
       .from(clinicalConditions)
-      .where(withTenant(clinicalConditions, this.clinicId, inArray(clinicalConditions.id, unique)));
+      .where(
+        withTenant(
+          clinicalConditions,
+          this.clinicId,
+          inArray(clinicalConditions.id, unique),
+        ),
+      );
     return rows.map((row) => this.toEntity(row));
   }
 
@@ -219,14 +251,18 @@ export class DrizzleClinicalConditionRepository implements ClinicalConditionRepo
   }
 }
 
-export class DrizzleConditionAssessmentRepository implements ConditionAssessmentRepository {
+export class DrizzleConditionAssessmentRepository
+  implements ConditionAssessmentRepository
+{
   constructor(
     private readonly db: AppDb,
     private readonly clinicId: string | null,
     private readonly secret: string,
   ) {}
 
-  private toEntity(row: typeof conditionAssessments.$inferSelect): ConditionAssessment {
+  private toEntity(
+    row: typeof conditionAssessments.$inferSelect,
+  ): ConditionAssessment {
     return ConditionAssessment.restore({
       ...row,
       notes: decryptField(row.notes, this.secret),
@@ -237,7 +273,7 @@ export class DrizzleConditionAssessmentRepository implements ConditionAssessment
   async save(assessment: ConditionAssessment): Promise<void> {
     if (this.clinicId === null) {
       throw new Error(
-        "Papel de sistema não pode salvar avaliação de condição (somente leitura cross-empresa)",
+        'Papel de sistema não pode salvar avaliação de condição (somente leitura cross-empresa)',
       );
     }
     await this.db.insert(conditionAssessments).values({
@@ -254,7 +290,7 @@ export class DrizzleConditionAssessmentRepository implements ConditionAssessment
       complications: assessment.complications,
       complicationCodes:
         assessment.complicationCodes.length > 0
-          ? assessment.complicationCodes.join(",")
+          ? assessment.complicationCodes.join(',')
           : null,
       detDiscolorationArea: assessment.detDiscolorationArea,
       detDiscolorationSeverity: assessment.detDiscolorationSeverity,
@@ -278,11 +314,16 @@ export class DrizzleConditionAssessmentRepository implements ConditionAssessment
           eq(conditionAssessments.conditionId, conditionId),
         ),
       )
-      .orderBy(desc(conditionAssessments.createdAt), desc(conditionAssessments.id));
+      .orderBy(
+        desc(conditionAssessments.createdAt),
+        desc(conditionAssessments.id),
+      );
     return rows.map((row) => this.toEntity(row));
   }
 
-  async findByConditionIds(conditionIds: string[]): Promise<ConditionAssessment[]> {
+  async findByConditionIds(
+    conditionIds: string[],
+  ): Promise<ConditionAssessment[]> {
     const unique = [...new Set(conditionIds)];
     if (unique.length === 0) {
       return [];
@@ -297,12 +338,17 @@ export class DrizzleConditionAssessmentRepository implements ConditionAssessment
           inArray(conditionAssessments.conditionId, unique),
         ),
       )
-      .orderBy(desc(conditionAssessments.createdAt), desc(conditionAssessments.id));
+      .orderBy(
+        desc(conditionAssessments.createdAt),
+        desc(conditionAssessments.id),
+      );
     return rows.map((row) => this.toEntity(row));
   }
 }
 
-export class DrizzleConditionPhotoRepository implements ConditionPhotoRepository {
+export class DrizzleConditionPhotoRepository
+  implements ConditionPhotoRepository
+{
   constructor(
     private readonly db: AppDb,
     private readonly clinicId: string | null,
@@ -320,7 +366,7 @@ export class DrizzleConditionPhotoRepository implements ConditionPhotoRepository
   async save(photo: ConditionPhoto): Promise<void> {
     if (this.clinicId === null) {
       throw new Error(
-        "Papel de sistema não pode salvar foto de condição (somente leitura cross-empresa)",
+        'Papel de sistema não pode salvar foto de condição (somente leitura cross-empresa)',
       );
     }
     const values = {
@@ -346,7 +392,13 @@ export class DrizzleConditionPhotoRepository implements ConditionPhotoRepository
     const rows = await this.db
       .select()
       .from(conditionPhotos)
-      .where(withTenant(conditionPhotos, this.clinicId, eq(conditionPhotos.triageStatus, "pending")))
+      .where(
+        withTenant(
+          conditionPhotos,
+          this.clinicId,
+          eq(conditionPhotos.triageStatus, 'pending'),
+        ),
+      )
       .orderBy(desc(conditionPhotos.createdAt));
     return rows.map((row) => this.toEntity(row));
   }
@@ -355,7 +407,9 @@ export class DrizzleConditionPhotoRepository implements ConditionPhotoRepository
     const rows = await this.db
       .select()
       .from(conditionPhotos)
-      .where(withTenant(conditionPhotos, this.clinicId, eq(conditionPhotos.id, id)))
+      .where(
+        withTenant(conditionPhotos, this.clinicId, eq(conditionPhotos.id, id)),
+      )
       .limit(1);
     return rows[0] ? this.toEntity(rows[0]) : null;
   }
@@ -364,7 +418,13 @@ export class DrizzleConditionPhotoRepository implements ConditionPhotoRepository
     const rows = await this.db
       .select()
       .from(conditionPhotos)
-      .where(withTenant(conditionPhotos, this.clinicId, eq(conditionPhotos.conditionId, conditionId)))
+      .where(
+        withTenant(
+          conditionPhotos,
+          this.clinicId,
+          eq(conditionPhotos.conditionId, conditionId),
+        ),
+      )
       .orderBy(desc(conditionPhotos.createdAt), desc(conditionPhotos.id));
     return rows.map((row) => this.toEntity(row));
   }
@@ -377,7 +437,13 @@ export class DrizzleConditionPhotoRepository implements ConditionPhotoRepository
     const rows = await this.db
       .select()
       .from(conditionPhotos)
-      .where(withTenant(conditionPhotos, this.clinicId, inArray(conditionPhotos.conditionId, unique)))
+      .where(
+        withTenant(
+          conditionPhotos,
+          this.clinicId,
+          inArray(conditionPhotos.conditionId, unique),
+        ),
+      )
       .orderBy(desc(conditionPhotos.createdAt), desc(conditionPhotos.id));
     return rows.map((row) => this.toEntity(row));
   }
@@ -385,7 +451,9 @@ export class DrizzleConditionPhotoRepository implements ConditionPhotoRepository
   async delete(id: string): Promise<void> {
     await this.db
       .delete(conditionPhotos)
-      .where(withTenant(conditionPhotos, this.clinicId, eq(conditionPhotos.id, id)));
+      .where(
+        withTenant(conditionPhotos, this.clinicId, eq(conditionPhotos.id, id)),
+      );
   }
 }
 
@@ -398,7 +466,7 @@ export class DrizzleConsentRecordRepository implements ConsentRecordRepository {
   async save(record: ConsentRecord): Promise<void> {
     if (this.clinicId === null) {
       throw new Error(
-        "Papel de sistema não pode salvar consentimento (somente leitura cross-empresa)",
+        'Papel de sistema não pode salvar consentimento (somente leitura cross-empresa)',
       );
     }
     await this.db.insert(consentRecords).values({
@@ -417,18 +485,36 @@ export class DrizzleConsentRecordRepository implements ConsentRecordRepository {
     const rows = await this.db
       .select()
       .from(consentRecords)
-      .where(withTenant(consentRecords, this.clinicId, eq(consentRecords.patientId, patientId)))
+      .where(
+        withTenant(
+          consentRecords,
+          this.clinicId,
+          eq(consentRecords.patientId, patientId),
+        ),
+      )
       .orderBy(desc(consentRecords.acceptedAt));
-    return rows.map((row) => ConsentRecord.restore({ ...row, kind: row.kind as ConsentRecordKind }));
+    return rows.map((row) =>
+      ConsentRecord.restore({ ...row, kind: row.kind as ConsentRecordKind }),
+    );
   }
 
-  async findLatestByPatientId(patientId: string): Promise<ConsentRecord | null> {
+  async findLatestByPatientId(
+    patientId: string,
+  ): Promise<ConsentRecord | null> {
     const [row] = await this.db
       .select()
       .from(consentRecords)
-      .where(withTenant(consentRecords, this.clinicId, eq(consentRecords.patientId, patientId)))
+      .where(
+        withTenant(
+          consentRecords,
+          this.clinicId,
+          eq(consentRecords.patientId, patientId),
+        ),
+      )
       .orderBy(desc(consentRecords.acceptedAt))
       .limit(1);
-    return row ? ConsentRecord.restore({ ...row, kind: row.kind as ConsentRecordKind }) : null;
+    return row
+      ? ConsentRecord.restore({ ...row, kind: row.kind as ConsentRecordKind })
+      : null;
   }
 }

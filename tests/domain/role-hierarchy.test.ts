@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { canProvision } from "@/domain/auth/role-hierarchy";
-import { USER_ROLES, type UserRole } from "@/domain/auth/user-role";
+import { describe, expect, it } from 'vitest';
+import { canProvision } from '@/domain/auth/role-hierarchy';
+import { USER_ROLES, type UserRole } from '@/domain/auth/user-role';
 
 /** Matriz completa esperada (RBAC-07..RBAC-10, ADR-003) — 36 pares ator×alvo. */
 const EXPECTED: Record<UserRole, Record<UserRole, boolean>> = {
@@ -54,7 +54,7 @@ const EXPECTED: Record<UserRole, Record<UserRole, boolean>> = {
   },
 };
 
-describe("Feature: Hierarquia de provisionamento de contas (RBAC-07..RBAC-10)", () => {
+describe('Feature: Hierarquia de provisionamento de contas (RBAC-07..RBAC-10)', () => {
   for (const actor of USER_ROLES) {
     for (const target of USER_ROLES) {
       const expected = EXPECTED[actor][target];
@@ -64,16 +64,16 @@ describe("Feature: Hierarquia de provisionamento de contas (RBAC-07..RBAC-10)", 
     }
   }
 
-  describe("Cenário: patient e partner nunca cadastram ninguém (RBAC-10)", () => {
-    it("Dado ator patient, Quando checar qualquer alvo, Então sempre false", () => {
+  describe('Cenário: patient e partner nunca cadastram ninguém (RBAC-10)', () => {
+    it('Dado ator patient, Quando checar qualquer alvo, Então sempre false', () => {
       for (const target of USER_ROLES) {
-        expect(canProvision("patient", target)).toBe(false);
+        expect(canProvision('patient', target)).toBe(false);
       }
     });
 
-    it("Dado ator partner, Quando checar qualquer alvo, Então sempre false", () => {
+    it('Dado ator partner, Quando checar qualquer alvo, Então sempre false', () => {
       for (const target of USER_ROLES) {
-        expect(canProvision("partner", target)).toBe(false);
+        expect(canProvision('partner', target)).toBe(false);
       }
     });
   });

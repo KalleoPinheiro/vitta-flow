@@ -1,12 +1,12 @@
-import type { Appointment } from "@/domain/scheduling/appointment";
-import type { AppointmentRepository } from "@/domain/scheduling/appointment-repository";
-import { TimeSlot } from "@/domain/shared/time-slot";
-import { NotFoundError } from "@/domain/shared/errors";
+import type { Appointment } from '@/domain/scheduling/appointment';
+import type { AppointmentRepository } from '@/domain/scheduling/appointment-repository';
 import {
   DEFAULT_SCHEDULE_CONFIG,
   type ScheduleConfigRepository,
-} from "@/domain/scheduling/schedule-config";
-import { assertSlotAvailable } from "./assert-slot-available";
+} from '@/domain/scheduling/schedule-config';
+import { NotFoundError } from '@/domain/shared/errors';
+import { TimeSlot } from '@/domain/shared/time-slot';
+import { assertSlotAvailable } from './assert-slot-available';
 
 export interface RescheduleAppointmentInput {
   id: string;
@@ -23,11 +23,12 @@ export class RescheduleAppointment {
   async execute(input: RescheduleAppointmentInput): Promise<Appointment> {
     const appointment = await this.appointments.findById(input.id);
     if (!appointment) {
-      throw new NotFoundError("Consulta", input.id);
+      throw new NotFoundError('Consulta', input.id);
     }
 
     const slot = TimeSlot.create(input.startsAt, input.endsAt);
-    const config = (await this.scheduleConfig?.get()) ?? DEFAULT_SCHEDULE_CONFIG;
+    const config =
+      (await this.scheduleConfig?.get()) ?? DEFAULT_SCHEDULE_CONFIG;
     await assertSlotAvailable(
       this.appointments,
       slot,

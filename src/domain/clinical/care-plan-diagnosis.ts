@@ -1,7 +1,11 @@
-import { ValidationError } from "../shared/errors";
-import { newId } from "../shared/id";
+import { ValidationError } from '../shared/errors';
+import { newId } from '../shared/id';
 
-export const CARE_PLAN_DIAGNOSIS_TYPES = ["real", "risco", "promocao-saude"] as const;
+export const CARE_PLAN_DIAGNOSIS_TYPES = [
+  'real',
+  'risco',
+  'promocao-saude',
+] as const;
 export type CarePlanDiagnosisType = (typeof CARE_PLAN_DIAGNOSIS_TYPES)[number];
 
 export interface CarePlanDiagnosisProps {
@@ -31,8 +35,13 @@ export class CarePlanDiagnosis {
   static create(props: CarePlanDiagnosisProps): CarePlanDiagnosis {
     CarePlanDiagnosis.validateIds(props);
     const relatedFactors = props.relatedFactors?.trim() || null;
-    const definingCharacteristics = props.definingCharacteristics?.trim() || null;
-    CarePlanDiagnosis.validatePes(props.type, relatedFactors, definingCharacteristics);
+    const definingCharacteristics =
+      props.definingCharacteristics?.trim() || null;
+    CarePlanDiagnosis.validatePes(
+      props.type,
+      relatedFactors,
+      definingCharacteristics,
+    );
 
     return new CarePlanDiagnosis({
       carePlanId: props.carePlanId,
@@ -47,10 +56,10 @@ export class CarePlanDiagnosis {
 
   private static validateIds(props: CarePlanDiagnosisProps): void {
     if (props.carePlanId.trim().length === 0) {
-      throw new ValidationError("Plano de cuidados é obrigatório");
+      throw new ValidationError('Plano de cuidados é obrigatório');
     }
     if (props.diagnosisCode.trim().length === 0) {
-      throw new ValidationError("Diagnóstico é obrigatório");
+      throw new ValidationError('Diagnóstico é obrigatório');
     }
   }
 
@@ -61,14 +70,17 @@ export class CarePlanDiagnosis {
     definingCharacteristics: string | null,
   ): void {
     if (!CARE_PLAN_DIAGNOSIS_TYPES.includes(type)) {
-      throw new ValidationError("Tipo de diagnóstico inválido");
+      throw new ValidationError('Tipo de diagnóstico inválido');
     }
-    if (type === "risco") {
+    if (type === 'risco') {
       CarePlanDiagnosis.validateRisco(relatedFactors, definingCharacteristics);
-    } else if (type === "real") {
+    } else if (type === 'real') {
       CarePlanDiagnosis.validateReal(relatedFactors, definingCharacteristics);
     } else {
-      CarePlanDiagnosis.validatePromocaoSaude(relatedFactors, definingCharacteristics);
+      CarePlanDiagnosis.validatePromocaoSaude(
+        relatedFactors,
+        definingCharacteristics,
+      );
     }
   }
 
@@ -79,11 +91,13 @@ export class CarePlanDiagnosis {
   ): void {
     if (definingCharacteristics) {
       throw new ValidationError(
-        "Diagnóstico de risco não tem características definidoras — apenas fatores de risco",
+        'Diagnóstico de risco não tem características definidoras — apenas fatores de risco',
       );
     }
     if (!relatedFactors) {
-      throw new ValidationError("Diagnóstico de risco exige fatores de risco (relacionado a)");
+      throw new ValidationError(
+        'Diagnóstico de risco exige fatores de risco (relacionado a)',
+      );
     }
   }
 
@@ -93,11 +107,13 @@ export class CarePlanDiagnosis {
     definingCharacteristics: string | null,
   ): void {
     if (!relatedFactors) {
-      throw new ValidationError("Diagnóstico real exige fatores relacionados (relacionado a)");
+      throw new ValidationError(
+        'Diagnóstico real exige fatores relacionados (relacionado a)',
+      );
     }
     if (!definingCharacteristics) {
       throw new ValidationError(
-        "Diagnóstico real exige características definidoras (evidenciado por)",
+        'Diagnóstico real exige características definidoras (evidenciado por)',
       );
     }
   }
@@ -109,12 +125,12 @@ export class CarePlanDiagnosis {
   ): void {
     if (relatedFactors) {
       throw new ValidationError(
-        "Diagnóstico de promoção da saúde não tem fatores relacionados — não há problema, só motivação",
+        'Diagnóstico de promoção da saúde não tem fatores relacionados — não há problema, só motivação',
       );
     }
     if (!definingCharacteristics) {
       throw new ValidationError(
-        "Diagnóstico de promoção da saúde exige características definidoras (evidenciado por)",
+        'Diagnóstico de promoção da saúde exige características definidoras (evidenciado por)',
       );
     }
   }

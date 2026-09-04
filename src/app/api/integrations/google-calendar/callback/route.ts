@@ -1,22 +1,27 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from 'next/server';
+import { getRepositories } from '@/infrastructure/container';
+import { fail } from '@/lib/api-response';
+import { encryptSecret } from '@/lib/auth/crypto';
 import {
   CALENDAR_OAUTH_STATE_COOKIE,
   decodeCalendarOAuthState,
-  googleCalendarOAuthConfigFromEnv,
   type GoogleCalendarOAuthConfig,
-} from "@/lib/auth/google-calendar-oauth";
-import { createOAuthClient } from "@/lib/auth/google-oauth-client";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { encryptSecret } from "@/lib/auth/crypto";
-import { getRepositories } from "@/infrastructure/container";
-import { getAuthConfig, type Session } from "@/lib/auth/session";
-import { fail } from "@/lib/api-response";
+  googleCalendarOAuthConfigFromEnv,
+} from '@/lib/auth/google-calendar-oauth';
+import { createOAuthClient } from '@/lib/auth/google-oauth-client';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { getAuthConfig, type Session } from '@/lib/auth/session';
 
 /** Base pública p/ redirects: a URL interna do container não é acessível ao navegador. */
-const publicBaseUrl = (request: NextRequest): string => process.env.APP_URL ?? request.url;
+const publicBaseUrl = (request: NextRequest): string =>
+  process.env.APP_URL ?? request.url;
 
 function clearState(response: NextResponse): NextResponse {
-  response.cookies.set(CALENDAR_OAUTH_STATE_COOKIE, "", { httpOnly: true, path: "/", maxAge: 0 });
+  response.cookies.set(CALENDAR_OAUTH_STATE_COOKIE, '', {
+    httpOnly: true,
+    path: '/',
+    maxAge: 0,
+  });
   return response;
 }
 
@@ -26,10 +31,13 @@ function clearState(response: NextResponse): NextResponse {
  * de conta entre o redirect e o callback gravaria a credencial do Google sob a
  * conta errada, possivelmente de outra empresa.
  */
-function extractValidatedCode(request: NextRequest, subject: string): string | null {
+function extractValidatedCode(
+  request: NextRequest,
+  subject: string,
+): string | null {
   const params = request.nextUrl.searchParams;
-  const code = params.get("code");
-  const state = params.get("state");
+  const code = params.get('code');
+  const state = params.get('state');
   const expected = decodeCalendarOAuthState(
     request.cookies.get(CALENDAR_OAUTH_STATE_COOKIE)?.value,
   );
@@ -53,7 +61,7 @@ interface CredentialOwner {
  */
 function credentialOwner(session: Session | null): CredentialOwner {
   return {
-    subject: session?.subject ?? "sessao-aberta",
+    subject: session?.subject ?? 'sessao-aberta',
     clinicId: session?.clinicId ?? null,
   };
 }
@@ -73,13 +81,15 @@ async function persistCalendarCredential(
   const { tokens } = await createOAuthClient(config).getToken(code);
   if (!tokens.refresh_token) {
     return fail(
-      "O Google não devolveu credencial de longa duração — revogue o acesso do VittaFlow na sua conta Google e conecte de novo",
+      'O Google não devolveu credencial de longa duração — revogue o acesso do VittaFlow na sua conta Google e conecte de novo',
       400,
     );
   }
 
   // Titular da credencial é a sessão nativa, não uma identidade do Google.
-  const { googleAccounts } = await getRepositories({ clinicId: owner.clinicId });
+  const { googleAccounts } = await getRepositories({
+    clinicId: owner.clinicId,
+  });
   await googleAccounts.save({
     email: owner.subject,
     encryptedRefreshToken: encryptSecret(tokens.refresh_token, secret),
@@ -101,23 +111,30 @@ export async function GET(request: NextRequest) {
   const config = googleCalendarOAuthConfigFromEnv();
   const auth = getAuthConfig();
   if (!config || !auth) {
-    return fail("Integração com Google Agenda não configurada", 503);
+    return fail('Integração com Google Agenda não configurada', 503);
   }
 
   const owner = credentialOwner(guard.session);
   const code = extractValidatedCode(request, owner.subject);
   if (!code) {
-    return clearState(fail("Fluxo de conexão inválido, tente novamente", 400));
+    return clearState(fail('Fluxo de conexão inválido, tente novamente', 400));
   }
 
   try {
-    const failure = await persistCalendarCredential(config, code, owner, auth.secret);
+    const failure = await persistCalendarCredential(
+      config,
+      code,
+      owner,
+      auth.secret,
+    );
     return clearState(
       failure ??
-        NextResponse.redirect(new URL("/configuracoes?calendar=conectado", publicBaseUrl(request))),
+        NextResponse.redirect(
+          new URL('/configuracoes?calendar=conectado', publicBaseUrl(request)),
+        ),
     );
   } catch (error) {
-    console.error("Google Agenda: falha ao concluir a conexão", error);
-    return clearState(fail("Falha ao conectar o Google Agenda", 502));
+    console.error('Google Agenda: falha ao concluir a conexão', error);
+    return clearState(fail('Falha ao conectar o Google Agenda', 502));
   }
 }

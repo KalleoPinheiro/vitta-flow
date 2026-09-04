@@ -1,19 +1,5 @@
-"use client";
+'use client';
 
-import { use, type ReactNode } from "react";
-import type { AssessmentDto, ConditionDto, PatientDto } from "@/lib/dto";
-import { useApiQuery } from "@/lib/use-api-query";
-import { useDocumentIssuance } from "@/lib/use-document-issuance";
-import {
-  CONDITION_KIND_LABELS,
-  EXUDATE_LABELS,
-  STOMA_TYPE_LABELS,
-  formatDate,
-} from "@/lib/format";
-import { ErrorAlert, LoadingIndicator } from "@/components/feedback";
-import { DocumentFrame, type ClinicInfoDto } from "@/components/document-frame";
-import { isClinicInfoComplete } from "@/domain/clinic/clinic";
-import { HealingChart } from "@/components/healing-chart";
 import {
   Table,
   TableBody,
@@ -21,7 +7,21 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@still-void/ui/react";
+} from '@still-void/ui/react';
+import { type ReactNode, use } from 'react';
+import { type ClinicInfoDto, DocumentFrame } from '@/components/document-frame';
+import { ErrorAlert, LoadingIndicator } from '@/components/feedback';
+import { HealingChart } from '@/components/healing-chart';
+import { isClinicInfoComplete } from '@/domain/clinic/clinic';
+import type { AssessmentDto, ConditionDto, PatientDto } from '@/lib/dto';
+import {
+  CONDITION_KIND_LABELS,
+  EXUDATE_LABELS,
+  formatDate,
+  STOMA_TYPE_LABELS,
+} from '@/lib/format';
+import { useApiQuery } from '@/lib/use-api-query';
+import { useDocumentIssuance } from '@/lib/use-document-issuance';
 
 function guardLoading(
   clinic: ClinicInfoDto | null,
@@ -30,13 +30,15 @@ function guardLoading(
   error: string | null,
 ): ReactNode | null {
   if (error) return <ErrorAlert message={error} />;
-  if (!clinic || condition === undefined || !assessments) return <LoadingIndicator />;
+  if (!clinic || condition === undefined || !assessments)
+    return <LoadingIndicator />;
   if (!isClinicInfoComplete(clinic)) {
     return (
       <ErrorAlert message="Clínica sem CNPJ ou responsável técnico cadastrados — cadastre em Configurações antes de emitir este documento." />
     );
   }
-  if (condition === null) return <ErrorAlert message="Condição não encontrada" />;
+  if (condition === null)
+    return <ErrorAlert message="Condição não encontrada" />;
   return null;
 }
 
@@ -74,16 +76,26 @@ export default function PartnerReportPage({
   params: Promise<{ conditionId: string }>;
 }) {
   const { conditionId } = use(params);
-  const { data: clinic } = useApiQuery<ClinicInfoDto>("/api/clinic-info");
+  const { data: clinic } = useApiQuery<ClinicInfoDto>('/api/clinic-info');
   const { data: condition, error } = useApiQuery<ConditionDto | null>(
     `/api/conditions/${conditionId}`,
   );
   const { data: assessments } = useApiQuery<AssessmentDto[]>(
     `/api/conditions/${conditionId}/assessments`,
   );
-  const { issuance, error: issuanceError } = useDocumentIssuance("relatorio", conditionId);
+  const { issuance, error: issuanceError } = useDocumentIssuance(
+    'relatorio',
+    conditionId,
+  );
 
-  const guard = guardBlock(clinic, condition, assessments, error, issuance, issuanceError);
+  const guard = guardBlock(
+    clinic,
+    condition,
+    assessments,
+    error,
+    issuance,
+    issuanceError,
+  );
   if (guard) return guard;
   if (!clinic || !condition || !assessments || !issuance) return null;
 
@@ -138,14 +150,16 @@ function ReportContent({
         {CONDITION_KIND_LABELS[condition.kind] ?? condition.kind}
         {condition.stomaType
           ? ` — ${STOMA_TYPE_LABELS[condition.stomaType] ?? condition.stomaType}`
-          : ""}
+          : ''}
         )
       </p>
       <p className="mb-4">
-        <strong>Início do acompanhamento:</strong>{" "}
-        {condition.startedAt ? formatDate(condition.startedAt) : formatDate(condition.createdAt)}{" "}
-        · <strong>Situação:</strong>{" "}
-        {condition.status === "active" ? "em acompanhamento" : "resolvida"}
+        <strong>Início do acompanhamento:</strong>{' '}
+        {condition.startedAt
+          ? formatDate(condition.startedAt)
+          : formatDate(condition.createdAt)}{' '}
+        · <strong>Situação:</strong>{' '}
+        {condition.status === 'active' ? 'em acompanhamento' : 'resolvida'}
       </p>
 
       {chronological.length >= 2 && (
@@ -162,9 +176,9 @@ function ReportContent({
           continuar em preto-sobre-branco na impressora P&B. O utilitário
           vence layer(components), então o override é determinístico. */}
       <div className="overflow-x-auto">
-        <Table className="w-full border-collapse text-xs text-black print:text-[9px]">
+        <Table className="w-full border-collapse text-black text-xs print:text-[9px]">
           <TableHeader>
-            <TableRow className="border-b border-black text-left">
+            <TableRow className="border-black border-b text-left">
               <TableHead className="py-1 pr-2 text-black">Data</TableHead>
               <TableHead className="py-1 pr-2 text-black">C×L×P (mm)</TableHead>
               <TableHead className="py-1 pr-2 text-black">Área (mm²)</TableHead>
@@ -175,15 +189,25 @@ function ReportContent({
           </TableHeader>
           <TableBody>
             {chronological.map((a) => (
-              <TableRow key={a.id} className="border-b border-black/60">
-                <TableCell className="py-1 pr-2">{formatDate(a.createdAt)}</TableCell>
+              <TableRow key={a.id} className="border-black/60 border-b">
                 <TableCell className="py-1 pr-2">
-                  {a.lengthMm != null ? `${a.lengthMm}×${a.widthMm ?? "—"}×${a.depthMm ?? "—"}` : "—"}
+                  {formatDate(a.createdAt)}
                 </TableCell>
-                <TableCell className="py-1 pr-2">{a.areaMm2 ?? "—"}</TableCell>
-                <TableCell className="py-1 pr-2">{a.tissueType ?? "—"}</TableCell>
-                <TableCell className="py-1 pr-2">{a.exudate ? (EXUDATE_LABELS[a.exudate] ?? a.exudate) : "—"}</TableCell>
-                <TableCell className="py-1">{a.painScale != null ? `${a.painScale}/10` : "—"}</TableCell>
+                <TableCell className="py-1 pr-2">
+                  {a.lengthMm != null
+                    ? `${a.lengthMm}×${a.widthMm ?? '—'}×${a.depthMm ?? '—'}`
+                    : '—'}
+                </TableCell>
+                <TableCell className="py-1 pr-2">{a.areaMm2 ?? '—'}</TableCell>
+                <TableCell className="py-1 pr-2">
+                  {a.tissueType ?? '—'}
+                </TableCell>
+                <TableCell className="py-1 pr-2">
+                  {a.exudate ? (EXUDATE_LABELS[a.exudate] ?? a.exudate) : '—'}
+                </TableCell>
+                <TableCell className="py-1">
+                  {a.painScale != null ? `${a.painScale}/10` : '—'}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

@@ -1,4 +1,4 @@
-import { detectImageType } from "./condition-photo";
+import { detectImageType } from './condition-photo';
 
 /**
  * Remove metadados sensíveis de imagens antes do armazenamento (AD-002):
@@ -18,11 +18,11 @@ export interface StripResult {
 export function stripImageMetadata(data: Uint8Array): StripResult {
   try {
     switch (detectImageType(data)) {
-      case "image/jpeg":
+      case 'image/jpeg':
         return { data: stripJpeg(data), stripped: true };
-      case "image/png":
+      case 'image/png':
         return { data: stripPng(data), stripped: true };
-      case "image/webp":
+      case 'image/webp':
         return { data: stripWebp(data), stripped: true };
       default:
         return { data, stripped: false };
@@ -42,7 +42,9 @@ const JPEG_COM = 0xfe;
 /** APP2 = perfil ICC, APP14 = transformação de cor Adobe: preservam a cor. */
 const JPEG_COLOR_MARKERS = new Set([0xe2, 0xee]);
 /** Marcadores sem payload de comprimento (standalone). */
-const JPEG_STANDALONE = new Set([0x01, 0xd0, 0xd1, 0xd2, 0xd3, 0xd4, 0xd5, 0xd6, 0xd7]);
+const JPEG_STANDALONE = new Set([
+  0x01, 0xd0, 0xd1, 0xd2, 0xd3, 0xd4, 0xd5, 0xd6, 0xd7,
+]);
 
 interface JpegSegment {
   end: number;
@@ -127,7 +129,7 @@ function stripJpeg(data: Uint8Array): Uint8Array {
 // --- PNG: chunks [len(4) type(4) data crc(4)]; remove texto/EXIF/timestamp. ---
 
 const PNG_SIGNATURE_LENGTH = 8;
-const PNG_METADATA_CHUNKS = new Set(["tEXt", "zTXt", "iTXt", "eXIf", "tIME"]);
+const PNG_METADATA_CHUNKS = new Set(['tEXt', 'zTXt', 'iTXt', 'eXIf', 'tIME']);
 
 function stripPng(data: Uint8Array): Uint8Array {
   const kept: Array<Uint8Array> = [data.subarray(0, PNG_SIGNATURE_LENGTH)];
@@ -138,7 +140,10 @@ function stripPng(data: Uint8Array): Uint8Array {
       return data;
     }
     const length =
-      (data[offset] << 24) | (data[offset + 1] << 16) | (data[offset + 2] << 8) | data[offset + 3];
+      (data[offset] << 24) |
+      (data[offset + 1] << 16) |
+      (data[offset + 2] << 8) |
+      data[offset + 3];
     const type = String.fromCharCode(
       data[offset + 4],
       data[offset + 5],
@@ -160,7 +165,7 @@ function stripPng(data: Uint8Array): Uint8Array {
 // --- WebP: RIFF chunks [fourcc(4) size(4 LE) data(+pad)]; remove EXIF/XMP. ---
 
 const WEBP_HEADER_LENGTH = 12;
-const WEBP_METADATA_CHUNKS = new Set(["EXIF", "XMP "]);
+const WEBP_METADATA_CHUNKS = new Set(['EXIF', 'XMP ']);
 const VP8X_EXIF_FLAG = 0x08;
 const VP8X_XMP_FLAG = 0x04;
 
@@ -179,14 +184,17 @@ function stripWebp(data: Uint8Array): Uint8Array {
       data[offset + 3],
     );
     const size =
-      data[offset + 4] | (data[offset + 5] << 8) | (data[offset + 6] << 16) | (data[offset + 7] << 24);
+      data[offset + 4] |
+      (data[offset + 5] << 8) |
+      (data[offset + 6] << 16) |
+      (data[offset + 7] << 24);
     const paddedEnd = offset + 8 + size + (size % 2);
     if (size < 0 || paddedEnd > data.length) {
       return data;
     }
     if (!WEBP_METADATA_CHUNKS.has(fourcc)) {
       const chunk = new Uint8Array(data.subarray(offset, paddedEnd));
-      if (fourcc === "VP8X" && chunk.length > 8) {
+      if (fourcc === 'VP8X' && chunk.length > 8) {
         // Chunks EXIF/XMP removidos → flags correspondentes zeradas.
         chunk[8] &= ~(VP8X_EXIF_FLAG | VP8X_XMP_FLAG);
       }

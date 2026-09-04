@@ -1,4 +1,4 @@
-import type { Clinic } from "./clinic";
+import type { Clinic } from './clinic';
 
 export interface ClinicRepository {
   create(clinic: Clinic): Promise<void>;

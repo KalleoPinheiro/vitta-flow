@@ -1,13 +1,16 @@
-"use client";
+'use client';
 
-import { use, type ReactNode } from "react";
-import type { AppointmentDto, PatientDto } from "@/lib/dto";
-import { useApiQuery } from "@/lib/use-api-query";
-import { useDocumentIssuance, type DocumentIssuance } from "@/lib/use-document-issuance";
-import { formatDate } from "@/lib/format";
-import { ErrorAlert, LoadingIndicator } from "@/components/feedback";
-import { DocumentFrame, type ClinicInfoDto } from "@/components/document-frame";
-import { isClinicInfoComplete } from "@/domain/clinic/clinic";
+import { type ReactNode, use } from 'react';
+import { type ClinicInfoDto, DocumentFrame } from '@/components/document-frame';
+import { ErrorAlert, LoadingIndicator } from '@/components/feedback';
+import { isClinicInfoComplete } from '@/domain/clinic/clinic';
+import type { AppointmentDto, PatientDto } from '@/lib/dto';
+import { formatDate } from '@/lib/format';
+import { useApiQuery } from '@/lib/use-api-query';
+import {
+  type DocumentIssuance,
+  useDocumentIssuance,
+} from '@/lib/use-document-issuance';
 
 function guardAppointment(
   clinic: ClinicInfoDto | null,
@@ -16,7 +19,8 @@ function guardAppointment(
   appointmentError: string | null,
   appointmentLoading: boolean,
 ): ReactNode | null {
-  if (appointmentError || clinicError) return <ErrorAlert message={appointmentError ?? clinicError ?? ""} />;
+  if (appointmentError || clinicError)
+    return <ErrorAlert message={appointmentError ?? clinicError ?? ''} />;
   if (!clinic || appointmentLoading) return <LoadingIndicator />;
   if (!appointment) return <ErrorAlert message="Consulta não encontrada" />;
   if (!isClinicInfoComplete(clinic)) {
@@ -24,9 +28,11 @@ function guardAppointment(
       <ErrorAlert message="Clínica sem CNPJ ou responsável técnico cadastrados — cadastre em Configurações antes de emitir este documento." />
     );
   }
-  if (appointment.status !== "completed") {
+  if (appointment.status !== 'completed') {
     return (
-      <ErrorAlert message={`Não é possível emitir declaração de comparecimento: consulta com status "${appointment.status}", não "realizada".`} />
+      <ErrorAlert
+        message={`Não é possível emitir declaração de comparecimento: consulta com status "${appointment.status}", não "realizada".`}
+      />
     );
   }
   return null;
@@ -63,7 +69,8 @@ export default function AttendanceDocumentPage({
   params: Promise<{ appointmentId: string }>;
 }) {
   const { appointmentId } = use(params);
-  const { data: clinic, error: clinicError } = useApiQuery<ClinicInfoDto>("/api/clinic-info");
+  const { data: clinic, error: clinicError } =
+    useApiQuery<ClinicInfoDto>('/api/clinic-info');
   const {
     data: appointment,
     error,
@@ -72,7 +79,10 @@ export default function AttendanceDocumentPage({
   const { data: patient } = useApiQuery<PatientDto>(
     appointment ? `/api/patients/${appointment.patientId}` : null,
   );
-  const { issuance, error: issuanceError } = useDocumentIssuance("atestado", appointmentId);
+  const { issuance, error: issuanceError } = useDocumentIssuance(
+    'atestado',
+    appointmentId,
+  );
 
   const guard = guardBlock(
     clinic,
@@ -89,7 +99,7 @@ export default function AttendanceDocumentPage({
   const start = new Date(appointment.startsAt);
   const end = new Date(appointment.endsAt);
   const time = (d: Date) =>
-    d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
   return (
     <DocumentFrame
@@ -99,13 +109,15 @@ export default function AttendanceDocumentPage({
       issuedAt={issuance.issuedAt}
     >
       <p className="mb-4">
-        Declaro, para os devidos fins, que{" "}
-        <strong>{appointment.patientName ?? "o(a) paciente"}</strong>
-        {patient?.birthDate ? ` (nascido(a) em ${formatDate(patient.birthDate)})` : ""}{" "}
-        compareceu a atendimento de estomaterapia nesta clínica no dia{" "}
-        <strong>{start.toLocaleDateString("pt-BR")}</strong>, no período de{" "}
-        <strong>{time(start)}</strong> às <strong>{time(end)}</strong>, para realização de:{" "}
-        <strong>{appointment.procedure}</strong>.
+        Declaro, para os devidos fins, que{' '}
+        <strong>{appointment.patientName ?? 'o(a) paciente'}</strong>
+        {patient?.birthDate
+          ? ` (nascido(a) em ${formatDate(patient.birthDate)})`
+          : ''}{' '}
+        compareceu a atendimento de estomaterapia nesta clínica no dia{' '}
+        <strong>{start.toLocaleDateString('pt-BR')}</strong>, no período de{' '}
+        <strong>{time(start)}</strong> às <strong>{time(end)}</strong>, para
+        realização de: <strong>{appointment.procedure}</strong>.
       </p>
       <p>Por ser verdade, firmo a presente declaração.</p>
     </DocumentFrame>

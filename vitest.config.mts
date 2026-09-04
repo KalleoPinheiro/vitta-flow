@@ -24,6 +24,11 @@ export default defineConfig({
       // que não existe em produção. Testes que precisam do cenário "sem auth"
       // sobrescrevem/limpam estas variáveis localmente.
       AUTH_SECRET: "vitest-auth-secret-0000000000000000",
+      // why: VITTA_ALLOW_OPEN_MODE=true em .env local (conveniência de `npm run
+      // dev`) vaza pro processo de teste e quebra as asserções fail-closed de
+      // require-session.test.ts — força vazio aqui pelo mesmo motivo do
+      // AUTH_SECRET acima.
+      VITTA_ALLOW_OPEN_MODE: "",
     },
     // Migra o PGlite 1x (todo o processo, não por worker/arquivo) e faz dump
     // do datadir num arquivo temporário — cada arquivo de teste que precisa

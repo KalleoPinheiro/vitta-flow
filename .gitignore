@@ -73,3 +73,6 @@ uploads/
 .agents
 .cursor
 .windsurf
+.tlc/harness/state/
+.cursor/hooks.json
+.claude/settings.json

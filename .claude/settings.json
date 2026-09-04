@@ -6,7 +6,15 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-dangerous-git.sh"
+            "command": "\"$ROOT_DIR\"/.claude/hooks/block-dangerous-git.sh"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$ROOT_DIR\"/.tlc/harness/bin/tlc-exec.mjs shim tool-before"
           }
         ]
       }
@@ -17,7 +25,57 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/lint-edited-file.sh"
+            "command": "\"$ROOT_DIR\"/.claude/hooks/lint-edited-file.sh"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$ROOT_DIR\"/.tlc/harness/bin/tlc-exec.mjs shim session-start"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$ROOT_DIR\"/.tlc/harness/bin/tlc-exec.mjs shim session-end"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$ROOT_DIR\"/.tlc/harness/bin/tlc-exec.mjs shim subagent-start"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$ROOT_DIR\"/.tlc/harness/bin/tlc-exec.mjs shim stop"
+          }
+        ]
+      }
+    ],
+    "MessageDisplay": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$ROOT_DIR\"/.tlc/harness/bin/tlc-exec.mjs shim response-after"
           }
         ]
       }

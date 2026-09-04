@@ -1,0 +1,23 @@
+{
+  "$schema": "https://unpkg.com/@tech-leads-club/harness-toolkit@0.10/schema.json",
+  "version": 1,
+  "codePaths": [
+    "app",
+    "lib",
+    "drizzle"
+  ],
+  "grind": {
+    "enabled": true,
+    "lintCommand": [
+      "npm",
+      "run",
+      "lint"
+    ],
+    "testCommand": [
+      "npm",
+      "run",
+      "test"
+    ],
+    "maxLoops": 3
+  }
+}

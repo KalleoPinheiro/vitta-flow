@@ -16,6 +16,7 @@ Next.js 16 (App Router), React 19, TypeScript 5, Drizzle ORM + Postgres 16, Tail
 - `npm run lint` — `biome check`
 - `npm run format` — `biome format --write .`
 - `npm run test` / `test:coverage` — vitest, **90% coverage minimum enforced**
+- `npm run test:changed` — vitest `--changed` (só testes afetados por diff não commitado; passe um ref, ex. `npm run test:changed -- origin/main`, pra comparar contra outra base); loop local rápido, **não substitui** `test:coverage` como gate — CI sempre roda suite completa
 - `npm run test:e2e` — Playwright
 - `npm run check:sv` — gate enforcing `@still-void/ui` adoption (see below)
 - `npm run db:migrate` — drizzle-kit migrate

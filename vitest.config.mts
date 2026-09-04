@@ -29,6 +29,12 @@ export default defineConfig({
       // require-session.test.ts — força vazio aqui pelo mesmo motivo do
       // AUTH_SECRET acima.
       VITTA_ALLOW_OPEN_MODE: "",
+      // why: RESEND_API_KEY/EMAIL_FROM reais em .env local (conveniência de
+      // `npm run dev` pra mandar e-mail de verdade) fazem buildEmailGateway()
+      // escolher o ResendEmailGateway real em vez do NullEmailGateway — a
+      // suíte inteira espera o dry-run (console.info) do gateway nulo.
+      RESEND_API_KEY: "",
+      EMAIL_FROM: "",
     },
     // Migra o PGlite 1x (todo o processo, não por worker/arquivo) e faz dump
     // do datadir num arquivo temporário — cada arquivo de teste que precisa

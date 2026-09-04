@@ -258,7 +258,8 @@ describe('Feature: Emissão e consumo de token de convite/reset', () => {
       });
 
       const updated = await accounts.findById(account.id);
-      expect(await verifyPassword('senha-nova-1', updated!.passwordHash)).toBe(
+      if (!updated) throw new Error('Conta não encontrada');
+      expect(await verifyPassword('senha-nova-1', updated.passwordHash)).toBe(
         true,
       );
     });
@@ -320,9 +321,10 @@ describe('Feature: Emissão e consumo de token de convite/reset', () => {
         }),
       ).rejects.toThrow(INVALID_TOKEN_MESSAGE);
       const unchanged = await accounts.findById(account.id);
-      expect(
-        await verifyPassword('senha-nova-1', unchanged!.passwordHash),
-      ).toBe(false);
+      if (!unchanged) throw new Error('Conta não encontrada');
+      expect(await verifyPassword('senha-nova-1', unchanged.passwordHash)).toBe(
+        false,
+      );
     });
 
     it('Dado conta apagada entre a emissão e o consumo, Quando consumir, Então lança a mensagem única', async () => {
@@ -432,7 +434,8 @@ describe('Feature: Emissão e consumo de token de convite/reset', () => {
         }),
       ).rejects.toThrow(INVALID_TOKEN_MESSAGE);
       const account2 = await accounts.findById(account.id);
-      expect(await verifyPassword('senha-nova-1', account2!.passwordHash)).toBe(
+      if (!account2) throw new Error('Conta não encontrada');
+      expect(await verifyPassword('senha-nova-1', account2.passwordHash)).toBe(
         false,
       );
     });

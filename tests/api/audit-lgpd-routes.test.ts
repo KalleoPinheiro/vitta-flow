@@ -469,17 +469,18 @@ describe('Feature: Rotas de auditoria, export LGPD, fotos (staff) e cron de lemb
       );
       const repos = await getRepositories({ clinicId: 'legacy-clinic' });
       const stored = await repos.conditionPhotos.findById(photoId);
+      if (!stored) throw new Error('Foto de condição não encontrada');
       const thirtyHoursAgo = new Date(Date.now() - 30 * 3_600_000);
       await repos.conditionPhotos.save(
         ConditionPhoto.restore({
-          id: stored!.id,
-          conditionId: stored!.conditionId,
-          assessmentId: stored!.assessmentId,
-          contentType: stored!.contentType,
-          sizeBytes: stored!.sizeBytes,
-          origin: stored!.origin,
-          patientNote: stored!.patientNote,
-          triageStatus: stored!.triageStatus,
+          id: stored.id,
+          conditionId: stored.conditionId,
+          assessmentId: stored.assessmentId,
+          contentType: stored.contentType,
+          sizeBytes: stored.sizeBytes,
+          origin: stored.origin,
+          patientNote: stored.patientNote,
+          triageStatus: stored.triageStatus,
           createdAt: thirtyHoursAgo,
         }),
       );

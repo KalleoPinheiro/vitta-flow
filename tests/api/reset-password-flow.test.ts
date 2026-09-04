@@ -19,9 +19,10 @@ interface Envelope<T> {
 }
 
 let ipCounter = 200;
-const freshIp = (): Record<string, string> => ({
-  'x-forwarded-for': `10.2.0.${(ipCounter += 1)}`,
-});
+const freshIp = (): Record<string, string> => {
+  ipCounter += 1;
+  return { 'x-forwarded-for': `10.2.0.${ipCounter}` };
+};
 
 /** Cria a conta, consome o convite e deixa a senha inicial definida. */
 const accountWithPassword = async (

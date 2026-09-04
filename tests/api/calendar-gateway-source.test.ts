@@ -30,7 +30,7 @@ describe('Feature: Origem da credencial do Google Agenda', () => {
       email: 'equipe-agenda@clinica.com',
       encryptedRefreshToken: encryptSecret(
         'refresh-token-conectado',
-        process.env.AUTH_SECRET!,
+        process.env.AUTH_SECRET as string,
       ),
       connectedAt: new Date(),
     });

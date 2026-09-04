@@ -82,7 +82,7 @@ describe('Feature: Conexão do Google Agenda desacoplada do login', () => {
     process.env.GOOGLE_CLIENT_SECRET = 'secret-xyz';
     process.env.APP_URL = 'https://app.vitta.test';
     oauthClientMock.mockImplementation((config: unknown) =>
-      realClient.create!(config),
+      realClient.create?.(config),
     );
   });
 
@@ -102,7 +102,7 @@ describe('Feature: Conexão do Google Agenda desacoplada do login', () => {
       );
 
       expect(response.status).toBe(307);
-      const location = new URL(response.headers.get('location')!);
+      const location = new URL(response.headers.get('location') ?? '');
       expect(location.origin).toBe('https://accounts.google.com');
       expect(location.searchParams.get('scope')).toBe(
         'https://www.googleapis.com/auth/calendar.events',
@@ -124,9 +124,9 @@ describe('Feature: Conexão do Google Agenda desacoplada do login', () => {
 
       const setCookie = response.headers.get('set-cookie') ?? '';
       expect(setCookie).toContain(`${CALENDAR_OAUTH_STATE_COOKIE}=`);
-      const state = new URL(response.headers.get('location')!).searchParams.get(
-        'state',
-      );
+      const state = new URL(
+        response.headers.get('location') ?? '',
+      ).searchParams.get('state');
       // O cookie amarra o state à conta que iniciou o fluxo. O valor sai
       // percent-encoded pelo serializador de cookie, então compara decodificado.
       const cookieValue = decodeURIComponent(
@@ -135,7 +135,7 @@ describe('Feature: Conexão do Google Agenda desacoplada do login', () => {
         )?.[1] ?? '',
       );
       expect(cookieValue).toBe(
-        encodeCalendarOAuthState(state!, 'agenda@clinica.com'),
+        encodeCalendarOAuthState(state ?? '', 'agenda@clinica.com'),
       );
     });
 
@@ -199,7 +199,7 @@ describe('Feature: Conexão do Google Agenda desacoplada do login', () => {
       });
       const stored = await googleAccounts.findByEmail('agenda@clinica.com');
       expect(stored).not.toBeNull();
-      expect(stored!.encryptedRefreshToken).not.toContain('refresh-token-real');
+      expect(stored?.encryptedRefreshToken).not.toContain('refresh-token-real');
     });
 
     it('Dado a conexão concluída, Quando ler a resposta, Então nenhum cookie de sessão é emitido', async () => {

@@ -42,9 +42,10 @@ const inviteFor = async (email: string): Promise<string> => {
 
 let ipCounter = 0;
 /** Um IP por chamada: o limite de 5/min é por IP e não deve vazar entre casos. */
-const freshIp = (): Record<string, string> => ({
-  'x-forwarded-for': `10.0.0.${(ipCounter += 1)}`,
-});
+const freshIp = (): Record<string, string> => {
+  ipCounter += 1;
+  return { 'x-forwarded-for': `10.0.0.${ipCounter}` };
+};
 
 const setPassword = async (
   token: string,
@@ -96,7 +97,10 @@ describe('Feature: POST /api/auth/set-password', () => {
     // com role "atendente"), não um valor fixo — AUTH-06.
     const { verifySessionToken } = await import('@/lib/auth/session');
     const sessionToken = cookie.match(/vitta_session=([^;]+)/)?.[1] ?? '';
-    const session = verifySessionToken(process.env.AUTH_SECRET!, sessionToken);
+    const session = verifySessionToken(
+      process.env.AUTH_SECRET as string,
+      sessionToken,
+    );
     expect(session?.role).toBe('atendente');
     expect(session?.subject).toBe('login-apos-convite@x.com');
   });
@@ -159,7 +163,8 @@ describe('Feature: POST /api/auth/set-password', () => {
     const { getRepositories } = await import('@/infrastructure/container');
     const { userAccounts } = await getRepositories({ clinicId: CLINIC_A_ID });
     const account = await userAccounts.findByEmail('conta-inativa@x.com');
-    await userAccounts.save(account!.deactivate());
+    if (!account) throw new Error('Conta não encontrada');
+    await userAccounts.save(account.deactivate());
 
     const response = await setPassword(token, 'senha-forte-8');
     const json = (await response.json()) as Envelope<null>;
@@ -197,8 +202,9 @@ describe('Feature: POST /api/auth/set-password', () => {
     });
     const { AuthToken } = await import('@/domain/auth/auth-token');
     const account = await userAccounts.findByEmail('audit-reset@x.com');
+    if (!account) throw new Error('Conta não encontrada');
     const { token: resetToken, secret } = AuthToken.issue({
-      accountId: account!.id,
+      accountId: account.id,
       purpose: 'reset',
       nowMs: Date.now(),
     });

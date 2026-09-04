@@ -50,7 +50,7 @@ describe('Feature: Registro de auditoria best-effort (após a resposta)', () => 
     });
 
     expect(afterTasks).toHaveLength(1);
-    await afterTasks[0]!();
+    await afterTasks[0]?.();
 
     expect(auditEvents.save).toHaveBeenCalledTimes(1);
     const saved = auditEvents.save.mock.calls[0][0];
@@ -80,7 +80,7 @@ describe('Feature: Registro de auditoria best-effort (após a resposta)', () => 
       resourceId: 'plan-1',
     });
 
-    await afterTasks[0]!();
+    await afterTasks[0]?.();
 
     const saved = auditEvents.save.mock.calls[0][0];
     expect(saved.clinicId).toBe('clinic-b');
@@ -95,7 +95,7 @@ describe('Feature: Registro de auditoria best-effort (após a resposta)', () => 
       resourceId: 'note-1',
     });
 
-    await afterTasks[0]!();
+    await afterTasks[0]?.();
 
     const saved = auditEvents.save.mock.calls[0][0];
     expect(saved.actorRole).toBe('anonymous');
@@ -115,7 +115,7 @@ describe('Feature: Registro de auditoria best-effort (após a resposta)', () => 
       resourceId: 'cond-1',
     });
 
-    await expect(afterTasks[0]!()).resolves.toBeUndefined();
+    await expect(afterTasks[0]?.()).resolves.toBeUndefined();
     expect(consoleSpy).toHaveBeenCalledWith(
       'Auditoria: falha ao registrar evento',
       expect.any(Error),
@@ -149,7 +149,7 @@ describe('Feature: Ator explícito pré-sessão (actorOverride, #71)', () => {
       },
     });
 
-    await afterTasks[0]!();
+    await afterTasks[0]?.();
 
     const saved = auditEvents.save.mock.calls[0][0];
     expect(saved.actorRole).toBe('atendente');
@@ -193,7 +193,7 @@ describe('Feature: Ator explícito pré-sessão (actorOverride, #71)', () => {
       resourceId: 'clinic-1',
     });
 
-    await afterTasks[0]!();
+    await afterTasks[0]?.();
 
     const saved = auditEvents.save.mock.calls[0][0];
     expect(saved.actorRole).toBe('company_admin');

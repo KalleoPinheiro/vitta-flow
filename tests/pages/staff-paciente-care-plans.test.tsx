@@ -356,7 +356,10 @@ function createCarePlanServer() {
   const state: CarePlanServerState = {
     plans: [],
     details: new Map(),
-    nextId: (prefix: string) => `${prefix}-${(counter += 1)}`,
+    nextId: (prefix: string) => {
+      counter += 1;
+      return `${prefix}-${counter}`;
+    },
   };
 
   return function handle({ url, init }: FetchCall): MockedResponse {
@@ -421,8 +424,11 @@ describe('Feature: Plano de Cuidados (SAE) na página do paciente', () => {
     await waitForOpenPlanModalToClose();
 
     const planTitle = await screen.findByText('Úlcera venosa perna E');
-    const planCard = planTitle.closest('li')!;
-    expect(within(planCard).getByText('Ativo')).toBeInTheDocument();
+    const planCard = planTitle.closest('li');
+    expect(planCard).not.toBeNull();
+    expect(
+      within(planCard as HTMLElement).getByText('Ativo'),
+    ).toBeInTheDocument();
   });
 
   it('Dado clique em Resolver plano seguido de cancelamento no dialog, Quando acionado, Então não chama a API e o plano continua ativo', async () => {

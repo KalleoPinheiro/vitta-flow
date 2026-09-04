@@ -664,9 +664,10 @@ describe('Feature: Doubles em memória de infraestrutura', () => {
     // ordenação e de janela de datas sem instantes distintos para discriminar.
     // restore permite controlar o instante — é o que esses cenários exigem.
     let auditSeq = 0;
-    const makeEvent = (patientId: string, occurredAt: Date) =>
-      AuditEvent.restore({
-        id: `audit-${(auditSeq += 1)}`,
+    const makeEvent = (patientId: string, occurredAt: Date) => {
+      auditSeq += 1;
+      return AuditEvent.restore({
+        id: `audit-${auditSeq}`,
         clinicId: 'clinic-1',
         actorRole: 'admin',
         actorId: 'staff',
@@ -677,6 +678,7 @@ describe('Feature: Doubles em memória de infraestrutura', () => {
         detail: null,
         occurredAt,
       });
+    };
 
     it('Dado eventos de pacientes distintos, Quando findAll sem filtro, Então retorna todos ordenados mais recente primeiro', async () => {
       const repo = new InMemoryAuditEventRepository();

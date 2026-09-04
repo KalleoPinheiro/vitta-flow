@@ -18,9 +18,10 @@ interface Envelope<T> {
 }
 
 let ipCounter = 100;
-const freshIp = (): Record<string, string> => ({
-  'x-forwarded-for': `10.1.0.${(ipCounter += 1)}`,
-});
+const freshIp = (): Record<string, string> => {
+  ipCounter += 1;
+  return { 'x-forwarded-for': `10.1.0.${ipCounter}` };
+};
 
 const createAccount = async (email: string): Promise<void> => {
   await ensureTestClinics();
@@ -110,7 +111,8 @@ describe('Feature: POST /api/auth/forgot-password', () => {
     const { getRepositories } = await import('@/infrastructure/container');
     const { userAccounts } = await getRepositories({ clinicId: CLINIC_A_ID });
     const account = await userAccounts.findByEmail('inativa-reset@x.com');
-    await userAccounts.save(account!.deactivate());
+    if (!account) throw new Error('Conta não encontrada');
+    await userAccounts.save(account.deactivate());
     const emails = spyOnSentEmails();
 
     const response = await forgot('inativa-reset@x.com');

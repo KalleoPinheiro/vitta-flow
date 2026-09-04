@@ -18,7 +18,10 @@ interface Envelope<T> {
 }
 
 let ipCounter = 0;
-const freshIp = (): string => `10.5.0.${(ipCounter += 1)}`;
+const freshIp = (): string => {
+  ipCounter += 1;
+  return `10.5.0.${ipCounter}`;
+};
 
 const bootstrapRequest = (
   body: unknown,
@@ -178,11 +181,11 @@ describe('Feature: POST /api/auth/bootstrap (primeiro Super Admin)', () => {
 
     expect(response.status).toBe(200);
     const { verifySessionToken } = await import('@/lib/auth/session');
-    const cookie = response.headers.get('set-cookie')!;
+    const cookie = response.headers.get('set-cookie') ?? '';
     const value = cookie.split(';')[0].split('=')[1];
-    expect(verifySessionToken(process.env.AUTH_SECRET!, value)?.role).toBe(
-      'super_admin',
-    );
+    expect(
+      verifySessionToken(process.env.AUTH_SECRET as string, value)?.role,
+    ).toBe('super_admin');
   });
 
   it('Dado que já existe uma conta, Quando POST de novo, Então responde 403 e não cria nada', async () => {

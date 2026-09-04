@@ -443,7 +443,7 @@ describe('Feature: Branches restantes de consultas, pacientes e catálogo clíni
 
       const nextResponse = await patientsRoute.GET(
         jsonRequest(
-          `/api/patients?limit=1&cursor=${encodeURIComponent(body.meta!.nextCursor!)}`,
+          `/api/patients?limit=1&cursor=${encodeURIComponent(body.meta?.nextCursor ?? '')}`,
           'GET',
         ),
       );

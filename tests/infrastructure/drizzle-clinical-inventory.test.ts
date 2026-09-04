@@ -86,7 +86,8 @@ describe('Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
     );
 
     const stored = await repo.findByPatientId(patient.id);
-    await repo.save(stored!.update({ allergies: 'Látex' }));
+    if (!stored) throw new Error('Anamnese não encontrada');
+    await repo.save(stored.update({ allergies: 'Látex' }));
 
     const updated = await repo.findByPatientId(patient.id);
     expect(updated?.comorbidities).toBe('DM2');

@@ -57,7 +57,7 @@ describe('Feature: Agendamento da sincronização com Google Calendar (após a r
     scheduleCalendarSync(services, action);
 
     expect(afterTasks).toHaveLength(1);
-    await afterTasks[0]!();
+    await afterTasks[0]?.();
 
     expect(action).toHaveBeenCalledTimes(1);
     expect(action.mock.calls[0][0]).toBeInstanceOf(SyncAppointmentCalendar);
@@ -75,7 +75,7 @@ describe('Feature: Agendamento da sincronização com Google Calendar (após a r
 
     scheduleCalendarSync(services, action);
 
-    await expect(afterTasks[0]!()).resolves.toBeUndefined();
+    await expect(afterTasks[0]?.()).resolves.toBeUndefined();
     expect(consoleSpy).toHaveBeenCalledWith(
       'Google Calendar: falha na sincronização pós-request',
       expect.any(Error),

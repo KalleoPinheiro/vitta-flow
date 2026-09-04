@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Button, Card, Icon } from "@still-void/ui/react";
 import { Tooltip, TooltipContent, TooltipTrigger, useToast } from "@still-void/ui/react/client";
 import type { AppointmentDto, FollowUpDto, SupplyDto } from "@/lib/dto";
@@ -327,12 +328,14 @@ function TriageQueue() {
       <ul className="flex flex-col gap-2">
         {queue.map((photo) => (
           <li key={photo.id} className="flex flex-wrap items-center gap-2 text-sm">
-            {/* eslint-disable-next-line @next/next/no-img-element -- rota autorizada dinâmica */}
-            <img
-              src={`/api/photos/${photo.id}`}
-              alt={`Foto de ${photo.patientName}`}
-              className="h-12 w-12 rounded border border-border object-cover"
-            />
+            <div className="relative h-12 w-12 rounded border border-border overflow-hidden shrink-0">
+              <Image
+                src={`/api/photos/${photo.id}`}
+                alt={`Foto de ${photo.patientName}`}
+                fill
+                className="object-cover"
+              />
+            </div>
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium">
                 {photo.patientName} — {photo.conditionTitle}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Image from "next/image";
 import { useToast } from "@still-void/ui/react/client";
 import { apiFetch } from "@/lib/client";
 import type { ConditionPhotoDto } from "@/lib/dto";
@@ -129,12 +130,14 @@ export function ConditionPhotos({ conditionId, canUpload }: ConditionPhotosProps
           <div className="flex flex-wrap gap-2">
             {chronological.map((photo) => (
               <figure key={photo.id} className="w-24">
-                {/* eslint-disable-next-line @next/next/no-img-element -- rota autorizada dinâmica */}
-                <img
-                  src={`/api/photos/${photo.id}`}
-                  alt={`Foto de ${formatDate(photo.createdAt)}`}
-                  className="h-24 w-24 rounded border border-border object-cover"
-                />
+                <div className="relative h-24 w-24 rounded border border-border overflow-hidden">
+                  <Image
+                    src={`/api/photos/${photo.id}`}
+                    alt={`Foto de ${formatDate(photo.createdAt)}`}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
                 <figcaption className="mt-0.5 flex items-center justify-between text-[10px] text-ink-3">
                   {formatDate(photo.createdAt)}
                   {canUpload && (
@@ -165,12 +168,14 @@ function ComparePane({ label, photoId }: { label: string; photoId: string }) {
   return (
     <figure>
       <figcaption className="mb-1 text-xs font-medium text-ink-3">{label}</figcaption>
-      {/* eslint-disable-next-line @next/next/no-img-element -- rota autorizada dinâmica */}
-      <img
-        src={`/api/photos/${photoId}`}
-        alt={label}
-        className="w-full rounded border border-border object-contain"
-      />
+      <div className="relative w-full aspect-square rounded border border-border overflow-hidden">
+        <Image
+          src={`/api/photos/${photoId}`}
+          alt={label}
+          fill
+          className="object-contain"
+        />
+      </div>
     </figure>
   );
 }

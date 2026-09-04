@@ -8,14 +8,14 @@ import {
 /**
  * Helpers de sessão para os testes de rota. As rotas exigem sessão válida
  * (`src/lib/auth/require-session.ts`), então a suíte assina um cookie real com o
- * `AUTH_SECRET` definido em `vitest.config.ts` — o mesmo caminho que o navegador
+ * `AUTH_SECRET` definido em `vitest.config.mts` — o mesmo caminho que o navegador
  * percorre em produção.
  */
 const secret = (): string => {
   const value = process.env.AUTH_SECRET;
   if (!value) {
     throw new Error(
-      'AUTH_SECRET ausente — defina em vitest.config.ts (test.env)',
+      'AUTH_SECRET ausente — defina em vitest.config.mts (test.env)',
     );
   }
   return value;

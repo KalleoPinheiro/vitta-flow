@@ -1,5 +1,5 @@
-import { ValidationError } from "../shared/errors";
-import { newId } from "../shared/id";
+import { ValidationError } from '../shared/errors';
+import { newId } from '../shared/id';
 
 export interface SessionPackageProps {
   patientId: string;
@@ -25,17 +25,19 @@ export class SessionPackage {
 
   static create(props: SessionPackageProps): SessionPackage {
     if (!props.patientId.trim() || !props.procedureId.trim()) {
-      throw new ValidationError("Pacote exige paciente e procedimento");
+      throw new ValidationError('Pacote exige paciente e procedimento');
     }
     if (
       !Number.isInteger(props.totalSessions) ||
       props.totalSessions < 1 ||
       props.totalSessions > MAX_SESSIONS
     ) {
-      throw new ValidationError(`Pacote deve ter de 1 a ${MAX_SESSIONS} sessões`);
+      throw new ValidationError(
+        `Pacote deve ter de 1 a ${MAX_SESSIONS} sessões`,
+      );
     }
     if (!Number.isInteger(props.priceCents) || props.priceCents < 0) {
-      throw new ValidationError("Preço do pacote não pode ser negativo");
+      throw new ValidationError('Preço do pacote não pode ser negativo');
     }
     return new SessionPackage({
       ...props,
@@ -53,9 +55,12 @@ export class SessionPackage {
 
   consumeSession(): SessionPackage {
     if (!this.hasBalance) {
-      throw new ValidationError("Pacote sem saldo de sessões");
+      throw new ValidationError('Pacote sem saldo de sessões');
     }
-    return new SessionPackage({ ...this.state, usedSessions: this.state.usedSessions + 1 });
+    return new SessionPackage({
+      ...this.state,
+      usedSessions: this.state.usedSessions + 1,
+    });
   }
 
   cancel(): SessionPackage {
@@ -63,7 +68,9 @@ export class SessionPackage {
   }
 
   get hasBalance(): boolean {
-    return this.state.active && this.state.usedSessions < this.state.totalSessions;
+    return (
+      this.state.active && this.state.usedSessions < this.state.totalSessions
+    );
   }
 
   get expiresAt(): Date | null {
@@ -73,7 +80,10 @@ export class SessionPackage {
   /** Elegível para consumo (COMP3-08): ativo, com saldo e dentro da validade. */
   isUsableAt(now: Date): boolean {
     const expiresAt = this.state.expiresAt ?? null;
-    return this.hasBalance && (expiresAt === null || expiresAt.getTime() > now.getTime());
+    return (
+      this.hasBalance &&
+      (expiresAt === null || expiresAt.getTime() > now.getTime())
+    );
   }
 
   get remainingSessions(): number {
@@ -118,7 +128,11 @@ export interface SessionPackageRepository {
   findById(id: string): Promise<SessionPackage | null>;
   findByPatientId(patientId: string): Promise<SessionPackage[]>;
   /** Pacote ativo, com saldo e não expirado para o par paciente+procedimento (mais antigo primeiro). */
-  findUsable(patientId: string, procedureId: string, now?: Date): Promise<SessionPackage | null>;
+  findUsable(
+    patientId: string,
+    procedureId: string,
+    now?: Date,
+  ): Promise<SessionPackage | null>;
   /** Registra consumo por consulta — unique por consulta garante idempotência. */
   recordConsumption(packageId: string, appointmentId: string): Promise<void>;
   wasConsumedBy(appointmentId: string): Promise<boolean>;

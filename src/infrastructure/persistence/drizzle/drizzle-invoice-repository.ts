@@ -1,16 +1,20 @@
-import { and, desc, eq, gte, lt, or, sql, type SQL } from "drizzle-orm";
-import { Invoice, type InvoiceStatus, type PaymentMethod } from "@/domain/billing/invoice";
+import { and, desc, eq, gte, lt, or, type SQL, sql } from 'drizzle-orm';
+import {
+  Invoice,
+  type InvoiceStatus,
+  type PaymentMethod,
+} from '@/domain/billing/invoice';
 import type {
   InvoiceFilter,
   InvoicePage,
   InvoiceRepository,
   InvoiceSummary,
-} from "@/domain/billing/invoice-repository";
-import { Money } from "@/domain/shared/money";
-import { decodeCursor } from "@/lib/pagination";
-import { MAX_ROWS, type AppDb } from "./db";
-import { invoices } from "./schema";
-import { withTenant } from "./tenant-scope";
+} from '@/domain/billing/invoice-repository';
+import { Money } from '@/domain/shared/money';
+import { decodeCursor } from '@/lib/pagination';
+import { type AppDb, MAX_ROWS } from './db';
+import { invoices } from './schema';
+import { withTenant } from './tenant-scope';
 
 type InvoiceRow = typeof invoices.$inferSelect;
 
@@ -36,7 +40,9 @@ export class DrizzleInvoiceRepository implements InvoiceRepository {
 
   async save(invoice: Invoice): Promise<void> {
     if (this.clinicId === null) {
-      throw new Error("Papel de sistema não pode salvar fatura (somente leitura cross-empresa)");
+      throw new Error(
+        'Papel de sistema não pode salvar fatura (somente leitura cross-empresa)',
+      );
     }
     const values = {
       id: invoice.id,
@@ -70,7 +76,13 @@ export class DrizzleInvoiceRepository implements InvoiceRepository {
     const rows = await this.db
       .select()
       .from(invoices)
-      .where(withTenant(invoices, this.clinicId, eq(invoices.appointmentId, appointmentId)))
+      .where(
+        withTenant(
+          invoices,
+          this.clinicId,
+          eq(invoices.appointmentId, appointmentId),
+        ),
+      )
       .limit(1);
     return rows[0] ? toInvoice(rows[0]) : null;
   }
@@ -78,18 +90,31 @@ export class DrizzleInvoiceRepository implements InvoiceRepository {
   private buildConditions(filter: InvoiceFilter): SQL | undefined {
     const conditions: SQL[] = [];
     if (filter.status) conditions.push(eq(invoices.status, filter.status));
-    if (filter.patientId) conditions.push(eq(invoices.patientId, filter.patientId));
+    if (filter.patientId)
+      conditions.push(eq(invoices.patientId, filter.patientId));
     if (filter.from) conditions.push(gte(invoices.issuedAt, filter.from));
     if (filter.to) conditions.push(lt(invoices.issuedAt, filter.to));
-    return withTenant(invoices, this.clinicId, conditions.length > 0 ? and(...conditions) : undefined);
+    return withTenant(
+      invoices,
+      this.clinicId,
+      conditions.length > 0 ? and(...conditions) : undefined,
+    );
   }
 
-  async findAll(filter: InvoiceFilter = {}, page: InvoicePage = {}): Promise<Invoice[]> {
+  async findAll(
+    filter: InvoiceFilter = {},
+    page: InvoicePage = {},
+  ): Promise<Invoice[]> {
     const limit = Math.min(page.limit ?? MAX_ROWS, MAX_ROWS);
     const rows = await this.db
       .select()
       .from(invoices)
-      .where(and(this.buildConditions(filter), buildInvoiceCursorFilter(page.cursor)))
+      .where(
+        and(
+          this.buildConditions(filter),
+          buildInvoiceCursorFilter(page.cursor),
+        ),
+      )
       .orderBy(desc(invoices.issuedAt), desc(invoices.id))
       .limit(limit);
     return rows.map(toInvoice);

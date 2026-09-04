@@ -1,16 +1,16 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { ValidationError } from "@/domain/shared/errors";
-import { USER_ROLES } from "@/domain/auth/user-role";
-import { CreateAccount } from "@/application/auth/create-account";
-import { UNSET_PASSWORD_HASH } from "@/lib/auth/password";
-import { sendInvite } from "@/application/auth/send-invite";
-import { handleRequest } from "@/lib/api-response";
-import { toUserAccountDto } from "@/lib/dto";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
-import { recordAudit } from "@/lib/audit";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { CreateAccount } from '@/application/auth/create-account';
+import { sendInvite } from '@/application/auth/send-invite';
+import { USER_ROLES } from '@/domain/auth/user-role';
+import { ValidationError } from '@/domain/shared/errors';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { recordAudit } from '@/lib/audit';
+import { UNSET_PASSWORD_HASH } from '@/lib/auth/password';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { toUserAccountDto } from '@/lib/dto';
 
 const createSchema = z
   .object({
@@ -22,11 +22,11 @@ const createSchema = z
     clinicId: z.string().max(100).nullish(),
     professionalId: z.string().max(100).nullish(),
   })
-  .refine((data) => data.role !== "profissional" || !!data.professionalId, {
+  .refine((data) => data.role !== 'profissional' || !!data.professionalId, {
     // Sem professionalId, a sessão do profissional nasce com vínculo nulo e o
     // escopo dinâmico (R4) nega acesso a todo paciente — conta inutilizável.
-    message: "professionalId é obrigatório para o papel profissional",
-    path: ["professionalId"],
+    message: 'professionalId é obrigatório para o papel profissional',
+    path: ['professionalId'],
   });
 
 export async function GET(request: NextRequest) {
@@ -52,10 +52,10 @@ export async function POST(request: NextRequest) {
     // antes — trata a chamada como super_admin, exigindo clinicId explícito.
     const actor = guard.session
       ? { role: guard.session.role, clinicId: guard.session.clinicId }
-      : { role: "super_admin" as const, clinicId: null };
+      : { role: 'super_admin' as const, clinicId: null };
 
     const targetClinicId =
-      actor.role === "super_admin"
+      actor.role === 'super_admin'
         ? (body.clinicId ?? LEGACY_CLINIC_ID)
         : (actor.clinicId ?? LEGACY_CLINIC_ID);
 
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     if (body.professionalId) {
       const professional = await professionals.findById(body.professionalId);
       if (!professional) {
-        throw new ValidationError("Profissional vinculado não encontrado");
+        throw new ValidationError('Profissional vinculado não encontrado');
       }
     }
 
@@ -78,8 +78,8 @@ export async function POST(request: NextRequest) {
     });
     const { delivered } = await sendInvite(services, account);
     recordAudit(auditEvents, guard.session, {
-      action: "create",
-      resourceType: "account",
+      action: 'create',
+      resourceType: 'account',
       resourceId: account.id,
     });
     return { ...toUserAccountDto(account), delivered };

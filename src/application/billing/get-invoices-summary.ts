@@ -1,4 +1,8 @@
-import type { InvoiceFilter, InvoiceRepository, InvoiceSummary } from "@/domain/billing/invoice-repository";
+import type {
+  InvoiceFilter,
+  InvoiceRepository,
+  InvoiceSummary,
+} from '@/domain/billing/invoice-repository';
 
 export class GetInvoicesSummary {
   constructor(private readonly invoices: InvoiceRepository) {}

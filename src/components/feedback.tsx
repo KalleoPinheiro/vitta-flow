@@ -1,5 +1,12 @@
-import Link from "next/link";
-import { Alert, AlertDescription, Button, CardSkeleton, Icon, type IconName } from "@still-void/ui/react";
+import {
+  Alert,
+  AlertDescription,
+  Button,
+  CardSkeleton,
+  Icon,
+  type IconName,
+} from '@still-void/ui/react';
+import Link from 'next/link';
 
 interface ErrorAlertProps {
   message: string;
@@ -12,7 +19,7 @@ interface ErrorAlertProps {
    * `warning` distingue erro de conflito (409) de erro de validação (400) —
    * mesmo alerta vermelho pros dois exigia ações opostas (AGENDA-05).
    */
-  variant?: "danger" | "warning";
+  variant?: 'danger' | 'warning';
 }
 
 /**
@@ -21,12 +28,21 @@ interface ErrorAlertProps {
  * (danger -ink pra contrast 4.5:1), e ícone padrão (se necessário).
  * O token semântico garante que erros nunca colidem com a cor accent do site.
  */
-export function ErrorAlert({ message, onRetry, variant = "danger" }: ErrorAlertProps) {
+export function ErrorAlert({
+  message,
+  onRetry,
+  variant = 'danger',
+}: ErrorAlertProps) {
   return (
     <Alert variant={variant} className="mb-4">
       <AlertDescription>{message}</AlertDescription>
       {onRetry && (
-        <Button type="button" variant="link" className="h-auto p-0 mt-1" onClick={onRetry}>
+        <Button
+          type="button"
+          variant="link"
+          className="mt-1 h-auto p-0"
+          onClick={onRetry}
+        >
           Tentar novamente
         </Button>
       )}
@@ -56,11 +72,14 @@ interface EmptyStateProps {
 
 export function EmptyState({ message, icon, action }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center gap-2 py-8 text-center text-sm text-ink-3">
+    <div className="flex flex-col items-center gap-2 py-8 text-center text-ink-3 text-sm">
       {icon && <Icon name={icon} className="text-2xl text-ink-3" />}
       <p>{message}</p>
       {action && (
-        <Link href={action.href} className="font-medium text-accent-ink hover:underline">
+        <Link
+          href={action.href}
+          className="font-medium text-accent-ink hover:underline"
+        >
           {action.label}
         </Link>
       )}

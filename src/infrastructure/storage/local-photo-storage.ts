@@ -1,7 +1,7 @@
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import path from "node:path";
-import type { PhotoStorage } from "@/application/ports/photo-storage";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import type { PhotoStorage } from '@/application/ports/photo-storage';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
 
 const ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 
@@ -15,18 +15,18 @@ export class LocalPhotoStorage implements PhotoStorage {
   private readonly dir: string;
 
   constructor(
-    baseDir: string = process.env.UPLOADS_DIR || "./uploads",
+    baseDir: string = process.env.UPLOADS_DIR || './uploads',
     clinicId: string = LEGACY_CLINIC_ID,
   ) {
     if (!ID_PATTERN.test(clinicId)) {
-      throw new Error("Identificador de clínica inválido");
+      throw new Error('Identificador de clínica inválido');
     }
-    this.dir = path.resolve(baseDir, clinicId, "condition-photos");
+    this.dir = path.resolve(baseDir, clinicId, 'condition-photos');
   }
 
   private pathFor(id: string): string {
     if (!ID_PATTERN.test(id)) {
-      throw new Error("Identificador de foto inválido");
+      throw new Error('Identificador de foto inválido');
     }
     return path.join(this.dir, id);
   }
@@ -40,7 +40,7 @@ export class LocalPhotoStorage implements PhotoStorage {
     try {
       return await readFile(this.pathFor(id));
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         return null;
       }
       throw error;

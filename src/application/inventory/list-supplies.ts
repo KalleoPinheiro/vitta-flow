@@ -1,5 +1,5 @@
-import type { Supply } from "@/domain/inventory/supply";
-import type { SupplyRepository } from "@/domain/inventory/inventory-repositories";
+import type { SupplyRepository } from '@/domain/inventory/inventory-repositories';
+import type { Supply } from '@/domain/inventory/supply';
 
 export interface SupplyListItem {
   supply: Supply;

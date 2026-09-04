@@ -1,15 +1,15 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { UpdatePartner } from "@/application/partners/update-partner";
-import { handleRequest } from "@/lib/api-response";
-import { toPartnerDto } from "@/lib/dto";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { UpdatePartner } from '@/application/partners/update-partner';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { toPartnerDto } from '@/lib/dto';
 
 const updateSchema = z.object({
   fullName: z.string().min(1).max(200).optional(),
-  email: z.string().min(1).max(200).email("Email inválido").optional(),
+  email: z.string().min(1).max(200).email('Email inválido').optional(),
   phone: z.string().min(1).max(50).optional(),
   crm: z.string().max(50).nullish(),
   specialty: z.string().max(200).nullish(),

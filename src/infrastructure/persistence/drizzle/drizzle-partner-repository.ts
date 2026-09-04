@@ -1,11 +1,12 @@
-import { asc, eq } from "drizzle-orm";
-import { Partner } from "@/domain/partner/partner";
-import type { PartnerRepository } from "@/domain/partner/partner-repository";
-import { MAX_ROWS, type AppDb } from "./db";
-import { partners } from "./schema";
-import { withTenant } from "./tenant-scope";
+import { asc, eq } from 'drizzle-orm';
+import { Partner } from '@/domain/partner/partner';
+import type { PartnerRepository } from '@/domain/partner/partner-repository';
+import { type AppDb, MAX_ROWS } from './db';
+import { partners } from './schema';
+import { withTenant } from './tenant-scope';
 
-const toPartner = (row: typeof partners.$inferSelect): Partner => Partner.restore(row);
+const toPartner = (row: typeof partners.$inferSelect): Partner =>
+  Partner.restore(row);
 
 export class DrizzlePartnerRepository implements PartnerRepository {
   constructor(
@@ -15,7 +16,9 @@ export class DrizzlePartnerRepository implements PartnerRepository {
 
   async save(partner: Partner): Promise<void> {
     if (this.clinicId === null) {
-      throw new Error("Papel de sistema não pode salvar parceiro (somente leitura cross-empresa)");
+      throw new Error(
+        'Papel de sistema não pode salvar parceiro (somente leitura cross-empresa)',
+      );
     }
     const values = {
       id: partner.id,
@@ -47,7 +50,13 @@ export class DrizzlePartnerRepository implements PartnerRepository {
     const rows = await this.db
       .select()
       .from(partners)
-      .where(withTenant(partners, this.clinicId, eq(partners.email, email.trim().toLowerCase())))
+      .where(
+        withTenant(
+          partners,
+          this.clinicId,
+          eq(partners.email, email.trim().toLowerCase()),
+        ),
+      )
       .limit(1);
     return rows[0] ? toPartner(rows[0]) : null;
   }

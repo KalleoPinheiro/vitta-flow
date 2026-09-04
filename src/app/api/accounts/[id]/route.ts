@@ -1,12 +1,12 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { NotFoundError } from "@/domain/shared/errors";
-import { hashPassword } from "@/lib/auth/password";
-import { handleRequest } from "@/lib/api-response";
-import { toUserAccountDto } from "@/lib/dto";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { NotFoundError } from '@/domain/shared/errors';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { hashPassword } from '@/lib/auth/password';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { toUserAccountDto } from '@/lib/dto';
 
 const updateSchema = z.object({
   active: z.boolean().optional(),
@@ -29,7 +29,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const all = await userAccounts.findAll();
     const existing = all.find((account) => account.id === id);
     if (!existing) {
-      throw new NotFoundError("Conta", id);
+      throw new NotFoundError('Conta', id);
     }
 
     let updated = existing;

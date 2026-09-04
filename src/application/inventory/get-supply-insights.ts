@@ -2,7 +2,7 @@ import type {
   StockMovementRepository,
   SupplyBatchRepository,
   SupplyRepository,
-} from "@/domain/inventory/inventory-repositories";
+} from '@/domain/inventory/inventory-repositories';
 
 export interface ExpiringBatchInfo {
   batchId: string;
@@ -40,10 +40,14 @@ export class GetSupplyInsights {
   ) {}
 
   async execute(now: Date = new Date()): Promise<SupplyInsights> {
-    const windowStart = new Date(now.getTime() - CONSUMPTION_WINDOW_DAYS * MS_PER_DAY);
+    const windowStart = new Date(
+      now.getTime() - CONSUMPTION_WINDOW_DAYS * MS_PER_DAY,
+    );
     // Range [from, to) — +1ms inclui movimentos registrados no mesmo instante.
     const windowEnd = new Date(now.getTime() + 1);
-    const expiryLimit = new Date(now.getTime() + EXPIRY_ALERT_DAYS * MS_PER_DAY);
+    const expiryLimit = new Date(
+      now.getTime() + EXPIRY_ALERT_DAYS * MS_PER_DAY,
+    );
 
     const [supplies, outflows, expiring] = await Promise.all([
       this.supplies.findAll(),
@@ -58,7 +62,8 @@ export class GetSupplyInsights {
       return {
         supplyId,
         avgDailyOut,
-        daysToStockout: avgDailyOut > 0 ? Math.floor(stockQty / avgDailyOut) : null,
+        daysToStockout:
+          avgDailyOut > 0 ? Math.floor(stockQty / avgDailyOut) : null,
       };
     });
 

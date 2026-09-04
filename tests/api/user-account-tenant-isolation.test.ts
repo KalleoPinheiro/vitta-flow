@@ -1,9 +1,13 @@
-import { describe, it, expect } from "vitest";
-import { jsonRequest } from "../support/request";
-import { adminCookieHeader } from "../support/session";
-import { ensureTestClinics, CLINIC_A_ID, CLINIC_B_ID } from "../support/clinics";
+import { describe, expect, it } from 'vitest';
+import {
+  CLINIC_A_ID,
+  CLINIC_B_ID,
+  ensureTestClinics,
+} from '../support/clinics';
+import { jsonRequest } from '../support/request';
+import { adminCookieHeader } from '../support/session';
 
-process.env.VITTA_DB_DRIVER = "pglite";
+process.env.VITTA_DB_DRIVER = 'pglite';
 
 interface Envelope<T> {
   success: boolean;
@@ -11,14 +15,14 @@ interface Envelope<T> {
   error: string | null;
 }
 
-describe("Feature: Isolamento de Conta de Usuário e e-mail único por empresa (MT-24)", () => {
+describe('Feature: Isolamento de Conta de Usuário e e-mail único por empresa (MT-24)', () => {
   const createAccount = async (clinicId: string, email: string) => {
-    const route = await import("@/app/api/accounts/route");
+    const route = await import('@/app/api/accounts/route');
     const response = await route.POST(
       jsonRequest(
-        "/api/accounts",
-        "POST",
-        { email, password: "senha-forte-123", role: "patient" },
+        '/api/accounts',
+        'POST',
+        { email, password: 'senha-forte-123', role: 'patient' },
         adminCookieHeader(clinicId),
       ),
     );
@@ -26,9 +30,9 @@ describe("Feature: Isolamento de Conta de Usuário e e-mail único por empresa (
     return { response, body };
   };
 
-  it("Dado o mesmo e-mail em duas clínicas distintas, Quando criar em ambas, Então não colide (unicidade composta)", async () => {
+  it('Dado o mesmo e-mail em duas clínicas distintas, Quando criar em ambas, Então não colide (unicidade composta)', async () => {
     await ensureTestClinics();
-    const sharedEmail = "conta-compartilhada@x.com";
+    const sharedEmail = 'conta-compartilhada@x.com';
 
     const first = await createAccount(CLINIC_A_ID, sharedEmail);
     const second = await createAccount(CLINIC_B_ID, sharedEmail);
@@ -38,28 +42,39 @@ describe("Feature: Isolamento de Conta de Usuário e e-mail único por empresa (
     expect(first.body.data.id).not.toBe(second.body.data.id);
   });
 
-  it("Dada sessão da clínica A, Quando GET /api/accounts, Então lista não inclui conta exclusiva da clínica B", async () => {
+  it('Dada sessão da clínica A, Quando GET /api/accounts, Então lista não inclui conta exclusiva da clínica B', async () => {
     await ensureTestClinics();
-    const { body: created } = await createAccount(CLINIC_B_ID, "conta-exclusiva-b@x.com");
+    const { body: created } = await createAccount(
+      CLINIC_B_ID,
+      'conta-exclusiva-b@x.com',
+    );
 
-    const route = await import("@/app/api/accounts/route");
+    const route = await import('@/app/api/accounts/route');
     const response = await route.GET(
-      jsonRequest("/api/accounts", "GET", undefined, adminCookieHeader(CLINIC_A_ID)),
+      jsonRequest(
+        '/api/accounts',
+        'GET',
+        undefined,
+        adminCookieHeader(CLINIC_A_ID),
+      ),
     );
     const body = (await response.json()) as Envelope<Array<{ id: string }>>;
 
     expect(body.data.some((a) => a.id === created.data.id)).toBe(false);
   });
 
-  it("Dada sessão da clínica A, Quando PATCH em conta da clínica B, Então 404", async () => {
+  it('Dada sessão da clínica A, Quando PATCH em conta da clínica B, Então 404', async () => {
     await ensureTestClinics();
-    const { body: created } = await createAccount(CLINIC_B_ID, "conta-so-edita-propria@x.com");
+    const { body: created } = await createAccount(
+      CLINIC_B_ID,
+      'conta-so-edita-propria@x.com',
+    );
 
-    const byIdRoute = await import("@/app/api/accounts/[id]/route");
+    const byIdRoute = await import('@/app/api/accounts/[id]/route');
     const response = await byIdRoute.PATCH(
       jsonRequest(
         `/api/accounts/${created.data.id}`,
-        "PATCH",
+        'PATCH',
         { active: false },
         adminCookieHeader(CLINIC_A_ID),
       ),

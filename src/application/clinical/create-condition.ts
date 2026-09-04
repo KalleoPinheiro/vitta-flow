@@ -2,10 +2,10 @@ import {
   ClinicalCondition,
   type ConditionKind,
   type StomaType,
-} from "@/domain/clinical/clinical-condition";
-import type { ClinicalConditionRepository } from "@/domain/clinical/clinical-repositories";
-import type { PatientRepository } from "@/domain/patient/patient-repository";
-import { NotFoundError } from "@/domain/shared/errors";
+} from '@/domain/clinical/clinical-condition';
+import type { ClinicalConditionRepository } from '@/domain/clinical/clinical-repositories';
+import type { PatientRepository } from '@/domain/patient/patient-repository';
+import { NotFoundError } from '@/domain/shared/errors';
 
 export interface CreateConditionInput {
   patientId: string;
@@ -25,7 +25,7 @@ export class CreateCondition {
   async execute(input: CreateConditionInput): Promise<ClinicalCondition> {
     const patient = await this.patients.findById(input.patientId);
     if (!patient) {
-      throw new NotFoundError("Paciente", input.patientId);
+      throw new NotFoundError('Paciente', input.patientId);
     }
     const condition = ClinicalCondition.create(input);
     await this.conditions.save(condition);

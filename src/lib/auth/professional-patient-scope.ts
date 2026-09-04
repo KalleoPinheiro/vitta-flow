@@ -1,6 +1,6 @@
-import { NotFoundError } from "@/domain/shared/errors";
-import type { ProfessionalPatientLinkRepository } from "@/domain/clinical/professional-patient-link";
-import type { Session } from "./session";
+import type { ProfessionalPatientLinkRepository } from '@/domain/clinical/professional-patient-link';
+import { NotFoundError } from '@/domain/shared/errors';
+import type { Session } from './session';
 
 /**
  * Escopo dinâmico do Profissional (R4, RBAC-17/19): sem vínculo com o
@@ -14,12 +14,13 @@ export async function assertPatientAccessibleToProfessional(
   patientId: string,
   links: ProfessionalPatientLinkRepository,
 ): Promise<void> {
-  if (session?.role !== "profissional") {
+  if (session?.role !== 'profissional') {
     return;
   }
   const hasLink =
-    session.professionalId !== null && (await links.hasLink(session.professionalId, patientId));
+    session.professionalId !== null &&
+    (await links.hasLink(session.professionalId, patientId));
   if (!hasLink) {
-    throw new NotFoundError("Paciente", patientId);
+    throw new NotFoundError('Paciente', patientId);
   }
 }

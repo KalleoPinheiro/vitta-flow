@@ -1,6 +1,6 @@
-import type { UserRole } from "@/domain/auth/user-role";
-import { getAuthConfig } from "./session";
-import { classifyRoute, isFamilyAllowedForRole } from "./route-family";
+import type { UserRole } from '@/domain/auth/user-role';
+import { classifyRoute, isFamilyAllowedForRole } from './route-family';
+import { getAuthConfig } from './session';
 
 /**
  * Política de acesso do VittaFlow — fonte única consumida pelas DUAS camadas de
@@ -22,31 +22,36 @@ import { classifyRoute, isFamilyAllowedForRole } from "./route-family";
 
 /** Caminhos liberados sem sessão — comparação exata, nunca por prefixo. */
 export const PUBLIC_PATHS = [
-  "/login",
+  '/login',
   // Fluxos de primeiro acesso e recuperação: quem os usa, por definição, não tem sessão.
-  "/definir-senha",
-  "/esqueci-senha",
-  "/api/auth/login",
-  "/api/auth/providers",
-  "/api/auth/set-password",
-  "/api/auth/forgot-password",
+  '/definir-senha',
+  '/esqueci-senha',
+  '/api/auth/login',
+  '/api/auth/providers',
+  '/api/auth/set-password',
+  '/api/auth/forgot-password',
   // Bootstrap do primeiro Super Admin: por definição não há sessão nem conta.
   // A própria rota exige o segredo `VITTA_BOOTSTRAP_TOKEN` e só funciona
   // enquanto a instalação está vazia.
-  "/api/auth/bootstrap",
+  '/api/auth/bootstrap',
   // Cron externo — a própria rota exige o header x-cron-secret (CRON_SECRET).
-  "/api/reminders/run",
+  '/api/reminders/run',
 ] as const;
 
 /** Rotas acessíveis a qualquer papel autenticado; todo o resto é exclusivo do admin (equipe). */
-export const SHARED_PATH_PREFIXES = ["/portal", "/api/portal", "/api/auth/logout"] as const;
+export const SHARED_PATH_PREFIXES = [
+  '/portal',
+  '/api/portal',
+  '/api/auth/logout',
+] as const;
 
-export const UNAUTHENTICATED_MESSAGE = "Não autenticado";
-export const STAFF_ONLY_MESSAGE = "Acesso restrito à equipe da clínica";
+export const UNAUTHENTICATED_MESSAGE = 'Não autenticado';
+export const STAFF_ONLY_MESSAGE = 'Acesso restrito à equipe da clínica';
 /** Distinto de STAFF_ONLY_MESSAGE: a sessão É da equipe, mas o papel não acessa esta família de rota (RBAC-16). */
-export const ROLE_FAMILY_DENIED_MESSAGE = "Seu papel não tem acesso a este recurso";
+export const ROLE_FAMILY_DENIED_MESSAGE =
+  'Seu papel não tem acesso a este recurso';
 export const AUTH_NOT_CONFIGURED_MESSAGE =
-  "Autenticação não configurada: defina AUTH_SECRET";
+  'Autenticação não configurada: defina AUTH_SECRET';
 
 /**
  * Opt-in explícito para rodar SEM autenticação (desenvolvimento, testes E2E do
@@ -54,7 +59,7 @@ export const AUTH_NOT_CONFIGURED_MESSAGE =
  * responde 503 em vez de liberar o prontuário. Antes, bastava `NODE_ENV` não ser
  * "production" — um deploy self-hosted que esquecesse essa variável ficava aberto.
  */
-export const ALLOW_OPEN_MODE_ENV = "VITTA_ALLOW_OPEN_MODE";
+export const ALLOW_OPEN_MODE_ENV = 'VITTA_ALLOW_OPEN_MODE';
 
 export function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some((path) => path === pathname);
@@ -81,9 +86,9 @@ export function isAllowedForRole(pathname: string, role: UserRole): boolean {
  * - `open`: sem autenticação configurada, liberado (só fora de produção).
  * - `unconfigured`: sem autenticação configurada e sem liberação — responde 503.
  */
-export type AuthMode = "configured" | "open" | "unconfigured";
+export type AuthMode = 'configured' | 'open' | 'unconfigured';
 
-const isProduction = (): boolean => process.env.NODE_ENV === "production";
+const isProduction = (): boolean => process.env.NODE_ENV === 'production';
 
 let warnedAuthDisabled = false;
 
@@ -113,12 +118,12 @@ function isAuthUsable(): boolean {
 
 export function resolveAuthMode(): AuthMode {
   if (isAuthUsable()) {
-    return "configured";
+    return 'configured';
   }
   // Fail-closed: liberar exige NÃO ser produção E o opt-in explícito.
-  if (isProduction() || process.env[ALLOW_OPEN_MODE_ENV] !== "true") {
-    return "unconfigured";
+  if (isProduction() || process.env[ALLOW_OPEN_MODE_ENV] !== 'true') {
+    return 'unconfigured';
   }
   warnAuthDisabledOnce();
-  return "open";
+  return 'open';
 }

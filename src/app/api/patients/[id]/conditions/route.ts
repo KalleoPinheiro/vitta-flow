@@ -1,15 +1,18 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { CreateCondition } from "@/application/clinical/create-condition";
-import { ListConditions } from "@/application/clinical/list-conditions";
-import { CONDITION_KINDS, STOMA_TYPES } from "@/domain/clinical/clinical-condition";
-import { handleRequest } from "@/lib/api-response";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { assertPatientAccessibleToProfessional } from "@/lib/auth/professional-patient-scope";
-import { recordAudit } from "@/lib/audit";
-import { toConditionDto } from "@/lib/dto";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { CreateCondition } from '@/application/clinical/create-condition';
+import { ListConditions } from '@/application/clinical/list-conditions';
+import {
+  CONDITION_KINDS,
+  STOMA_TYPES,
+} from '@/domain/clinical/clinical-condition';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { recordAudit } from '@/lib/audit';
+import { assertPatientAccessibleToProfessional } from '@/lib/auth/professional-patient-scope';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { toConditionDto } from '@/lib/dto';
 
 const conditionSchema = z.object({
   kind: z.enum(CONDITION_KINDS),
@@ -27,14 +30,21 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { conditions, auditEvents, professionalPatientLinks } = await getRepositories({
-      clinicId: guard.session?.clinicId ?? null,
+    const { conditions, auditEvents, professionalPatientLinks } =
+      await getRepositories({
+        clinicId: guard.session?.clinicId ?? null,
+      });
+    await assertPatientAccessibleToProfessional(
+      guard.session,
+      id,
+      professionalPatientLinks,
+    );
+    const result = await new ListConditions(conditions).execute({
+      patientId: id,
     });
-    await assertPatientAccessibleToProfessional(guard.session, id, professionalPatientLinks);
-    const result = await new ListConditions(conditions).execute({ patientId: id });
     recordAudit(auditEvents, guard.session, {
-      action: "read",
-      resourceType: "conditions",
+      action: 'read',
+      resourceType: 'conditions',
       resourceId: id,
       patientId: id,
     });
@@ -49,10 +59,15 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = conditionSchema.parse(await request.json());
-    const { conditions, patients, auditEvents, professionalPatientLinks } = await getRepositories({
-      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
-    });
-    await assertPatientAccessibleToProfessional(guard.session, id, professionalPatientLinks);
+    const { conditions, patients, auditEvents, professionalPatientLinks } =
+      await getRepositories({
+        clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+      });
+    await assertPatientAccessibleToProfessional(
+      guard.session,
+      id,
+      professionalPatientLinks,
+    );
     const condition = await new CreateCondition(conditions, patients).execute({
       patientId: id,
       kind: body.kind,
@@ -62,8 +77,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
       notes: body.notes ?? null,
     });
     recordAudit(auditEvents, guard.session, {
-      action: "create",
-      resourceType: "condition",
+      action: 'create',
+      resourceType: 'condition',
       resourceId: condition.id,
       patientId: id,
     });

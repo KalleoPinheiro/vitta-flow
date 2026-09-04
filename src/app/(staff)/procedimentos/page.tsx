@@ -1,15 +1,5 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { apiFetch } from "@/lib/client";
-import { useToast } from "@still-void/ui/react/client";
-import type { ProcedureDto, SupplyDto } from "@/lib/dto";
-import { useApiQuery } from "@/lib/use-api-query";
-import { formatCurrency } from "@/lib/format";
-import { Modal } from "@/components/modal";
-import { ConfirmAction } from "@/components/confirm-action";
-import { StatusBadge } from "@/components/status-badge";
-import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import {
   Button,
   Card,
@@ -21,15 +11,33 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@still-void/ui/react";
+} from '@still-void/ui/react';
+import { useToast } from '@still-void/ui/react/client';
+import { useState } from 'react';
+import { ConfirmAction } from '@/components/confirm-action';
+import {
+  EmptyState,
+  ErrorAlert,
+  LoadingIndicator,
+} from '@/components/feedback';
+import { Modal } from '@/components/modal';
+import { StatusBadge } from '@/components/status-badge';
+import { apiFetch } from '@/lib/client';
+import type { ProcedureDto, SupplyDto } from '@/lib/dto';
+import { formatCurrency } from '@/lib/format';
+import { useApiQuery } from '@/lib/use-api-query';
 
 export default function ProceduresPage() {
   const { toast } = useToast();
-  const { data: procedures, error, refresh } = useApiQuery<ProcedureDto[]>("/api/procedures");
-  const [editing, setEditing] = useState<ProcedureDto | "new" | null>(null);
+  const {
+    data: procedures,
+    error,
+    refresh,
+  } = useApiQuery<ProcedureDto[]>('/api/procedures');
+  const [editing, setEditing] = useState<ProcedureDto | 'new' | null>(null);
   const [kitFor, setKitFor] = useState<ProcedureDto | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   const filtered = (procedures ?? []).filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase()),
   );
@@ -37,41 +45,52 @@ export default function ProceduresPage() {
   const toggleActive = async (procedure: ProcedureDto) => {
     try {
       await apiFetch(`/api/procedures/${procedure.id}`, {
-        method: "PATCH",
+        method: 'PATCH',
         body: JSON.stringify({ active: !procedure.active }),
       });
       toast({
-        description: procedure.active ? "Procedimento desativado" : "Procedimento ativado",
-        variant: "success",
+        description: procedure.active
+          ? 'Procedimento desativado'
+          : 'Procedimento ativado',
+        variant: 'success',
       });
       setActionError(null);
       refresh();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Erro ao atualizar procedimento");
+      setActionError(
+        err instanceof Error ? err.message : 'Erro ao atualizar procedimento',
+      );
     }
   };
 
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="sv-display text-2xl font-bold">Catálogo de procedimentos</h1>
+        <h1 className="sv-display font-bold text-2xl">
+          Catálogo de procedimentos
+        </h1>
         <Button
           type="button"
-          onClick={() => setEditing("new")}
+          onClick={() => setEditing('new')}
           variant="accent"
         >
           + Novo procedimento
         </Button>
       </div>
 
-      <p className="mb-4 text-sm text-ink-3">
-        Fonte única de nome, preço e duração — o agendamento preenche a partir daqui e a
-        margem por procedimento fica consistente.
+      <p className="mb-4 text-ink-3 text-sm">
+        Fonte única de nome, preço e duração — o agendamento preenche a partir
+        daqui e a margem por procedimento fica consistente.
       </p>
 
       <ErrorAlertOrNull message={resolveErrorMessage(actionError, error)} />
 
-      <SearchBar count={procedures?.length ?? 0} filteredCount={filtered.length} search={search} onSearch={setSearch} />
+      <SearchBar
+        count={procedures?.length ?? 0}
+        filteredCount={filtered.length}
+        search={search}
+        onSearch={setSearch}
+      />
 
       <ProceduresTable
         procedures={procedures}
@@ -95,7 +114,10 @@ export default function ProceduresPage() {
   );
 }
 
-function resolveErrorMessage(actionError: string | null, loadError: string | null): string | null {
+function resolveErrorMessage(
+  actionError: string | null,
+  loadError: string | null,
+): string | null {
   return actionError ?? loadError;
 }
 
@@ -126,8 +148,8 @@ function SearchBar({
         placeholder="Buscar por nome…"
         className="max-w-sm"
       />
-      <span className="text-sm text-ink-3">
-        {filteredCount} {filteredCount === 1 ? "procedimento" : "procedimentos"}
+      <span className="text-ink-3 text-sm">
+        {filteredCount} {filteredCount === 1 ? 'procedimento' : 'procedimentos'}
       </span>
     </div>
   );
@@ -138,7 +160,7 @@ function EditProcedureModal({
   onClose,
   onSaved,
 }: {
-  editing: ProcedureDto | "new" | null;
+  editing: ProcedureDto | 'new' | null;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -146,8 +168,14 @@ function EditProcedureModal({
     return null;
   }
   return (
-    <Modal title={editing === "new" ? "Novo procedimento" : "Editar procedimento"} onClose={onClose}>
-      <ProcedureForm initial={editing === "new" ? undefined : editing} onSaved={onSaved} />
+    <Modal
+      title={editing === 'new' ? 'Novo procedimento' : 'Editar procedimento'}
+      onClose={onClose}
+    >
+      <ProcedureForm
+        initial={editing === 'new' ? undefined : editing}
+        onSaved={onSaved}
+      />
     </Modal>
   );
 }
@@ -160,7 +188,13 @@ interface ProceduresTableProps {
   onToggleActive: (procedure: ProcedureDto) => void;
 }
 
-function ProceduresTable({ procedures, filtered, onKit, onEdit, onToggleActive }: ProceduresTableProps) {
+function ProceduresTable({
+  procedures,
+  filtered,
+  onKit,
+  onEdit,
+  onToggleActive,
+}: ProceduresTableProps) {
   return (
     <Card>
       {!procedures ? (
@@ -211,19 +245,25 @@ function ProcedureRow({
   onToggleActive: () => void;
 }) {
   return (
-    <TableRow className={procedure.active ? "" : "opacity-50"}>
+    <TableRow className={procedure.active ? '' : 'opacity-50'}>
       <TableCell className="px-4 py-3 font-medium">{procedure.name}</TableCell>
-      <TableCell className="px-4 py-3">{formatCurrency(procedure.priceCents)}</TableCell>
-      <TableCell className="px-4 py-3 text-ink-2">{procedure.durationMinutes} min</TableCell>
+      <TableCell className="px-4 py-3">
+        {formatCurrency(procedure.priceCents)}
+      </TableCell>
+      <TableCell className="px-4 py-3 text-ink-2">
+        {procedure.durationMinutes} min
+      </TableCell>
       <TableCell className="px-4 py-3">
         <StatusBadge
-          status={procedure.active ? "confirmed" : "cancelled"}
-          label={procedure.active ? "Ativo" : "Inativo"}
+          status={procedure.active ? 'confirmed' : 'cancelled'}
+          label={procedure.active ? 'Ativo' : 'Inativo'}
         />
       </TableCell>
       <TableCell className="px-4 py-3 text-right">
         <Button type="button" onClick={onKit} variant="ghost" size="sm">
-          {procedure.kitItemCount > 0 ? `Kit (${procedure.kitItemCount})` : "Sem kit"}
+          {procedure.kitItemCount > 0
+            ? `Kit (${procedure.kitItemCount})`
+            : 'Sem kit'}
         </Button>
         <Button type="button" onClick={onEdit} variant="ghost" size="sm">
           Editar
@@ -242,7 +282,12 @@ function ProcedureRow({
             onConfirm={onToggleActive}
           />
         ) : (
-          <Button type="button" onClick={onToggleActive} variant="ghost" size="sm">
+          <Button
+            type="button"
+            onClick={onToggleActive}
+            variant="ghost"
+            size="sm"
+          >
             Reativar
           </Button>
         )}
@@ -259,9 +304,13 @@ function ProcedureForm({
   onSaved: () => void;
 }) {
   const { toast } = useToast();
-  const [name, setName] = useState(initial?.name ?? "");
-  const [price, setPrice] = useState(initial ? String(initial.priceCents / 100) : "");
-  const [duration, setDuration] = useState(initial ? String(initial.durationMinutes) : "60");
+  const [name, setName] = useState(initial?.name ?? '');
+  const [price, setPrice] = useState(
+    initial ? String(initial.priceCents / 100) : '',
+  );
+  const [duration, setDuration] = useState(
+    initial ? String(initial.durationMinutes) : '60',
+  );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -277,19 +326,24 @@ function ProcedureForm({
       };
       if (initial) {
         await apiFetch(`/api/procedures/${initial.id}`, {
-          method: "PATCH",
+          method: 'PATCH',
           body: JSON.stringify(payload),
         });
       } else {
-        await apiFetch("/api/procedures", { method: "POST", body: JSON.stringify(payload) });
+        await apiFetch('/api/procedures', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
       }
       toast({
-        description: "Procedimento salvo",
-        variant: "success",
+        description: 'Procedimento salvo',
+        variant: 'success',
       });
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao salvar procedimento");
+      setError(
+        err instanceof Error ? err.message : 'Erro ao salvar procedimento',
+      );
     } finally {
       setSaving(false);
     }
@@ -298,7 +352,7 @@ function ProcedureForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       {error && <ErrorAlert message={error} />}
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Nome *
         <Input
           required
@@ -309,10 +363,10 @@ function ProcedureForm({
         />
       </label>
       <div className="grid grid-cols-2 gap-3">
-        <label className="text-sm font-medium">
+        <label className="font-medium text-sm">
           Preço *
           <div className="mt-1 flex items-center gap-1.5">
-            <span className="text-sm text-ink-3">R$</span>
+            <span className="text-ink-3 text-sm">R$</span>
             <Input
               required
               type="number"
@@ -324,7 +378,7 @@ function ProcedureForm({
             />
           </div>
         </label>
-        <label className="text-sm font-medium">
+        <label className="font-medium text-sm">
           Duração (min) *
           <Input
             required
@@ -337,13 +391,8 @@ function ProcedureForm({
           />
         </label>
       </div>
-      <Button
-        type="submit"
-        disabled={saving}
-        variant="accent"
-        className="mt-1"
-      >
-        {saving ? "Salvando…" : "Salvar"}
+      <Button type="submit" disabled={saving} variant="accent" className="mt-1">
+        {saving ? 'Salvando…' : 'Salvar'}
       </Button>
     </form>
   );
@@ -367,17 +416,24 @@ function KitModal({
 }
 
 interface KitItemDraft {
+  id: string;
   supplyId: string;
   quantity: string;
 }
 
 /** Kit padrão do procedimento: baixado automaticamente ao concluir a consulta. */
-function KitForm({ procedure, onSaved }: { procedure: ProcedureDto; onSaved: () => void }) {
+function KitForm({
+  procedure,
+  onSaved,
+}: {
+  procedure: ProcedureDto;
+  onSaved: () => void;
+}) {
   const { toast } = useToast();
-  const { data: supplies } = useApiQuery<SupplyDto[]>("/api/supplies");
-  const { data: kit } = useApiQuery<{ items: Array<{ supplyId: string; quantity: number }> }>(
-    `/api/procedures/${procedure.id}/kit`,
-  );
+  const { data: supplies } = useApiQuery<SupplyDto[]>('/api/supplies');
+  const { data: kit } = useApiQuery<{
+    items: Array<{ supplyId: string; quantity: number }>;
+  }>(`/api/procedures/${procedure.id}/kit`);
   const [edits, setEdits] = useState<KitItemDraft[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -385,11 +441,19 @@ function KitForm({ procedure, onSaved }: { procedure: ProcedureDto; onSaved: () 
   if (!supplies || !kit) return <LoadingIndicator />;
 
   const items =
-    edits ?? kit.items.map((item) => ({ supplyId: item.supplyId, quantity: String(item.quantity) }));
+    edits ??
+    kit.items.map((item) => ({
+      id: crypto.randomUUID(),
+      supplyId: item.supplyId,
+      quantity: String(item.quantity),
+    }));
   const activeSupplies = supplies.filter((s) => s.active);
-  const supplyName = (id: string) => supplies.find((s) => s.id === id)?.name ?? id;
+  const supplyName = (id: string) =>
+    supplies.find((s) => s.id === id)?.name ?? id;
   const filledItems = items.filter((item) => item.supplyId);
-  const hasInvalidQuantity = filledItems.some((item) => !(Number(item.quantity) > 0));
+  const hasInvalidQuantity = filledItems.some(
+    (item) => !(Number(item.quantity) > 0),
+  );
 
   /** Opções de um `<select>` de linha excluem insumos já escolhidos em outras
    * linhas do mesmo kit (PROC-04) — o domínio já rejeita duplicata no save,
@@ -403,14 +467,16 @@ function KitForm({ procedure, onSaved }: { procedure: ProcedureDto; onSaved: () 
 
   const save = async () => {
     if (hasInvalidQuantity) {
-      setError("Quantidade deve ser um número inteiro maior que zero em todos os itens");
+      setError(
+        'Quantidade deve ser um número inteiro maior que zero em todos os itens',
+      );
       return;
     }
     setSaving(true);
     setError(null);
     try {
       await apiFetch(`/api/procedures/${procedure.id}/kit`, {
-        method: "PUT",
+        method: 'PUT',
         body: JSON.stringify({
           items: filledItems.map((item) => ({
             supplyId: item.supplyId,
@@ -419,12 +485,12 @@ function KitForm({ procedure, onSaved }: { procedure: ProcedureDto; onSaved: () 
         }),
       });
       toast({
-        description: "Kit atualizado",
-        variant: "success",
+        description: 'Kit atualizado',
+        variant: 'success',
       });
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao salvar kit");
+      setError(err instanceof Error ? err.message : 'Erro ao salvar kit');
       setSaving(false);
     }
   };
@@ -432,15 +498,17 @@ function KitForm({ procedure, onSaved }: { procedure: ProcedureDto; onSaved: () 
   return (
     <div className="flex flex-col gap-3">
       {error && <ErrorAlert message={error} />}
-      <p className="text-sm text-ink-3">
+      <p className="text-ink-3 text-sm">
         Ao concluir uma consulta deste procedimento, estes insumos são baixados
         automaticamente com custo vinculado ao atendimento.
       </p>
       {items.length === 0 && (
-        <p className="text-sm text-ink-3">Nenhum item — a conclusão não baixa estoque.</p>
+        <p className="text-ink-3 text-sm">
+          Nenhum item — a conclusão não baixa estoque.
+        </p>
       )}
       {items.map((item, index) => (
-        <div key={`${item.supplyId}-${index}`} className="flex items-center gap-2">
+        <div key={item.id} className="flex items-center gap-2">
           {/* SPEC_DEVIATION: ported alongside T13, não T7-T12 — este <select> não
               constava no "Where" de nenhuma task T6-T12 (tasks.md conta 22 selects
               nelas, spec.md declara baseline 23). Sem portá-lo aqui, a checagem #8
@@ -448,7 +516,11 @@ function KitForm({ procedure, onSaved }: { procedure: ProcedureDto; onSaved: () 
           <NativeSelect
             value={item.supplyId}
             onChange={(e) =>
-              setEdits(items.map((it, i) => (i === index ? { ...it, supplyId: e.target.value } : it)))
+              setEdits(
+                items.map((it, i) =>
+                  i === index ? { ...it, supplyId: e.target.value } : it,
+                ),
+              )
             }
             className="flex-1"
           >
@@ -458,16 +530,23 @@ function KitForm({ procedure, onSaved }: { procedure: ProcedureDto; onSaved: () 
                 {supply.name}
               </option>
             ))}
-            {item.supplyId && !activeSupplies.some((s) => s.id === item.supplyId) && (
-              <option value={item.supplyId}>{supplyName(item.supplyId)}</option>
-            )}
+            {item.supplyId &&
+              !activeSupplies.some((s) => s.id === item.supplyId) && (
+                <option value={item.supplyId}>
+                  {supplyName(item.supplyId)}
+                </option>
+              )}
           </NativeSelect>
           <Input
             type="number"
             min="1"
             value={item.quantity}
             onChange={(e) =>
-              setEdits(items.map((it, i) => (i === index ? { ...it, quantity: e.target.value } : it)))
+              setEdits(
+                items.map((it, i) =>
+                  i === index ? { ...it, quantity: e.target.value } : it,
+                ),
+              )
             }
             className="w-20"
           />
@@ -483,9 +562,14 @@ function KitForm({ procedure, onSaved }: { procedure: ProcedureDto; onSaved: () 
       ))}
       <Button
         type="button"
-        onClick={() => setEdits([...items, { supplyId: "", quantity: "1" }])}
+        onClick={() =>
+          setEdits([
+            ...items,
+            { id: crypto.randomUUID(), supplyId: '', quantity: '1' },
+          ])
+        }
         variant="link"
-        className="h-auto p-0 self-start text-accent-ink"
+        className="h-auto self-start p-0 text-accent-ink"
       >
         + Adicionar insumo
       </Button>
@@ -496,7 +580,7 @@ function KitForm({ procedure, onSaved }: { procedure: ProcedureDto; onSaved: () 
         variant="accent"
         className="mt-1 self-start"
       >
-        {saving ? "Salvando…" : "Salvar kit"}
+        {saving ? 'Salvando…' : 'Salvar kit'}
       </Button>
     </div>
   );

@@ -10,10 +10,12 @@ export interface GoogleCalendarOAuthConfig {
  * nativa que iniciou o fluxo), então pedir identidade seria coleta sem
  * finalidade (minimização, LGPD).
  */
-export const GOOGLE_CALENDAR_SCOPES = ["https://www.googleapis.com/auth/calendar.events"];
+export const GOOGLE_CALENDAR_SCOPES = [
+  'https://www.googleapis.com/auth/calendar.events',
+];
 
 /** Cookie de estado anti-CSRF do fluxo de conexão da agenda. */
-export const CALENDAR_OAUTH_STATE_COOKIE = "vitta_calendar_oauth_state";
+export const CALENDAR_OAUTH_STATE_COOKIE = 'vitta_calendar_oauth_state';
 
 /**
  * O cookie carrega `<state>:<subject>` — o `state` fecha o CSRF e o `subject`
@@ -21,21 +23,28 @@ export const CALENDAR_OAUTH_STATE_COOKIE = "vitta_calendar_oauth_state";
  * entre o redirect e o callback gravaria a credencial do Google sob outra
  * conta (ou outra empresa), já que o callback só enxerga a sessão do retorno.
  */
-export function encodeCalendarOAuthState(state: string, subject: string): string {
+export function encodeCalendarOAuthState(
+  state: string,
+  subject: string,
+): string {
   return `${state}:${subject}`;
 }
 
 export function decodeCalendarOAuthState(
   value: string | undefined,
 ): { state: string; subject: string } | null {
-  const separator = value?.indexOf(":") ?? -1;
+  const separator = value?.indexOf(':') ?? -1;
   if (!value || separator <= 0) {
     return null;
   }
-  return { state: value.slice(0, separator), subject: value.slice(separator + 1) };
+  return {
+    state: value.slice(0, separator),
+    subject: value.slice(separator + 1),
+  };
 }
 
-export const CALENDAR_CALLBACK_PATH = "/api/integrations/google-calendar/callback";
+export const CALENDAR_CALLBACK_PATH =
+  '/api/integrations/google-calendar/callback';
 
 /**
  * Config do OAuth de agenda. Diferente do login por Google que existia antes,
@@ -52,6 +61,6 @@ export function googleCalendarOAuthConfigFromEnv(): GoogleCalendarOAuthConfig | 
   return {
     clientId,
     clientSecret,
-    redirectUri: `${appUrl.replace(/\/$/, "")}${CALENDAR_CALLBACK_PATH}`,
+    redirectUri: `${appUrl.replace(/\/$/, '')}${CALENDAR_CALLBACK_PATH}`,
   };
 }

@@ -1,4 +1,4 @@
-import { InvalidMoneyError } from "./errors";
+import { InvalidMoneyError } from './errors';
 
 const CENTS_PER_REAL = 100;
 
@@ -7,10 +7,14 @@ export class Money {
 
   static fromCents(cents: number): Money {
     if (!Number.isInteger(cents)) {
-      throw new InvalidMoneyError(`Valor em centavos deve ser inteiro: ${cents}`);
+      throw new InvalidMoneyError(
+        `Valor em centavos deve ser inteiro: ${cents}`,
+      );
     }
     if (cents < 0) {
-      throw new InvalidMoneyError(`Valor monetário não pode ser negativo: ${cents}`);
+      throw new InvalidMoneyError(
+        `Valor monetário não pode ser negativo: ${cents}`,
+      );
     }
     return new Money(cents);
   }
@@ -44,9 +48,9 @@ export class Money {
   }
 
   format(): string {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
     }).format(this.toReais());
   }
 }

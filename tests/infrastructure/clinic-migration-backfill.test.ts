@@ -1,16 +1,16 @@
-import { describe, it, expect, beforeAll } from "vitest";
-import fs from "node:fs";
-import path from "node:path";
-import { PGlite } from "@electric-sql/pglite";
-import { pg_trgm } from "@electric-sql/pglite/contrib/pg_trgm";
-import { btree_gist } from "@electric-sql/pglite/contrib/btree_gist";
-import { drizzle, type PgliteDatabase } from "drizzle-orm/pglite";
-import { migrate } from "drizzle-orm/pglite/migrator";
-import { sql } from "drizzle-orm";
-import * as schema from "@/infrastructure/persistence/drizzle/schema";
+import fs from 'node:fs';
+import path from 'node:path';
+import { PGlite } from '@electric-sql/pglite';
+import { btree_gist } from '@electric-sql/pglite/contrib/btree_gist';
+import { pg_trgm } from '@electric-sql/pglite/contrib/pg_trgm';
+import { sql } from 'drizzle-orm';
+import { drizzle, type PgliteDatabase } from 'drizzle-orm/pglite';
+import { migrate } from 'drizzle-orm/pglite/migrator';
+import { beforeAll, describe, expect, it } from 'vitest';
+import * as schema from '@/infrastructure/persistence/drizzle/schema';
 
-const MIGRATIONS_DIR = path.join(process.cwd(), "drizzle");
-const TARGET_MIGRATION = "0019_clinic-foundation.sql";
+const MIGRATIONS_DIR = path.join(process.cwd(), 'drizzle');
+const TARGET_MIGRATION = '0019_clinic-foundation.sql';
 
 /** Tabelas tocadas pela fundação de multi-tenancy (MT-02) — uma linha mínima cada, sem clinic_id. */
 const FIXTURE_STATEMENTS: string[] = [
@@ -45,61 +45,83 @@ const FIXTURE_STATEMENTS: string[] = [
 ];
 
 const TENANT_TABLES = [
-  "anamneses",
-  "appointments",
-  "audit_events",
-  "care_plan_diagnoses",
-  "care_plan_interventions",
-  "care_plan_outcomes",
-  "care_plans",
-  "clinical_conditions",
-  "condition_assessments",
-  "condition_photos",
-  "consent_records",
-  "evolution_notes",
-  "follow_ups",
-  "intervention_records",
-  "invoices",
-  "outcome_evaluations",
-  "package_consumptions",
-  "partners",
-  "patients",
-  "procedures",
-  "professionals",
-  "reminder_logs",
-  "schedule_settings",
-  "session_packages",
-  "stock_movements",
-  "supplies",
-  "supply_batches",
-  "user_accounts",
+  'anamneses',
+  'appointments',
+  'audit_events',
+  'care_plan_diagnoses',
+  'care_plan_interventions',
+  'care_plan_outcomes',
+  'care_plans',
+  'clinical_conditions',
+  'condition_assessments',
+  'condition_photos',
+  'consent_records',
+  'evolution_notes',
+  'follow_ups',
+  'intervention_records',
+  'invoices',
+  'outcome_evaluations',
+  'package_consumptions',
+  'partners',
+  'patients',
+  'procedures',
+  'professionals',
+  'reminder_logs',
+  'schedule_settings',
+  'session_packages',
+  'stock_movements',
+  'supplies',
+  'supply_batches',
+  'user_accounts',
 ];
 
-describe("Feature: Migração de backfill de clinic_id", () => {
+describe('Feature: Migração de backfill de clinic_id', () => {
   let db: PgliteDatabase<typeof schema>;
 
   beforeAll(async () => {
     const client = new PGlite({ extensions: { pg_trgm, btree_gist } });
     db = drizzle(client, { schema });
 
-    const priorMigrationsDir = fs.mkdtempSync(path.join(process.cwd(), ".tmp-migrate-"));
-    const priorMeta = path.join(priorMigrationsDir, "meta");
+    const priorMigrationsDir = fs.mkdtempSync(
+      path.join(process.cwd(), '.tmp-migrate-'),
+    );
+    const priorMeta = path.join(priorMigrationsDir, 'meta');
     fs.mkdirSync(priorMeta);
-    const journal = JSON.parse(fs.readFileSync(path.join(MIGRATIONS_DIR, "meta", "_journal.json"), "utf8"));
+    const journal = JSON.parse(
+      fs.readFileSync(
+        path.join(MIGRATIONS_DIR, 'meta', '_journal.json'),
+        'utf8',
+      ),
+    );
     const targetIdx = journal.entries.find(
-      (e: { tag: string }) => e.tag === "0019_clinic-foundation",
+      (e: { tag: string }) => e.tag === '0019_clinic-foundation',
     ).idx;
     // Só as migrações estritamente anteriores a 0019 — migrações posteriores
     // (ex.: 0020, que depende das colunas criadas por 0019) não podem rodar
     // antes dela.
-    journal.entries = journal.entries.filter((e: { idx: number }) => e.idx < targetIdx);
-    fs.writeFileSync(path.join(priorMeta, "_journal.json"), JSON.stringify(journal));
+    journal.entries = journal.entries.filter(
+      (e: { idx: number }) => e.idx < targetIdx,
+    );
+    fs.writeFileSync(
+      path.join(priorMeta, '_journal.json'),
+      JSON.stringify(journal),
+    );
     for (const entry of journal.entries) {
       fs.copyFileSync(
-        path.join(MIGRATIONS_DIR, "meta", `${String(entry.idx).padStart(4, "0")}_snapshot.json`),
-        path.join(priorMeta, `${String(entry.idx).padStart(4, "0")}_snapshot.json`),
+        path.join(
+          MIGRATIONS_DIR,
+          'meta',
+          `${String(entry.idx).padStart(4, '0')}_snapshot.json`,
+        ),
+        path.join(
+          priorMeta,
+          `${String(entry.idx).padStart(4, '0')}_snapshot.json`,
+        ),
       );
-      fs.copyFileSync(path.join(MIGRATIONS_DIR, `${entry.tag}.sql`), path.join(priorMigrationsDir, `${entry.tag}.sql`));
+      fs.copyFileSync(
+        path.join(MIGRATIONS_DIR, `${entry.tag}.sql`),
+        path.join(priorMigrationsDir, `${entry.tag}.sql`),
+      );
     }
 
     await migrate(db, { migrationsFolder: priorMigrationsDir });
@@ -109,8 +131,11 @@ describe("Feature: Migração de backfill de clinic_id", () => {
       await db.execute(sql.raw(statement));
     }
 
-    const migrationSql = fs.readFileSync(path.join(MIGRATIONS_DIR, TARGET_MIGRATION), "utf8");
-    for (const statement of migrationSql.split("--> statement-breakpoint")) {
+    const migrationSql = fs.readFileSync(
+      path.join(MIGRATIONS_DIR, TARGET_MIGRATION),
+      'utf8',
+    );
+    for (const statement of migrationSql.split('--> statement-breakpoint')) {
       const trimmed = statement.trim();
       if (trimmed.length > 0) {
         await db.execute(sql.raw(trimmed));
@@ -118,17 +143,26 @@ describe("Feature: Migração de backfill de clinic_id", () => {
     }
   });
 
-  it("cria a clínica legada", async () => {
-    const rows = await db.execute(sql.raw(`SELECT id, name FROM "clinics" WHERE id = 'legacy-clinic'`));
+  it('cria a clínica legada', async () => {
+    const rows = await db.execute(
+      sql.raw(`SELECT id, name FROM "clinics" WHERE id = 'legacy-clinic'`),
+    );
     expect(rows.rows).toHaveLength(1);
   });
 
-  it.each(TENANT_TABLES)("100%% das linhas de %s recebem o clinic_id da clínica legada, zero linha órfã", async (table) => {
-    const total = await db.execute(sql.raw(`SELECT count(*)::int AS c FROM "${table}"`));
-    const orphans = await db.execute(
-      sql.raw(`SELECT count(*)::int AS c FROM "${table}" WHERE clinic_id IS NULL OR clinic_id <> 'legacy-clinic'`),
-    );
-    expect(Number((total.rows[0] as { c: number }).c)).toBeGreaterThan(0);
-    expect(Number((orphans.rows[0] as { c: number }).c)).toBe(0);
-  });
+  it.each(TENANT_TABLES)(
+    '100%% das linhas de %s recebem o clinic_id da clínica legada, zero linha órfã',
+    async (table) => {
+      const total = await db.execute(
+        sql.raw(`SELECT count(*)::int AS c FROM "${table}"`),
+      );
+      const orphans = await db.execute(
+        sql.raw(
+          `SELECT count(*)::int AS c FROM "${table}" WHERE clinic_id IS NULL OR clinic_id <> 'legacy-clinic'`,
+        ),
+      );
+      expect(Number((total.rows[0] as { c: number }).c)).toBeGreaterThan(0);
+      expect(Number((orphans.rows[0] as { c: number }).c)).toBe(0);
+    },
+  );
 });

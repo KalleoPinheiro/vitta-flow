@@ -1,10 +1,10 @@
-import type { NursingOutcome } from "@/domain/taxonomy/nursing-outcome";
-import type { NursingIntervention } from "@/domain/taxonomy/nursing-intervention";
+import type { NursingIntervention } from '@/domain/taxonomy/nursing-intervention';
+import type { NursingOutcome } from '@/domain/taxonomy/nursing-outcome';
 import type {
   NursingInterventionRepository,
   NursingOutcomeRepository,
   TaxonomyLinkageRepository,
-} from "@/domain/taxonomy/taxonomy-repositories";
+} from '@/domain/taxonomy/taxonomy-repositories';
 
 export interface LinkedTerms {
   outcomes: NursingOutcome[];
@@ -21,9 +21,11 @@ export class SuggestLinkedTerms {
 
   async execute(input: { diagnosisCode: string }): Promise<LinkedTerms> {
     const links = await this.linkages.findByDiagnosisCode(input.diagnosisCode);
-    const outcomeCodes = links.filter((link) => link.role === "outcome").map((link) => link.targetCode);
+    const outcomeCodes = links
+      .filter((link) => link.role === 'outcome')
+      .map((link) => link.targetCode);
     const interventionCodes = links
-      .filter((link) => link.role === "intervention")
+      .filter((link) => link.role === 'intervention')
       .map((link) => link.targetCode);
 
     const [outcomes, interventions] = await Promise.all([

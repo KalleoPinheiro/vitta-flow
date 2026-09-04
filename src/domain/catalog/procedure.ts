@@ -1,5 +1,5 @@
-import { ValidationError } from "../shared/errors";
-import { newId } from "../shared/id";
+import { ValidationError } from '../shared/errors';
+import { newId } from '../shared/id';
 
 export interface ProcedureProps {
   name: string;
@@ -35,19 +35,25 @@ export class Procedure {
   private static validate(props: ProcedureProps): ProcedureProps {
     const name = props.name.trim();
     if (name.length === 0) {
-      throw new ValidationError("Nome do procedimento é obrigatório");
+      throw new ValidationError('Nome do procedimento é obrigatório');
     }
     if (!Number.isInteger(props.priceCents) || props.priceCents < 0) {
-      throw new ValidationError("Preço padrão não pode ser negativo");
+      throw new ValidationError('Preço padrão não pode ser negativo');
     }
     if (
       !Number.isInteger(props.durationMinutes) ||
       props.durationMinutes <= 0 ||
       props.durationMinutes > MAX_DURATION_MINUTES
     ) {
-      throw new ValidationError("Duração padrão deve ser entre 1 minuto e 8 horas");
+      throw new ValidationError(
+        'Duração padrão deve ser entre 1 minuto e 8 horas',
+      );
     }
-    return { name, priceCents: props.priceCents, durationMinutes: props.durationMinutes };
+    return {
+      name,
+      priceCents: props.priceCents,
+      durationMinutes: props.durationMinutes,
+    };
   }
 
   update(changes: Partial<ProcedureProps>): Procedure {

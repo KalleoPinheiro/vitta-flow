@@ -1,22 +1,22 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { UserAccount } from "@/domain/auth/user-account";
-import { UNSET_PASSWORD_HASH } from "@/lib/auth/password";
-import { passwordMatches } from "@/lib/auth/session";
-import { IssueAuthToken } from "@/application/auth/auth-token-flow";
-import { appUrlFromEnv } from "@/application/auth/send-invite";
-import { RateLimiter } from "@/lib/auth/rate-limit";
-import { clientIp } from "@/lib/auth/client-ip";
-import { fail, handleRequest } from "@/lib/api-response";
-import { ProvisioningDeniedError } from "@/domain/shared/errors";
-import { isUniqueViolation } from "@/lib/db-errors";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { IssueAuthToken } from '@/application/auth/auth-token-flow';
+import { appUrlFromEnv } from '@/application/auth/send-invite';
+import { UserAccount } from '@/domain/auth/user-account';
+import { ProvisioningDeniedError } from '@/domain/shared/errors';
+import { getRepositories } from '@/infrastructure/container';
+import { fail, handleRequest } from '@/lib/api-response';
+import { clientIp } from '@/lib/auth/client-ip';
+import { UNSET_PASSWORD_HASH } from '@/lib/auth/password';
+import { RateLimiter } from '@/lib/auth/rate-limit';
+import { passwordMatches } from '@/lib/auth/session';
+import { isUniqueViolation } from '@/lib/db-errors';
 
 const BOOTSTRAP_RATE_LIMIT = new RateLimiter(5, 60_000);
 
-export const BOOTSTRAP_TOKEN_HEADER = "x-bootstrap-token";
+export const BOOTSTRAP_TOKEN_HEADER = 'x-bootstrap-token';
 /** Mensagem única para segredo errado e para instalação já inicializada. */
-export const BOOTSTRAP_UNAVAILABLE_MESSAGE = "Bootstrap indisponível";
+export const BOOTSTRAP_UNAVAILABLE_MESSAGE = 'Bootstrap indisponível';
 
 const schema = z.object({
   email: z.string().min(3).max(200),
@@ -27,7 +27,10 @@ function hasValidBootstrapToken(request: NextRequest): boolean {
   const provided = request.headers.get(BOOTSTRAP_TOKEN_HEADER);
   // `passwordMatches` é a comparação em tempo constante do projeto — o nome vem
   // do primeiro uso (senha), mas o contrato é "compara dois segredos".
-  return Boolean(expected) && Boolean(provided) && passwordMatches(expected!, provided!);
+  if (!expected || !provided) {
+    return false;
+  }
+  return passwordMatches(expected, provided);
 }
 
 /**
@@ -45,7 +48,7 @@ function hasValidBootstrapToken(request: NextRequest): boolean {
  */
 export async function POST(request: NextRequest) {
   if (!BOOTSTRAP_RATE_LIMIT.allow(clientIp(request))) {
-    return fail("Muitas tentativas, aguarde um minuto", 429);
+    return fail('Muitas tentativas, aguarde um minuto', 429);
   }
   if (!hasValidBootstrapToken(request)) {
     return fail(BOOTSTRAP_UNAVAILABLE_MESSAGE, 403);
@@ -62,7 +65,7 @@ export async function POST(request: NextRequest) {
     const account = UserAccount.create({
       email: body.email,
       passwordHash: UNSET_PASSWORD_HASH,
-      role: "super_admin",
+      role: 'super_admin',
       clinicId: null,
     });
     // O link é montado ANTES de criar a conta: se `APP_URL` estiver inválida em
@@ -89,7 +92,7 @@ export async function POST(request: NextRequest) {
     const { inviteUrl, delivered } = await new IssueAuthToken(
       services.authTokens,
       services.email,
-    ).issueAndTryDeliver({ account, purpose: "invite", appUrl });
+    ).issueAndTryDeliver({ account, purpose: 'invite', appUrl });
 
     return {
       email: account.email,

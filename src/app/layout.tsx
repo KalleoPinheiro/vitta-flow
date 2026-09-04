@@ -1,29 +1,30 @@
-import type { Metadata } from "next";
-import { Sora, Manrope, JetBrains_Mono } from "next/font/google";
-import { Providers } from "./providers";
-import "./globals.css";
+import type { Metadata } from 'next';
+import { JetBrains_Mono, Manrope, Sora } from 'next/font/google';
+import { Providers } from './providers';
+import './globals.css';
 
 const sora = Sora({
-  variable: "--font-sora",
-  subsets: ["latin"],
-  weight: ["400", "600", "700"],
+  variable: '--font-sora',
+  subsets: ['latin'],
+  weight: ['400', '600', '700'],
 });
 
 const manrope = Manrope({
-  variable: "--font-manrope",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  variable: '--font-manrope',
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
 });
 
 const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
-  subsets: ["latin"],
-  weight: ["400", "500"],
+  variable: '--font-jetbrains-mono',
+  subsets: ['latin'],
+  weight: ['400', '500'],
 });
 
 export const metadata: Metadata = {
-  title: "VittaFlow — Clínica de Estomaterapia",
-  description: "Gestão de pacientes, agenda e faturamento para clínica de estomaterapia",
+  title: 'VittaFlow — Clínica de Estomaterapia',
+  description:
+    'Gestão de pacientes, agenda e faturamento para clínica de estomaterapia',
 };
 
 // CSP estrita com nonce (issue #76) exige um nonce novo por request — só existe
@@ -31,7 +32,7 @@ export const metadata: Metadata = {
 // Cobre tanto páginas autenticadas quanto públicas (ex.: /login) — nenhuma delas
 // tem hoje um caso de uso que justifique o ganho de estático/ISR sobre o custo
 // de desativar essa otimização.
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 export default function RootLayout({
   children,

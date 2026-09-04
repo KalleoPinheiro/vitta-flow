@@ -1,5 +1,5 @@
-import { Supply, type SupplyProps } from "@/domain/inventory/supply";
-import type { SupplyRepository } from "@/domain/inventory/inventory-repositories";
+import type { SupplyRepository } from '@/domain/inventory/inventory-repositories';
+import { Supply, type SupplyProps } from '@/domain/inventory/supply';
 
 export class CreateSupply {
   constructor(private readonly supplies: SupplyRepository) {}

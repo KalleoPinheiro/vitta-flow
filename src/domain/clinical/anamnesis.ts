@@ -1,4 +1,4 @@
-import { ValidationError } from "../shared/errors";
+import { ValidationError } from '../shared/errors';
 
 export interface AnamnesisProps {
   patientId: string;
@@ -20,11 +20,11 @@ export interface AnamnesisState {
 }
 
 const TEXT_FIELDS = [
-  "comorbidities",
-  "allergies",
-  "medications",
-  "surgicalHistory",
-  "notes",
+  'comorbidities',
+  'allergies',
+  'medications',
+  'surgicalHistory',
+  'notes',
 ] as const;
 
 type AnamnesisTextField = (typeof TEXT_FIELDS)[number];
@@ -38,11 +38,11 @@ const mergeTextFields = (
   ) as Record<AnamnesisTextField, string>;
 
 const EMPTY_FIELDS: Record<AnamnesisTextField, string> = {
-  comorbidities: "",
-  allergies: "",
-  medications: "",
-  surgicalHistory: "",
-  notes: "",
+  comorbidities: '',
+  allergies: '',
+  medications: '',
+  surgicalHistory: '',
+  notes: '',
 };
 
 export class Anamnesis {
@@ -50,7 +50,7 @@ export class Anamnesis {
 
   static create(props: AnamnesisProps): Anamnesis {
     if (props.patientId.trim().length === 0) {
-      throw new ValidationError("Paciente é obrigatório");
+      throw new ValidationError('Paciente é obrigatório');
     }
     return new Anamnesis({
       patientId: props.patientId,
@@ -63,7 +63,7 @@ export class Anamnesis {
     return new Anamnesis({ ...state });
   }
 
-  update(changes: Omit<Partial<AnamnesisProps>, "patientId">): Anamnesis {
+  update(changes: Omit<Partial<AnamnesisProps>, 'patientId'>): Anamnesis {
     return new Anamnesis({
       ...this.state,
       ...mergeTextFields(this.state, changes),

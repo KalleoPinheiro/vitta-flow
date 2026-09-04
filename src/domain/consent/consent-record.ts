@@ -1,9 +1,9 @@
-import { createHash } from "node:crypto";
-import { ValidationError } from "../shared/errors";
-import { newId } from "../shared/id";
+import { createHash } from 'node:crypto';
+import { ValidationError } from '../shared/errors';
+import { newId } from '../shared/id';
 
 /** "accept": aceite do termo. "revoke": revogação — nunca apaga o aceite original (append-only). */
-export type ConsentRecordKind = "accept" | "revoke";
+export type ConsentRecordKind = 'accept' | 'revoke';
 
 export interface ConsentRecordState {
   id: string;
@@ -19,11 +19,14 @@ export interface ConsentRecordState {
 }
 
 /** Estado de linha legada (pré-#70): sem `kind`/`textVersion` gravados. */
-type LegacyConsentRecordState = Omit<ConsentRecordState, "kind" | "textVersion"> &
-  Partial<Pick<ConsentRecordState, "kind" | "textVersion">>;
+type LegacyConsentRecordState = Omit<
+  ConsentRecordState,
+  'kind' | 'textVersion'
+> &
+  Partial<Pick<ConsentRecordState, 'kind' | 'textVersion'>>;
 
 export const hashConsentText = (text: string): string =>
-  createHash("sha256").update(text, "utf8").digest("hex");
+  createHash('sha256').update(text, 'utf8').digest('hex');
 
 /** Aceite digital do termo de consentimento — registro imutável (append-only). */
 export class ConsentRecord {
@@ -36,18 +39,18 @@ export class ConsentRecord {
     ipAddress?: string | null;
   }): ConsentRecord {
     if (!input.patientId.trim()) {
-      throw new ValidationError("Paciente é obrigatório");
+      throw new ValidationError('Paciente é obrigatório');
     }
     if (!input.consentText.trim()) {
-      throw new ValidationError("Texto do termo é obrigatório");
+      throw new ValidationError('Texto do termo é obrigatório');
     }
     if (!input.textVersion.trim()) {
-      throw new ValidationError("Versão do termo é obrigatória");
+      throw new ValidationError('Versão do termo é obrigatória');
     }
     return new ConsentRecord({
       id: newId(),
       patientId: input.patientId,
-      kind: "accept",
+      kind: 'accept',
       textHash: hashConsentText(input.consentText),
       textVersion: input.textVersion,
       ipAddress: input.ipAddress?.trim() || null,
@@ -56,15 +59,18 @@ export class ConsentRecord {
   }
 
   /** Registra revogação — não apaga o aceite original, cria um novo registro append-only. */
-  static revoke(input: { patientId: string; ipAddress?: string | null }): ConsentRecord {
+  static revoke(input: {
+    patientId: string;
+    ipAddress?: string | null;
+  }): ConsentRecord {
     if (!input.patientId.trim()) {
-      throw new ValidationError("Paciente é obrigatório");
+      throw new ValidationError('Paciente é obrigatório');
     }
     return new ConsentRecord({
       id: newId(),
       patientId: input.patientId,
-      kind: "revoke",
-      textHash: "",
+      kind: 'revoke',
+      textHash: '',
       textVersion: null,
       ipAddress: input.ipAddress?.trim() || null,
       acceptedAt: new Date(),
@@ -74,7 +80,7 @@ export class ConsentRecord {
   static restore(state: LegacyConsentRecordState): ConsentRecord {
     return new ConsentRecord({
       ...state,
-      kind: state.kind ?? "accept",
+      kind: state.kind ?? 'accept',
       textVersion: state.textVersion ?? null,
     });
   }
@@ -98,11 +104,17 @@ export class ConsentRecord {
   static resolveStatus(
     records: readonly ConsentRecord[],
     consentText: string,
-  ): { accepted: boolean; current: ConsentRecord | null; latestAccept: ConsentRecord | null } {
+  ): {
+    accepted: boolean;
+    current: ConsentRecord | null;
+    latestAccept: ConsentRecord | null;
+  } {
     const latestAccept =
       records
-        .filter((record) => record.kind === "accept")
-        .sort((a, b) => b.state.acceptedAt.getTime() - a.state.acceptedAt.getTime())[0] ?? null;
+        .filter((record) => record.kind === 'accept')
+        .sort(
+          (a, b) => b.state.acceptedAt.getTime() - a.state.acceptedAt.getTime(),
+        )[0] ?? null;
 
     if (records.length === 0) {
       return { accepted: false, current: null, latestAccept: null };
@@ -110,12 +122,16 @@ export class ConsentRecord {
     const latest = [...records].sort(
       (a, b) =>
         b.state.acceptedAt.getTime() - a.state.acceptedAt.getTime() ||
-        (a.kind === "revoke" ? -1 : 1),
+        (a.kind === 'revoke' ? -1 : 1),
     )[0];
-    if (latest.kind === "revoke") {
+    if (latest.kind === 'revoke') {
       return { accepted: false, current: latest, latestAccept };
     }
-    return { accepted: latest.covers(consentText), current: latest, latestAccept };
+    return {
+      accepted: latest.covers(consentText),
+      current: latest,
+      latestAccept,
+    };
   }
 
   /** O aceite cobre este texto? (hash idêntico) */

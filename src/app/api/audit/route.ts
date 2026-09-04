@@ -1,9 +1,9 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { handleRequest } from "@/lib/api-response";
-import { toAuditEventDto } from "@/lib/dto";
-import { requireStaffSession } from "@/lib/auth/require-session";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { getRepositories } from '@/infrastructure/container';
+import { handleRequest } from '@/lib/api-response';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { toAuditEventDto } from '@/lib/dto';
 
 const querySchema = z.object({
   patientId: z.string().max(100).optional(),
@@ -20,11 +20,11 @@ export async function GET(request: NextRequest) {
   return handleRequest(async () => {
     const params = request.nextUrl.searchParams;
     const query = querySchema.parse({
-      patientId: params.get("patientId") ?? undefined,
-      from: params.get("from") ?? undefined,
-      to: params.get("to") ?? undefined,
-      limit: params.get("limit") ?? undefined,
-      offset: params.get("offset") ?? undefined,
+      patientId: params.get('patientId') ?? undefined,
+      from: params.get('from') ?? undefined,
+      to: params.get('to') ?? undefined,
+      limit: params.get('limit') ?? undefined,
+      offset: params.get('offset') ?? undefined,
     });
 
     const { auditEvents } = await getRepositories({ clinicId: null });

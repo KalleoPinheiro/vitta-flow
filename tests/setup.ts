@@ -1,6 +1,6 @@
-import "@testing-library/jest-dom/vitest";
-import { afterEach, vi } from "vitest";
-import { cleanup } from "@testing-library/react";
+import '@testing-library/jest-dom/vitest';
+import { cleanup } from '@testing-library/react';
+import { afterEach, vi } from 'vitest';
 
 /**
  * Sem `test.globals: true`, o auto-cleanup do @testing-library/react entre
@@ -9,7 +9,7 @@ import { cleanup } from "@testing-library/react";
  * quebrar os arquivos com `environment: "node"` (maioria da suíte).
  */
 afterEach(() => {
-  if (typeof document !== "undefined") {
+  if (typeof document !== 'undefined') {
     cleanup();
   }
 });
@@ -20,8 +20,8 @@ afterEach(() => {
  * "`after` was called outside a request scope". Substituímos por execução
  * imediata (fire-and-forget), preservando todo o resto do módulo real.
  */
-vi.mock("next/server", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("next/server")>();
+vi.mock('next/server', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('next/server')>();
   return {
     ...actual,
     after: (task: () => void | Promise<void>) => {

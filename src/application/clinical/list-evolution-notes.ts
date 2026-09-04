@@ -1,5 +1,5 @@
-import type { EvolutionNote } from "@/domain/clinical/evolution-note";
-import type { EvolutionNoteRepository } from "@/domain/clinical/clinical-repositories";
+import type { EvolutionNoteRepository } from '@/domain/clinical/clinical-repositories';
+import type { EvolutionNote } from '@/domain/clinical/evolution-note';
 
 export class ListEvolutionNotes {
   constructor(private readonly evolutions: EvolutionNoteRepository) {}

@@ -1,7 +1,7 @@
-import { ValidationError } from "../shared/errors";
-import { newId } from "../shared/id";
+import { ValidationError } from '../shared/errors';
+import { newId } from '../shared/id';
 
-export const AUDIT_ACTIONS = ["read", "create", "update", "delete"] as const;
+export const AUDIT_ACTIONS = ['read', 'create', 'update', 'delete'] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
 export interface AuditEventProps {
@@ -32,13 +32,13 @@ export class AuditEvent {
 
   static create(props: AuditEventProps): AuditEvent {
     if (!props.clinicId.trim()) {
-      throw new ValidationError("Empresa da auditoria é obrigatória");
+      throw new ValidationError('Empresa da auditoria é obrigatória');
     }
     if (!props.actorRole.trim() || !props.actorId.trim()) {
-      throw new ValidationError("Ator da auditoria é obrigatório");
+      throw new ValidationError('Ator da auditoria é obrigatório');
     }
     if (!props.resourceType.trim() || !props.resourceId.trim()) {
-      throw new ValidationError("Recurso auditado é obrigatório");
+      throw new ValidationError('Recurso auditado é obrigatório');
     }
     return new AuditEvent({
       clinicId: props.clinicId,

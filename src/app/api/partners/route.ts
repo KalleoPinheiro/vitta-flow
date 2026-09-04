@@ -1,16 +1,16 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { CreatePartner } from "@/application/partners/create-partner";
-import { ListPartners } from "@/application/partners/list-partners";
-import { handleRequest } from "@/lib/api-response";
-import { toPartnerDto } from "@/lib/dto";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { CreatePartner } from '@/application/partners/create-partner';
+import { ListPartners } from '@/application/partners/list-partners';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { toPartnerDto } from '@/lib/dto';
 
 const partnerSchema = z.object({
   fullName: z.string().min(1).max(200),
-  email: z.string().min(1).max(200).email("Email inválido"),
+  email: z.string().min(1).max(200).email('Email inválido'),
   phone: z.string().min(1).max(50),
   crm: z.string().max(50).nullish(),
   specialty: z.string().max(200).nullish(),
@@ -21,7 +21,9 @@ export async function GET(request: NextRequest) {
   if (!guard.ok) return guard.response;
 
   return handleRequest(async () => {
-    const { partners } = await getRepositories({ clinicId: guard.session?.clinicId ?? null });
+    const { partners } = await getRepositories({
+      clinicId: guard.session?.clinicId ?? null,
+    });
     const result = await new ListPartners(partners).execute();
     return result.map(toPartnerDto);
   });

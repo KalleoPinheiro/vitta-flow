@@ -1,10 +1,10 @@
-import type { NextRequest } from "next/server";
-import { getRepositories } from "@/infrastructure/container";
-import { GetBillingSummary } from "@/application/billing/get-billing-summary";
-import { ListAppointments } from "@/application/appointments/list-appointments";
-import { handleRequest, fail } from "@/lib/api-response";
-import { toAppointmentDto } from "@/lib/dto";
-import { requireStaffSession } from "@/lib/auth/require-session";
+import type { NextRequest } from 'next/server';
+import { ListAppointments } from '@/application/appointments/list-appointments';
+import { GetBillingSummary } from '@/application/billing/get-billing-summary';
+import { getRepositories } from '@/infrastructure/container';
+import { fail, handleRequest } from '@/lib/api-response';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { toAppointmentDto } from '@/lib/dto';
 
 const MONTH_REGEX = /^\d{4}-\d{2}$/;
 
@@ -12,9 +12,9 @@ export async function GET(request: NextRequest) {
   const guard = requireStaffSession(request);
   if (!guard.ok) return guard.response;
 
-  const month = request.nextUrl.searchParams.get("month");
+  const month = request.nextUrl.searchParams.get('month');
   if (month && !MONTH_REGEX.test(month)) {
-    return fail("Parâmetro month deve estar no formato YYYY-MM", 400);
+    return fail('Parâmetro month deve estar no formato YYYY-MM', 400);
   }
 
   return handleRequest(async () => {
@@ -25,10 +25,20 @@ export async function GET(request: NextRequest) {
     const from = new Date(year, monthIndex, 1);
     const to = new Date(year, monthIndex + 1, 1);
 
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const startOfToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+    const endOfToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + 1,
+    );
 
-    const { appointments, patients, invoices } = await getRepositories({ clinicId: null });
+    const { appointments, patients, invoices } = await getRepositories({
+      clinicId: null,
+    });
     const [billing, monthStats, todayAppointments] = await Promise.all([
       new GetBillingSummary(invoices).execute({ from, to }),
       appointments.getStatsInRange(from, to),

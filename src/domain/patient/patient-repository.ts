@@ -1,4 +1,4 @@
-import type { Patient } from "./patient";
+import type { Patient } from './patient';
 
 export interface PatientPage {
   limit?: number;

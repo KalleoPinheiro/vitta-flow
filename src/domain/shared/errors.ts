@@ -8,23 +8,23 @@ export abstract class DomainError extends Error {
 }
 
 export class ValidationError extends DomainError {
-  readonly code = "VALIDATION_ERROR";
+  readonly code = 'VALIDATION_ERROR';
 }
 
 export class InvalidMoneyError extends DomainError {
-  readonly code = "INVALID_MONEY";
+  readonly code = 'INVALID_MONEY';
 }
 
 export class InvalidTimeSlotError extends DomainError {
-  readonly code = "INVALID_TIME_SLOT";
+  readonly code = 'INVALID_TIME_SLOT';
 }
 
 export class InvalidStatusTransitionError extends DomainError {
-  readonly code = "INVALID_STATUS_TRANSITION";
+  readonly code = 'INVALID_STATUS_TRANSITION';
 }
 
 export class NotFoundError extends DomainError {
-  readonly code = "NOT_FOUND";
+  readonly code = 'NOT_FOUND';
 
   constructor(entity: string, id: string) {
     super(`${entity} não encontrado(a): ${id}`);
@@ -32,19 +32,19 @@ export class NotFoundError extends DomainError {
 }
 
 export class SchedulingConflictError extends DomainError {
-  readonly code = "SCHEDULING_CONFLICT";
+  readonly code = 'SCHEDULING_CONFLICT';
 }
 
 /** Ação exige consentimento vigente do titular (LGPD) — mapeado para 403. */
 export class ConsentRequiredError extends DomainError {
-  readonly code = "CONSENT_REQUIRED";
+  readonly code = 'CONSENT_REQUIRED';
 }
 
 export class InsufficientStockError extends DomainError {
-  readonly code = "INSUFFICIENT_STOCK";
+  readonly code = 'INSUFFICIENT_STOCK';
 }
 
 /** Ator tentou cadastrar um papel/empresa fora do que a hierarquia permite (RBAC-11..14). */
 export class ProvisioningDeniedError extends DomainError {
-  readonly code = "PROVISIONING_DENIED";
+  readonly code = 'PROVISIONING_DENIED';
 }

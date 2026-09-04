@@ -1,11 +1,11 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { NotFoundError, ValidationError } from "@/domain/shared/errors";
-import { handleRequest } from "@/lib/api-response";
-import { toProcedureDto } from "@/lib/dto";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { NotFoundError, ValidationError } from '@/domain/shared/errors';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { toProcedureDto } from '@/lib/dto';
 
 const updateSchema = z.object({
   name: z.string().min(1).max(200).optional(),
@@ -29,12 +29,14 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
     const existing = await procedures.findById(id);
     if (!existing) {
-      throw new NotFoundError("Procedimento", id);
+      throw new NotFoundError('Procedimento', id);
     }
     if (body.name) {
       const sameName = await procedures.findByName(body.name);
       if (sameName && sameName.id !== id) {
-        throw new ValidationError(`Já existe procedimento com o nome "${sameName.name}"`);
+        throw new ValidationError(
+          `Já existe procedimento com o nome "${sameName.name}"`,
+        );
       }
     }
 

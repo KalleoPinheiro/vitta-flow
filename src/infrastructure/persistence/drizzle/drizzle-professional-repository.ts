@@ -1,9 +1,9 @@
-import { asc, eq, inArray } from "drizzle-orm";
-import { Professional } from "@/domain/professional/professional";
-import type { ProfessionalRepository } from "@/domain/professional/professional-repository";
-import { MAX_ROWS, type AppDb } from "./db";
-import { professionals } from "./schema";
-import { withTenant } from "./tenant-scope";
+import { asc, eq, inArray } from 'drizzle-orm';
+import { Professional } from '@/domain/professional/professional';
+import type { ProfessionalRepository } from '@/domain/professional/professional-repository';
+import { type AppDb, MAX_ROWS } from './db';
+import { professionals } from './schema';
+import { withTenant } from './tenant-scope';
 
 export class DrizzleProfessionalRepository implements ProfessionalRepository {
   constructor(
@@ -14,7 +14,7 @@ export class DrizzleProfessionalRepository implements ProfessionalRepository {
   async save(professional: Professional): Promise<void> {
     if (this.clinicId === null) {
       throw new Error(
-        "Papel de sistema não pode salvar profissional (somente leitura cross-empresa)",
+        'Papel de sistema não pode salvar profissional (somente leitura cross-empresa)',
       );
     }
     const values = {
@@ -49,7 +49,13 @@ export class DrizzleProfessionalRepository implements ProfessionalRepository {
     const rows = await this.db
       .select()
       .from(professionals)
-      .where(withTenant(professionals, this.clinicId, inArray(professionals.id, unique)));
+      .where(
+        withTenant(
+          professionals,
+          this.clinicId,
+          inArray(professionals.id, unique),
+        ),
+      );
     return rows.map((row) => Professional.restore(row));
   }
 

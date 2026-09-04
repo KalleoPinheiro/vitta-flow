@@ -1,9 +1,9 @@
-import type { NextRequest } from "next/server";
-import { getRepositories } from "@/infrastructure/container";
-import { handleRequest } from "@/lib/api-response";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import type { ClinicalCondition } from "@/domain/clinical/clinical-condition";
-import type { ConditionAssessment } from "@/domain/clinical/condition-assessment";
+import type { NextRequest } from 'next/server';
+import type { ClinicalCondition } from '@/domain/clinical/clinical-condition';
+import type { ConditionAssessment } from '@/domain/clinical/condition-assessment';
+import { getRepositories } from '@/infrastructure/container';
+import { handleRequest } from '@/lib/api-response';
+import { requireStaffSession } from '@/lib/auth/require-session';
 
 const MS_PER_HOUR = 3_600_000;
 
@@ -11,15 +11,16 @@ const MS_PER_HOUR = 3_600_000;
 function latestScoreFor(
   condition: ClinicalCondition | undefined,
   assessment: ConditionAssessment | undefined,
-): { kind: "push" | "det"; value: number } | null {
+): { kind: 'push' | 'det'; value: number } | null {
   if (!condition || !assessment) {
     return null;
   }
-  const value = condition.kind === "wound" ? assessment.pushScore : assessment.detScore;
+  const value =
+    condition.kind === 'wound' ? assessment.pushScore : assessment.detScore;
   if (value == null) {
     return null;
   }
-  return { kind: condition.kind === "wound" ? "push" : "det", value };
+  return { kind: condition.kind === 'wound' ? 'push' : 'det', value };
 }
 
 /** Fila de triagem (staff): fotos enviadas por pacientes aguardando avaliação. */
@@ -28,12 +29,15 @@ export async function GET(request: NextRequest) {
   if (!guard.ok) return guard.response;
 
   return handleRequest(async () => {
-    const { conditionPhotos, conditions, patients, assessments } = await getRepositories({
-      clinicId: guard.session?.clinicId ?? null,
-    });
+    const { conditionPhotos, conditions, patients, assessments } =
+      await getRepositories({
+        clinicId: guard.session?.clinicId ?? null,
+      });
     const pending = await conditionPhotos.findPendingTriage();
 
-    const conditionIds = [...new Set(pending.map((photo) => photo.conditionId))];
+    const conditionIds = [
+      ...new Set(pending.map((photo) => photo.conditionId)),
+    ];
     // Uma query em lote (CONS2-09) — padrão anti-N+1 do restante do projeto.
     const conditionList = await conditions.findByIds(conditionIds);
     const conditionById = new Map(conditionList.map((c) => [c.id, c]));
@@ -47,7 +51,10 @@ export async function GET(request: NextRequest) {
     const latestByCondition = new Map<string, ConditionAssessment>();
     for (const assessment of allAssessments) {
       const current = latestByCondition.get(assessment.conditionId);
-      if (!current || assessment.createdAt.getTime() > current.createdAt.getTime()) {
+      if (
+        !current ||
+        assessment.createdAt.getTime() > current.createdAt.getTime()
+      ) {
         latestByCondition.set(assessment.conditionId, assessment);
       }
     }
@@ -55,18 +62,25 @@ export async function GET(request: NextRequest) {
     const now = Date.now();
     return pending.map((photo) => {
       const condition = conditionById.get(photo.conditionId);
-      const patient = condition ? patientById.get(condition.patientId) : undefined;
+      const patient = condition
+        ? patientById.get(condition.patientId)
+        : undefined;
       return {
         id: photo.id,
         conditionId: photo.conditionId,
-        conditionTitle: condition?.title ?? "—",
+        conditionTitle: condition?.title ?? '—',
         patientId: condition?.patientId ?? null,
-        patientName: patient?.fullName ?? "—",
+        patientName: patient?.fullName ?? '—',
         patientNote: photo.patientNote,
         createdAt: photo.createdAt.toISOString(),
         // Idade da pendência (COMP3-04): triagem parada > 24h ganha destaque na UI.
-        waitingHours: Math.floor((now - photo.createdAt.getTime()) / MS_PER_HOUR),
-        latestScore: latestScoreFor(condition, latestByCondition.get(photo.conditionId)),
+        waitingHours: Math.floor(
+          (now - photo.createdAt.getTime()) / MS_PER_HOUR,
+        ),
+        latestScore: latestScoreFor(
+          condition,
+          latestByCondition.get(photo.conditionId),
+        ),
       };
     });
   });

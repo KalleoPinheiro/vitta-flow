@@ -1,11 +1,13 @@
-import { and, eq } from "drizzle-orm";
-import type { ProfessionalPatientLinkRepository } from "@/domain/clinical/professional-patient-link";
-import { newId } from "@/domain/shared/id";
-import type { AppDb } from "./db";
-import { professionalPatientLinks } from "./schema";
-import { withTenant } from "./tenant-scope";
+import { and, eq } from 'drizzle-orm';
+import type { ProfessionalPatientLinkRepository } from '@/domain/clinical/professional-patient-link';
+import { newId } from '@/domain/shared/id';
+import type { AppDb } from './db';
+import { professionalPatientLinks } from './schema';
+import { withTenant } from './tenant-scope';
 
-export class DrizzleProfessionalPatientLinkRepository implements ProfessionalPatientLinkRepository {
+export class DrizzleProfessionalPatientLinkRepository
+  implements ProfessionalPatientLinkRepository
+{
   constructor(
     private readonly db: AppDb,
     private readonly clinicId: string | null,
@@ -13,7 +15,9 @@ export class DrizzleProfessionalPatientLinkRepository implements ProfessionalPat
 
   async ensureLink(professionalId: string, patientId: string): Promise<void> {
     if (this.clinicId === null) {
-      throw new Error("Papel de sistema não pode criar vínculo profissional-paciente");
+      throw new Error(
+        'Papel de sistema não pode criar vínculo profissional-paciente',
+      );
     }
     await this.db
       .insert(professionalPatientLinks)
@@ -24,7 +28,12 @@ export class DrizzleProfessionalPatientLinkRepository implements ProfessionalPat
         patientId,
         createdAt: new Date(),
       })
-      .onConflictDoNothing({ target: [professionalPatientLinks.professionalId, professionalPatientLinks.patientId] });
+      .onConflictDoNothing({
+        target: [
+          professionalPatientLinks.professionalId,
+          professionalPatientLinks.patientId,
+        ],
+      });
   }
 
   async hasLink(professionalId: string, patientId: string): Promise<boolean> {

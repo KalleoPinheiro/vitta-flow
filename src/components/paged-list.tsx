@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import type { ReactNode } from "react";
-import { EmptyState, LoadingIndicator } from "./feedback";
+import type { ReactNode } from 'react';
+import { EmptyState, LoadingIndicator } from './feedback';
 
 interface PagedListProps<T> {
   items: T[] | null;
@@ -10,7 +10,11 @@ interface PagedListProps<T> {
 }
 
 /** Estados padrão de listagem paginada: carregando → vazio → conteúdo. */
-export function PagedList<T>({ items, emptyMessage, render }: PagedListProps<T>) {
+export function PagedList<T>({
+  items,
+  emptyMessage,
+  render,
+}: PagedListProps<T>) {
   if (!items) {
     return <LoadingIndicator />;
   }

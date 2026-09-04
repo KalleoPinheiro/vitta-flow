@@ -1,26 +1,40 @@
-import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, ne, or, sql, type SQL } from "drizzle-orm";
 import {
-  Appointment,
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  gte,
+  inArray,
+  isNull,
+  lt,
+  ne,
+  or,
+  type SQL,
+  sql,
+} from 'drizzle-orm';
+import {
   APPOINTMENT_STATUSES,
+  Appointment,
   type AppointmentStatus,
-} from "@/domain/scheduling/appointment";
+} from '@/domain/scheduling/appointment';
 import type {
   AppointmentRangeStats,
   AppointmentRepository,
   FindByPatientOptions,
-} from "@/domain/scheduling/appointment-repository";
-import { SchedulingConflictError } from "@/domain/shared/errors";
-import { Money } from "@/domain/shared/money";
-import { TimeSlot } from "@/domain/shared/time-slot";
-import type { AppDb } from "./db";
-import { appointments } from "./schema";
-import { withTenant } from "./tenant-scope";
+} from '@/domain/scheduling/appointment-repository';
+import { SchedulingConflictError } from '@/domain/shared/errors';
+import { Money } from '@/domain/shared/money';
+import { TimeSlot } from '@/domain/shared/time-slot';
+import type { AppDb } from './db';
+import { appointments } from './schema';
+import { withTenant } from './tenant-scope';
 
-const PG_EXCLUSION_VIOLATION = "23P01";
+const PG_EXCLUSION_VIOLATION = '23P01';
 
 function isExclusionViolation(error: unknown): boolean {
   let current: unknown = error;
-  while (typeof current === "object" && current !== null) {
+  while (typeof current === 'object' && current !== null) {
     if ((current as { code?: string }).code === PG_EXCLUSION_VIOLATION) {
       return true;
     }
@@ -31,7 +45,7 @@ function isExclusionViolation(error: unknown): boolean {
 
 type AppointmentRow = typeof appointments.$inferSelect;
 
-const ACTIVE_STATUSES = ["scheduled", "confirmed"];
+const ACTIVE_STATUSES = ['scheduled', 'confirmed'];
 
 const toAppointment = (row: AppointmentRow): Appointment =>
   Appointment.restore({
@@ -57,7 +71,7 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
   async save(appointment: Appointment): Promise<void> {
     if (this.clinicId === null) {
       throw new Error(
-        "Papel de sistema não pode salvar consulta (somente leitura cross-empresa)",
+        'Papel de sistema não pode salvar consulta (somente leitura cross-empresa)',
       );
     }
     const values = {
@@ -83,7 +97,7 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
     } catch (error) {
       if (isExclusionViolation(error)) {
         throw new SchedulingConflictError(
-          "Horário indisponível: conflito com outra consulta (intervalo mínimo de 15 minutos)",
+          'Horário indisponível: conflito com outra consulta (intervalo mínimo de 15 minutos)',
         );
       }
       throw error;
@@ -107,15 +121,26 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
     const rows = await this.db
       .select()
       .from(appointments)
-      .where(withTenant(appointments, this.clinicId, inArray(appointments.id, unique)));
+      .where(
+        withTenant(
+          appointments,
+          this.clinicId,
+          inArray(appointments.id, unique),
+        ),
+      );
     return rows.map(toAppointment);
   }
 
-  private patientConditions(base: SQL, options?: FindByPatientOptions): SQL | undefined {
+  private patientConditions(
+    base: SQL,
+    options?: FindByPatientOptions,
+  ): SQL | undefined {
     return withTenant(
       appointments,
       this.clinicId,
-      options?.endsAfter ? and(base, gte(appointments.endsAt, options.endsAfter)) : base,
+      options?.endsAfter
+        ? and(base, gte(appointments.endsAt, options.endsAfter))
+        : base,
     );
   }
 
@@ -126,7 +151,9 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
     const rows = await this.db
       .select()
       .from(appointments)
-      .where(this.patientConditions(eq(appointments.patientId, patientId), options))
+      .where(
+        this.patientConditions(eq(appointments.patientId, patientId), options),
+      )
       .orderBy(asc(appointments.startsAt));
     return rows.map(toAppointment);
   }
@@ -142,7 +169,12 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
     const rows = await this.db
       .select()
       .from(appointments)
-      .where(this.patientConditions(inArray(appointments.patientId, unique), options))
+      .where(
+        this.patientConditions(
+          inArray(appointments.patientId, unique),
+          options,
+        ),
+      )
       .orderBy(asc(appointments.startsAt));
     return rows.map(toAppointment);
   }
@@ -152,7 +184,10 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
     end: Date,
     options?: { professionalId?: string },
   ): Promise<Appointment[]> {
-    const base = and(lt(appointments.startsAt, end), gt(appointments.endsAt, start));
+    const base = and(
+      lt(appointments.startsAt, end),
+      gt(appointments.endsAt, start),
+    );
     const rows = await this.db
       .select()
       .from(appointments)
@@ -169,7 +204,10 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
     return rows.map(toAppointment);
   }
 
-  async getStatsInRange(start: Date, end: Date): Promise<AppointmentRangeStats> {
+  async getStatsInRange(
+    start: Date,
+    end: Date,
+  ): Promise<AppointmentRangeStats> {
     const inRange = withTenant(
       appointments,
       this.clinicId,
@@ -201,7 +239,7 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
         totalCents: sql<number>`coalesce(sum(${appointments.priceCents}), 0)`,
       })
       .from(appointments)
-      .where(and(inRange, eq(appointments.status, "completed")))
+      .where(and(inRange, eq(appointments.status, 'completed')))
       .groupBy(appointments.procedure)
       .orderBy(desc(sql`coalesce(sum(${appointments.priceCents}), 0)`));
 
@@ -218,7 +256,9 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
   async getProductionInRange(
     start: Date,
     end: Date,
-  ): Promise<Array<{ professionalId: string | null; count: number; totalCents: number }>> {
+  ): Promise<
+    Array<{ professionalId: string | null; count: number; totalCents: number }>
+  > {
     const rows = await this.db
       .select({
         professionalId: appointments.professionalId,
@@ -233,7 +273,7 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
           and(
             lt(appointments.startsAt, end),
             gt(appointments.endsAt, start),
-            eq(appointments.status, "completed"),
+            eq(appointments.status, 'completed'),
           ),
         ),
       )

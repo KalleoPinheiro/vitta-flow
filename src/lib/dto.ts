@@ -1,37 +1,37 @@
-import type { Patient } from "@/domain/patient/patient";
-import type { Partner } from "@/domain/partner/partner";
-import type { Appointment } from "@/domain/scheduling/appointment";
-import type { Invoice } from "@/domain/billing/invoice";
-import type { Anamnesis } from "@/domain/clinical/anamnesis";
-import type { EvolutionNote } from "@/domain/clinical/evolution-note";
-import type { ClinicalCondition } from "@/domain/clinical/clinical-condition";
-import type { ConditionAssessment } from "@/domain/clinical/condition-assessment";
-import type { Supply } from "@/domain/inventory/supply";
-import type { StockMovement } from "@/domain/inventory/stock-movement";
-import type { FollowUp } from "@/domain/followup/follow-up";
-import type { AuditEvent } from "@/domain/audit/audit-event";
-import type { ConditionPhoto } from "@/domain/clinical/condition-photo";
-import type { Professional } from "@/domain/professional/professional";
-import type { Procedure as CatalogProcedure } from "@/domain/catalog/procedure";
-import type { Clinic } from "@/domain/clinic/clinic";
-import type { UserAccount } from "@/domain/auth/user-account";
-import { UNSET_PASSWORD_HASH } from "@/lib/auth/password";
-import type { NursingDiagnosis } from "@/domain/taxonomy/nursing-diagnosis";
-import type { NursingOutcome } from "@/domain/taxonomy/nursing-outcome";
-import type { NursingIntervention } from "@/domain/taxonomy/nursing-intervention";
-import type { CarePlan, CarePlanStatus } from "@/domain/clinical/care-plan";
+import type { CarePlanDetail } from '@/application/clinical/get-care-plan';
+import type { AuditEvent } from '@/domain/audit/audit-event';
+import type { UserAccount } from '@/domain/auth/user-account';
+import type { Invoice } from '@/domain/billing/invoice';
+import type { Procedure as CatalogProcedure } from '@/domain/catalog/procedure';
+import type { Clinic } from '@/domain/clinic/clinic';
+import type { Anamnesis } from '@/domain/clinical/anamnesis';
+import type { CarePlan, CarePlanStatus } from '@/domain/clinical/care-plan';
 import type {
   CarePlanDiagnosis,
   CarePlanDiagnosisType,
-} from "@/domain/clinical/care-plan-diagnosis";
-import type { CarePlanOutcome } from "@/domain/clinical/care-plan-outcome";
+} from '@/domain/clinical/care-plan-diagnosis';
 import type {
   CarePlanIntervention,
   InterventionPriority,
-} from "@/domain/clinical/care-plan-intervention";
-import type { OutcomeEvaluation } from "@/domain/clinical/outcome-evaluation";
-import type { InterventionRecord } from "@/domain/clinical/intervention-record";
-import type { CarePlanDetail } from "@/application/clinical/get-care-plan";
+} from '@/domain/clinical/care-plan-intervention';
+import type { CarePlanOutcome } from '@/domain/clinical/care-plan-outcome';
+import type { ClinicalCondition } from '@/domain/clinical/clinical-condition';
+import type { ConditionAssessment } from '@/domain/clinical/condition-assessment';
+import type { ConditionPhoto } from '@/domain/clinical/condition-photo';
+import type { EvolutionNote } from '@/domain/clinical/evolution-note';
+import type { InterventionRecord } from '@/domain/clinical/intervention-record';
+import type { OutcomeEvaluation } from '@/domain/clinical/outcome-evaluation';
+import type { FollowUp } from '@/domain/followup/follow-up';
+import type { StockMovement } from '@/domain/inventory/stock-movement';
+import type { Supply } from '@/domain/inventory/supply';
+import type { Partner } from '@/domain/partner/partner';
+import type { Patient } from '@/domain/patient/patient';
+import type { Professional } from '@/domain/professional/professional';
+import type { Appointment } from '@/domain/scheduling/appointment';
+import type { NursingDiagnosis } from '@/domain/taxonomy/nursing-diagnosis';
+import type { NursingIntervention } from '@/domain/taxonomy/nursing-intervention';
+import type { NursingOutcome } from '@/domain/taxonomy/nursing-outcome';
+import { UNSET_PASSWORD_HASH } from '@/lib/auth/password';
 
 export interface PatientDto {
   id: string;
@@ -71,7 +71,9 @@ export interface PortalAppointmentDto {
   status: string;
 }
 
-export const toPortalAppointmentDto = (appointment: Appointment): PortalAppointmentDto => ({
+export const toPortalAppointmentDto = (
+  appointment: Appointment,
+): PortalAppointmentDto => ({
   id: appointment.id,
   startsAt: appointment.slot.start.toISOString(),
   endsAt: appointment.slot.end.toISOString(),
@@ -87,7 +89,9 @@ export interface PortalPatientProfileDto {
   phone: string;
 }
 
-export const toPortalPatientProfileDto = (patient: Patient): PortalPatientProfileDto => ({
+export const toPortalPatientProfileDto = (
+  patient: Patient,
+): PortalPatientProfileDto => ({
   id: patient.id,
   fullName: patient.fullName,
   email: patient.email,
@@ -100,7 +104,9 @@ export interface ReferredPatientSummaryDto {
   fullName: string;
 }
 
-export const toReferredPatientSummaryDto = (patient: Patient): ReferredPatientSummaryDto => ({
+export const toReferredPatientSummaryDto = (
+  patient: Patient,
+): ReferredPatientSummaryDto => ({
   id: patient.id,
   fullName: patient.fullName,
 });
@@ -252,7 +258,9 @@ export interface PortalConditionDto {
   createdAt: string;
 }
 
-export const toPortalConditionDto = (condition: ClinicalCondition): PortalConditionDto => ({
+export const toPortalConditionDto = (
+  condition: ClinicalCondition,
+): PortalConditionDto => ({
   id: condition.id,
   patientId: condition.patientId,
   kind: condition.kind,
@@ -282,7 +290,9 @@ export interface AssessmentDto {
   createdAt: string;
 }
 
-export const toAssessmentDto = (assessment: ConditionAssessment): AssessmentDto => ({
+export const toAssessmentDto = (
+  assessment: ConditionAssessment,
+): AssessmentDto => ({
   id: assessment.id,
   conditionId: assessment.conditionId,
   lengthMm: assessment.lengthMm,
@@ -325,7 +335,9 @@ export interface PortalAssessmentDto {
   createdAt: string;
 }
 
-export const toPortalAssessmentDto = (assessment: ConditionAssessment): PortalAssessmentDto => ({
+export const toPortalAssessmentDto = (
+  assessment: ConditionAssessment,
+): PortalAssessmentDto => ({
   id: assessment.id,
   conditionId: assessment.conditionId,
   lengthMm: assessment.lengthMm,
@@ -351,7 +363,9 @@ export interface NursingDiagnosisDto {
   edition: string;
 }
 
-export const toNursingDiagnosisDto = (diagnosis: NursingDiagnosis): NursingDiagnosisDto => ({
+export const toNursingDiagnosisDto = (
+  diagnosis: NursingDiagnosis,
+): NursingDiagnosisDto => ({
   code: diagnosis.code,
   label: diagnosis.label,
   domain: diagnosis.domain,
@@ -370,7 +384,9 @@ export interface NursingOutcomeDto {
   scaleAnchors: string[];
 }
 
-export const toNursingOutcomeDto = (outcome: NursingOutcome): NursingOutcomeDto => ({
+export const toNursingOutcomeDto = (
+  outcome: NursingOutcome,
+): NursingOutcomeDto => ({
   code: outcome.code,
   label: outcome.label,
   domain: outcome.domain,
@@ -449,7 +465,9 @@ export interface OutcomeEvaluationDto {
   evaluatedAt: string;
 }
 
-export const toOutcomeEvaluationDto = (evaluation: OutcomeEvaluation): OutcomeEvaluationDto => ({
+export const toOutcomeEvaluationDto = (
+  evaluation: OutcomeEvaluation,
+): OutcomeEvaluationDto => ({
   id: evaluation.id,
   outcomeId: evaluation.outcomeId,
   score: evaluation.score,
@@ -504,7 +522,9 @@ export interface InterventionRecordDto {
   performedAt: string;
 }
 
-export const toInterventionRecordDto = (record: InterventionRecord): InterventionRecordDto => ({
+export const toInterventionRecordDto = (
+  record: InterventionRecord,
+): InterventionRecordDto => ({
   id: record.id,
   interventionId: record.interventionId,
   professionalId: record.professionalId,
@@ -559,17 +579,23 @@ export const toCarePlanDetailDto = (
   diagnoses: detail.diagnoses.map((diagnosis) =>
     toCarePlanDiagnosisDto(
       diagnosis,
-      catalog.diagnoses.get(diagnosis.diagnosisCode)?.label ?? diagnosis.diagnosisCode,
+      catalog.diagnoses.get(diagnosis.diagnosisCode)?.label ??
+        diagnosis.diagnosisCode,
     ),
   ),
   outcomes: detail.outcomes.map(({ outcome, evaluations }) =>
-    toCarePlanOutcomeDto(outcome, evaluations, catalog.outcomes.get(outcome.outcomeCode)),
+    toCarePlanOutcomeDto(
+      outcome,
+      evaluations,
+      catalog.outcomes.get(outcome.outcomeCode),
+    ),
   ),
   interventions: detail.interventions.map(({ intervention, records }) =>
     toCarePlanInterventionDto(
       intervention,
       records,
-      catalog.interventions.get(intervention.interventionCode)?.label ?? intervention.interventionCode,
+      catalog.interventions.get(intervention.interventionCode)?.label ??
+        intervention.interventionCode,
     ),
   ),
 });
@@ -610,7 +636,9 @@ export interface StockMovementDto {
   createdAt: string;
 }
 
-export const toStockMovementDto = (movement: StockMovement): StockMovementDto => ({
+export const toStockMovementDto = (
+  movement: StockMovement,
+): StockMovementDto => ({
   id: movement.id,
   supplyId: movement.supplyId,
   type: movement.type,
@@ -647,7 +675,10 @@ export const toFollowUpDto = (
   isOverdue,
 });
 
-export const toInvoiceDto = (invoice: Invoice, patientName?: string): InvoiceDto => ({
+export const toInvoiceDto = (
+  invoice: Invoice,
+  patientName?: string,
+): InvoiceDto => ({
   id: invoice.id,
   patientId: invoice.patientId,
   patientName,
@@ -697,7 +728,9 @@ export interface ConditionPhotoDto {
   createdAt: string;
 }
 
-export const toConditionPhotoDto = (photo: ConditionPhoto): ConditionPhotoDto => ({
+export const toConditionPhotoDto = (
+  photo: ConditionPhoto,
+): ConditionPhotoDto => ({
   id: photo.id,
   conditionId: photo.conditionId,
   assessmentId: photo.assessmentId,
@@ -717,7 +750,9 @@ export interface ProfessionalDto {
   active: boolean;
 }
 
-export const toProfessionalDto = (professional: Professional): ProfessionalDto => ({
+export const toProfessionalDto = (
+  professional: Professional,
+): ProfessionalDto => ({
   id: professional.id,
   fullName: professional.fullName,
   registry: professional.registry,

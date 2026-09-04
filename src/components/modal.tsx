@@ -1,7 +1,11 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogTitle } from "@still-void/ui/react/client";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from '@still-void/ui/react/client';
+import { useEffect, useState } from 'react';
 
 interface ModalProps {
   title: string;
@@ -33,7 +37,9 @@ interface ModalProps {
  */
 export function Modal({ title, onClose, children }: ModalProps) {
   const [previouslyFocused] = useState<HTMLElement | null>(() =>
-    typeof document === "undefined" ? null : (document.activeElement as HTMLElement | null),
+    typeof document === 'undefined'
+      ? null
+      : (document.activeElement as HTMLElement | null),
   );
 
   useEffect(() => {
@@ -57,7 +63,9 @@ export function Modal({ title, onClose, children }: ModalProps) {
         className="max-h-[90vh] overflow-y-auto shadow-none"
       >
         <div className="flex items-center justify-between">
-          <DialogTitle className="sv-display text-lg font-semibold">{title}</DialogTitle>
+          <DialogTitle className="sv-display font-semibold text-lg">
+            {title}
+          </DialogTitle>
         </div>
         {children}
       </DialogContent>

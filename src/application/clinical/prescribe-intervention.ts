@@ -1,13 +1,13 @@
 import {
   CarePlanIntervention,
   type InterventionPriority,
-} from "@/domain/clinical/care-plan-intervention";
+} from '@/domain/clinical/care-plan-intervention';
 import type {
   CarePlanInterventionRepository,
   CarePlanRepository,
-} from "@/domain/clinical/clinical-repositories";
-import type { NursingInterventionRepository } from "@/domain/taxonomy/taxonomy-repositories";
-import { NotFoundError, ValidationError } from "@/domain/shared/errors";
+} from '@/domain/clinical/clinical-repositories';
+import { NotFoundError, ValidationError } from '@/domain/shared/errors';
+import type { NursingInterventionRepository } from '@/domain/taxonomy/taxonomy-repositories';
 
 export interface PrescribeInterventionInput {
   carePlanId: string;
@@ -23,17 +23,19 @@ export class PrescribeIntervention {
     private readonly catalog: NursingInterventionRepository,
   ) {}
 
-  async execute(input: PrescribeInterventionInput): Promise<CarePlanIntervention> {
+  async execute(
+    input: PrescribeInterventionInput,
+  ): Promise<CarePlanIntervention> {
     const plan = await this.carePlans.findById(input.carePlanId);
     if (!plan) {
-      throw new NotFoundError("Plano de cuidados", input.carePlanId);
+      throw new NotFoundError('Plano de cuidados', input.carePlanId);
     }
     if (!plan.isActive) {
-      throw new ValidationError("Plano de cuidados não está ativo");
+      throw new ValidationError('Plano de cuidados não está ativo');
     }
     const catalogEntry = await this.catalog.findByCode(input.interventionCode);
     if (!catalogEntry) {
-      throw new NotFoundError("Intervenção NIC", input.interventionCode);
+      throw new NotFoundError('Intervenção NIC', input.interventionCode);
     }
     const intervention = CarePlanIntervention.create(input);
     await this.interventions.save(intervention);

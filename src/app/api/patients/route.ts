@@ -1,16 +1,16 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { CreatePatient } from "@/application/patients/create-patient";
-import { ListPatients } from "@/application/patients/list-patients";
-import { handleRequest } from "@/lib/api-response";
-import { toPatientDto } from "@/lib/dto";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
-import { ensureLinkBestEffort } from "@/lib/patient-link";
-import { recordAudit } from "@/lib/audit";
-import { encodeCursor } from "@/lib/pagination";
-import type { PatientDto } from "@/lib/dto";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { CreatePatient } from '@/application/patients/create-patient';
+import { ListPatients } from '@/application/patients/list-patients';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { recordAudit } from '@/lib/audit';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import type { PatientDto } from '@/lib/dto';
+import { toPatientDto } from '@/lib/dto';
+import { encodeCursor } from '@/lib/pagination';
+import { ensureLinkBestEffort } from '@/lib/patient-link';
 
 const paginationSchema = z.object({
   limit: z.coerce.number().int().min(1).max(500).default(100),
@@ -45,10 +45,10 @@ export async function GET(request: NextRequest) {
   return handleRequest(
     async () => {
       const params = request.nextUrl.searchParams;
-      const search = params.get("search") ?? undefined;
+      const search = params.get('search') ?? undefined;
       const parsedPage = paginationSchema.parse({
-        limit: params.get("limit") ?? undefined,
-        cursor: params.get("cursor") ?? undefined,
+        limit: params.get('limit') ?? undefined,
+        cursor: params.get('cursor') ?? undefined,
       });
       limit = parsedPage.limit;
 
@@ -58,9 +58,11 @@ export async function GET(request: NextRequest) {
       // Escopo dinâmico do Profissional (R4/RBAC-17): a listagem só mostra
       // pacientes com quem o profissional tem vínculo registrado.
       let allowedPatientIds: string[] | undefined;
-      if (guard.session?.role === "profissional") {
+      if (guard.session?.role === 'profissional') {
         allowedPatientIds = guard.session.professionalId
-          ? await professionalPatientLinks.findLinkedPatientIds(guard.session.professionalId)
+          ? await professionalPatientLinks.findLinkedPatientIds(
+              guard.session.professionalId,
+            )
           : [];
       }
       const result = await new ListPatients(patients).execute({
@@ -81,9 +83,10 @@ export async function POST(request: NextRequest) {
 
   return handleRequest(async () => {
     const body = createPatientSchema.parse(await request.json());
-    const { patients, partners, professionalPatientLinks, auditEvents } = await getRepositories({
-      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
-    });
+    const { patients, partners, professionalPatientLinks, auditEvents } =
+      await getRepositories({
+        clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+      });
     const patient = await new CreatePatient(patients, partners).execute({
       fullName: body.fullName,
       email: body.email,
@@ -94,12 +97,19 @@ export async function POST(request: NextRequest) {
     });
     // Profissional que cadastra um paciente ganha acesso imediato a ele,
     // mesmo antes de qualquer agendamento (RBAC-17/18).
-    if (guard.session?.role === "profissional" && guard.session.professionalId) {
-      await ensureLinkBestEffort(professionalPatientLinks, guard.session.professionalId, patient.id);
+    if (
+      guard.session?.role === 'profissional' &&
+      guard.session.professionalId
+    ) {
+      await ensureLinkBestEffort(
+        professionalPatientLinks,
+        guard.session.professionalId,
+        patient.id,
+      );
     }
     recordAudit(auditEvents, guard.session, {
-      action: "create",
-      resourceType: "patient",
+      action: 'create',
+      resourceType: 'patient',
       resourceId: patient.id,
       patientId: patient.id,
     });

@@ -1,22 +1,36 @@
-import { and, asc, desc, eq, gt, gte, lt, lte, sql, type SQL } from "drizzle-orm";
-import { Supply } from "@/domain/inventory/supply";
-import { StockMovement, type MovementType } from "@/domain/inventory/stock-movement";
-import { SupplyBatch } from "@/domain/inventory/supply-batch";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  gte,
+  lt,
+  lte,
+  type SQL,
+  sql,
+} from 'drizzle-orm';
+import { FollowUp, type FollowUpStatus } from '@/domain/followup/follow-up';
+import type {
+  FollowUpFilter,
+  FollowUpRepository,
+} from '@/domain/followup/follow-up-repository';
 import type {
   OutflowBySupply,
   OutflowCostByAppointment,
   StockMovementRepository,
   SupplyBatchRepository,
   SupplyRepository,
-} from "@/domain/inventory/inventory-repositories";
-import { FollowUp, type FollowUpStatus } from "@/domain/followup/follow-up";
-import type {
-  FollowUpFilter,
-  FollowUpRepository,
-} from "@/domain/followup/follow-up-repository";
-import { MAX_ROWS, type AppDb } from "./db";
-import { followUps, stockMovements, supplies, supplyBatches } from "./schema";
-import { withTenant } from "./tenant-scope";
+} from '@/domain/inventory/inventory-repositories';
+import {
+  type MovementType,
+  StockMovement,
+} from '@/domain/inventory/stock-movement';
+import { Supply } from '@/domain/inventory/supply';
+import { SupplyBatch } from '@/domain/inventory/supply-batch';
+import { type AppDb, MAX_ROWS } from './db';
+import { followUps, stockMovements, supplies, supplyBatches } from './schema';
+import { withTenant } from './tenant-scope';
 
 export class DrizzleSupplyRepository implements SupplyRepository {
   constructor(
@@ -26,7 +40,9 @@ export class DrizzleSupplyRepository implements SupplyRepository {
 
   async save(supply: Supply): Promise<void> {
     if (this.clinicId === null) {
-      throw new Error("Papel de sistema não pode salvar insumo (somente leitura cross-empresa)");
+      throw new Error(
+        'Papel de sistema não pode salvar insumo (somente leitura cross-empresa)',
+      );
     }
     const values = {
       id: supply.id,
@@ -56,7 +72,9 @@ export class DrizzleSupplyRepository implements SupplyRepository {
 
   async adjustStock(id: string, delta: number): Promise<Supply | null> {
     if (this.clinicId === null) {
-      throw new Error("Papel de sistema não pode ajustar insumo (somente leitura cross-empresa)");
+      throw new Error(
+        'Papel de sistema não pode ajustar insumo (somente leitura cross-empresa)',
+      );
     }
     const rows = await this.db
       .update(supplies)
@@ -92,7 +110,7 @@ export class DrizzleStockMovementRepository implements StockMovementRepository {
   async save(movement: StockMovement): Promise<void> {
     if (this.clinicId === null) {
       throw new Error(
-        "Papel de sistema não pode salvar movimento de estoque (somente leitura cross-empresa)",
+        'Papel de sistema não pode salvar movimento de estoque (somente leitura cross-empresa)',
       );
     }
     await this.db.insert(stockMovements).values({
@@ -112,9 +130,17 @@ export class DrizzleStockMovementRepository implements StockMovementRepository {
     const rows = await this.db
       .select()
       .from(stockMovements)
-      .where(withTenant(stockMovements, this.clinicId, eq(stockMovements.supplyId, supplyId)))
+      .where(
+        withTenant(
+          stockMovements,
+          this.clinicId,
+          eq(stockMovements.supplyId, supplyId),
+        ),
+      )
       .orderBy(desc(stockMovements.createdAt), desc(stockMovements.id));
-    return rows.map((row) => StockMovement.restore({ ...row, type: row.type as MovementType }));
+    return rows.map((row) =>
+      StockMovement.restore({ ...row, type: row.type as MovementType }),
+    );
   }
 
   async findByAppointmentId(appointmentId: string): Promise<StockMovement[]> {
@@ -122,13 +148,22 @@ export class DrizzleStockMovementRepository implements StockMovementRepository {
       .select()
       .from(stockMovements)
       .where(
-        withTenant(stockMovements, this.clinicId, eq(stockMovements.appointmentId, appointmentId)),
+        withTenant(
+          stockMovements,
+          this.clinicId,
+          eq(stockMovements.appointmentId, appointmentId),
+        ),
       )
       .orderBy(desc(stockMovements.createdAt));
-    return rows.map((row) => StockMovement.restore({ ...row, type: row.type as MovementType }));
+    return rows.map((row) =>
+      StockMovement.restore({ ...row, type: row.type as MovementType }),
+    );
   }
 
-  async getOutflowCostInRange(from: Date, to: Date): Promise<OutflowCostByAppointment[]> {
+  async getOutflowCostInRange(
+    from: Date,
+    to: Date,
+  ): Promise<OutflowCostByAppointment[]> {
     const rows = await this.db
       .select({
         appointmentId: stockMovements.appointmentId,
@@ -140,7 +175,7 @@ export class DrizzleStockMovementRepository implements StockMovementRepository {
           stockMovements,
           this.clinicId,
           and(
-            eq(stockMovements.type, "out"),
+            eq(stockMovements.type, 'out'),
             gte(stockMovements.createdAt, from),
             lt(stockMovements.createdAt, to),
           ),
@@ -165,14 +200,17 @@ export class DrizzleStockMovementRepository implements StockMovementRepository {
           stockMovements,
           this.clinicId,
           and(
-            eq(stockMovements.type, "out"),
+            eq(stockMovements.type, 'out'),
             gte(stockMovements.createdAt, from),
             lt(stockMovements.createdAt, to),
           ),
         ),
       )
       .groupBy(stockMovements.supplyId);
-    return rows.map((row) => ({ supplyId: row.supplyId, totalQty: Number(row.totalQty) }));
+    return rows.map((row) => ({
+      supplyId: row.supplyId,
+      totalQty: Number(row.totalQty),
+    }));
   }
 }
 
@@ -185,7 +223,7 @@ export class DrizzleSupplyBatchRepository implements SupplyBatchRepository {
   async save(batch: SupplyBatch): Promise<void> {
     if (this.clinicId === null) {
       throw new Error(
-        "Papel de sistema não pode salvar lote de insumo (somente leitura cross-empresa)",
+        'Papel de sistema não pode salvar lote de insumo (somente leitura cross-empresa)',
       );
     }
     const values = {
@@ -212,10 +250,16 @@ export class DrizzleSupplyBatchRepository implements SupplyBatchRepository {
         withTenant(
           supplyBatches,
           this.clinicId,
-          and(eq(supplyBatches.supplyId, supplyId), gt(supplyBatches.remaining, 0)),
+          and(
+            eq(supplyBatches.supplyId, supplyId),
+            gt(supplyBatches.remaining, 0),
+          ),
         ),
       )
-      .orderBy(sql`${supplyBatches.expiresAt} ASC NULLS LAST`, asc(supplyBatches.createdAt));
+      .orderBy(
+        sql`${supplyBatches.expiresAt} ASC NULLS LAST`,
+        asc(supplyBatches.createdAt),
+      );
     return rows.map((row) => SupplyBatch.restore(row));
   }
 
@@ -227,7 +271,10 @@ export class DrizzleSupplyBatchRepository implements SupplyBatchRepository {
         withTenant(
           supplyBatches,
           this.clinicId,
-          and(gt(supplyBatches.remaining, 0), lte(supplyBatches.expiresAt, limit)),
+          and(
+            gt(supplyBatches.remaining, 0),
+            lte(supplyBatches.expiresAt, limit),
+          ),
         ),
       )
       .orderBy(asc(supplyBatches.expiresAt))
@@ -248,7 +295,9 @@ export class DrizzleFollowUpRepository implements FollowUpRepository {
 
   async save(followUp: FollowUp): Promise<void> {
     if (this.clinicId === null) {
-      throw new Error("Papel de sistema não pode salvar retorno (somente leitura cross-empresa)");
+      throw new Error(
+        'Papel de sistema não pode salvar retorno (somente leitura cross-empresa)',
+      );
     }
     const values = {
       id: followUp.id,
@@ -278,14 +327,20 @@ export class DrizzleFollowUpRepository implements FollowUpRepository {
   async findAll(filter: FollowUpFilter = {}): Promise<FollowUp[]> {
     const conditions: SQL[] = [];
     if (filter.status) conditions.push(eq(followUps.status, filter.status));
-    if (filter.patientId) conditions.push(eq(followUps.patientId, filter.patientId));
-    if (filter.dueBefore) conditions.push(lt(followUps.dueDate, filter.dueBefore));
+    if (filter.patientId)
+      conditions.push(eq(followUps.patientId, filter.patientId));
+    if (filter.dueBefore)
+      conditions.push(lt(followUps.dueDate, filter.dueBefore));
 
     const rows = await this.db
       .select()
       .from(followUps)
       .where(
-        withTenant(followUps, this.clinicId, conditions.length > 0 ? and(...conditions) : undefined),
+        withTenant(
+          followUps,
+          this.clinicId,
+          conditions.length > 0 ? and(...conditions) : undefined,
+        ),
       )
       .orderBy(asc(followUps.dueDate))
       .limit(MAX_ROWS);

@@ -1,5 +1,5 @@
-import type { Appointment, AppointmentStatus } from "./appointment";
-import type { TimeSlot } from "../shared/time-slot";
+import type { TimeSlot } from '../shared/time-slot';
+import type { Appointment, AppointmentStatus } from './appointment';
 
 export interface ProcedureRevenue {
   procedure: string;
@@ -21,9 +21,15 @@ export interface AppointmentRepository {
   save(appointment: Appointment): Promise<void>;
   findById(id: string): Promise<Appointment | null>;
   findByIds(ids: string[]): Promise<Appointment[]>;
-  findByPatientId(patientId: string, options?: FindByPatientOptions): Promise<Appointment[]>;
+  findByPatientId(
+    patientId: string,
+    options?: FindByPatientOptions,
+  ): Promise<Appointment[]>;
   /** Busca em lote — evita N+1 ao montar dados de vários pacientes. */
-  findByPatientIds(patientIds: string[], options?: FindByPatientOptions): Promise<Appointment[]>;
+  findByPatientIds(
+    patientIds: string[],
+    options?: FindByPatientOptions,
+  ): Promise<Appointment[]>;
   findInRange(
     start: Date,
     end: Date,
@@ -44,5 +50,7 @@ export interface AppointmentRepository {
   getProductionInRange(
     start: Date,
     end: Date,
-  ): Promise<Array<{ professionalId: string | null; count: number; totalCents: number }>>;
+  ): Promise<
+    Array<{ professionalId: string | null; count: number; totalCents: number }>
+  >;
 }

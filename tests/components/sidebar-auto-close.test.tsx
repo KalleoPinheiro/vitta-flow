@@ -1,29 +1,30 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { render } from "@testing-library/react";
-import { SidebarAutoClose } from "@/app/(staff)/sidebar-auto-close";
+
+import { render } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { SidebarAutoClose } from '@/app/(staff)/sidebar-auto-close';
 
 // Mock de usePathname
-let mockPathname = "/";
-vi.mock("next/navigation", () => ({
+let mockPathname = '/';
+vi.mock('next/navigation', () => ({
   usePathname: () => mockPathname,
 }));
 
 // Mock de useSidebar — retorna um objeto com setOpen capturável
 const mockSetOpen = vi.fn();
-vi.mock("@still-void/ui/react/client", () => ({
+vi.mock('@still-void/ui/react/client', () => ({
   useSidebar: () => ({
     open: true,
     setOpen: mockSetOpen,
     toggle: vi.fn(),
     isMobile: false,
-    collapsible: "offcanvas",
-    panelId: "test-panel",
+    collapsible: 'offcanvas',
+    panelId: 'test-panel',
     triggerRef: null,
   }),
 }));
 
-describe("Feature: Fechar drawer ao navegar", () => {
+describe('Feature: Fechar drawer ao navegar', () => {
   beforeEach(() => {
     mockSetOpen.mockClear();
   });
@@ -32,37 +33,37 @@ describe("Feature: Fechar drawer ao navegar", () => {
     vi.clearAllMocks();
   });
 
-  describe("Cenário: comportamento no mount e pathname", () => {
-    it("Dado SidebarAutoClose renderizado em pathname /inicial, Quando renderizar, Então NÃO fecha o drawer (não chama setOpen)", () => {
-      mockPathname = "/";
+  describe('Cenário: comportamento no mount e pathname', () => {
+    it('Dado SidebarAutoClose renderizado em pathname /inicial, Quando renderizar, Então NÃO fecha o drawer (não chama setOpen)', () => {
+      mockPathname = '/';
       render(
         <div>
           <SidebarAutoClose />
-        </div>
+        </div>,
       );
 
       // Nenhuma chamada a setOpen no primeiro render
       expect(mockSetOpen).not.toHaveBeenCalled();
     });
 
-    it("Dado SidebarAutoClose renderizado e pathname muda de /inicial para /pacientes, Quando pathname mudar, Então fecha o drawer (chama setOpen(false))", () => {
+    it('Dado SidebarAutoClose renderizado e pathname muda de /inicial para /pacientes, Quando pathname mudar, Então fecha o drawer (chama setOpen(false))', () => {
       // Primeira renderização em /
-      mockPathname = "/";
+      mockPathname = '/';
       const { rerender } = render(
         <div>
           <SidebarAutoClose />
-        </div>
+        </div>,
       );
 
       // Nenhuma chamada ainda
       expect(mockSetOpen).not.toHaveBeenCalled();
 
       // Muda pathname
-      mockPathname = "/pacientes";
+      mockPathname = '/pacientes';
       rerender(
         <div>
           <SidebarAutoClose />
-        </div>
+        </div>,
       );
 
       // Deve ter chamado setOpen(false)
@@ -70,29 +71,29 @@ describe("Feature: Fechar drawer ao navegar", () => {
       expect(mockSetOpen).toHaveBeenCalledTimes(1);
     });
 
-    it("Dado SidebarAutoClose com pathname já mudado N vezes, Quando cada mudança ocorrer, Então fecha sempre", () => {
-      mockPathname = "/";
+    it('Dado SidebarAutoClose com pathname já mudado N vezes, Quando cada mudança ocorrer, Então fecha sempre', () => {
+      mockPathname = '/';
       const { rerender } = render(
         <div>
           <SidebarAutoClose />
-        </div>
+        </div>,
       );
 
       // Primeira mudança
-      mockPathname = "/agenda";
+      mockPathname = '/agenda';
       rerender(
         <div>
           <SidebarAutoClose />
-        </div>
+        </div>,
       );
       expect(mockSetOpen).toHaveBeenNthCalledWith(1, false);
 
       // Segunda mudança
-      mockPathname = "/faturamento";
+      mockPathname = '/faturamento';
       rerender(
         <div>
           <SidebarAutoClose />
-        </div>
+        </div>,
       );
       expect(mockSetOpen).toHaveBeenNthCalledWith(2, false);
       expect(mockSetOpen).toHaveBeenCalledTimes(2);

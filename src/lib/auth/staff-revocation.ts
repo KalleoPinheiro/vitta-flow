@@ -1,5 +1,5 @@
-import type { Session } from "./session";
-import { isStaffRole } from "./staff-roles";
+import type { Session } from './session';
+import { isStaffRole } from './staff-roles';
 
 /**
  * Deny-list de sessões staff: a sessão HMAC é stateless (vale 12h), então
@@ -28,12 +28,15 @@ async function lookupAccountStatus(
   clinicId: string | null,
 ): Promise<{ isActive: boolean } | null> {
   const [{ getDb }, { DrizzleUserAccountRepository }] = await Promise.all([
-    import("@/infrastructure/persistence/drizzle/db"),
-    import("@/infrastructure/persistence/drizzle/drizzle-foundation-repositories"),
+    import('@/infrastructure/persistence/drizzle/db'),
+    import(
+      '@/infrastructure/persistence/drizzle/drizzle-foundation-repositories'
+    ),
   ]);
-  const account = await new DrizzleUserAccountRepository(await getDb(), clinicId).findByEmail(
-    email,
-  );
+  const account = await new DrizzleUserAccountRepository(
+    await getDb(),
+    clinicId,
+  ).findByEmail(email);
   return account ? { isActive: account.isActive } : null;
 }
 
@@ -42,7 +45,7 @@ export async function isStaffSessionRevoked(
   lookup: AccountStatusLookup = lookupAccountStatus,
   nowMs: number = Date.now(),
 ): Promise<boolean> {
-  if (!isStaffRole(session.role) || !session.subject.includes("@")) {
+  if (!isStaffRole(session.role) || !session.subject.includes('@')) {
     return false;
   }
 
@@ -54,10 +57,16 @@ export async function isStaffSessionRevoked(
   try {
     const account = await lookup(session.subject, session.clinicId);
     const revoked = account !== null && !account.isActive;
-    cache.set(session.subject, { revoked, expiresAtMs: nowMs + REVOCATION_CACHE_TTL_MS });
+    cache.set(session.subject, {
+      revoked,
+      expiresAtMs: nowMs + REVOCATION_CACHE_TTL_MS,
+    });
     return revoked;
   } catch (error) {
-    console.error("Revogação de sessão: falha ao consultar conta — fail-open (AD-004)", error);
+    console.error(
+      'Revogação de sessão: falha ao consultar conta — fail-open (AD-004)',
+      error,
+    );
     return false;
   }
 }

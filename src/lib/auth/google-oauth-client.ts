@@ -1,4 +1,4 @@
-import { google } from "googleapis";
+import { google } from 'googleapis';
 
 /** Só o que o cliente OAuth precisa — nenhuma política de autorização. */
 export interface OAuthClientConfig {
@@ -8,5 +8,9 @@ export interface OAuthClientConfig {
 }
 
 export function createOAuthClient(config: OAuthClientConfig) {
-  return new google.auth.OAuth2(config.clientId, config.clientSecret, config.redirectUri);
+  return new google.auth.OAuth2(
+    config.clientId,
+    config.clientSecret,
+    config.redirectUri,
+  );
 }

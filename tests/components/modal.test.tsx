@@ -1,28 +1,35 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
-import { Modal } from "@/components/modal";
+
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { Modal } from '@/components/modal';
 
 afterEach(() => {
   cleanup();
 });
 
-describe("Feature: Modal", () => {
-  describe("Cenário: renderização de conteúdo", () => {
-    it("Dado título e children, Quando renderizar, Então exibe título e conteúdo filho", () => {
+describe('Feature: Modal', () => {
+  describe('Cenário: renderização de conteúdo', () => {
+    it('Dado título e children, Quando renderizar, Então exibe título e conteúdo filho', () => {
       render(
         <Modal title="Detalhes do paciente" onClose={vi.fn()}>
           <p>Conteúdo do modal</p>
         </Modal>,
       );
 
-      expect(screen.getByText("Detalhes do paciente")).toBeInTheDocument();
-      expect(screen.getByText("Conteúdo do modal")).toBeInTheDocument();
+      expect(screen.getByText('Detalhes do paciente')).toBeInTheDocument();
+      expect(screen.getByText('Conteúdo do modal')).toBeInTheDocument();
     });
   });
 
-  describe("Cenário: fechamento pelo botão", () => {
-    it("Dado clique no botão fechar, Quando acionado, Então onClose é chamado", () => {
+  describe('Cenário: fechamento pelo botão', () => {
+    it('Dado clique no botão fechar, Quando acionado, Então onClose é chamado', () => {
       const onClose = vi.fn();
       render(
         <Modal title="Detalhes" onClose={onClose}>
@@ -30,29 +37,31 @@ describe("Feature: Modal", () => {
         </Modal>,
       );
 
-      fireEvent.click(screen.getByRole("button", { name: "Fechar" }));
+      fireEvent.click(screen.getByRole('button', { name: 'Fechar' }));
 
       expect(onClose).toHaveBeenCalledTimes(1);
     });
 
-    it("Dado closeLabel=\"Fechar\" no DialogContent, Então há exatamente um botão com nome acessível Fechar e nenhum Close dialog", () => {
+    it('Dado closeLabel="Fechar" no DialogContent, Então há exatamente um botão com nome acessível Fechar e nenhum Close dialog', () => {
       render(
         <Modal title="Detalhes" onClose={vi.fn()}>
           <p>Conteúdo</p>
         </Modal>,
       );
 
-      expect(screen.getAllByRole("button", { name: "Fechar" })).toHaveLength(1);
-      expect(screen.queryByRole("button", { name: "Close dialog" })).not.toBeInTheDocument();
+      expect(screen.getAllByRole('button', { name: 'Fechar' })).toHaveLength(1);
+      expect(
+        screen.queryByRole('button', { name: 'Close dialog' }),
+      ).not.toBeInTheDocument();
     });
   });
 
-  describe("Cenário: interação dentro do diálogo", () => {
+  describe('Cenário: interação dentro do diálogo', () => {
     // A dismissão por clique NO overlay é coberta em e2e/modal-dismissao.spec.ts:
     // a Radix a implementa ouvindo `pointerdown`, e o jsdom não implementa
     // PointerEvent — nem com polyfill o handler dispara. É comportamento real de
     // browser, então a asserção vive na camada onde há browser de verdade.
-    it("Dado clique dentro do diálogo, Quando acionado, Então onClose não é chamado", () => {
+    it('Dado clique dentro do diálogo, Quando acionado, Então onClose não é chamado', () => {
       const onClose = vi.fn();
       render(
         <Modal title="Detalhes" onClose={onClose}>
@@ -60,13 +69,13 @@ describe("Feature: Modal", () => {
         </Modal>,
       );
 
-      fireEvent.pointerDown(screen.getByText("Conteúdo do card"));
-      fireEvent.click(screen.getByText("Conteúdo do card"));
+      fireEvent.pointerDown(screen.getByText('Conteúdo do card'));
+      fireEvent.click(screen.getByText('Conteúdo do card'));
 
       expect(onClose).not.toHaveBeenCalled();
     });
 
-    it("Dado o diálogo aberto, Então o overlay de dismissão está presente sobre a página", () => {
+    it('Dado o diálogo aberto, Então o overlay de dismissão está presente sobre a página', () => {
       render(
         <Modal title="Detalhes" onClose={vi.fn()}>
           <p>Conteúdo</p>
@@ -85,19 +94,21 @@ describe("Feature: Modal", () => {
     });
   });
 
-  describe("Cenário: semântica de diálogo acessível", () => {
-    it("Dado o modal renderizado, Então expõe role dialog com aria-modal e título associado", () => {
+  describe('Cenário: semântica de diálogo acessível', () => {
+    it('Dado o modal renderizado, Então expõe role dialog com aria-modal e título associado', () => {
       render(
         <Modal title="Detalhes do paciente" onClose={vi.fn()}>
           <p>Conteúdo</p>
         </Modal>,
       );
 
-      const dialog = screen.getByRole("dialog", { name: "Detalhes do paciente" });
-      expect(dialog).toHaveAttribute("aria-modal", "true");
+      const dialog = screen.getByRole('dialog', {
+        name: 'Detalhes do paciente',
+      });
+      expect(dialog).toHaveAttribute('aria-modal', 'true');
     });
 
-    it("Dado o modal renderizado, Então o diálogo vem do Dialog do Still Void", () => {
+    it('Dado o modal renderizado, Então o diálogo vem do Dialog do Still Void', () => {
       render(
         <Modal title="Detalhes" onClose={vi.fn()}>
           <p>Conteúdo</p>
@@ -110,10 +121,10 @@ describe("Feature: Modal", () => {
       // implementação do overlay acima, não listada nas 3 quebras do Problem
       // Statement da spec. A cor de fundo renderizada é a mesma; a asserção segue
       // a classe real emitida pelo pacote.
-      expect(screen.getByRole("dialog")).toHaveClass("sv-dialog");
+      expect(screen.getByRole('dialog')).toHaveClass('sv-dialog');
     });
 
-    it("Dado o modal renderizado, Então não tem sombra — regra de fidelidade do Still Void", () => {
+    it('Dado o modal renderizado, Então não tem sombra — regra de fidelidade do Still Void', () => {
       render(
         <Modal title="Detalhes" onClose={vi.fn()}>
           <p>Conteúdo</p>
@@ -122,8 +133,8 @@ describe("Feature: Modal", () => {
 
       // O DialogContent do pacote traz `shadow-lg`, contrariando a propria regra
       // "cards have no shadow" do README da lib. O app neutraliza com shadow-none.
-      expect(screen.getByRole("dialog")).toHaveClass("shadow-none");
-      expect(screen.getByRole("dialog")).not.toHaveClass("shadow-lg");
+      expect(screen.getByRole('dialog')).toHaveClass('shadow-none');
+      expect(screen.getByRole('dialog')).not.toHaveClass('shadow-lg');
     });
 
     // SPEC_DEVIATION: a partir da 3.2.0, o `closeLabel` nativo faz o `DialogContent`
@@ -134,7 +145,7 @@ describe("Feature: Modal", () => {
     // conteúdo do modal como "primeiro", e o botão nativo "Fechar" como "último".
     // Continua acessível — Escape, clique e Tab cíclico funcionam — só a posição
     // relativa mudou. Decisão confirmada com o usuário: adotar a ordem nova da lib.
-    it("Dado o modal montado, Então o foco vai para o primeiro elemento focável dentro dele", async () => {
+    it('Dado o modal montado, Então o foco vai para o primeiro elemento focável dentro dele', async () => {
       render(
         <Modal title="Detalhes" onClose={vi.fn()}>
           <button type="button">Salvar</button>
@@ -142,13 +153,13 @@ describe("Feature: Modal", () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText("Salvar")).toHaveFocus();
+        expect(screen.getByText('Salvar')).toHaveFocus();
       });
     });
   });
 
-  describe("Cenário: fechamento pela tecla Escape", () => {
-    it("Dado Escape pressionado, Quando o modal está aberto, Então onClose é chamado", () => {
+  describe('Cenário: fechamento pela tecla Escape', () => {
+    it('Dado Escape pressionado, Quando o modal está aberto, Então onClose é chamado', () => {
       const onClose = vi.fn();
       render(
         <Modal title="Detalhes" onClose={onClose}>
@@ -156,15 +167,15 @@ describe("Feature: Modal", () => {
         </Modal>,
       );
 
-      fireEvent.keyDown(document, { key: "Escape" });
+      fireEvent.keyDown(document, { key: 'Escape' });
 
       expect(onClose).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe("Cenário: restauração de foco ao fechar", () => {
-    it("Dado um elemento focado antes de abrir, Quando o modal desmonta, Então o foco volta pra ele", async () => {
-      const trigger = document.createElement("button");
+  describe('Cenário: restauração de foco ao fechar', () => {
+    it('Dado um elemento focado antes de abrir, Quando o modal desmonta, Então o foco volta pra ele', async () => {
+      const trigger = document.createElement('button');
       document.body.appendChild(trigger);
       trigger.focus();
 
@@ -174,7 +185,7 @@ describe("Feature: Modal", () => {
         </Modal>,
       );
       await waitFor(() => {
-        expect(screen.getByRole("button", { name: "Fechar" })).toHaveFocus();
+        expect(screen.getByRole('button', { name: 'Fechar' })).toHaveFocus();
       });
       unmount();
 
@@ -189,41 +200,41 @@ describe("Feature: Modal", () => {
     });
   });
 
-  describe("Cenário: Tab preso dentro do modal", () => {
+  describe('Cenário: Tab preso dentro do modal', () => {
     // SPEC_DEVIATION: mesma mudança de ordem descrita acima (autofocus) — o botão
     // nativo "Fechar" agora é o ÚLTIMO focável (renderizado depois de `{children}`),
     // e "Salvar" (conteúdo do modal) é o PRIMEIRO. Os dois testes abaixo focam/
     // asserem na direção correta para essa ordem nova.
-    it("Dado foco no último elemento focável, Quando Tab é pressionado, Então o foco volta ao primeiro", () => {
+    it('Dado foco no último elemento focável, Quando Tab é pressionado, Então o foco volta ao primeiro', () => {
       render(
         <Modal title="Detalhes" onClose={vi.fn()}>
           <button type="button">Salvar</button>
         </Modal>,
       );
 
-      const dialog = screen.getByRole("dialog");
-      const closeButton = screen.getByRole("button", { name: "Fechar" });
-      const saveButton = screen.getByText("Salvar");
+      const dialog = screen.getByRole('dialog');
+      const closeButton = screen.getByRole('button', { name: 'Fechar' });
+      const saveButton = screen.getByText('Salvar');
       closeButton.focus();
 
-      fireEvent.keyDown(dialog, { key: "Tab" });
+      fireEvent.keyDown(dialog, { key: 'Tab' });
 
       expect(saveButton).toHaveFocus();
     });
 
-    it("Dado foco no primeiro elemento focável, Quando Shift+Tab é pressionado, Então o foco vai ao último", () => {
+    it('Dado foco no primeiro elemento focável, Quando Shift+Tab é pressionado, Então o foco vai ao último', () => {
       render(
         <Modal title="Detalhes" onClose={vi.fn()}>
           <button type="button">Salvar</button>
         </Modal>,
       );
 
-      const dialog = screen.getByRole("dialog");
-      const closeButton = screen.getByRole("button", { name: "Fechar" });
-      const saveButton = screen.getByText("Salvar");
+      const dialog = screen.getByRole('dialog');
+      const closeButton = screen.getByRole('button', { name: 'Fechar' });
+      const saveButton = screen.getByText('Salvar');
       saveButton.focus();
 
-      fireEvent.keyDown(dialog, { key: "Tab", shiftKey: true });
+      fireEvent.keyDown(dialog, { key: 'Tab', shiftKey: true });
 
       expect(closeButton).toHaveFocus();
     });

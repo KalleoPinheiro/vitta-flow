@@ -4,7 +4,7 @@
  * invalida aceites anteriores (paciente precisa aceitar de novo) — por isso
  * o texto é fixo, sem interpolação de dados variáveis.
  */
-export const CONSENT_TEXT_VERSION = "v1";
+export const CONSENT_TEXT_VERSION = 'v1';
 
 export const CONSENT_TEXT = `TERMO DE CONSENTIMENTO LIVRE E ESCLARECIDO (${CONSENT_TEXT_VERSION})
 

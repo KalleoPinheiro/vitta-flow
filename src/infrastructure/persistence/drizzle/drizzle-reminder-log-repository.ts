@@ -1,12 +1,12 @@
-import { and, eq } from "drizzle-orm";
-import {
+import { and, eq } from 'drizzle-orm';
+import type {
+  ReminderKind,
   ReminderLog,
-  type ReminderKind,
-  type ReminderLogRepository,
-} from "@/domain/messaging/reminder-log";
-import type { AppDb } from "./db";
-import { LEGACY_CLINIC_ID } from "./legacy-clinic";
-import { reminderLogs } from "./schema";
+  ReminderLogRepository,
+} from '@/domain/messaging/reminder-log';
+import type { AppDb } from './db';
+import { LEGACY_CLINIC_ID } from './legacy-clinic';
+import { reminderLogs } from './schema';
 
 export class DrizzleReminderLogRepository implements ReminderLogRepository {
   constructor(
@@ -36,7 +36,11 @@ export class DrizzleReminderLogRepository implements ReminderLogRepository {
       .onConflictDoNothing();
   }
 
-  async wasSent(kind: ReminderKind, referenceId: string, onDay: string): Promise<boolean> {
+  async wasSent(
+    kind: ReminderKind,
+    referenceId: string,
+    onDay: string,
+  ): Promise<boolean> {
     const rows = await this.db
       .select({ id: reminderLogs.id })
       .from(reminderLogs)

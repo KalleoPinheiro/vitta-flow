@@ -1,5 +1,5 @@
-import { getAuthConfig } from "@/lib/auth/session";
-import { ok } from "@/lib/api-response";
+import { ok } from '@/lib/api-response';
+import { getAuthConfig } from '@/lib/auth/session';
 
 /**
  * Informa à tela de login quais métodos estão habilitados (rota pública, sem

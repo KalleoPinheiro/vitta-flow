@@ -1,6 +1,6 @@
-import { ValidationError } from "../shared/errors";
-import { newId } from "../shared/id";
-import { NocScale, type NocScaleAnchors } from "./noc-scale";
+import { ValidationError } from '../shared/errors';
+import { newId } from '../shared/id';
+import { NocScale, type NocScaleAnchors } from './noc-scale';
 
 const CODE_PATTERN = /^\d{4}$/;
 
@@ -31,20 +31,20 @@ export class NursingOutcome {
 
   static create(props: NursingOutcomeProps): NursingOutcome {
     if (!CODE_PATTERN.test(props.code)) {
-      throw new ValidationError("Código NOC deve ter 4 dígitos (ex.: 1101)");
+      throw new ValidationError('Código NOC deve ter 4 dígitos (ex.: 1101)');
     }
     const label = props.label.trim();
     if (label.length === 0) {
-      throw new ValidationError("Rótulo do resultado é obrigatório");
+      throw new ValidationError('Rótulo do resultado é obrigatório');
     }
     const domain = props.domain.trim();
     const outcomeClass = props.class.trim();
     if (domain.length === 0 || outcomeClass.length === 0) {
-      throw new ValidationError("Domínio e classe NOC são obrigatórios");
+      throw new ValidationError('Domínio e classe NOC são obrigatórios');
     }
     const edition = props.edition.trim();
     if (edition.length === 0) {
-      throw new ValidationError("Edição da taxonomia é obrigatória");
+      throw new ValidationError('Edição da taxonomia é obrigatória');
     }
     return new NursingOutcome({
       id: newId(),

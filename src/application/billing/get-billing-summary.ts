@@ -1,4 +1,4 @@
-import type { InvoiceRepository } from "@/domain/billing/invoice-repository";
+import type { InvoiceRepository } from '@/domain/billing/invoice-repository';
 
 export interface BillingSummaryInput {
   from: Date;

@@ -1,15 +1,15 @@
-import type { Partner } from "@/domain/partner/partner";
-import type { PartnerRepository } from "@/domain/partner/partner-repository";
-import type { Patient } from "@/domain/patient/patient";
-import type { PatientRepository } from "@/domain/patient/patient-repository";
-import type { Appointment } from "@/domain/scheduling/appointment";
-import type { AppointmentRepository } from "@/domain/scheduling/appointment-repository";
 import type {
   ClinicalConditionRepository,
   ConditionAssessmentRepository,
-} from "@/domain/clinical/clinical-repositories";
-import { NotFoundError } from "@/domain/shared/errors";
-import type { ConditionWithAssessments } from "./get-patient-portal-data";
+} from '@/domain/clinical/clinical-repositories';
+import type { Partner } from '@/domain/partner/partner';
+import type { PartnerRepository } from '@/domain/partner/partner-repository';
+import type { Patient } from '@/domain/patient/patient';
+import type { PatientRepository } from '@/domain/patient/patient-repository';
+import type { Appointment } from '@/domain/scheduling/appointment';
+import type { AppointmentRepository } from '@/domain/scheduling/appointment-repository';
+import { NotFoundError } from '@/domain/shared/errors';
+import type { ConditionWithAssessments } from './get-patient-portal-data';
 
 function groupBy<T>(items: T[], keyOf: (item: T) => string): Map<string, T[]> {
   const groups = new Map<string, T[]>();
@@ -51,8 +51,8 @@ export class GetPartnerPortalData {
 
   async execute(input: { email: string }): Promise<PartnerPortalData> {
     const partner = await this.partners.findByEmail(input.email);
-    if (!partner || !partner.isActive) {
-      throw new NotFoundError("Parceiro", input.email);
+    if (!partner?.isActive) {
+      throw new NotFoundError('Parceiro', input.email);
     }
 
     const referred = await this.patients.findByReferrer(partner.id);
@@ -69,15 +69,20 @@ export class GetPartnerPortalData {
 
     const appointmentsByPatient = groupBy(allAppointments, (a) => a.patientId);
     const conditionsByPatient = groupBy(allConditions, (c) => c.patientId);
-    const assessmentsByCondition = groupBy(allAssessments, (a) => a.conditionId);
+    const assessmentsByCondition = groupBy(
+      allAssessments,
+      (a) => a.conditionId,
+    );
 
     const referredPatients = referred.map((patient) => ({
       patient,
       appointments: appointmentsByPatient.get(patient.id) ?? [],
-      conditions: (conditionsByPatient.get(patient.id) ?? []).map((condition) => ({
-        condition,
-        assessments: assessmentsByCondition.get(condition.id) ?? [],
-      })),
+      conditions: (conditionsByPatient.get(patient.id) ?? []).map(
+        (condition) => ({
+          condition,
+          assessments: assessmentsByCondition.get(condition.id) ?? [],
+        }),
+      ),
     }));
 
     return { partner, referredPatients };

@@ -1,9 +1,9 @@
-import type { NextRequest } from "next/server";
-import { getRepositories } from "@/infrastructure/container";
-import { NotFoundError } from "@/domain/shared/errors";
-import { handleRequest } from "@/lib/api-response";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { recordAuditNow } from "@/lib/audit";
+import type { NextRequest } from 'next/server';
+import { NotFoundError } from '@/domain/shared/errors';
+import { getRepositories } from '@/infrastructure/container';
+import { handleRequest } from '@/lib/api-response';
+import { recordAuditNow } from '@/lib/audit';
+import { requireStaffSession } from '@/lib/auth/require-session';
 import {
   toAnamnesisDto,
   toAppointmentDto,
@@ -13,7 +13,7 @@ import {
   toEvolutionNoteDto,
   toInvoiceDto,
   toPatientDto,
-} from "@/lib/dto";
+} from '@/lib/dto';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -27,22 +27,30 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   const response = await handleRequest(async () => {
     const { id } = await context.params;
-    const repos = await getRepositories({ clinicId: guard.session?.clinicId ?? null });
+    const repos = await getRepositories({
+      clinicId: guard.session?.clinicId ?? null,
+    });
 
     const patient = await repos.patients.findById(id);
     if (!patient) {
-      throw new NotFoundError("Paciente", id);
+      throw new NotFoundError('Paciente', id);
     }
 
-    const [anamnesis, evolutions, conditions, appointments, invoices, consents] =
-      await Promise.all([
-        repos.anamneses.findByPatientId(id),
-        repos.evolutions.findByPatientId(id),
-        repos.conditions.findByPatientId(id),
-        repos.appointments.findByPatientId(id),
-        repos.invoices.findAll({ patientId: id }),
-        repos.consentRecords.findByPatientId(id),
-      ]);
+    const [
+      anamnesis,
+      evolutions,
+      conditions,
+      appointments,
+      invoices,
+      consents,
+    ] = await Promise.all([
+      repos.anamneses.findByPatientId(id),
+      repos.evolutions.findByPatientId(id),
+      repos.conditions.findByPatientId(id),
+      repos.appointments.findByPatientId(id),
+      repos.invoices.findAll({ patientId: id }),
+      repos.consentRecords.findByPatientId(id),
+    ]);
     const conditionIds = conditions.map((condition) => condition.id);
     const [assessments, photos, packages] = await Promise.all([
       repos.assessments.findByConditionIds(conditionIds),
@@ -52,11 +60,11 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
     // Write-ahead (SEC1-20): exportação sem trilha de auditoria não responde sucesso.
     await recordAuditNow(repos.auditEvents, guard.session, {
-      action: "read",
-      resourceType: "export",
+      action: 'read',
+      resourceType: 'export',
       resourceId: id,
       patientId: id,
-      detail: "exportação LGPD do titular",
+      detail: 'exportação LGPD do titular',
     });
 
     return {
@@ -67,7 +75,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
       conditions: conditions.map(toConditionDto),
       assessments: assessments.map(toAssessmentDto),
       photos: photos.map(toConditionPhotoDto),
-      appointments: appointments.map((appointment) => toAppointmentDto(appointment)),
+      appointments: appointments.map((appointment) =>
+        toAppointmentDto(appointment),
+      ),
       invoices: invoices.map((invoice) => toInvoiceDto(invoice)),
       consents: consents.map((consent) => ({
         id: consent.id,
@@ -85,6 +95,6 @@ export async function GET(request: NextRequest, context: RouteContext) {
   });
   // Dados clínicos completos do titular (LGPD): o navegador não pode
   // reaproveitar a resposta depois de uma troca de clínica no mesmo perfil.
-  response.headers.set("Cache-Control", "no-store");
+  response.headers.set('Cache-Control', 'no-store');
   return response;
 }

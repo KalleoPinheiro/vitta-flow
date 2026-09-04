@@ -1,11 +1,15 @@
-import { describe, it, expect } from "vitest";
-import { NextRequest } from "next/server";
-import { jsonRequest } from "../support/request";
-import { adminCookieHeader, cookieHeaderFor } from "../support/session";
-import { ensureTestClinics, CLINIC_A_ID, CLINIC_B_ID } from "../support/clinics";
-import type { ClinicInfoDto } from "@/lib/dto";
+import { NextRequest } from 'next/server';
+import { describe, expect, it } from 'vitest';
+import type { ClinicInfoDto } from '@/lib/dto';
+import {
+  CLINIC_A_ID,
+  CLINIC_B_ID,
+  ensureTestClinics,
+} from '../support/clinics';
+import { jsonRequest } from '../support/request';
+import { adminCookieHeader, cookieHeaderFor } from '../support/session';
 
-process.env.VITTA_DB_DRIVER = "pglite";
+process.env.VITTA_DB_DRIVER = 'pglite';
 
 interface Envelope<T> {
   success: boolean;
@@ -13,13 +17,18 @@ interface Envelope<T> {
   error: string | null;
 }
 
-describe("Feature: Dados cadastrais da clínica (issue #61)", () => {
-  it("Dada clínica sem dados salvos, Quando buscar, Então retorna campos nulos (não erro)", async () => {
+describe('Feature: Dados cadastrais da clínica (issue #61)', () => {
+  it('Dada clínica sem dados salvos, Quando buscar, Então retorna campos nulos (não erro)', async () => {
     await ensureTestClinics();
-    const route = await import("@/app/api/settings/clinic-info/route");
+    const route = await import('@/app/api/settings/clinic-info/route');
 
     const response = await route.GET(
-      jsonRequest("/api/settings/clinic-info", "GET", undefined, adminCookieHeader(CLINIC_B_ID)),
+      jsonRequest(
+        '/api/settings/clinic-info',
+        'GET',
+        undefined,
+        adminCookieHeader(CLINIC_B_ID),
+      ),
     );
     const body = (await response.json()) as Envelope<{ info: ClinicInfoDto }>;
 
@@ -28,117 +37,137 @@ describe("Feature: Dados cadastrais da clínica (issue #61)", () => {
     expect(body.data?.info.professionalName).toBeNull();
   });
 
-  it("Dado Admin de Empresa, Quando salvar dados cadastrais, Então GET subsequente reflete os valores", async () => {
+  it('Dado Admin de Empresa, Quando salvar dados cadastrais, Então GET subsequente reflete os valores', async () => {
     await ensureTestClinics();
-    const route = await import("@/app/api/settings/clinic-info/route");
+    const route = await import('@/app/api/settings/clinic-info/route');
 
     await route.PUT(
       jsonRequest(
-        "/api/settings/clinic-info",
-        "PUT",
+        '/api/settings/clinic-info',
+        'PUT',
         {
-          cnpj: "12.345.678/0001-90",
-          address: "Rua das Flores, 100",
-          city: "São Paulo",
-          professionalName: "Enf. Ana",
-          professionalRegistry: "COREN-SP 123456",
+          cnpj: '12.345.678/0001-90',
+          address: 'Rua das Flores, 100',
+          city: 'São Paulo',
+          professionalName: 'Enf. Ana',
+          professionalRegistry: 'COREN-SP 123456',
         },
         adminCookieHeader(CLINIC_A_ID),
       ),
     );
     const response = await route.GET(
-      jsonRequest("/api/settings/clinic-info", "GET", undefined, adminCookieHeader(CLINIC_A_ID)),
+      jsonRequest(
+        '/api/settings/clinic-info',
+        'GET',
+        undefined,
+        adminCookieHeader(CLINIC_A_ID),
+      ),
     );
     const body = (await response.json()) as Envelope<{ info: ClinicInfoDto }>;
 
-    expect(body.data?.info.cnpj).toBe("12.345.678/0001-90");
-    expect(body.data?.info.professionalName).toBe("Enf. Ana");
-    expect(body.data?.info.professionalRegistry).toBe("COREN-SP 123456");
+    expect(body.data?.info.cnpj).toBe('12.345.678/0001-90');
+    expect(body.data?.info.professionalName).toBe('Enf. Ana');
+    expect(body.data?.info.professionalRegistry).toBe('COREN-SP 123456');
   });
 
-  it("Dado Admin de Empresa, Quando salvar a razão social, Então GET subsequente reflete o novo nome", async () => {
+  it('Dado Admin de Empresa, Quando salvar a razão social, Então GET subsequente reflete o novo nome', async () => {
     await ensureTestClinics();
-    const route = await import("@/app/api/settings/clinic-info/route");
+    const route = await import('@/app/api/settings/clinic-info/route');
 
     await route.PUT(
       jsonRequest(
-        "/api/settings/clinic-info",
-        "PUT",
-        { name: "Clínica VittaFlow Ltda" },
+        '/api/settings/clinic-info',
+        'PUT',
+        { name: 'Clínica VittaFlow Ltda' },
         adminCookieHeader(CLINIC_A_ID),
       ),
     );
     const response = await route.GET(
-      jsonRequest("/api/settings/clinic-info", "GET", undefined, adminCookieHeader(CLINIC_A_ID)),
+      jsonRequest(
+        '/api/settings/clinic-info',
+        'GET',
+        undefined,
+        adminCookieHeader(CLINIC_A_ID),
+      ),
     );
     const body = (await response.json()) as Envelope<{ info: ClinicInfoDto }>;
 
-    expect(body.data?.info.name).toBe("Clínica VittaFlow Ltda");
+    expect(body.data?.info.name).toBe('Clínica VittaFlow Ltda');
   });
 
-  it("Dado Admin de Empresa, Quando salvar dados cadastrais, Então registra evento de auditoria (#71)", async () => {
+  it('Dado Admin de Empresa, Quando salvar dados cadastrais, Então registra evento de auditoria (#71)', async () => {
     await ensureTestClinics();
-    const route = await import("@/app/api/settings/clinic-info/route");
-    const { getRepositories } = await import("@/infrastructure/container");
+    const route = await import('@/app/api/settings/clinic-info/route');
+    const { getRepositories } = await import('@/infrastructure/container');
     const { auditEvents } = await getRepositories({ clinicId: CLINIC_A_ID });
 
     await route.PUT(
       jsonRequest(
-        "/api/settings/clinic-info",
-        "PUT",
-        { name: "Clínica Auditada Ltda" },
+        '/api/settings/clinic-info',
+        'PUT',
+        { name: 'Clínica Auditada Ltda' },
         adminCookieHeader(CLINIC_A_ID),
       ),
     );
 
     const events = await auditEvents.findAll();
     const event = events.find(
-      (e) => e.resourceType === "clinic-info" && e.resourceId === CLINIC_A_ID,
+      (e) => e.resourceType === 'clinic-info' && e.resourceId === CLINIC_A_ID,
     );
     expect(event).toBeDefined();
-    expect(event?.action).toBe("update");
+    expect(event?.action).toBe('update');
   });
 
-  it("Dado Admin de Empresa, Quando enviar nome vazio, Então retorna 400", async () => {
+  it('Dado Admin de Empresa, Quando enviar nome vazio, Então retorna 400', async () => {
     await ensureTestClinics();
-    const route = await import("@/app/api/settings/clinic-info/route");
+    const route = await import('@/app/api/settings/clinic-info/route');
 
     const response = await route.PUT(
-      jsonRequest("/api/settings/clinic-info", "PUT", { name: "" }, adminCookieHeader(CLINIC_A_ID)),
+      jsonRequest(
+        '/api/settings/clinic-info',
+        'PUT',
+        { name: '' },
+        adminCookieHeader(CLINIC_A_ID),
+      ),
     );
 
     expect(response.status).toBe(400);
   });
 
-  it("Dados salvos em uma clínica, Quando outra clínica busca, Então não vaza entre empresas (MT-06)", async () => {
+  it('Dados salvos em uma clínica, Quando outra clínica busca, Então não vaza entre empresas (MT-06)', async () => {
     await ensureTestClinics();
-    const route = await import("@/app/api/settings/clinic-info/route");
+    const route = await import('@/app/api/settings/clinic-info/route');
 
     await route.PUT(
       jsonRequest(
-        "/api/settings/clinic-info",
-        "PUT",
-        { cnpj: "11.111.111/0001-11" },
+        '/api/settings/clinic-info',
+        'PUT',
+        { cnpj: '11.111.111/0001-11' },
         adminCookieHeader(CLINIC_A_ID),
       ),
     );
     const responseB = await route.GET(
-      jsonRequest("/api/settings/clinic-info", "GET", undefined, adminCookieHeader(CLINIC_B_ID)),
+      jsonRequest(
+        '/api/settings/clinic-info',
+        'GET',
+        undefined,
+        adminCookieHeader(CLINIC_B_ID),
+      ),
     );
     const bodyB = (await responseB.json()) as Envelope<{ info: ClinicInfoDto }>;
 
-    expect(bodyB.data?.info.cnpj).not.toBe("11.111.111/0001-11");
+    expect(bodyB.data?.info.cnpj).not.toBe('11.111.111/0001-11');
   });
 
-  it("Dado papel atendente, Quando tentar salvar, Então retorna 403", async () => {
+  it('Dado papel atendente, Quando tentar salvar, Então retorna 403', async () => {
     const response = await (
-      await import("@/app/api/settings/clinic-info/route")
+      await import('@/app/api/settings/clinic-info/route')
     ).PUT(
       jsonRequest(
-        "/api/settings/clinic-info",
-        "PUT",
-        { cnpj: "00.000.000/0001-00" },
-        cookieHeaderFor("atendente", undefined, CLINIC_A_ID),
+        '/api/settings/clinic-info',
+        'PUT',
+        { cnpj: '00.000.000/0001-00' },
+        cookieHeaderFor('atendente', undefined, CLINIC_A_ID),
       ),
     );
     const body = (await response.json()) as Envelope<never>;
@@ -147,25 +176,29 @@ describe("Feature: Dados cadastrais da clínica (issue #61)", () => {
     expect(body.success).toBe(false);
   });
 
-  it("Dado papel profissional, Quando tentar salvar, Então retorna 403", async () => {
+  it('Dado papel profissional, Quando tentar salvar, Então retorna 403', async () => {
     const response = await (
-      await import("@/app/api/settings/clinic-info/route")
+      await import('@/app/api/settings/clinic-info/route')
     ).PUT(
       jsonRequest(
-        "/api/settings/clinic-info",
-        "PUT",
-        { cnpj: "00.000.000/0001-00" },
-        cookieHeaderFor("profissional", undefined, CLINIC_A_ID),
+        '/api/settings/clinic-info',
+        'PUT',
+        { cnpj: '00.000.000/0001-00' },
+        cookieHeaderFor('profissional', undefined, CLINIC_A_ID),
       ),
     );
 
     expect(response.status).toBe(403);
   });
 
-  it("Dado sem sessão, Quando buscar, Então retorna 401", async () => {
+  it('Dado sem sessão, Quando buscar, Então retorna 401', async () => {
     const response = await (
-      await import("@/app/api/settings/clinic-info/route")
-    ).GET(new NextRequest("http://localhost/api/settings/clinic-info", { method: "GET" }));
+      await import('@/app/api/settings/clinic-info/route')
+    ).GET(
+      new NextRequest('http://localhost/api/settings/clinic-info', {
+        method: 'GET',
+      }),
+    );
 
     expect(response.status).toBe(401);
   });

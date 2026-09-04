@@ -1,6 +1,6 @@
-import { desc, eq } from "drizzle-orm";
-import type { AppDb } from "./db";
-import { googleAccounts } from "./schema";
+import { desc, eq } from 'drizzle-orm';
+import type { AppDb } from './db';
+import { googleAccounts } from './schema';
 
 export interface GoogleAccount {
   email: string;

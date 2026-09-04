@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
-import { apiFetch } from "./client";
+import { useCallback, useEffect, useState } from 'react';
+import { apiFetch } from './client';
 
 export interface PagedQueryResult<T> {
   items: T[] | null;
@@ -18,7 +18,10 @@ export interface PagedQueryResult<T> {
  * Lista paginada por limit/offset: primeira página via effect (recarrega quando
  * a URL base muda), páginas seguintes anexadas via loadMore().
  */
-export function usePagedQuery<T>(baseUrl: string, pageSize: number): PagedQueryResult<T> {
+export function usePagedQuery<T>(
+  baseUrl: string,
+  pageSize: number,
+): PagedQueryResult<T> {
   const [items, setItems] = useState<T[] | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +32,7 @@ export function usePagedQuery<T>(baseUrl: string, pageSize: number): PagedQueryR
 
   const pageUrl = useCallback(
     (offset: number) => {
-      const separator = baseUrl.includes("?") ? "&" : "?";
+      const separator = baseUrl.includes('?') ? '&' : '?';
       return `${baseUrl}${separator}limit=${pageSize}&offset=${offset}`;
     },
     [baseUrl, pageSize],
@@ -50,14 +53,16 @@ export function usePagedQuery<T>(baseUrl: string, pageSize: number): PagedQueryR
       })
       .catch((err: unknown) => {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Erro ao carregar dados");
+          setError(
+            err instanceof Error ? err.message : 'Erro ao carregar dados',
+          );
           setSettledKey(requestKey);
         }
       });
     return () => {
       cancelled = true;
     };
-  }, [pageUrl, pageSize, version, requestKey]);
+  }, [pageUrl, pageSize, requestKey]);
 
   const refresh = useCallback(() => setVersion((current) => current + 1), []);
 
@@ -70,7 +75,7 @@ export function usePagedQuery<T>(baseUrl: string, pageSize: number): PagedQueryR
         setError(null);
       })
       .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : "Erro ao carregar dados");
+        setError(err instanceof Error ? err.message : 'Erro ao carregar dados');
       });
   }, [items, pageUrl, pageSize]);
 

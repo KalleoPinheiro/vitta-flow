@@ -1,13 +1,13 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { DeleteConditionPhoto } from "@/application/clinical/delete-condition-photo";
-import { FollowUp } from "@/domain/followup/follow-up";
-import { NotFoundError } from "@/domain/shared/errors";
-import { handleRequest, fail } from "@/lib/api-response";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { recordAudit, recordAuditNow } from "@/lib/audit";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { DeleteConditionPhoto } from '@/application/clinical/delete-condition-photo';
+import { FollowUp } from '@/domain/followup/follow-up';
+import { NotFoundError } from '@/domain/shared/errors';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { fail, handleRequest } from '@/lib/api-response';
+import { recordAudit, recordAuditNow } from '@/lib/audit';
+import { requireStaffSession } from '@/lib/auth/require-session';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -24,15 +24,15 @@ export async function GET(request: NextRequest, context: RouteContext) {
   const photo = await conditionPhotos.findById(id);
   const data = photo ? await photoStorage.read(photo.id) : null;
   if (!photo || !data) {
-    return fail("Foto não encontrada", 404);
+    return fail('Foto não encontrada', 404);
   }
 
   return new Response(new Uint8Array(data), {
     headers: {
-      "Content-Type": photo.contentType,
-      "Content-Length": String(data.byteLength),
-      "Cache-Control": "private, max-age=3600",
-      "X-Content-Type-Options": "nosniff",
+      'Content-Type': photo.contentType,
+      'Content-Length': String(data.byteLength),
+      'Cache-Control': 'private, max-age=3600',
+      'X-Content-Type-Options': 'nosniff',
     },
   });
 }
@@ -43,29 +43,34 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
 
   return handleRequest(async () => {
     const { id } = await context.params;
-    const { conditionPhotos, photoStorage, conditions, auditEvents } = await getRepositories({
-      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
-    });
+    const { conditionPhotos, photoStorage, conditions, auditEvents } =
+      await getRepositories({
+        clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+      });
 
     const photo = await conditionPhotos.findById(id);
-    const condition = photo ? await conditions.findById(photo.conditionId) : null;
+    const condition = photo
+      ? await conditions.findById(photo.conditionId)
+      : null;
 
     // Trilha ANTES do destrutivo (SEC1-21): sem transação entre storage e banco,
     // auditar depois arriscaria apagar o dado clínico e perder o registro. Auditar
     // antes pode registrar uma exclusão que falhou — falha preferível.
     await recordAuditNow(auditEvents, guard.session, {
-      action: "delete",
-      resourceType: "photo",
+      action: 'delete',
+      resourceType: 'photo',
       resourceId: id,
       patientId: condition?.patientId ?? null,
-      detail: "correção de upload",
+      detail: 'correção de upload',
     });
-    await new DeleteConditionPhoto(conditionPhotos, photoStorage).execute({ id });
+    await new DeleteConditionPhoto(conditionPhotos, photoStorage).execute({
+      id,
+    });
     return { deleted: true };
   });
 }
 
-const triageSchema = z.object({ triage: z.enum(["reviewed", "escalated"]) });
+const triageSchema = z.object({ triage: z.enum(['reviewed', 'escalated']) });
 
 /**
  * Triagem da foto do paciente (O4.2): "reviewed" mantém o plano;
@@ -78,20 +83,21 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = triageSchema.parse(await request.json());
-    const { conditionPhotos, conditions, followUps, auditEvents } = await getRepositories({
-      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
-    });
+    const { conditionPhotos, conditions, followUps, auditEvents } =
+      await getRepositories({
+        clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+      });
 
     const photo = await conditionPhotos.findById(id);
     if (!photo) {
-      throw new NotFoundError("Foto", id);
+      throw new NotFoundError('Foto', id);
     }
     const condition = await conditions.findById(photo.conditionId);
 
     const triaged = photo.withTriage(body.triage);
     await conditionPhotos.save(triaged);
 
-    if (body.triage === "escalated" && condition) {
+    if (body.triage === 'escalated' && condition) {
       await followUps.save(
         FollowUp.create({
           patientId: condition.patientId,
@@ -103,8 +109,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     }
 
     recordAudit(auditEvents, guard.session, {
-      action: "update",
-      resourceType: "photo",
+      action: 'update',
+      resourceType: 'photo',
       resourceId: id,
       patientId: condition?.patientId ?? null,
       detail: `triagem: ${body.triage}`,

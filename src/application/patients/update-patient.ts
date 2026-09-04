@@ -1,8 +1,8 @@
-import type { Patient } from "@/domain/patient/patient";
-import type { PatientRepository } from "@/domain/patient/patient-repository";
-import type { PartnerRepository } from "@/domain/partner/partner-repository";
-import { NotFoundError, ValidationError } from "@/domain/shared/errors";
-import { assertValidReferrer } from "./assert-valid-referrer";
+import type { PartnerRepository } from '@/domain/partner/partner-repository';
+import type { Patient } from '@/domain/patient/patient';
+import type { PatientRepository } from '@/domain/patient/patient-repository';
+import { NotFoundError, ValidationError } from '@/domain/shared/errors';
+import { assertValidReferrer } from './assert-valid-referrer';
 
 export interface UpdatePatientInput {
   id: string;
@@ -23,12 +23,14 @@ export class UpdatePatient {
   async execute(input: UpdatePatientInput): Promise<Patient> {
     const patient = await this.patients.findById(input.id);
     if (!patient) {
-      throw new NotFoundError("Paciente", input.id);
+      throw new NotFoundError('Paciente', input.id);
     }
     if (input.email) {
       const byEmail = await this.patients.findByEmail(input.email);
       if (byEmail && byEmail.id !== patient.id) {
-        throw new ValidationError(`Já existe paciente com o email ${input.email}`);
+        throw new ValidationError(
+          `Já existe paciente com o email ${input.email}`,
+        );
       }
     }
     await assertValidReferrer(this.partners, input.referredByPartnerId);

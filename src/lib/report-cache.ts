@@ -1,4 +1,4 @@
-import type { MonthlyReport } from "@/application/reports/get-monthly-report";
+import type { MonthlyReport } from '@/application/reports/get-monthly-report';
 
 /**
  * Mês 100% no passado é imutável — recalcular o agregado inteiro a cada acesso

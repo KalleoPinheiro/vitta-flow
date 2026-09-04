@@ -1,5 +1,5 @@
-import { newId } from "../shared/id";
-import { validatePersonContact } from "../shared/person-validation";
+import { newId } from '../shared/id';
+import { validatePersonContact } from '../shared/person-validation';
 
 export interface PartnerProps {
   fullName: string;
@@ -46,7 +46,10 @@ export class Partner {
       email: changes.email ?? this.state.email,
       phone: changes.phone ?? this.state.phone,
       crm: changes.crm !== undefined ? changes.crm : this.state.crm,
-      specialty: changes.specialty !== undefined ? changes.specialty : this.state.specialty,
+      specialty:
+        changes.specialty !== undefined
+          ? changes.specialty
+          : this.state.specialty,
     });
     return new Partner({ ...this.state, ...validated });
   }

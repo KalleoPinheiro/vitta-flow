@@ -1,29 +1,29 @@
-import { ValidationError } from "../shared/errors";
-import { newId } from "../shared/id";
+import { ValidationError } from '../shared/errors';
+import { newId } from '../shared/id';
 
-export const EXUDATE_LEVELS = ["none", "low", "moderate", "high"] as const;
+export const EXUDATE_LEVELS = ['none', 'low', 'moderate', 'high'] as const;
 export type ExudateLevel = (typeof EXUDATE_LEVELS)[number];
 
 /** Tipos de tecido do PUSH 3.0 (subscore 0–4). Texto livre legado permanece válido. */
 export const TISSUE_TYPES = [
-  "closed",
-  "epithelial",
-  "granulation",
-  "slough",
-  "necrotic",
+  'closed',
+  'epithelial',
+  'granulation',
+  'slough',
+  'necrotic',
 ] as const;
 export type TissueType = (typeof TISSUE_TYPES)[number];
 
 /** Complicações canônicas de estomia — base de epidemiologia e relatórios. */
 export const STOMA_COMPLICATIONS = [
-  "dermatitis",
-  "prolapse",
-  "hernia",
-  "retraction",
-  "bleeding",
-  "granuloma",
-  "stenosis",
-  "other",
+  'dermatitis',
+  'prolapse',
+  'hernia',
+  'retraction',
+  'bleeding',
+  'granuloma',
+  'stenosis',
+  'other',
 ] as const;
 export type StomaComplication = (typeof STOMA_COMPLICATIONS)[number];
 
@@ -97,20 +97,25 @@ export class ConditionAssessment {
 
   private static validate(props: ConditionAssessmentProps): void {
     if (props.conditionId.trim().length === 0) {
-      throw new ValidationError("Condição é obrigatória");
+      throw new ValidationError('Condição é obrigatória');
     }
     const measurements = [
-      ["comprimento", props.lengthMm],
-      ["largura", props.widthMm],
-      ["profundidade", props.depthMm],
+      ['comprimento', props.lengthMm],
+      ['largura', props.widthMm],
+      ['profundidade', props.depthMm],
     ] as const;
     for (const [label, value] of measurements) {
       if (value != null && value < 0) {
         throw new ValidationError(`Medida de ${label} não pode ser negativa`);
       }
     }
-    if (props.painScale != null && (props.painScale < 0 || props.painScale > MAX_PAIN)) {
-      throw new ValidationError(`Escala de dor deve estar entre 0 e ${MAX_PAIN}`);
+    if (
+      props.painScale != null &&
+      (props.painScale < 0 || props.painScale > MAX_PAIN)
+    ) {
+      throw new ValidationError(
+        `Escala de dor deve estar entre 0 e ${MAX_PAIN}`,
+      );
     }
     ConditionAssessment.validateDet(props);
     ConditionAssessment.validateComplicationCodes(props.complicationCodes);
@@ -131,7 +136,8 @@ export class ConditionAssessment {
       (v) => v == null || (Number.isInteger(v) && v >= 0 && v <= DET_MAX_AREA),
     );
     const severityValid = severities.every(
-      (v) => v == null || (Number.isInteger(v) && v >= 0 && v <= DET_MAX_SEVERITY),
+      (v) =>
+        v == null || (Number.isInteger(v) && v >= 0 && v <= DET_MAX_SEVERITY),
     );
     if (!areaValid || !severityValid) {
       throw new ValidationError(
@@ -140,20 +146,26 @@ export class ConditionAssessment {
     }
   }
 
-  private static validateComplicationCodes(codes: string | null | undefined): void {
+  private static validateComplicationCodes(
+    codes: string | null | undefined,
+  ): void {
     if (!codes?.trim()) {
       return;
     }
-    const tokens = codes.split(",").map((token) => token.trim());
+    const tokens = codes.split(',').map((token) => token.trim());
     const invalid = tokens.filter(
       (token) => !STOMA_COMPLICATIONS.includes(token as StomaComplication),
     );
     if (invalid.length > 0) {
-      throw new ValidationError(`Complicações inválidas: ${invalid.join(", ")}`);
+      throw new ValidationError(
+        `Complicações inválidas: ${invalid.join(', ')}`,
+      );
     }
   }
 
-  private static normalizeText(value: string | null | undefined): string | null {
+  private static normalizeText(
+    value: string | null | undefined,
+  ): string | null {
     const trimmed = value?.trim();
     return trimmed ? trimmed : null;
   }
@@ -181,7 +193,9 @@ export class ConditionAssessment {
       painScale: props.painScale ?? null,
       skinCondition: ConditionAssessment.normalizeText(props.skinCondition),
       complications: ConditionAssessment.normalizeText(props.complications),
-      complicationCodes: ConditionAssessment.normalizeText(props.complicationCodes),
+      complicationCodes: ConditionAssessment.normalizeText(
+        props.complicationCodes,
+      ),
       ...ConditionAssessment.normalizeDet(props),
       notes: ConditionAssessment.normalizeText(props.notes),
       id: newId(),
@@ -246,7 +260,7 @@ export class ConditionAssessment {
     if (!raw) {
       return [];
     }
-    return raw.split(",").map((token) => token.trim() as StomaComplication);
+    return raw.split(',').map((token) => token.trim() as StomaComplication);
   }
 
   /**
@@ -272,7 +286,9 @@ export class ConditionAssessment {
 
   /** DET (estomias): soma de (área + severidade) dos 3 domínios → 0–15. Null se incompleto. */
   get detScore(): number | null {
-    const domains: Array<[number | null | undefined, number | null | undefined]> = [
+    const domains: Array<
+      [number | null | undefined, number | null | undefined]
+    > = [
       [this.state.detDiscolorationArea, this.state.detDiscolorationSeverity],
       [this.state.detErosionArea, this.state.detErosionSeverity],
       [this.state.detOvergrowthArea, this.state.detOvergrowthSeverity],
@@ -280,7 +296,10 @@ export class ConditionAssessment {
     if (domains.some(([area, severity]) => area == null || severity == null)) {
       return null;
     }
-    return domains.reduce((sum, [area, severity]) => sum + (area ?? 0) + (severity ?? 0), 0);
+    return domains.reduce(
+      (sum, [area, severity]) => sum + (area ?? 0) + (severity ?? 0),
+      0,
+    );
   }
 
   get detDiscolorationArea(): number | null {

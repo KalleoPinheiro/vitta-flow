@@ -1,13 +1,16 @@
-import { StockMovement, type MovementType } from "@/domain/inventory/stock-movement";
-import { SupplyBatch } from "@/domain/inventory/supply-batch";
 import type {
   StockMovementRepository,
   SupplyBatchRepository,
   SupplyRepository,
-} from "@/domain/inventory/inventory-repositories";
-import type { AppointmentRepository } from "@/domain/scheduling/appointment-repository";
-import type { Supply } from "@/domain/inventory/supply";
-import { InsufficientStockError, NotFoundError } from "@/domain/shared/errors";
+} from '@/domain/inventory/inventory-repositories';
+import {
+  type MovementType,
+  StockMovement,
+} from '@/domain/inventory/stock-movement';
+import type { Supply } from '@/domain/inventory/supply';
+import { SupplyBatch } from '@/domain/inventory/supply-batch';
+import type { AppointmentRepository } from '@/domain/scheduling/appointment-repository';
+import { InsufficientStockError, NotFoundError } from '@/domain/shared/errors';
 
 export interface RegisterStockMovementInput {
   supplyId: string;
@@ -33,15 +36,16 @@ export class RegisterStockMovement {
   async execute(input: RegisterStockMovementInput): Promise<Supply> {
     const supply = await this.supplies.findById(input.supplyId);
     if (!supply) {
-      throw new NotFoundError("Insumo", input.supplyId);
+      throw new NotFoundError('Insumo', input.supplyId);
     }
 
-    const appointmentId = input.type === "out" ? (input.appointmentId ?? null) : null;
+    const appointmentId =
+      input.type === 'out' ? (input.appointmentId ?? null) : null;
     // Valida o vínculo apenas quando o repositório de consultas foi fornecido.
     if (appointmentId && this.appointments) {
       const appointment = await this.appointments.findById(appointmentId);
       if (!appointment) {
-        throw new NotFoundError("Consulta", appointmentId);
+        throw new NotFoundError('Consulta', appointmentId);
       }
     }
 
@@ -53,12 +57,12 @@ export class RegisterStockMovement {
       reason: input.reason,
       appointmentId,
       // Congela o custo da saída no preço vigente do insumo.
-      unitPriceCents: input.type === "out" ? supply.priceCents : null,
+      unitPriceCents: input.type === 'out' ? supply.priceCents : null,
     });
 
     // Aplicação atômica (CONS2-05): a condição é re-checada no banco — corrida
     // entre o findById acima e a baixa não deixa estoque negativo (CONS2-08).
-    const delta = input.type === "in" ? input.quantity : -input.quantity;
+    const delta = input.type === 'in' ? input.quantity : -input.quantity;
     const updated = await this.supplies.adjustStock(supply.id, delta);
     if (!updated) {
       throw new InsufficientStockError(
@@ -79,7 +83,7 @@ export class RegisterStockMovement {
     if (!this.batches) {
       return;
     }
-    if (input.type === "in") {
+    if (input.type === 'in') {
       if (input.batchLabel || input.expiresAt) {
         await this.batches.save(
           SupplyBatch.create({
@@ -94,7 +98,9 @@ export class RegisterStockMovement {
     }
 
     let toConsume = input.quantity;
-    for (const batch of await this.batches.findActiveBySupplyId(input.supplyId)) {
+    for (const batch of await this.batches.findActiveBySupplyId(
+      input.supplyId,
+    )) {
       if (toConsume <= 0) break;
       const { batch: consumed, leftover } = batch.consume(toConsume);
       await this.batches.save(consumed);
@@ -108,8 +114,12 @@ export class RegisterStockMovement {
  * (quantidade positiva; estoque suficiente). A condição definitiva é aplicada
  * no banco por `adjustStock` (anti-corrida).
  */
-function assertMovementAllowed(supply: Supply, type: MovementType, quantity: number): void {
-  if (type === "in") {
+function assertMovementAllowed(
+  supply: Supply,
+  type: MovementType,
+  quantity: number,
+): void {
+  if (type === 'in') {
     supply.registerEntry(quantity);
   } else {
     supply.registerExit(quantity);

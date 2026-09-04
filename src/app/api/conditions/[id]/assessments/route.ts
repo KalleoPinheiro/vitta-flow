@@ -1,13 +1,13 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { AddConditionAssessment } from "@/application/clinical/add-condition-assessment";
-import { EXUDATE_LEVELS } from "@/domain/clinical/condition-assessment";
-import { handleRequest } from "@/lib/api-response";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { recordAudit } from "@/lib/audit";
-import { toAssessmentDto } from "@/lib/dto";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { AddConditionAssessment } from '@/application/clinical/add-condition-assessment';
+import { EXUDATE_LEVELS } from '@/domain/clinical/condition-assessment';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { recordAudit } from '@/lib/audit';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { toAssessmentDto } from '@/lib/dto';
 
 const detArea = z.number().int().min(0).max(3).nullish();
 const detSeverity = z.number().int().min(0).max(2).nullish();
@@ -47,8 +47,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
       conditions.findById(id),
     ]);
     recordAudit(auditEvents, guard.session, {
-      action: "read",
-      resourceType: "assessments",
+      action: 'read',
+      resourceType: 'assessments',
       resourceId: id,
       patientId: condition?.patientId ?? null,
     });
@@ -66,14 +66,17 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const { assessments, conditions, auditEvents } = await getRepositories({
       clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
     });
-    const assessment = await new AddConditionAssessment(assessments, conditions).execute({
+    const assessment = await new AddConditionAssessment(
+      assessments,
+      conditions,
+    ).execute({
       conditionId: id,
       ...body,
     });
     const condition = await conditions.findById(id);
     recordAudit(auditEvents, guard.session, {
-      action: "create",
-      resourceType: "assessment",
+      action: 'create',
+      resourceType: 'assessment',
       resourceId: assessment.id,
       patientId: condition?.patientId ?? null,
     });

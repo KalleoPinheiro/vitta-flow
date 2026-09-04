@@ -1,17 +1,20 @@
-import { InvalidStatusTransitionError, ValidationError } from "../shared/errors";
-import { newId } from "../shared/id";
-import type { Money } from "../shared/money";
+import {
+  InvalidStatusTransitionError,
+  ValidationError,
+} from '../shared/errors';
+import { newId } from '../shared/id';
+import type { Money } from '../shared/money';
 
-export const INVOICE_STATUSES = ["pending", "paid", "cancelled"] as const;
+export const INVOICE_STATUSES = ['pending', 'paid', 'cancelled'] as const;
 export type InvoiceStatus = (typeof INVOICE_STATUSES)[number];
 
 export const PAYMENT_METHODS = [
-  "pix",
-  "cash",
-  "credit_card",
-  "debit_card",
-  "insurance",
-  "transfer",
+  'pix',
+  'cash',
+  'credit_card',
+  'debit_card',
+  'insurance',
+  'transfer',
 ] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
@@ -37,13 +40,13 @@ export class Invoice {
   static create(props: InvoiceProps): Invoice {
     const description = props.description.trim();
     if (description.length === 0) {
-      throw new ValidationError("Descrição da fatura é obrigatória");
+      throw new ValidationError('Descrição da fatura é obrigatória');
     }
     if (props.amount.isZero()) {
-      throw new ValidationError("Valor da fatura deve ser maior que zero");
+      throw new ValidationError('Valor da fatura deve ser maior que zero');
     }
     if (props.patientId.trim().length === 0) {
-      throw new ValidationError("Paciente é obrigatório");
+      throw new ValidationError('Paciente é obrigatório');
     }
     return new Invoice({
       ...props,
@@ -51,7 +54,7 @@ export class Invoice {
       appointmentId: props.appointmentId ?? null,
       dueDate: props.dueDate ?? null,
       id: newId(),
-      status: "pending",
+      status: 'pending',
       issuedAt: new Date(),
       paidAt: null,
       paymentMethod: null,
@@ -63,21 +66,26 @@ export class Invoice {
   }
 
   markPaid(method: PaymentMethod, paidAt: Date = new Date()): Invoice {
-    if (this.state.status !== "pending") {
+    if (this.state.status !== 'pending') {
       throw new InvalidStatusTransitionError(
         `Não é possível pagar fatura com status "${this.state.status}"`,
       );
     }
-    return new Invoice({ ...this.state, status: "paid", paymentMethod: method, paidAt });
+    return new Invoice({
+      ...this.state,
+      status: 'paid',
+      paymentMethod: method,
+      paidAt,
+    });
   }
 
   cancel(): Invoice {
-    if (this.state.status !== "pending") {
+    if (this.state.status !== 'pending') {
       throw new InvalidStatusTransitionError(
         `Não é possível cancelar fatura com status "${this.state.status}"`,
       );
     }
-    return new Invoice({ ...this.state, status: "cancelled" });
+    return new Invoice({ ...this.state, status: 'cancelled' });
   }
 
   get id(): string {

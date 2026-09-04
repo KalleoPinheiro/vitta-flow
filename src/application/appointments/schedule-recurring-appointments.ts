@@ -1,9 +1,9 @@
-import type { Appointment } from "@/domain/scheduling/appointment";
-import { ValidationError } from "@/domain/shared/errors";
-import {
+import type { Appointment } from '@/domain/scheduling/appointment';
+import { ValidationError } from '@/domain/shared/errors';
+import type {
   ScheduleAppointment,
-  type ScheduleAppointmentInput,
-} from "./schedule-appointment";
+  ScheduleAppointmentInput,
+} from './schedule-appointment';
 
 const MS_PER_WEEK = 7 * 86_400_000;
 const MAX_OCCURRENCES = 24;
@@ -29,11 +29,13 @@ const isIntInRange = (value: number, min: number, max: number): boolean =>
 
 function validateRecurrence(input: RecurringScheduleInput): number {
   if (!isIntInRange(input.occurrences, 2, MAX_OCCURRENCES)) {
-    throw new ValidationError(`Série deve ter de 2 a ${MAX_OCCURRENCES} ocorrências`);
+    throw new ValidationError(
+      `Série deve ter de 2 a ${MAX_OCCURRENCES} ocorrências`,
+    );
   }
   const interval = input.weeksInterval ?? 1;
   if (!isIntInRange(interval, 1, 8)) {
-    throw new ValidationError("Intervalo deve ser de 1 a 8 semanas");
+    throw new ValidationError('Intervalo deve ser de 1 a 8 semanas');
   }
   return interval;
 }
@@ -41,7 +43,9 @@ function validateRecurrence(input: RecurringScheduleInput): number {
 export class ScheduleRecurringAppointments {
   constructor(private readonly schedule: ScheduleAppointment) {}
 
-  async execute(input: RecurringScheduleInput): Promise<RecurringScheduleResult> {
+  async execute(
+    input: RecurringScheduleInput,
+  ): Promise<RecurringScheduleResult> {
     const interval = validateRecurrence(input);
     const result: RecurringScheduleResult = { created: [], skipped: [] };
     for (let occurrence = 0; occurrence < input.occurrences; occurrence += 1) {
@@ -49,11 +53,13 @@ export class ScheduleRecurringAppointments {
       const startsAt = new Date(input.startsAt.getTime() + offset);
       const endsAt = new Date(input.endsAt.getTime() + offset);
       try {
-        result.created.push(await this.schedule.execute({ ...input, startsAt, endsAt }));
+        result.created.push(
+          await this.schedule.execute({ ...input, startsAt, endsAt }),
+        );
       } catch (error) {
         result.skipped.push({
           startsAt,
-          reason: error instanceof Error ? error.message : "Erro desconhecido",
+          reason: error instanceof Error ? error.message : 'Erro desconhecido',
         });
       }
     }

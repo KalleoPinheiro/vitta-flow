@@ -1,7 +1,10 @@
-import { InvalidStatusTransitionError, ValidationError } from "../shared/errors";
-import { newId } from "../shared/id";
+import {
+  InvalidStatusTransitionError,
+  ValidationError,
+} from '../shared/errors';
+import { newId } from '../shared/id';
 
-export const CARE_PLAN_STATUSES = ["active", "resolved", "cancelled"] as const;
+export const CARE_PLAN_STATUSES = ['active', 'resolved', 'cancelled'] as const;
 export type CarePlanStatus = (typeof CARE_PLAN_STATUSES)[number];
 
 export interface CarePlanProps {
@@ -24,14 +27,14 @@ export class CarePlan {
   static create(props: CarePlanProps): CarePlan {
     const patientId = props.patientId.trim();
     if (patientId.length === 0) {
-      throw new ValidationError("Paciente é obrigatório");
+      throw new ValidationError('Paciente é obrigatório');
     }
     return new CarePlan({
       patientId,
       conditionId: props.conditionId ?? null,
       professionalId: props.professionalId ?? null,
       id: newId(),
-      status: "active",
+      status: 'active',
       createdAt: new Date(),
     });
   }
@@ -41,18 +44,20 @@ export class CarePlan {
   }
 
   private transitionTo(next: CarePlanStatus): CarePlan {
-    if (this.state.status !== "active") {
-      throw new InvalidStatusTransitionError("Plano de cuidados não está ativo");
+    if (this.state.status !== 'active') {
+      throw new InvalidStatusTransitionError(
+        'Plano de cuidados não está ativo',
+      );
     }
     return new CarePlan({ ...this.state, status: next });
   }
 
   resolve(): CarePlan {
-    return this.transitionTo("resolved");
+    return this.transitionTo('resolved');
   }
 
   cancel(): CarePlan {
-    return this.transitionTo("cancelled");
+    return this.transitionTo('cancelled');
   }
 
   get id(): string {
@@ -76,7 +81,7 @@ export class CarePlan {
   }
 
   get isActive(): boolean {
-    return this.state.status === "active";
+    return this.state.status === 'active';
   }
 
   get createdAt(): Date {

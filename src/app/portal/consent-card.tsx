@@ -1,13 +1,22 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Image from "next/image";
-import { apiFetch } from "@/lib/client";
-import { formatDateTime } from "@/lib/format";
-import { Alert, AlertDescription, Button, Card, FileInput, Icon, Input, Prose } from "@still-void/ui/react";
-import { useToast } from "@still-void/ui/react/client";
-import { ErrorAlert } from "@/components/feedback";
-import { ConfirmAction } from "@/components/confirm-action";
+import {
+  Alert,
+  AlertDescription,
+  Button,
+  Card,
+  FileInput,
+  Icon,
+  Input,
+  Prose,
+} from '@still-void/ui/react';
+import { useToast } from '@still-void/ui/react/client';
+import Image from 'next/image';
+import { useState } from 'react';
+import { ConfirmAction } from '@/components/confirm-action';
+import { ErrorAlert } from '@/components/feedback';
+import { apiFetch } from '@/lib/client';
+import { formatDateTime } from '@/lib/format';
 
 export interface ConsentStatusDto {
   consentText: string;
@@ -39,13 +48,16 @@ export function ConsentCard({
       setRevoking(true);
       setError(null);
       try {
-        await apiFetch("/api/portal/patient/consent/revoke", { method: "POST" });
-        toast({ description: "Consentimento revogado", variant: "success" });
+        await apiFetch('/api/portal/patient/consent/revoke', {
+          method: 'POST',
+        });
+        toast({ description: 'Consentimento revogado', variant: 'success' });
         onAccepted();
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Erro ao revogar consentimento";
+        const message =
+          err instanceof Error ? err.message : 'Erro ao revogar consentimento';
         setError(message);
-        toast({ description: message, variant: "danger" });
+        toast({ description: message, variant: 'danger' });
       } finally {
         setRevoking(false);
       }
@@ -56,7 +68,10 @@ export function ConsentCard({
         <Alert variant="success">
           <AlertDescription>
             <Icon name="check-circle" /> Termo de consentimento aceito
-            {status.acceptedAt ? ` em ${formatDateTime(status.acceptedAt)}` : ""}.
+            {status.acceptedAt
+              ? ` em ${formatDateTime(status.acceptedAt)}`
+              : ''}
+            .
           </AlertDescription>
         </Alert>
         {error && <ErrorAlert message={error} />}
@@ -65,8 +80,14 @@ export function ConsentCard({
             aceite. */}
         <ConfirmAction
           trigger={
-            <Button type="button" variant="ghost" size="sm" disabled={revoking} className="self-start">
-              {revoking ? "Revogando…" : "Revogar consentimento"}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={revoking}
+              className="self-start"
+            >
+              {revoking ? 'Revogando…' : 'Revogar consentimento'}
             </Button>
           }
           title="Revogar consentimento"
@@ -83,13 +104,17 @@ export function ConsentCard({
     setAccepting(true);
     setError(null);
     try {
-      await apiFetch("/api/portal/patient/consent", { method: "POST" });
-      toast({ description: "Termo de consentimento aceito", variant: "success" });
+      await apiFetch('/api/portal/patient/consent', { method: 'POST' });
+      toast({
+        description: 'Termo de consentimento aceito',
+        variant: 'success',
+      });
       onAccepted();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Erro ao registrar aceite";
+      const message =
+        err instanceof Error ? err.message : 'Erro ao registrar aceite';
       setError(message);
-      toast({ description: message, variant: "danger" });
+      toast({ description: message, variant: 'danger' });
     } finally {
       // Sai de "Registrando…" mesmo no sucesso: quem confirma o aceite na tela é
       // o status recarregado pelo pai, e essa recarga pode falhar. Se o estado
@@ -104,7 +129,7 @@ export function ConsentCard({
   // Apenas documentado aqui; cores e estrutura continuam com classes warning.
   return (
     <Card as="section" className="border-warning bg-warning-soft p-4">
-      <h2 className="mb-2 text-sm font-bold text-warning">
+      <h2 className="mb-2 font-bold text-sm text-warning">
         Termo de consentimento pendente
       </h2>
       {error && <ErrorAlert message={error} />}
@@ -117,7 +142,7 @@ export function ConsentCard({
         onClick={() => void accept()}
         variant="accent"
       >
-        {accepting ? "Registrando…" : "Li e aceito o termo"}
+        {accepting ? 'Registrando…' : 'Li e aceito o termo'}
       </Button>
     </Card>
   );
@@ -136,7 +161,7 @@ export function PatientPhotoUpload({
   onSent: () => void;
 }) {
   const { toast } = useToast();
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -163,23 +188,29 @@ export function PatientPhotoUpload({
     setError(null);
     try {
       const body = new FormData();
-      body.append("file", pendingFile);
-      body.append("conditionId", conditionId);
-      if (note) body.append("note", note);
-      const response = await fetch("/api/portal/patient/photos", { method: "POST", body });
+      body.append('file', pendingFile);
+      body.append('conditionId', conditionId);
+      if (note) body.append('note', note);
+      const response = await fetch('/api/portal/patient/photos', {
+        method: 'POST',
+        body,
+      });
       if (!response.ok) {
-        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(payload?.error ?? "Erro ao enviar foto");
+        const payload = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(payload?.error ?? 'Erro ao enviar foto');
       }
       clearSelection();
       setSent(true);
-      setNote("");
-      toast({ description: "Foto enviada", variant: "success" });
+      setNote('');
+      toast({ description: 'Foto enviada', variant: 'success' });
       onSent();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Erro ao enviar foto";
+      const message =
+        err instanceof Error ? err.message : 'Erro ao enviar foto';
       setError(message);
-      toast({ description: message, variant: "danger" });
+      toast({ description: message, variant: 'danger' });
     } finally {
       setSending(false);
     }
@@ -199,8 +230,9 @@ export function PatientPhotoUpload({
     <div className="mt-2 rounded-lg border border-border bg-bg p-3">
       {error && <ErrorAlert message={error} />}
       {sent && (
-        <p className="mb-2 text-xs text-success">
-          Foto enviada — a equipe vai avaliar e retorna se for preciso antecipar sua consulta.
+        <p className="mb-2 text-success text-xs">
+          Foto enviada — a equipe vai avaliar e retorna se for preciso antecipar
+          sua consulta.
         </p>
       )}
       <div className="flex flex-wrap items-center gap-2">
@@ -222,13 +254,13 @@ export function PatientPhotoUpload({
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) selectFile(file);
-            e.target.value = "";
+            e.target.value = '';
           }}
         />
       </div>
       {pendingFile && previewUrl && (
         <div className="mt-2 flex items-center gap-3 rounded border border-border bg-sv-surface p-2">
-          <div className="relative h-16 w-16 rounded overflow-hidden shrink-0">
+          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded">
             <Image
               src={previewUrl}
               alt="Prévia da foto selecionada"
@@ -237,12 +269,24 @@ export function PatientPhotoUpload({
             />
           </div>
           <div className="flex flex-1 flex-col gap-1">
-            <p className="text-xs text-ink-3">{pendingFile.name}</p>
+            <p className="text-ink-3 text-xs">{pendingFile.name}</p>
             <div className="flex gap-2">
-              <Button type="button" size="sm" variant="accent" disabled={sending} onClick={() => void upload()}>
-                {sending ? "Enviando…" : "Enviar"}
+              <Button
+                type="button"
+                size="sm"
+                variant="accent"
+                disabled={sending}
+                onClick={() => void upload()}
+              >
+                {sending ? 'Enviando…' : 'Enviar'}
               </Button>
-              <Button type="button" size="sm" variant="ghost" disabled={sending} onClick={clearSelection}>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                disabled={sending}
+                onClick={clearSelection}
+              >
                 Cancelar
               </Button>
             </div>

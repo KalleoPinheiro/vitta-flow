@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { apiFetchPage } from "./client";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { apiFetchPage } from './client';
 
 export interface CursorPagedQueryResult<T> {
   items: T[] | null;
@@ -19,7 +19,10 @@ export interface CursorPagedQueryResult<T> {
  * quando a URL base muda), páginas seguintes anexadas via loadMore(). Mesma
  * interface pública de `usePagedQuery` (offset) — troca é só o import na página.
  */
-export function useCursorPagedQuery<T>(baseUrl: string, pageSize: number): CursorPagedQueryResult<T> {
+export function useCursorPagedQuery<T>(
+  baseUrl: string,
+  pageSize: number,
+): CursorPagedQueryResult<T> {
   const [items, setItems] = useState<T[] | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -36,8 +39,8 @@ export function useCursorPagedQuery<T>(baseUrl: string, pageSize: number): Curso
 
   const pageUrl = useCallback(
     (cursor: string | null) => {
-      const separator = baseUrl.includes("?") ? "&" : "?";
-      const cursorParam = cursor ? `&cursor=${encodeURIComponent(cursor)}` : "";
+      const separator = baseUrl.includes('?') ? '&' : '?';
+      const cursorParam = cursor ? `&cursor=${encodeURIComponent(cursor)}` : '';
       return `${baseUrl}${separator}limit=${pageSize}${cursorParam}`;
     },
     [baseUrl, pageSize],
@@ -58,11 +61,13 @@ export function useCursorPagedQuery<T>(baseUrl: string, pageSize: number): Curso
       })
       .catch((err: unknown) => {
         if (requestIdRef.current === requestId) {
-          setError(err instanceof Error ? err.message : "Erro ao carregar dados");
+          setError(
+            err instanceof Error ? err.message : 'Erro ao carregar dados',
+          );
           setSettledKey(requestKey);
         }
       });
-  }, [pageUrl, version, baseUrl, requestKey]);
+  }, [pageUrl, requestKey]);
 
   const refresh = useCallback(() => setVersion((current) => current + 1), []);
 
@@ -78,9 +83,16 @@ export function useCursorPagedQuery<T>(baseUrl: string, pageSize: number): Curso
       })
       .catch((err: unknown) => {
         if (requestIdRef.current !== requestId) return;
-        setError(err instanceof Error ? err.message : "Erro ao carregar dados");
+        setError(err instanceof Error ? err.message : 'Erro ao carregar dados');
       });
   }, [nextCursor, pageUrl]);
 
-  return { items, hasMore: nextCursor !== null, error, isLoading, refresh, loadMore };
+  return {
+    items,
+    hasMore: nextCursor !== null,
+    error,
+    isLoading,
+    refresh,
+    loadMore,
+  };
 }

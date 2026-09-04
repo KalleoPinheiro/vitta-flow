@@ -1,18 +1,18 @@
-import type { Supply } from "@/domain/inventory/supply";
-import type { StockMovement } from "@/domain/inventory/stock-movement";
-import type { SupplyBatch } from "@/domain/inventory/supply-batch";
+import type { FollowUp } from '@/domain/followup/follow-up';
+import type {
+  FollowUpFilter,
+  FollowUpRepository,
+} from '@/domain/followup/follow-up-repository';
 import type {
   OutflowBySupply,
   OutflowCostByAppointment,
   StockMovementRepository,
   SupplyBatchRepository,
   SupplyRepository,
-} from "@/domain/inventory/inventory-repositories";
-import type { FollowUp } from "@/domain/followup/follow-up";
-import type {
-  FollowUpFilter,
-  FollowUpRepository,
-} from "@/domain/followup/follow-up-repository";
+} from '@/domain/inventory/inventory-repositories';
+import type { StockMovement } from '@/domain/inventory/stock-movement';
+import type { Supply } from '@/domain/inventory/supply';
+import type { SupplyBatch } from '@/domain/inventory/supply-batch';
 
 export class InMemorySupplyRepository implements SupplyRepository {
   private readonly items = new Map<string, Supply>();
@@ -26,7 +26,9 @@ export class InMemorySupplyRepository implements SupplyRepository {
   }
 
   async findAll(): Promise<Supply[]> {
-    return [...this.items.values()].sort((a, b) => a.name.localeCompare(b.name));
+    return [...this.items.values()].sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
   }
 
   async adjustStock(id: string, delta: number): Promise<Supply | null> {
@@ -37,13 +39,16 @@ export class InMemorySupplyRepository implements SupplyRepository {
     if (delta === 0) {
       return current;
     }
-    const adjusted = delta > 0 ? current.registerEntry(delta) : current.registerExit(-delta);
+    const adjusted =
+      delta > 0 ? current.registerEntry(delta) : current.registerExit(-delta);
     this.items.set(id, adjusted);
     return adjusted;
   }
 }
 
-export class InMemoryStockMovementRepository implements StockMovementRepository {
+export class InMemoryStockMovementRepository
+  implements StockMovementRepository
+{
   private readonly items = new Map<string, StockMovement>();
 
   async save(movement: StockMovement): Promise<void> {
@@ -62,13 +67,20 @@ export class InMemoryStockMovementRepository implements StockMovementRepository 
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
-  async getOutflowCostInRange(from: Date, to: Date): Promise<OutflowCostByAppointment[]> {
+  async getOutflowCostInRange(
+    from: Date,
+    to: Date,
+  ): Promise<OutflowCostByAppointment[]> {
     const totals = new Map<string | null, number>();
     for (const movement of this.items.values()) {
       const at = movement.createdAt.getTime();
-      if (movement.type !== "out" || at < from.getTime() || at >= to.getTime()) continue;
+      if (movement.type !== 'out' || at < from.getTime() || at >= to.getTime())
+        continue;
       const cost = movement.totalCostCents ?? 0;
-      totals.set(movement.appointmentId, (totals.get(movement.appointmentId) ?? 0) + cost);
+      totals.set(
+        movement.appointmentId,
+        (totals.get(movement.appointmentId) ?? 0) + cost,
+      );
     }
     return [...totals.entries()].map(([appointmentId, totalCents]) => ({
       appointmentId,
@@ -80,10 +92,17 @@ export class InMemoryStockMovementRepository implements StockMovementRepository 
     const totals = new Map<string, number>();
     for (const movement of this.items.values()) {
       const at = movement.createdAt.getTime();
-      if (movement.type !== "out" || at < from.getTime() || at >= to.getTime()) continue;
-      totals.set(movement.supplyId, (totals.get(movement.supplyId) ?? 0) + movement.quantity);
+      if (movement.type !== 'out' || at < from.getTime() || at >= to.getTime())
+        continue;
+      totals.set(
+        movement.supplyId,
+        (totals.get(movement.supplyId) ?? 0) + movement.quantity,
+      );
     }
-    return [...totals.entries()].map(([supplyId, totalQty]) => ({ supplyId, totalQty }));
+    return [...totals.entries()].map(([supplyId, totalQty]) => ({
+      supplyId,
+      totalQty,
+    }));
   }
 }
 
@@ -110,7 +129,9 @@ export class InMemorySupplyBatchRepository implements SupplyBatchRepository {
     return [...this.items.values()]
       .filter(
         (b) =>
-          b.remaining > 0 && b.expiresAt != null && b.expiresAt.getTime() <= limit.getTime(),
+          b.remaining > 0 &&
+          b.expiresAt != null &&
+          b.expiresAt.getTime() <= limit.getTime(),
       )
       .sort(InMemorySupplyBatchRepository.byExpiryFefo);
   }
@@ -132,7 +153,11 @@ export class InMemoryFollowUpRepository implements FollowUpRepository {
       .filter((f) => {
         if (filter?.status && f.status !== filter.status) return false;
         if (filter?.patientId && f.patientId !== filter.patientId) return false;
-        if (filter?.dueBefore && f.dueDate.getTime() >= filter.dueBefore.getTime()) return false;
+        if (
+          filter?.dueBefore &&
+          f.dueDate.getTime() >= filter.dueBefore.getTime()
+        )
+          return false;
         return true;
       })
       .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());

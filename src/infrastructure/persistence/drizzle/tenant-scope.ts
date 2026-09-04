@@ -1,5 +1,5 @@
-import { and, eq, type SQL } from "drizzle-orm";
-import type { PgColumn } from "drizzle-orm/pg-core";
+import { and, eq, type SQL } from 'drizzle-orm';
+import type { PgColumn } from 'drizzle-orm/pg-core';
 
 /**
  * Escopo por tenant centralizado (AD-017): `clinicId: null` é o papel de sistema

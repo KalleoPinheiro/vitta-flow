@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { Suspense, useState } from "react";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { Button, Input } from "@still-void/ui/react";
-import { apiFetch } from "@/lib/client";
-import { ErrorAlert } from "@/components/feedback";
+import { Button, Input } from '@still-void/ui/react';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { ErrorAlert } from '@/components/feedback';
+import { apiFetch } from '@/lib/client';
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -18,17 +18,17 @@ export default function SetPasswordPage() {
 }
 
 function SetPasswordCard() {
-  const token = useSearchParams().get("token") ?? "";
+  const token = useSearchParams().get('token') ?? '';
 
   return (
     <div className="flex min-h-[70vh] items-center justify-center">
       {/* sv-gradient-border é a assinatura visual do Still Void — nunca trocada
           por box-shadow, e cards do sistema não têm sombra. */}
       <div className="sv-gradient-border w-full max-w-sm p-8">
-        <h1 className="sv-display text-xl font-bold">Defina sua senha</h1>
-        <p className="mb-6 mt-1 text-sm text-ink-3">
-          Escolha uma senha de pelo menos {MIN_PASSWORD_LENGTH} caracteres para acessar o
-          VittaFlow.
+        <h1 className="sv-display font-bold text-xl">Defina sua senha</h1>
+        <p className="mt-1 mb-6 text-ink-3 text-sm">
+          Escolha uma senha de pelo menos {MIN_PASSWORD_LENGTH} caracteres para
+          acessar o VittaFlow.
         </p>
         {token ? (
           <SetPasswordForm token={token} />
@@ -60,8 +60,8 @@ function RequestNewLink() {
 }
 
 function SetPasswordForm({ token }: { token: string }) {
-  const [password, setPassword] = useState("");
-  const [confirmation, setConfirmation] = useState("");
+  const [password, setPassword] = useState('');
+  const [confirmation, setConfirmation] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
@@ -69,19 +69,19 @@ function SetPasswordForm({ token }: { token: string }) {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (password !== confirmation) {
-      setError("As duas senhas não conferem");
+      setError('As duas senhas não conferem');
       return;
     }
     setSubmitting(true);
     setError(null);
     try {
-      await apiFetch("/api/auth/set-password", {
-        method: "POST",
+      await apiFetch('/api/auth/set-password', {
+        method: 'POST',
         body: JSON.stringify({ token, password }),
       });
       setDone(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao definir a senha");
+      setError(err instanceof Error ? err.message : 'Erro ao definir a senha');
     } finally {
       setSubmitting(false);
     }
@@ -103,7 +103,7 @@ function SetPasswordForm({ token }: { token: string }) {
   return (
     <form onSubmit={handleSubmit}>
       {error && <ErrorAlert message={error} />}
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Nova senha
         <Input
           required
@@ -114,7 +114,7 @@ function SetPasswordForm({ token }: { token: string }) {
           className="mt-1"
         />
       </label>
-      <label className="mt-3 block text-sm font-medium">
+      <label className="mt-3 block font-medium text-sm">
         Confirme a senha
         <Input
           required
@@ -125,8 +125,13 @@ function SetPasswordForm({ token }: { token: string }) {
           className="mt-1"
         />
       </label>
-      <Button type="submit" disabled={submitting} variant="accent" className="mt-4 w-full">
-        {submitting ? "Salvando…" : "Definir senha"}
+      <Button
+        type="submit"
+        disabled={submitting}
+        variant="accent"
+        className="mt-4 w-full"
+      >
+        {submitting ? 'Salvando…' : 'Definir senha'}
       </Button>
       <RequestNewLink />
     </form>

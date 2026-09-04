@@ -1,7 +1,7 @@
-import type { Appointment } from "@/domain/scheduling/appointment";
-import type { AppointmentRepository } from "@/domain/scheduling/appointment-repository";
-import type { PatientRepository } from "@/domain/patient/patient-repository";
-import { NotFoundError, ValidationError } from "@/domain/shared/errors";
+import type { PatientRepository } from '@/domain/patient/patient-repository';
+import type { Appointment } from '@/domain/scheduling/appointment';
+import type { AppointmentRepository } from '@/domain/scheduling/appointment-repository';
+import { NotFoundError, ValidationError } from '@/domain/shared/errors';
 
 export interface ConfirmOwnAppointmentInput {
   email: string;
@@ -22,22 +22,22 @@ export class ConfirmOwnAppointment {
 
   async execute(input: ConfirmOwnAppointmentInput): Promise<Appointment> {
     const patient = await this.patients.findByEmail(input.email);
-    if (!patient || !patient.isActive) {
-      throw new NotFoundError("Paciente", input.email);
+    if (!patient?.isActive) {
+      throw new NotFoundError('Paciente', input.email);
     }
 
     const appointment = await this.appointments.findById(input.appointmentId);
     if (!appointment || appointment.patientId !== patient.id) {
-      throw new NotFoundError("Consulta", input.appointmentId);
+      throw new NotFoundError('Consulta', input.appointmentId);
     }
 
-    if (appointment.status === "confirmed") {
+    if (appointment.status === 'confirmed') {
       return appointment;
     }
 
     const now = input.now ?? new Date();
     if (appointment.slot.start.getTime() <= now.getTime()) {
-      throw new ValidationError("Só é possível confirmar consultas futuras");
+      throw new ValidationError('Só é possível confirmar consultas futuras');
     }
 
     const confirmed = appointment.confirm();

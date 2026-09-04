@@ -1,6 +1,6 @@
-import { newId } from "../shared/id";
+import { newId } from '../shared/id';
 
-export const REMINDER_KINDS = ["confirmation", "recall"] as const;
+export const REMINDER_KINDS = ['confirmation', 'recall'] as const;
 export type ReminderKind = (typeof REMINDER_KINDS)[number];
 
 export interface ReminderLogState {
@@ -19,7 +19,11 @@ export const dateKey = (date: Date): string => date.toISOString().slice(0, 10);
 export class ReminderLog {
   private constructor(private readonly state: ReminderLogState) {}
 
-  static create(kind: ReminderKind, referenceId: string, sentAt: Date = new Date()): ReminderLog {
+  static create(
+    kind: ReminderKind,
+    referenceId: string,
+    sentAt: Date = new Date(),
+  ): ReminderLog {
     return new ReminderLog({
       id: newId(),
       kind,
@@ -56,5 +60,9 @@ export class ReminderLog {
 
 export interface ReminderLogRepository {
   save(log: ReminderLog): Promise<void>;
-  wasSent(kind: ReminderKind, referenceId: string, onDay: string): Promise<boolean>;
+  wasSent(
+    kind: ReminderKind,
+    referenceId: string,
+    onDay: string,
+  ): Promise<boolean>;
 }

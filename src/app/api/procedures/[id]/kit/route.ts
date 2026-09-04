@@ -1,9 +1,9 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { NotFoundError } from "@/domain/shared/errors";
-import { handleRequest } from "@/lib/api-response";
-import { requireStaffSession } from "@/lib/auth/require-session";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { NotFoundError } from '@/domain/shared/errors';
+import { getRepositories } from '@/infrastructure/container';
+import { handleRequest } from '@/lib/api-response';
+import { requireStaffSession } from '@/lib/auth/require-session';
 
 const kitSchema = z.object({
   items: z
@@ -36,11 +36,13 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = kitSchema.parse(await request.json());
-    const { procedureKits, procedures } = await getRepositories({ clinicId: null });
+    const { procedureKits, procedures } = await getRepositories({
+      clinicId: null,
+    });
 
     const procedure = await procedures.findById(id);
     if (!procedure) {
-      throw new NotFoundError("Procedimento", id);
+      throw new NotFoundError('Procedimento', id);
     }
 
     await procedureKits.setKit(id, body.items);

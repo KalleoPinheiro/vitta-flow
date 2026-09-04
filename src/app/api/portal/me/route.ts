@@ -1,7 +1,7 @@
-import type { NextRequest } from "next/server";
-import { USER_ROLES } from "@/domain/auth/user-role";
-import { requirePortalSession } from "@/lib/auth/require-session";
-import { ok } from "@/lib/api-response";
+import type { NextRequest } from 'next/server';
+import { USER_ROLES } from '@/domain/auth/user-role';
+import { ok } from '@/lib/api-response';
+import { requirePortalSession } from '@/lib/auth/require-session';
 
 /** Identidade da sessão atual — qualquer papel autenticado. */
 export async function GET(request: NextRequest) {

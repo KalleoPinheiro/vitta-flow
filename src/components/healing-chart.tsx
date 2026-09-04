@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { ChartAxis, ChartContainer, ChartLine } from "@still-void/ui/react";
-import { formatDate } from "@/lib/format";
+import { ChartAxis, ChartContainer, ChartLine } from '@still-void/ui/react';
+import { formatDate } from '@/lib/format';
 
 /**
  * Só os campos numéricos usados no gráfico — aceita tanto `AssessmentDto`
@@ -47,7 +47,8 @@ function toPoints(
 ): ChartPoint[] {
   const span = max - min || 1;
   return values.map((p) => {
-    const y = PAD_TOP + (HEIGHT - PAD_TOP - PAD_BOTTOM) * (1 - (p.value - min) / span);
+    const y =
+      PAD_TOP + (HEIGHT - PAD_TOP - PAD_BOTTOM) * (1 - (p.value - min) / span);
     return { x: xOf(p.date), y };
   });
 }
@@ -60,9 +61,9 @@ const CLINICAL_SCORE_MAX = 17; // PUSH 0–17 (DET 0–15 compartilha o eixo)
  * não colidirem com o accent quando ele muda. Sempre a variante -ink, a que
  * mantém contraste no tema claro.
  */
-const SERIES_AREA = "var(--sv-accent-ink)";
-const SERIES_SCORE = "var(--sv-info-ink)";
-const SERIES_PAIN = "var(--sv-warning-ink)";
+const SERIES_AREA = 'var(--sv-accent-ink)';
+const SERIES_SCORE = 'var(--sv-info-ink)';
+const SERIES_PAIN = 'var(--sv-warning-ink)';
 
 interface ChartModel {
   areaSeries: SeriesPoint[];
@@ -84,7 +85,10 @@ function buildChartModel(assessments: ChartAssessment[]): ChartModel | null {
     .map((a) => ({ date: new Date(a.createdAt), value: a.areaMm2 as number }));
   const painSeries: SeriesPoint[] = ordered
     .filter((a) => a.painScale != null)
-    .map((a) => ({ date: new Date(a.createdAt), value: a.painScale as number }));
+    .map((a) => ({
+      date: new Date(a.createdAt),
+      value: a.painScale as number,
+    }));
   // Score clínico validado: PUSH (ferida) ou DET (estomia) — nunca ambos na mesma condição.
   const scoreSeries: SeriesPoint[] = ordered
     .filter((a) => a.pushScore != null || a.detScore != null)
@@ -100,7 +104,9 @@ function buildChartModel(assessments: ChartAssessment[]): ChartModel | null {
     return null;
   }
 
-  const allDates = [...areaSeries, ...painSeries, ...scoreSeries].map((p) => p.date.getTime());
+  const allDates = [...areaSeries, ...painSeries, ...scoreSeries].map((p) =>
+    p.date.getTime(),
+  );
   const minT = Math.min(...allDates);
   const maxT = Math.max(...allDates);
   const spanT = maxT - minT || 1;
@@ -120,7 +126,8 @@ function buildChartModel(assessments: ChartAssessment[]): ChartModel | null {
     areaMax: Math.max(...areaSeries.map((p) => p.value), 1),
     trend,
     xOf: (d: Date) =>
-      PAD_LEFT + (WIDTH - PAD_LEFT - PAD_RIGHT) * ((d.getTime() - minT) / spanT),
+      PAD_LEFT +
+      (WIDTH - PAD_LEFT - PAD_RIGHT) * ((d.getTime() - minT) / spanT),
   };
 }
 
@@ -134,18 +141,28 @@ export function HealingChart({ assessments }: HealingChartProps) {
   const model = buildChartModel(assessments);
   if (!model) {
     return (
-      <p className="text-xs text-ink-3">
-        Registre medidas (C×L) ou dor em pelo menos duas avaliações para acompanhar a tendência.
+      <p className="text-ink-3 text-xs">
+        Registre medidas (C×L) ou dor em pelo menos duas avaliações para
+        acompanhar a tendência.
       </p>
     );
   }
-  const { areaSeries, painSeries, scoreSeries, minT, maxT, areaMax, trend, xOf } = model;
+  const {
+    areaSeries,
+    painSeries,
+    scoreSeries,
+    minT,
+    maxT,
+    areaMax,
+    trend,
+    xOf,
+  } = model;
 
   return (
     <div>
       {trend != null && (
         <p
-          className={`mb-1 text-xs font-medium ${trend <= 0 ? "text-success" : "text-warning"}`}
+          className={`mb-1 font-medium text-xs ${trend <= 0 ? 'text-success' : 'text-warning'}`}
         >
           {trend <= 0
             ? `Área reduziu ${Math.abs(trend)}% desde a primeira medição`
@@ -166,17 +183,25 @@ export function HealingChart({ assessments }: HealingChartProps) {
         aria-label="Gráfico de evolução da condição"
       >
         <g transform={`translate(${PAD_LEFT}, ${HEIGHT - PAD_BOTTOM})`}>
-          <ChartAxis orientation="bottom" ticks={[]} length={WIDTH - PAD_LEFT - PAD_RIGHT} />
+          <ChartAxis
+            orientation="bottom"
+            ticks={[]}
+            length={WIDTH - PAD_LEFT - PAD_RIGHT}
+          />
         </g>
         {areaSeries.length >= MIN_MEASURED_POINTS && (
           <>
-            <ChartLine points={toPoints(areaSeries, 0, areaMax, xOf)} color={SERIES_AREA} />
+            <ChartLine
+              points={toPoints(areaSeries, 0, areaMax, xOf)}
+              color={SERIES_AREA}
+            />
             {areaSeries.map((p) => (
               <circle
                 key={`a-${p.date.getTime()}`}
                 cx={xOf(p.date)}
                 cy={
-                  PAD_TOP + (HEIGHT - PAD_TOP - PAD_BOTTOM) * (1 - p.value / areaMax)
+                  PAD_TOP +
+                  (HEIGHT - PAD_TOP - PAD_BOTTOM) * (1 - p.value / areaMax)
                 }
                 r="3"
                 fill={SERIES_AREA}
@@ -197,7 +222,10 @@ export function HealingChart({ assessments }: HealingChartProps) {
             {/* #94, DOC-07: marcador quadrado (a área usa círculo) — forma
                 distinta reforça a diferenciação por traço em P&B/daltonismo. */}
             {scoreSeries.map((p) => {
-              const cy = PAD_TOP + (HEIGHT - PAD_TOP - PAD_BOTTOM) * (1 - p.value / CLINICAL_SCORE_MAX);
+              const cy =
+                PAD_TOP +
+                (HEIGHT - PAD_TOP - PAD_BOTTOM) *
+                  (1 - p.value / CLINICAL_SCORE_MAX);
               return (
                 <rect
                   key={`s-${p.date.getTime()}`}
@@ -218,7 +246,12 @@ export function HealingChart({ assessments }: HealingChartProps) {
               color={SERIES_PAIN}
               className="healing-chart__pain-line"
             />
-            <text x={WIDTH - PAD_RIGHT + 4} y={PAD_TOP + 4} fontSize="10" fill={SERIES_PAIN}>
+            <text
+              x={WIDTH - PAD_RIGHT + 4}
+              y={PAD_TOP + 4}
+              fontSize="10"
+              fill={SERIES_PAIN}
+            >
               dor /10
             </text>
           </>
@@ -226,13 +259,19 @@ export function HealingChart({ assessments }: HealingChartProps) {
         <text x={PAD_LEFT} y={HEIGHT - 8} fontSize="10" fill="var(--sv-text-3)">
           {formatDate(new Date(minT).toISOString())}
         </text>
-        <text x={WIDTH - PAD_RIGHT} y={HEIGHT - 8} fontSize="10" fill="var(--sv-text-3)" textAnchor="end">
+        <text
+          x={WIDTH - PAD_RIGHT}
+          y={HEIGHT - 8}
+          fontSize="10"
+          fill="var(--sv-text-3)"
+          textAnchor="end"
+        >
           {formatDate(new Date(maxT).toISOString())}
         </text>
       </ChartContainer>
-      <p className="mt-1 text-xs text-ink-3">
-        Sólida no accent: área da ferida (mm²) · sólida azul: gravidade clínica · tracejada âmbar:
-        dor (0–10)
+      <p className="mt-1 text-ink-3 text-xs">
+        Sólida no accent: área da ferida (mm²) · sólida azul: gravidade clínica
+        · tracejada âmbar: dor (0–10)
       </p>
     </div>
   );

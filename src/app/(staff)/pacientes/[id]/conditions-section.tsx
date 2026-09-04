@@ -1,22 +1,5 @@
-"use client";
+'use client';
 
-import { useCallback, useState } from "react";
-import { useToast } from "@still-void/ui/react/client";
-import { apiFetch } from "@/lib/client";
-import type { AssessmentDto, ConditionDto } from "@/lib/dto";
-import {
-  CONDITION_KIND_LABELS,
-  EXUDATE_LABELS,
-  STOMA_TYPE_LABELS,
-  formatDate,
-  formatDateTime,
-} from "@/lib/format";
-import { Modal } from "@/components/modal";
-import { ConfirmAction } from "@/components/confirm-action";
-import { StatusBadge } from "@/components/status-badge";
-import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
-import { HealingChart } from "@/components/healing-chart";
-import { ConditionPhotos } from "./condition-photos";
 import {
   Button,
   Card,
@@ -29,7 +12,28 @@ import {
   TableHeader,
   TableRow,
   Textarea,
-} from "@still-void/ui/react";
+} from '@still-void/ui/react';
+import { useToast } from '@still-void/ui/react/client';
+import { useCallback, useState } from 'react';
+import { ConfirmAction } from '@/components/confirm-action';
+import {
+  EmptyState,
+  ErrorAlert,
+  LoadingIndicator,
+} from '@/components/feedback';
+import { HealingChart } from '@/components/healing-chart';
+import { Modal } from '@/components/modal';
+import { StatusBadge } from '@/components/status-badge';
+import { apiFetch } from '@/lib/client';
+import type { AssessmentDto, ConditionDto } from '@/lib/dto';
+import {
+  CONDITION_KIND_LABELS,
+  EXUDATE_LABELS,
+  formatDate,
+  formatDateTime,
+  STOMA_TYPE_LABELS,
+} from '@/lib/format';
+import { ConditionPhotos } from './condition-photos';
 
 interface ConditionsSectionProps {
   patientId: string;
@@ -53,10 +57,14 @@ export function ConditionsSection({
   const [creating, setCreating] = useState(false);
   const [assessing, setAssessing] = useState<ConditionDto | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [assessments, setAssessments] = useState<Record<string, AssessmentDto[]>>({});
+  const [assessments, setAssessments] = useState<
+    Record<string, AssessmentDto[]>
+  >({});
 
   const loadAssessments = useCallback(async (conditionId: string) => {
-    const result = await apiFetch<AssessmentDto[]>(`/api/conditions/${conditionId}/assessments`);
+    const result = await apiFetch<AssessmentDto[]>(
+      `/api/conditions/${conditionId}/assessments`,
+    );
     setAssessments((prev) => ({ ...prev, [conditionId]: result }));
   }, []);
 
@@ -71,13 +79,15 @@ export function ConditionsSection({
   const resolveCondition = async (condition: ConditionDto) => {
     try {
       await apiFetch<ConditionDto>(`/api/conditions/${condition.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ action: "resolve" }),
+        method: 'PATCH',
+        body: JSON.stringify({ action: 'resolve' }),
       });
-      toast({ description: "Condição resolvida", variant: "success" });
+      toast({ description: 'Condição resolvida', variant: 'success' });
       onChanged();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Erro ao resolver condição");
+      setActionError(
+        err instanceof Error ? err.message : 'Erro ao resolver condição',
+      );
     }
   };
 
@@ -85,7 +95,7 @@ export function ConditionsSection({
     <div className="flex flex-col gap-4">
       {actionError && <ErrorAlert message={actionError} />}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-ink-3">
+        <p className="text-ink-3 text-sm">
           Estomias e feridas com avaliações seriadas para acompanhar a evolução.
         </p>
         <Button
@@ -113,14 +123,26 @@ export function ConditionsSection({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <span className="mr-2 font-medium">{condition.title}</span>
-                    <span className="mr-2 text-xs text-ink-3">
+                    <span className="mr-2 text-ink-3 text-xs">
                       {CONDITION_KIND_LABELS[condition.kind]}
-                      {condition.stomaType ? ` · ${STOMA_TYPE_LABELS[condition.stomaType]}` : ""}
-                      {condition.startedAt ? ` · desde ${formatDate(condition.startedAt)}` : ""}
+                      {condition.stomaType
+                        ? ` · ${STOMA_TYPE_LABELS[condition.stomaType]}`
+                        : ''}
+                      {condition.startedAt
+                        ? ` · desde ${formatDate(condition.startedAt)}`
+                        : ''}
                     </span>
                     <StatusBadge
-                      status={condition.status === "active" ? "confirmed" : "completed"}
-                      label={condition.status === "active" ? "Em acompanhamento" : "Resolvida"}
+                      status={
+                        condition.status === 'active'
+                          ? 'confirmed'
+                          : 'completed'
+                      }
+                      label={
+                        condition.status === 'active'
+                          ? 'Em acompanhamento'
+                          : 'Resolvida'
+                      }
                     />
                   </div>
                   <div className="flex gap-2 text-sm">
@@ -130,9 +152,9 @@ export function ConditionsSection({
                       variant="link"
                       className="h-auto p-0 text-accent-ink"
                     >
-                      {isOpen ? "Ocultar avaliações" : "Ver avaliações"}
+                      {isOpen ? 'Ocultar avaliações' : 'Ver avaliações'}
                     </Button>
-                    {condition.status === "active" && (
+                    {condition.status === 'active' && (
                       <>
                         <Button
                           type="button"
@@ -144,7 +166,11 @@ export function ConditionsSection({
                         </Button>
                         <ConfirmAction
                           trigger={
-                            <Button type="button" variant="link" className="h-auto p-0 text-ink-3">
+                            <Button
+                              type="button"
+                              variant="link"
+                              className="h-auto p-0 text-ink-3"
+                            >
                               Marcar resolvida
                             </Button>
                           }
@@ -166,10 +192,10 @@ export function ConditionsSection({
                 </div>
 
                 {isOpen && (
-                  <div className="mt-3 border-t border-border pt-3">
+                  <div className="mt-3 border-border border-t pt-3">
                     <ConditionPhotos
                       conditionId={condition.id}
-                      canUpload={condition.status === "active"}
+                      canUpload={condition.status === 'active'}
                     />
                     {conditionAssessments.length === 0 ? (
                       <EmptyState message="Nenhuma avaliação registrada." />
@@ -182,36 +208,66 @@ export function ConditionsSection({
                           <TableHeader>
                             <TableRow>
                               <TableHead className="py-1 pr-3">Data</TableHead>
-                              <TableHead className="py-1 pr-3">C×L×P (mm)</TableHead>
-                              <TableHead className="py-1 pr-3">Área (mm²)</TableHead>
-                              <TableHead className="py-1 pr-3">Tecido</TableHead>
-                              <TableHead className="py-1 pr-3">Exsudato</TableHead>
+                              <TableHead className="py-1 pr-3">
+                                C×L×P (mm)
+                              </TableHead>
+                              <TableHead className="py-1 pr-3">
+                                Área (mm²)
+                              </TableHead>
+                              <TableHead className="py-1 pr-3">
+                                Tecido
+                              </TableHead>
+                              <TableHead className="py-1 pr-3">
+                                Exsudato
+                              </TableHead>
                               <TableHead className="py-1 pr-3">Dor</TableHead>
-                              <TableHead className="py-1 pr-3">PUSH/DET</TableHead>
-                              <TableHead className="py-1 pr-3">Pele periestomal</TableHead>
-                              <TableHead className="py-1">Complicações</TableHead>
+                              <TableHead className="py-1 pr-3">
+                                PUSH/DET
+                              </TableHead>
+                              <TableHead className="py-1 pr-3">
+                                Pele periestomal
+                              </TableHead>
+                              <TableHead className="py-1">
+                                Complicações
+                              </TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {conditionAssessments.map((a) => (
                               <TableRow key={a.id}>
-                                <TableCell className="py-1.5 pr-3">{formatDateTime(a.createdAt)}</TableCell>
+                                <TableCell className="py-1.5 pr-3">
+                                  {formatDateTime(a.createdAt)}
+                                </TableCell>
                                 <TableCell className="py-1.5 pr-3">
                                   {a.lengthMm != null
-                                    ? `${a.lengthMm}×${a.widthMm ?? "—"}×${a.depthMm ?? "—"}`
-                                    : "—"}
+                                    ? `${a.lengthMm}×${a.widthMm ?? '—'}×${a.depthMm ?? '—'}`
+                                    : '—'}
                                 </TableCell>
-                                <TableCell className="py-1.5 pr-3">{a.areaMm2 ?? "—"}</TableCell>
-                                <TableCell className="py-1.5 pr-3">{a.tissueType ?? "—"}</TableCell>
                                 <TableCell className="py-1.5 pr-3">
-                                  {a.exudate ? EXUDATE_LABELS[a.exudate] : "—"}
+                                  {a.areaMm2 ?? '—'}
                                 </TableCell>
-                                <TableCell className={painCellClass(a.painScale)}>
-                                  {a.painScale != null ? `${a.painScale}/10` : "—"}
+                                <TableCell className="py-1.5 pr-3">
+                                  {a.tissueType ?? '—'}
                                 </TableCell>
-                                <TableCell className="py-1.5 pr-3 font-medium">{scoreLabel(a)}</TableCell>
-                                <TableCell className="py-1.5 pr-3">{a.skinCondition ?? "—"}</TableCell>
-                                <TableCell className={complicationsCellClass(a)}>
+                                <TableCell className="py-1.5 pr-3">
+                                  {a.exudate ? EXUDATE_LABELS[a.exudate] : '—'}
+                                </TableCell>
+                                <TableCell
+                                  className={painCellClass(a.painScale)}
+                                >
+                                  {a.painScale != null
+                                    ? `${a.painScale}/10`
+                                    : '—'}
+                                </TableCell>
+                                <TableCell className="py-1.5 pr-3 font-medium">
+                                  {scoreLabel(a)}
+                                </TableCell>
+                                <TableCell className="py-1.5 pr-3">
+                                  {a.skinCondition ?? '—'}
+                                </TableCell>
+                                <TableCell
+                                  className={complicationsCellClass(a)}
+                                >
                                   {complicationsCellText(a)}
                                 </TableCell>
                               </TableRow>
@@ -241,7 +297,10 @@ export function ConditionsSection({
       )}
 
       {assessing && (
-        <Modal title={`Avaliação — ${assessing.title}`} onClose={() => setAssessing(null)}>
+        <Modal
+          title={`Avaliação — ${assessing.title}`}
+          onClose={() => setAssessing(null)}
+        >
           <AssessmentForm
             condition={assessing}
             onSaved={() => {
@@ -256,13 +315,19 @@ export function ConditionsSection({
   );
 }
 
-function ConditionForm({ patientId, onSaved }: { patientId: string; onSaved: () => void }) {
+function ConditionForm({
+  patientId,
+  onSaved,
+}: {
+  patientId: string;
+  onSaved: () => void;
+}) {
   const { toast } = useToast();
-  const [kind, setKind] = useState<"stoma" | "wound">("stoma");
-  const [title, setTitle] = useState("");
-  const [stomaType, setStomaType] = useState("colostomia");
-  const [startedAt, setStartedAt] = useState("");
-  const [notes, setNotes] = useState("");
+  const [kind, setKind] = useState<'stoma' | 'wound'>('stoma');
+  const [title, setTitle] = useState('');
+  const [stomaType, setStomaType] = useState('colostomia');
+  const [startedAt, setStartedAt] = useState('');
+  const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -272,19 +337,19 @@ function ConditionForm({ patientId, onSaved }: { patientId: string; onSaved: () 
     setError(null);
     try {
       await apiFetch<ConditionDto>(`/api/patients/${patientId}/conditions`, {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify({
           kind,
           title,
-          stomaType: kind === "stoma" ? stomaType : null,
+          stomaType: kind === 'stoma' ? stomaType : null,
           startedAt: startedAt ? new Date(startedAt).toISOString() : null,
           notes: notes || null,
         }),
       });
-      toast({ description: "Condição registrada", variant: "success" });
+      toast({ description: 'Condição registrada', variant: 'success' });
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao criar condição");
+      setError(err instanceof Error ? err.message : 'Erro ao criar condição');
     } finally {
       setSaving(false);
     }
@@ -293,19 +358,19 @@ function ConditionForm({ patientId, onSaved }: { patientId: string; onSaved: () 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       {error && <ErrorAlert message={error} />}
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Tipo *
         <NativeSelect
           value={kind}
-          onChange={(e) => setKind(e.target.value as "stoma" | "wound")}
+          onChange={(e) => setKind(e.target.value as 'stoma' | 'wound')}
           className="mt-1"
         >
           <option value="stoma">Estomia</option>
           <option value="wound">Ferida</option>
         </NativeSelect>
       </label>
-      {kind === "stoma" && (
-        <label className="text-sm font-medium">
+      {kind === 'stoma' && (
+        <label className="font-medium text-sm">
           Tipo de estomia *
           <NativeSelect
             value={stomaType}
@@ -320,17 +385,21 @@ function ConditionForm({ patientId, onSaved }: { patientId: string; onSaved: () 
           </NativeSelect>
         </label>
       )}
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Descrição/localização *
         <Input
           required
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder={kind === "stoma" ? "Ex.: Colostomia terminal QIE" : "Ex.: Úlcera venosa perna E"}
+          placeholder={
+            kind === 'stoma'
+              ? 'Ex.: Colostomia terminal QIE'
+              : 'Ex.: Úlcera venosa perna E'
+          }
           className="mt-1"
         />
       </label>
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Início (cirurgia/lesão)
         <Input
           type="date"
@@ -339,41 +408,41 @@ function ConditionForm({ patientId, onSaved }: { patientId: string; onSaved: () 
           className="mt-1"
         />
       </label>
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Observações
-        <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className="mt-1" />
+        <Textarea
+          rows={2}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          className="mt-1"
+        />
       </label>
-      <Button
-        type="submit"
-        disabled={saving}
-        variant="accent"
-        className="mt-1"
-      >
-        {saving ? "Salvando…" : "Criar condição"}
+      <Button type="submit" disabled={saving} variant="accent" className="mt-1">
+        {saving ? 'Salvando…' : 'Criar condição'}
       </Button>
     </form>
   );
 }
 
 const HIGH_PAIN_THRESHOLD = 7;
-const ABNORMAL_CELL_CLASS = "font-semibold text-danger";
+const ABNORMAL_CELL_CLASS = 'font-semibold text-danger';
 
 /** Dor alta ganha destaque visual (PRONT-05) — mesmo peso de "área 4mm²" hoje. */
 function painCellClass(painScale: number | null): string {
   const abnormal = painScale != null && painScale >= HIGH_PAIN_THRESHOLD;
-  return `py-1.5 pr-3 ${abnormal ? ABNORMAL_CELL_CLASS : ""}`;
+  return `py-1.5 pr-3 ${abnormal ? ABNORMAL_CELL_CLASS : ''}`;
 }
 
 function complicationsCellClass(assessment: AssessmentDto): string {
-  const abnormal = complicationsCellText(assessment) !== "—";
-  return `py-1.5 ${abnormal ? ABNORMAL_CELL_CLASS : ""}`;
+  const abnormal = complicationsCellText(assessment) !== '—';
+  return `py-1.5 ${abnormal ? ABNORMAL_CELL_CLASS : ''}`;
 }
 
 /** Score clínico validado da avaliação: PUSH (ferida) ou DET (estomia). */
 function scoreLabel(assessment: AssessmentDto): string {
   if (assessment.pushScore != null) return `PUSH ${assessment.pushScore}`;
   if (assessment.detScore != null) return `DET ${assessment.detScore}`;
-  return "—";
+  return '—';
 }
 
 interface AssessmentFormValues {
@@ -397,28 +466,31 @@ interface AssessmentFormValues {
 
 /** Complicações canônicas de estomia (O2.2) — labels em pt-BR. */
 const COMPLICATION_OPTIONS = [
-  { value: "dermatitis", label: "Dermatite" },
-  { value: "prolapse", label: "Prolapso" },
-  { value: "hernia", label: "Hérnia" },
-  { value: "retraction", label: "Retração" },
-  { value: "bleeding", label: "Sangramento" },
-  { value: "granuloma", label: "Granuloma" },
-  { value: "stenosis", label: "Estenose" },
-  { value: "other", label: "Outra" },
+  { value: 'dermatitis', label: 'Dermatite' },
+  { value: 'prolapse', label: 'Prolapso' },
+  { value: 'hernia', label: 'Hérnia' },
+  { value: 'retraction', label: 'Retração' },
+  { value: 'bleeding', label: 'Sangramento' },
+  { value: 'granuloma', label: 'Granuloma' },
+  { value: 'stenosis', label: 'Estenose' },
+  { value: 'other', label: 'Outra' },
 ];
 
 /** Labels canônicas + texto livre lado a lado (issue #67 — dado gravado, antes nunca exibido). */
 function complicationsCellText(assessment: AssessmentDto): string {
   const labels = assessment.complicationCodes.map(
-    (code) => COMPLICATION_OPTIONS.find((option) => option.value === code)?.label ?? code,
+    (code) =>
+      COMPLICATION_OPTIONS.find((option) => option.value === code)?.label ??
+      code,
   );
   const parts = [...labels, assessment.complications].filter(
     (part): part is string => Boolean(part),
   );
-  return parts.length > 0 ? parts.join("; ") : "—";
+  return parts.length > 0 ? parts.join('; ') : '—';
 }
 
-const toNumberOrNull = (value: string): number | null => (value ? Number(value) : null);
+const toNumberOrNull = (value: string): number | null =>
+  value ? Number(value) : null;
 const toTextOrNull = (value: string): string | null => value || null;
 
 const toAssessmentPayload = (values: AssessmentFormValues) => ({
@@ -431,7 +503,9 @@ const toAssessmentPayload = (values: AssessmentFormValues) => ({
   skinCondition: toTextOrNull(values.skinCondition),
   complications: toTextOrNull(values.complications),
   complicationCodes:
-    values.complicationCodes.length > 0 ? values.complicationCodes.join(",") : null,
+    values.complicationCodes.length > 0
+      ? values.complicationCodes.join(',')
+      : null,
   detDiscolorationArea: toNumberOrNull(values.detDiscolorationArea),
   detDiscolorationSeverity: toNumberOrNull(values.detDiscolorationSeverity),
   detErosionArea: toNumberOrNull(values.detErosionArea),
@@ -441,26 +515,32 @@ const toAssessmentPayload = (values: AssessmentFormValues) => ({
   notes: toTextOrNull(values.notes),
 });
 
-function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSaved: () => void }) {
+function AssessmentForm({
+  condition,
+  onSaved,
+}: {
+  condition: ConditionDto;
+  onSaved: () => void;
+}) {
   const { toast } = useToast();
-  const isWound = condition.kind === "wound";
+  const isWound = condition.kind === 'wound';
   const [values, setValues] = useState<AssessmentFormValues>({
-    lengthMm: "",
-    widthMm: "",
-    depthMm: "",
-    tissueType: "",
-    exudate: "",
-    painScale: "",
-    skinCondition: "",
-    complications: "",
+    lengthMm: '',
+    widthMm: '',
+    depthMm: '',
+    tissueType: '',
+    exudate: '',
+    painScale: '',
+    skinCondition: '',
+    complications: '',
     complicationCodes: [],
-    detDiscolorationArea: "",
-    detDiscolorationSeverity: "",
-    detErosionArea: "",
-    detErosionSeverity: "",
-    detOvergrowthArea: "",
-    detOvergrowthSeverity: "",
-    notes: "",
+    detDiscolorationArea: '',
+    detDiscolorationSeverity: '',
+    detErosionArea: '',
+    detErosionSeverity: '',
+    detOvergrowthArea: '',
+    detOvergrowthSeverity: '',
+    notes: '',
   });
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -482,13 +562,15 @@ function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSav
     setError(null);
     try {
       await apiFetch(`/api/conditions/${condition.id}/assessments`, {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify(toAssessmentPayload(values)),
       });
-      toast({ description: "Avaliação registrada", variant: "success" });
+      toast({ description: 'Avaliação registrada', variant: 'success' });
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao registrar avaliação");
+      setError(
+        err instanceof Error ? err.message : 'Erro ao registrar avaliação',
+      );
     } finally {
       setSaving(false);
     }
@@ -500,23 +582,45 @@ function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSav
       {isWound && (
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <label className="text-sm font-medium">
+            <label className="font-medium text-sm">
               Comprimento (mm)
-              <Input type="number" min="0" value={values.lengthMm} onChange={(e) => set("lengthMm")(e.target.value)} className="mt-1" />
+              <Input
+                type="number"
+                min="0"
+                value={values.lengthMm}
+                onChange={(e) => set('lengthMm')(e.target.value)}
+                className="mt-1"
+              />
             </label>
-            <label className="text-sm font-medium">
+            <label className="font-medium text-sm">
               Largura (mm)
-              <Input type="number" min="0" value={values.widthMm} onChange={(e) => set("widthMm")(e.target.value)} className="mt-1" />
+              <Input
+                type="number"
+                min="0"
+                value={values.widthMm}
+                onChange={(e) => set('widthMm')(e.target.value)}
+                className="mt-1"
+              />
             </label>
-            <label className="text-sm font-medium">
+            <label className="font-medium text-sm">
               Profundidade (mm)
-              <Input type="number" min="0" value={values.depthMm} onChange={(e) => set("depthMm")(e.target.value)} className="mt-1" />
+              <Input
+                type="number"
+                min="0"
+                value={values.depthMm}
+                onChange={(e) => set('depthMm')(e.target.value)}
+                className="mt-1"
+              />
             </label>
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <label className="text-sm font-medium">
+            <label className="font-medium text-sm">
               Tecido predominante
-              <NativeSelect value={values.tissueType} onChange={(e) => set("tissueType")(e.target.value)} className="mt-1">
+              <NativeSelect
+                value={values.tissueType}
+                onChange={(e) => set('tissueType')(e.target.value)}
+                className="mt-1"
+              >
                 <option value="">—</option>
                 {/* Valores canônicos do PUSH 3.0 — texto livre legado permanece no histórico. */}
                 <option value="closed">Fechado (0)</option>
@@ -526,9 +630,13 @@ function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSav
                 <option value="necrotic">Necrose (4)</option>
               </NativeSelect>
             </label>
-            <label className="text-sm font-medium">
+            <label className="font-medium text-sm">
               Exsudato
-              <NativeSelect value={values.exudate} onChange={(e) => set("exudate")(e.target.value)} className="mt-1">
+              <NativeSelect
+                value={values.exudate}
+                onChange={(e) => set('exudate')(e.target.value)}
+                className="mt-1"
+              >
                 <option value="">—</option>
                 {Object.entries(EXUDATE_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>
@@ -543,7 +651,7 @@ function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSav
       {!isWound && (
         <>
           <fieldset className="rounded-lg border border-border p-3">
-            <legend className="px-1 text-xs font-semibold uppercase text-ink-3">
+            <legend className="px-1 font-semibold text-ink-3 text-xs uppercase">
               Escala DET (0–15) — área 0–3 · severidade 0–2
             </legend>
             <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
@@ -551,37 +659,37 @@ function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSav
                 label="Descoloração"
                 area={values.detDiscolorationArea}
                 severity={values.detDiscolorationSeverity}
-                onArea={set("detDiscolorationArea")}
-                onSeverity={set("detDiscolorationSeverity")}
+                onArea={set('detDiscolorationArea')}
+                onSeverity={set('detDiscolorationSeverity')}
               />
               <DetDomainInputs
                 label="Erosão"
                 area={values.detErosionArea}
                 severity={values.detErosionSeverity}
-                onArea={set("detErosionArea")}
-                onSeverity={set("detErosionSeverity")}
+                onArea={set('detErosionArea')}
+                onSeverity={set('detErosionSeverity')}
               />
               <DetDomainInputs
                 label="Hiperplasia"
                 area={values.detOvergrowthArea}
                 severity={values.detOvergrowthSeverity}
-                onArea={set("detOvergrowthArea")}
-                onSeverity={set("detOvergrowthSeverity")}
+                onArea={set('detOvergrowthArea')}
+                onSeverity={set('detOvergrowthSeverity')}
               />
             </div>
           </fieldset>
           <div>
-            <p className="mb-1 text-sm font-medium">Complicações</p>
+            <p className="mb-1 font-medium text-sm">Complicações</p>
             <div className="flex flex-wrap gap-2">
               {COMPLICATION_OPTIONS.map((option) => (
                 <Button
                   key={option.value}
                   type="button"
                   onClick={() => toggleComplication(option.value)}
-                  className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                  className={`rounded-full px-2.5 py-1 font-medium text-xs ${
                     values.complicationCodes.includes(option.value)
-                      ? "bg-danger text-white"
-                      : "border border-border-strong text-ink-2 hover:bg-surface-2"
+                      ? 'bg-danger text-white'
+                      : 'border border-border-strong text-ink-2 hover:bg-surface-2'
                   }`}
                   variant="outline"
                 >
@@ -590,41 +698,48 @@ function AssessmentForm({ condition, onSaved }: { condition: ConditionDto; onSav
               ))}
             </div>
           </div>
-          <label className="text-sm font-medium">
+          <label className="font-medium text-sm">
             Pele periestomal
             <Input
               value={values.skinCondition}
-              onChange={(e) => set("skinCondition")(e.target.value)}
+              onChange={(e) => set('skinCondition')(e.target.value)}
               placeholder="Ex.: íntegra, dermatite leve…"
               className="mt-1"
             />
           </label>
-          <label className="text-sm font-medium">
+          <label className="font-medium text-sm">
             Observação de complicações (texto livre)
             <Input
               value={values.complications}
-              onChange={(e) => set("complications")(e.target.value)}
+              onChange={(e) => set('complications')(e.target.value)}
               placeholder="Detalhe as complicações selecionadas…"
               className="mt-1"
             />
           </label>
         </>
       )}
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Dor (0–10)
-        <Input type="number" min="0" max="10" value={values.painScale} onChange={(e) => set("painScale")(e.target.value)} className="mt-1" />
+        <Input
+          type="number"
+          min="0"
+          max="10"
+          value={values.painScale}
+          onChange={(e) => set('painScale')(e.target.value)}
+          className="mt-1"
+        />
       </label>
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Observações
-        <Textarea rows={2} value={values.notes} onChange={(e) => set("notes")(e.target.value)} className="mt-1" />
+        <Textarea
+          rows={2}
+          value={values.notes}
+          onChange={(e) => set('notes')(e.target.value)}
+          className="mt-1"
+        />
       </label>
-      <Button
-        type="submit"
-        disabled={saving}
-        variant="accent"
-        className="mt-1"
-      >
-        {saving ? "Registrando…" : "Registrar avaliação"}
+      <Button type="submit" disabled={saving} variant="accent" className="mt-1">
+        {saving ? 'Registrando…' : 'Registrar avaliação'}
       </Button>
     </form>
   );

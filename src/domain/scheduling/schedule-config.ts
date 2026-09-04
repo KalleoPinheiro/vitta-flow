@@ -1,4 +1,4 @@
-import { ValidationError } from "../shared/errors";
+import { ValidationError } from '../shared/errors';
 
 /** Dias da semana como em Date.getDay(): 0=domingo … 6=sábado. */
 export interface ScheduleConfig {
@@ -16,7 +16,15 @@ export const DEFAULT_SCHEDULE_CONFIG: ScheduleConfig = {
   minGapMinutes: 15,
 };
 
-const WEEKDAY_LABELS = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
+const WEEKDAY_LABELS = [
+  'domingo',
+  'segunda',
+  'terça',
+  'quarta',
+  'quinta',
+  'sexta',
+  'sábado',
+];
 
 // Piso imposto pela constraint de exclusão do banco (migração 0002): 15 minutos.
 const MIN_GAP_FLOOR = 15;
@@ -28,7 +36,7 @@ const isIntInRange = (value: number, min: number, max: number): boolean =>
 export function validateScheduleConfig(config: ScheduleConfig): ScheduleConfig {
   const weekdays = [...new Set(config.weekdays)].sort((a, b) => a - b);
   if (weekdays.length === 0 || !weekdays.every((d) => isIntInRange(d, 0, 6))) {
-    throw new ValidationError("Selecione ao menos um dia da semana válido");
+    throw new ValidationError('Selecione ao menos um dia da semana válido');
   }
   const hoursValid =
     isIntInRange(config.startHour, 0, 23) &&
@@ -36,7 +44,7 @@ export function validateScheduleConfig(config: ScheduleConfig): ScheduleConfig {
     config.startHour < config.endHour;
   if (!hoursValid) {
     throw new ValidationError(
-      "Horário de funcionamento inválido (abertura antes do fechamento, 0–24h)",
+      'Horário de funcionamento inválido (abertura antes do fechamento, 0–24h)',
     );
   }
   if (!isIntInRange(config.minGapMinutes, MIN_GAP_FLOOR, MAX_GAP)) {
@@ -48,8 +56,8 @@ export function validateScheduleConfig(config: ScheduleConfig): ScheduleConfig {
 }
 
 export function describeSchedule(config: ScheduleConfig): string {
-  const days = config.weekdays.map((d) => WEEKDAY_LABELS[d]).join(", ");
-  return `${days}, das ${String(config.startHour).padStart(2, "0")}:00 às ${config.endHour}:00`;
+  const days = config.weekdays.map((d) => WEEKDAY_LABELS[d]).join(', ');
+  return `${days}, das ${String(config.startHour).padStart(2, '0')}:00 às ${config.endHour}:00`;
 }
 
 export interface ScheduleConfigRepository {

@@ -1,4 +1,4 @@
-import type { Professional } from "./professional";
+import type { Professional } from './professional';
 
 export interface ProfessionalRepository {
   save(professional: Professional): Promise<void>;

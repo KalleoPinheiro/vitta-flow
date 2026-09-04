@@ -1,15 +1,18 @@
-import type { Procedure } from "@/domain/catalog/procedure";
-import type { ProcedureRepository } from "@/domain/catalog/procedure-repository";
-import type { UserAccount, UserAccountRepository } from "@/domain/auth/user-account";
+import type {
+  UserAccount,
+  UserAccountRepository,
+} from '@/domain/auth/user-account';
+import type { Procedure } from '@/domain/catalog/procedure';
+import {
+  type ProcedureKitItem,
+  type ProcedureKitRepository,
+  validateKitItems,
+} from '@/domain/catalog/procedure-kit';
+import type { ProcedureRepository } from '@/domain/catalog/procedure-repository';
 import type {
   ScheduleConfig,
   ScheduleConfigRepository,
-} from "@/domain/scheduling/schedule-config";
-import {
-  validateKitItems,
-  type ProcedureKitItem,
-  type ProcedureKitRepository,
-} from "@/domain/catalog/procedure-kit";
+} from '@/domain/scheduling/schedule-config';
 
 export class InMemoryProcedureRepository implements ProcedureRepository {
   private readonly items = new Map<string, Procedure>();
@@ -25,12 +28,16 @@ export class InMemoryProcedureRepository implements ProcedureRepository {
   async findByName(name: string): Promise<Procedure | null> {
     const normalized = name.trim().toLowerCase();
     return (
-      [...this.items.values()].find((p) => p.name.toLowerCase() === normalized) ?? null
+      [...this.items.values()].find(
+        (p) => p.name.toLowerCase() === normalized,
+      ) ?? null
     );
   }
 
   async findAll(): Promise<Procedure[]> {
-    return [...this.items.values()].sort((a, b) => a.name.localeCompare(b.name));
+    return [...this.items.values()].sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
   }
 }
 
@@ -62,11 +69,15 @@ export class InMemoryUserAccountRepository implements UserAccountRepository {
   }
 
   async findAll(): Promise<UserAccount[]> {
-    return [...this.items.values()].sort((a, b) => a.email.localeCompare(b.email));
+    return [...this.items.values()].sort((a, b) =>
+      a.email.localeCompare(b.email),
+    );
   }
 }
 
-export class InMemoryScheduleConfigRepository implements ScheduleConfigRepository {
+export class InMemoryScheduleConfigRepository
+  implements ScheduleConfigRepository
+{
   private config: ScheduleConfig | null = null;
 
   async get(): Promise<ScheduleConfig | null> {

@@ -1,23 +1,32 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { Button, Card, Icon } from "@still-void/ui/react";
-import { Tooltip, TooltipContent, TooltipTrigger, useToast } from "@still-void/ui/react/client";
-import type { AppointmentDto, FollowUpDto, SupplyDto } from "@/lib/dto";
-import type { BillingSummary } from "@/application/billing/get-billing-summary";
-import { apiFetch } from "@/lib/client";
-import { useApiQuery } from "@/lib/use-api-query";
+import { Button, Card, Icon } from '@still-void/ui/react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  useToast,
+} from '@still-void/ui/react/client';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useState } from 'react';
+import type { BillingSummary } from '@/application/billing/get-billing-summary';
+import { ConfirmAction } from '@/components/confirm-action';
+import {
+  EmptyState,
+  ErrorAlert,
+  LoadingIndicator,
+} from '@/components/feedback';
+import { StatusBadge } from '@/components/status-badge';
+import { apiFetch } from '@/lib/client';
+import type { AppointmentDto, FollowUpDto, SupplyDto } from '@/lib/dto';
 import {
   APPOINTMENT_STATUS_LABELS,
   formatCurrency,
   formatDate,
   formatTime,
-} from "@/lib/format";
-import { StatusBadge } from "@/components/status-badge";
-import { ConfirmAction } from "@/components/confirm-action";
-import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
+} from '@/lib/format';
+import { useApiQuery } from '@/lib/use-api-query';
 
 interface SummaryData {
   billing: BillingSummary;
@@ -27,37 +36,39 @@ interface SummaryData {
 
 export default function DashboardPage() {
   const { toast } = useToast();
-  const { data: summary, error } = useApiQuery<SummaryData>("/api/summary");
+  const { data: summary, error } = useApiQuery<SummaryData>('/api/summary');
   const {
     data: followUps,
     error: followUpsError,
     isLoading: followUpsLoading,
     refresh: refreshFollowUps,
-  } = useApiQuery<FollowUpDto[]>("/api/follow-ups?status=pending");
+  } = useApiQuery<FollowUpDto[]>('/api/follow-ups?status=pending');
   const {
     data: supplies,
     error: suppliesError,
     isLoading: suppliesLoading,
     refresh: refreshSupplies,
-  } = useApiQuery<SupplyDto[]>("/api/supplies");
+  } = useApiQuery<SupplyDto[]>('/api/supplies');
 
   const lowStock = (supplies ?? []).filter((s) => s.active && s.isLowStock);
 
-  const resolveFollowUp = async (id: string, status: "done" | "cancelled") => {
+  const resolveFollowUp = async (id: string, status: 'done' | 'cancelled') => {
     try {
       await apiFetch<FollowUpDto>(`/api/follow-ups/${id}`, {
-        method: "PATCH",
+        method: 'PATCH',
         body: JSON.stringify({ status }),
       });
       toast({
-        description: status === "done" ? "Retorno concluído" : "Retorno cancelado",
-        variant: "success",
+        description:
+          status === 'done' ? 'Retorno concluído' : 'Retorno cancelado',
+        variant: 'success',
       });
       refreshFollowUps();
     } catch (err) {
       toast({
-        description: err instanceof Error ? err.message : "Erro ao atualizar retorno",
-        variant: "danger",
+        description:
+          err instanceof Error ? err.message : 'Erro ao atualizar retorno',
+        variant: 'danger',
       });
     }
   };
@@ -67,37 +78,43 @@ export default function DashboardPage() {
 
   const cards = [
     {
-      label: "Recebido no mês",
+      label: 'Recebido no mês',
       value: formatCurrency(summary.billing.paidCents),
-      href: "/faturamento",
+      href: '/faturamento',
     },
     {
-      label: "A receber",
+      label: 'A receber',
       value: formatCurrency(summary.billing.pendingCents),
-      href: "/faturamento",
+      href: '/faturamento',
     },
     {
-      label: "Consultas no mês",
+      label: 'Consultas no mês',
       value: String(summary.appointmentsInMonth),
-      href: "/agenda",
+      href: '/agenda',
     },
     {
-      label: "Faturas pendentes",
+      label: 'Faturas pendentes',
       value: String(summary.billing.pendingCount),
-      href: "/faturamento",
+      href: '/faturamento',
     },
   ];
 
   return (
     <div>
-      <h1 className="sv-display pt-0 pb-6 text-2xl font-bold">Dashboard</h1>
+      <h1 className="sv-display pt-0 pb-6 font-bold text-2xl">Dashboard</h1>
 
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((card) => (
-          <Link key={card.label} href={card.href} aria-label={`Ver ${card.label.toLowerCase()}`}>
+          <Link
+            key={card.label}
+            href={card.href}
+            aria-label={`Ver ${card.label.toLowerCase()}`}
+          >
             <Card className="p-5 transition-colors hover:border-accent">
-              <p className="text-sm text-ink-3">{card.label}</p>
-              <p className="mt-1 text-2xl font-bold text-accent-ink">{card.value}</p>
+              <p className="text-ink-3 text-sm">{card.label}</p>
+              <p className="mt-1 font-bold text-2xl text-accent-ink">
+                {card.value}
+              </p>
             </Card>
           </Link>
         ))}
@@ -108,10 +125,10 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card className="p-5">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Consultas de hoje</h2>
+            <h2 className="font-semibold text-lg">Consultas de hoje</h2>
             <Link
               href="/agenda"
-              className="inline-flex items-center gap-1 whitespace-nowrap text-sm font-medium text-accent-ink hover:underline"
+              className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-accent-ink text-sm hover:underline"
             >
               Ver agenda completa <Icon name="chevron-right" />
             </Link>
@@ -120,22 +137,33 @@ export default function DashboardPage() {
             <EmptyState
               message="Nenhuma consulta agendada para hoje."
               icon="check-circle"
-              action={{ label: "Ver agenda", href: "/agenda" }}
+              action={{ label: 'Ver agenda', href: '/agenda' }}
             />
           ) : (
             <ul className="divide-y divide-border">
               {summary.today.map((appointment) => (
-                <li key={appointment.id} className="flex items-center gap-4 py-3">
-                  <span className="w-24 shrink-0 font-mono text-sm text-ink-2">
-                    {formatTime(appointment.startsAt)}–{formatTime(appointment.endsAt)}
+                <li
+                  key={appointment.id}
+                  className="flex items-center gap-4 py-3"
+                >
+                  <span className="w-24 shrink-0 font-mono text-ink-2 text-sm">
+                    {formatTime(appointment.startsAt)}–
+                    {formatTime(appointment.endsAt)}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{appointment.patientName}</p>
-                    <p className="truncate text-sm text-ink-3">{appointment.procedure}</p>
+                    <p className="truncate font-medium">
+                      {appointment.patientName}
+                    </p>
+                    <p className="truncate text-ink-3 text-sm">
+                      {appointment.procedure}
+                    </p>
                   </div>
                   <StatusBadge
                     status={appointment.status}
-                    label={APPOINTMENT_STATUS_LABELS[appointment.status] ?? appointment.status}
+                    label={
+                      APPOINTMENT_STATUS_LABELS[appointment.status] ??
+                      appointment.status
+                    }
                   />
                 </li>
               ))}
@@ -168,13 +196,19 @@ interface FollowUpsCardProps {
   error: string | null;
   isLoading: boolean;
   onRetry: () => void;
-  onResolve: (id: string, status: "done" | "cancelled") => void;
+  onResolve: (id: string, status: 'done' | 'cancelled') => void;
 }
 
-function FollowUpsCard({ followUps, error, isLoading, onRetry, onResolve }: FollowUpsCardProps) {
+function FollowUpsCard({
+  followUps,
+  error,
+  isLoading,
+  onRetry,
+  onResolve,
+}: FollowUpsCardProps) {
   return (
     <Card className="p-5">
-      <h2 className="mb-4 text-lg font-semibold">Retornos pendentes</h2>
+      <h2 className="mb-4 font-semibold text-lg">Retornos pendentes</h2>
       {error ? (
         <ErrorAlert message={error} onRetry={onRetry} />
       ) : isLoading ? (
@@ -184,44 +218,54 @@ function FollowUpsCard({ followUps, error, isLoading, onRetry, onResolve }: Foll
       ) : (
         <ul className="divide-y divide-border">
           {followUps.slice(0, 8).map((followUp) => (
-            <li key={followUp.id} className="flex items-center gap-3 py-3 text-sm">
+            <li
+              key={followUp.id}
+              className="flex items-center gap-3 py-3 text-sm"
+            >
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">
-                  <Link href={`/pacientes/${followUp.patientId}`} className="hover:underline">
+                  <Link
+                    href={`/pacientes/${followUp.patientId}`}
+                    className="hover:underline"
+                  >
                     {followUp.patientName}
                   </Link>
                 </p>
                 <p className="truncate text-ink-3">{followUp.reason}</p>
               </div>
               <span
-                className={`shrink-0 text-xs font-medium ${
-                  followUp.isOverdue ? "text-danger" : "text-ink-3"
+                className={`shrink-0 font-medium text-xs ${
+                  followUp.isOverdue ? 'text-danger' : 'text-ink-3'
                 }`}
               >
                 {followUp.isOverdue ? (
                   <>
-                    <Icon name="alert-triangle" /> Atrasado —{" "}
+                    <Icon name="alert-triangle" /> Atrasado —{' '}
                   </>
                 ) : null}
                 {formatDate(followUp.dueDate)}
               </span>
               <Link
-                href={`/agenda?followUpId=${followUp.id}&patientId=${followUp.patientId}&procedure=${encodeURIComponent(followUp.reason.replace(/^Retorno: /, ""))}`}
+                href={`/agenda?followUpId=${followUp.id}&patientId=${followUp.patientId}&procedure=${encodeURIComponent(followUp.reason.replace(/^Retorno: /, ''))}`}
                 className="shrink-0 font-medium text-accent-ink hover:underline"
               >
                 Agendar
               </Link>
               <Button
                 type="button"
-                onClick={() => void onResolve(followUp.id, "done")}
+                onClick={() => void onResolve(followUp.id, 'done')}
                 variant="link"
-                className="h-auto p-0 shrink-0 text-success"
+                className="h-auto shrink-0 p-0 text-success"
               >
                 Concluir
               </Button>
               <ConfirmAction
                 trigger={
-                  <Button type="button" variant="link" className="h-auto p-0 shrink-0 text-ink-3">
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="h-auto shrink-0 p-0 text-ink-3"
+                  >
                     Cancelar
                   </Button>
                 }
@@ -229,7 +273,7 @@ function FollowUpsCard({ followUps, error, isLoading, onRetry, onResolve }: Foll
                 description="O retorno agendado será cancelado e o paciente não será mais lembrado."
                 confirmLabel="Cancelar retorno"
                 variant="danger"
-                onConfirm={() => onResolve(followUp.id, "cancelled")}
+                onConfirm={() => onResolve(followUp.id, 'cancelled')}
               />
             </li>
           ))}
@@ -246,14 +290,19 @@ interface LowStockCardProps {
   onRetry: () => void;
 }
 
-function LowStockCard({ lowStock, error, isLoading, onRetry }: LowStockCardProps) {
+function LowStockCard({
+  lowStock,
+  error,
+  isLoading,
+  onRetry,
+}: LowStockCardProps) {
   return (
     <Card className="p-5">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Estoque baixo</h2>
+        <h2 className="font-semibold text-lg">Estoque baixo</h2>
         <Link
           href="/materiais"
-          className="inline-flex items-center gap-1 whitespace-nowrap text-sm font-medium text-accent-ink hover:underline"
+          className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-accent-ink text-sm hover:underline"
         >
           Ver materiais <Icon name="chevron-right" />
         </Link>
@@ -263,7 +312,10 @@ function LowStockCard({ lowStock, error, isLoading, onRetry }: LowStockCardProps
       ) : isLoading ? (
         <LoadingIndicator />
       ) : lowStock.length === 0 ? (
-        <EmptyState message="Nenhum insumo abaixo do mínimo." icon="check-circle" />
+        <EmptyState
+          message="Nenhum insumo abaixo do mínimo."
+          icon="check-circle"
+        />
       ) : (
         <ul className="divide-y divide-border text-sm">
           {lowStock.slice(0, 6).map((supply) => (
@@ -288,31 +340,36 @@ interface TriagePhotoDto {
   patientNote: string | null;
   createdAt: string;
   waitingHours: number;
-  latestScore: { kind: "push" | "det"; value: number } | null;
+  latestScore: { kind: 'push' | 'det'; value: number } | null;
 }
 
 const TRIAGE_ATTENTION_HOURS = 24;
 
 /** Fila de triagem (O4.2): fotos enviadas por pacientes entre consultas. */
 function TriageQueue() {
-  const { data: queue, refresh } = useApiQuery<TriagePhotoDto[]>("/api/photos/triage");
+  const { data: queue, refresh } =
+    useApiQuery<TriagePhotoDto[]>('/api/photos/triage');
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const triage = async (photo: TriagePhotoDto, decision: "reviewed" | "escalated") => {
+  const triage = async (
+    photo: TriagePhotoDto,
+    decision: 'reviewed' | 'escalated',
+  ) => {
     try {
       await apiFetch(`/api/photos/${photo.id}`, {
-        method: "PATCH",
+        method: 'PATCH',
         body: JSON.stringify({ triage: decision }),
       });
       toast({
-        description: decision === "reviewed" ? "Foto revisada" : "Foto escalada",
-        variant: "success",
+        description:
+          decision === 'reviewed' ? 'Foto revisada' : 'Foto escalada',
+        variant: 'success',
       });
       setError(null);
       refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro na triagem");
+      setError(err instanceof Error ? err.message : 'Erro na triagem');
     }
   };
 
@@ -321,14 +378,18 @@ function TriageQueue() {
   }
   return (
     <Card className="mb-6 border-accent bg-accent-soft p-4">
-      <h3 className="mb-2 text-sm font-bold text-accent-ink">
-        <Icon name="camera" /> Fotos de pacientes aguardando triagem ({queue.length})
+      <h3 className="mb-2 font-bold text-accent-ink text-sm">
+        <Icon name="camera" /> Fotos de pacientes aguardando triagem (
+        {queue.length})
       </h3>
       {error && <ErrorAlert message={error} />}
       <ul className="flex flex-col gap-2">
         {queue.map((photo) => (
-          <li key={photo.id} className="flex flex-wrap items-center gap-2 text-sm">
-            <div className="relative h-12 w-12 rounded border border-border overflow-hidden shrink-0">
+          <li
+            key={photo.id}
+            className="flex flex-wrap items-center gap-2 text-sm"
+          >
+            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded border border-border">
               <Image
                 src={`/api/photos/${photo.id}`}
                 alt={`Foto de ${photo.patientName}`}
@@ -342,27 +403,30 @@ function TriageQueue() {
                 {photo.latestScore && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span
-                        tabIndex={0}
-                        className="ml-2 rounded bg-sv-surface px-1.5 py-0.5 text-xs font-semibold text-accent-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink"
+                      <Button
+                        type="button"
+                        variant="link"
+                        className="ml-2 h-auto rounded bg-sv-surface px-1.5 py-0.5 font-semibold text-accent-ink text-xs no-underline hover:no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-ink focus-visible:outline-offset-2"
                       >
-                        {photo.latestScore.kind === "push" ? "PUSH" : "DET"} {photo.latestScore.value}
-                      </span>
+                        {photo.latestScore.kind === 'push' ? 'PUSH' : 'DET'}{' '}
+                        {photo.latestScore.value}
+                      </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      {photo.latestScore.kind === "push"
-                        ? "PUSH — Pressure Ulcer Scale for Healing: escala de cicatrização de lesão por pressão"
-                        : "DET — índice Débito/Exsudato/Tecido da avaliação de estomia"}
+                      {photo.latestScore.kind === 'push'
+                        ? 'PUSH — Pressure Ulcer Scale for Healing: escala de cicatrização de lesão por pressão'
+                        : 'DET — índice Débito/Exsudato/Tecido da avaliação de estomia'}
                     </TooltipContent>
                   </Tooltip>
                 )}
               </p>
-              <p className="truncate text-xs text-ink-3">
-                {photo.patientNote ?? "sem observação"} · {formatDate(photo.createdAt)} ·{" "}
+              <p className="truncate text-ink-3 text-xs">
+                {photo.patientNote ?? 'sem observação'} ·{' '}
+                {formatDate(photo.createdAt)} ·{' '}
                 <span
                   className={
                     photo.waitingHours >= TRIAGE_ATTENTION_HOURS
-                      ? "font-semibold text-danger"
+                      ? 'font-semibold text-danger'
                       : undefined
                   }
                 >
@@ -372,18 +436,26 @@ function TriageQueue() {
             </div>
             <ConfirmAction
               trigger={
-                <Button type="button" variant="link" className="h-auto p-0 text-success">
+                <Button
+                  type="button"
+                  variant="link"
+                  className="h-auto p-0 text-success"
+                >
                   Ok, manter plano
                 </Button>
               }
               title="Manter o plano de cuidados?"
               description="A foto é marcada como revisada sem intervenção. Não há ação de reabrir depois."
               confirmLabel="Confirmar"
-              onConfirm={() => triage(photo, "reviewed")}
+              onConfirm={() => triage(photo, 'reviewed')}
             />
             <ConfirmAction
               trigger={
-                <Button type="button" variant="link" className="h-auto p-0 text-danger">
+                <Button
+                  type="button"
+                  variant="link"
+                  className="h-auto p-0 text-danger"
+                >
                   Antecipar retorno
                 </Button>
               }
@@ -391,7 +463,7 @@ function TriageQueue() {
               description="O retorno do paciente é antecipado com base nesta foto."
               confirmLabel="Confirmar antecipação"
               variant="danger"
-              onConfirm={() => triage(photo, "escalated")}
+              onConfirm={() => triage(photo, 'escalated')}
             />
           </li>
         ))}

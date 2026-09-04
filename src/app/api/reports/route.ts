@@ -1,9 +1,9 @@
-import type { NextRequest } from "next/server";
-import { getRepositories } from "@/infrastructure/container";
-import { GetMonthlyReport } from "@/application/reports/get-monthly-report";
-import { handleRequest, fail } from "@/lib/api-response";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { cacheReport, getCachedReport } from "@/lib/report-cache";
+import type { NextRequest } from 'next/server';
+import { GetMonthlyReport } from '@/application/reports/get-monthly-report';
+import { getRepositories } from '@/infrastructure/container';
+import { fail, handleRequest } from '@/lib/api-response';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { cacheReport, getCachedReport } from '@/lib/report-cache';
 
 const MONTH_REGEX = /^\d{4}-\d{2}$/;
 
@@ -11,9 +11,9 @@ export async function GET(request: NextRequest) {
   const guard = requireStaffSession(request);
   if (!guard.ok) return guard.response;
 
-  const month = request.nextUrl.searchParams.get("month");
+  const month = request.nextUrl.searchParams.get('month');
   if (month && !MONTH_REGEX.test(month)) {
-    return fail("Parâmetro month deve estar no formato YYYY-MM", 400);
+    return fail('Parâmetro month deve estar no formato YYYY-MM', 400);
   }
 
   return handleRequest(async () => {
@@ -26,13 +26,14 @@ export async function GET(request: NextRequest) {
 
     const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const isClosedMonth = to.getTime() <= startOfCurrentMonth.getTime();
-    const cacheKey = `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
+    const cacheKey = `${year}-${String(monthIndex + 1).padStart(2, '0')}`;
     const cached = isClosedMonth ? getCachedReport(cacheKey) : undefined;
     if (cached) {
       return cached;
     }
 
-    const { appointments, invoices, stockMovements, professionals } = await getRepositories({ clinicId: null });
+    const { appointments, invoices, stockMovements, professionals } =
+      await getRepositories({ clinicId: null });
     const report = await new GetMonthlyReport(
       appointments,
       invoices,

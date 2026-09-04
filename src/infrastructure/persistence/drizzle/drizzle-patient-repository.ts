@@ -1,10 +1,13 @@
-import { and, asc, eq, gt, ilike, inArray, or, sql } from "drizzle-orm";
-import { Patient } from "@/domain/patient/patient";
-import type { PatientPage, PatientRepository } from "@/domain/patient/patient-repository";
-import { decodeCursor } from "@/lib/pagination";
-import { MAX_ROWS, type AppDb } from "./db";
-import { patients } from "./schema";
-import { withTenant } from "./tenant-scope";
+import { and, asc, eq, gt, ilike, inArray, or, sql } from 'drizzle-orm';
+import { Patient } from '@/domain/patient/patient';
+import type {
+  PatientPage,
+  PatientRepository,
+} from '@/domain/patient/patient-repository';
+import { decodeCursor } from '@/lib/pagination';
+import { type AppDb, MAX_ROWS } from './db';
+import { patients } from './schema';
+import { withTenant } from './tenant-scope';
 
 type PatientRow = typeof patients.$inferSelect;
 
@@ -29,7 +32,9 @@ export class DrizzlePatientRepository implements PatientRepository {
 
   async save(patient: Patient): Promise<void> {
     if (this.clinicId === null) {
-      throw new Error("Papel de sistema não pode salvar paciente (somente leitura cross-empresa)");
+      throw new Error(
+        'Papel de sistema não pode salvar paciente (somente leitura cross-empresa)',
+      );
     }
     const values = {
       id: patient.id,
@@ -62,7 +67,13 @@ export class DrizzlePatientRepository implements PatientRepository {
     const rows = await this.db
       .select()
       .from(patients)
-      .where(withTenant(patients, this.clinicId, eq(patients.email, email.trim().toLowerCase())))
+      .where(
+        withTenant(
+          patients,
+          this.clinicId,
+          eq(patients.email, email.trim().toLowerCase()),
+        ),
+      )
       .limit(1);
     return rows[0] ? toPatient(rows[0]) : null;
   }
@@ -100,7 +111,13 @@ export class DrizzlePatientRepository implements PatientRepository {
     const rows = await this.db
       .select()
       .from(patients)
-      .where(withTenant(patients, this.clinicId, eq(patients.referredByPartnerId, partnerId)))
+      .where(
+        withTenant(
+          patients,
+          this.clinicId,
+          eq(patients.referredByPartnerId, partnerId),
+        ),
+      )
       .limit(MAX_ROWS);
     return rows.map(toPatient);
   }
@@ -137,7 +154,10 @@ function buildPatientCursorFilter(cursor?: string) {
  * ids da página, quando ambos existem. Extraída de `findAll` para manter a
  * complexidade dentro do limite do projeto (issue #48).
  */
-function buildPatientFilter(search: string | undefined, ids: string[] | undefined) {
+function buildPatientFilter(
+  search: string | undefined,
+  ids: string[] | undefined,
+) {
   const searchFilter = search
     ? or(
         ilike(patients.fullName, `%${search}%`),

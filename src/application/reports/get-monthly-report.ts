@@ -1,15 +1,15 @@
+import {
+  type BillingSummary,
+  GetBillingSummary,
+} from '@/application/billing/get-billing-summary';
+import type { InvoiceRepository } from '@/domain/billing/invoice-repository';
+import type { StockMovementRepository } from '@/domain/inventory/inventory-repositories';
+import type { ProfessionalRepository } from '@/domain/professional/professional-repository';
+import type { AppointmentStatus } from '@/domain/scheduling/appointment';
 import type {
   AppointmentRepository,
   ProcedureRevenue,
-} from "@/domain/scheduling/appointment-repository";
-import type { InvoiceRepository } from "@/domain/billing/invoice-repository";
-import type { StockMovementRepository } from "@/domain/inventory/inventory-repositories";
-import type { ProfessionalRepository } from "@/domain/professional/professional-repository";
-import type { AppointmentStatus } from "@/domain/scheduling/appointment";
-import {
-  GetBillingSummary,
-  type BillingSummary,
-} from "@/application/billing/get-billing-summary";
+} from '@/domain/scheduling/appointment-repository';
 
 export type { ProcedureRevenue };
 
@@ -56,29 +56,39 @@ export class GetMonthlyReport {
     const [stats, billing, outflowCosts, production] = await Promise.all([
       this.appointments.getStatsInRange(input.from, input.to),
       new GetBillingSummary(this.invoices).execute(input),
-      this.stockMovements?.getOutflowCostInRange(input.from, input.to) ?? Promise.resolve([]),
+      this.stockMovements?.getOutflowCostInRange(input.from, input.to) ??
+        Promise.resolve([]),
       this.appointments.getProductionInRange(input.from, input.to),
     ]);
 
     const { byStatus, revenueByProcedure } = stats;
-    const totalAppointments = Object.values(byStatus).reduce((sum, count) => sum + count, 0);
+    const totalAppointments = Object.values(byStatus).reduce(
+      (sum, count) => sum + count,
+      0,
+    );
     const nonCancelled = totalAppointments - byStatus.cancelled;
     const noShowRate = nonCancelled > 0 ? byStatus.no_show / nonCancelled : 0;
 
     // Custo por procedimento: saídas vinculadas → consulta → procedimento.
     const attributed = outflowCosts.filter(
-      (c): c is { appointmentId: string; totalCents: number } => c.appointmentId != null,
+      (c): c is { appointmentId: string; totalCents: number } =>
+        c.appointmentId != null,
     );
     const linkedAppointments = await this.appointments.findByIds(
       attributed.map((c) => c.appointmentId),
     );
-    const procedureById = new Map(linkedAppointments.map((a) => [a.id, a.procedure]));
+    const procedureById = new Map(
+      linkedAppointments.map((a) => [a.id, a.procedure]),
+    );
     const costByProcedure = new Map<string, number>();
     let orphanCostCents = 0;
     for (const cost of attributed) {
       const procedure = procedureById.get(cost.appointmentId);
       if (procedure) {
-        costByProcedure.set(procedure, (costByProcedure.get(procedure) ?? 0) + cost.totalCents);
+        costByProcedure.set(
+          procedure,
+          (costByProcedure.get(procedure) ?? 0) + cost.totalCents,
+        );
       } else {
         orphanCostCents += cost.totalCents;
       }
@@ -87,7 +97,10 @@ export class GetMonthlyReport {
       outflowCosts
         .filter((c) => c.appointmentId == null)
         .reduce((sum, c) => sum + c.totalCents, 0) + orphanCostCents;
-    const totalSupplyCostCents = outflowCosts.reduce((sum, c) => sum + c.totalCents, 0);
+    const totalSupplyCostCents = outflowCosts.reduce(
+      (sum, c) => sum + c.totalCents,
+      0,
+    );
 
     return {
       totalAppointments,
@@ -109,7 +122,11 @@ export class GetMonthlyReport {
   }
 
   private async buildProduction(
-    production: Array<{ professionalId: string | null; count: number; totalCents: number }>,
+    production: Array<{
+      professionalId: string | null;
+      count: number;
+      totalCents: number;
+    }>,
   ): Promise<ProfessionalProduction[]> {
     const ids = production
       .map((p) => p.professionalId)
@@ -119,14 +136,17 @@ export class GetMonthlyReport {
 
     return production
       .map((entry) => {
-        const professional = entry.professionalId ? byId.get(entry.professionalId) : undefined;
+        const professional = entry.professionalId
+          ? byId.get(entry.professionalId)
+          : undefined;
         const pct = professional?.commissionPct ?? null;
         return {
           professionalId: entry.professionalId,
-          professionalName: professional?.fullName ?? "Sem atribuição",
+          professionalName: professional?.fullName ?? 'Sem atribuição',
           count: entry.count,
           totalCents: entry.totalCents,
-          commissionCents: pct != null ? Math.round((entry.totalCents * pct) / 100) : null,
+          commissionCents:
+            pct != null ? Math.round((entry.totalCents * pct) / 100) : null,
         };
       })
       .sort((a, b) => b.totalCents - a.totalCents);

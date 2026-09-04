@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import type { PartnerDto, PatientDto } from "@/lib/dto";
-import { ErrorAlert } from "@/components/feedback";
-import { Button, Input, NativeSelect, Textarea } from "@still-void/ui/react";
+import { Button, Input, NativeSelect, Textarea } from '@still-void/ui/react';
+import { useState } from 'react';
+import { ErrorAlert } from '@/components/feedback';
+import type { PartnerDto, PatientDto } from '@/lib/dto';
 
 export interface PatientFormValues {
   fullName: string;
@@ -22,20 +22,29 @@ interface PatientFormProps {
 
 const toFormValues = (initial?: PatientDto): PatientFormValues => {
   if (!initial) {
-    return { fullName: "", email: "", phone: "", birthDate: "", notes: "", referredByPartnerId: "" };
+    return {
+      fullName: '',
+      email: '',
+      phone: '',
+      birthDate: '',
+      notes: '',
+      referredByPartnerId: '',
+    };
   }
   return {
     fullName: initial.fullName,
     email: initial.email,
     phone: initial.phone,
-    birthDate: initial.birthDate ? initial.birthDate.slice(0, 10) : "",
-    notes: initial.notes ?? "",
-    referredByPartnerId: initial.referredByPartnerId ?? "",
+    birthDate: initial.birthDate ? initial.birthDate.slice(0, 10) : '',
+    notes: initial.notes ?? '',
+    referredByPartnerId: initial.referredByPartnerId ?? '',
   };
 };
 
 export function PatientForm({ initial, partners, onSubmit }: PatientFormProps) {
-  const [values, setValues] = useState<PatientFormValues>(() => toFormValues(initial));
+  const [values, setValues] = useState<PatientFormValues>(() =>
+    toFormValues(initial),
+  );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -49,7 +58,7 @@ export function PatientForm({ initial, partners, onSubmit }: PatientFormProps) {
     try {
       await onSubmit(values);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao salvar paciente");
+      setError(err instanceof Error ? err.message : 'Erro ao salvar paciente');
     } finally {
       setSaving(false);
     }
@@ -58,48 +67,48 @@ export function PatientForm({ initial, partners, onSubmit }: PatientFormProps) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       {error && <ErrorAlert message={error} />}
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Nome completo *
         <Input
           required
           value={values.fullName}
-          onChange={(e) => set("fullName")(e.target.value)}
+          onChange={(e) => set('fullName')(e.target.value)}
           className="mt-1"
         />
       </label>
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Email *
         <Input
           required
           type="email"
           value={values.email}
-          onChange={(e) => set("email")(e.target.value)}
+          onChange={(e) => set('email')(e.target.value)}
           className="mt-1"
         />
       </label>
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Telefone *
         <Input
           required
           value={values.phone}
-          onChange={(e) => set("phone")(e.target.value)}
+          onChange={(e) => set('phone')(e.target.value)}
           className="mt-1"
         />
       </label>
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Data de nascimento
         <Input
           type="date"
           value={values.birthDate}
-          onChange={(e) => set("birthDate")(e.target.value)}
+          onChange={(e) => set('birthDate')(e.target.value)}
           className="mt-1"
         />
       </label>
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Indicado por (médico parceiro)
         <NativeSelect
           value={values.referredByPartnerId}
-          onChange={(e) => set("referredByPartnerId")(e.target.value)}
+          onChange={(e) => set('referredByPartnerId')(e.target.value)}
           className="mt-1"
         >
           <option value="">Sem indicação</option>
@@ -108,27 +117,22 @@ export function PatientForm({ initial, partners, onSubmit }: PatientFormProps) {
             .map((partner) => (
               <option key={partner.id} value={partner.id}>
                 {partner.fullName}
-                {partner.specialty ? ` — ${partner.specialty}` : ""}
+                {partner.specialty ? ` — ${partner.specialty}` : ''}
               </option>
             ))}
         </NativeSelect>
       </label>
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Observações clínicas
         <Textarea
           rows={3}
           value={values.notes}
-          onChange={(e) => set("notes")(e.target.value)}
+          onChange={(e) => set('notes')(e.target.value)}
           className="mt-1"
         />
       </label>
-      <Button
-        type="submit"
-        disabled={saving}
-        variant="accent"
-        className="mt-2"
-      >
-        {saving ? "Salvando…" : "Salvar"}
+      <Button type="submit" disabled={saving} variant="accent" className="mt-2">
+        {saving ? 'Salvando…' : 'Salvar'}
       </Button>
     </form>
   );

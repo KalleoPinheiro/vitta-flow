@@ -1,13 +1,13 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { ScheduleOwnAppointment } from "@/application/portal/schedule-own-appointment";
-import { requirePortalSession } from "@/lib/auth/require-session";
-import { handleRequest } from "@/lib/api-response";
-import { recordAudit } from "@/lib/audit";
-import { scheduleCalendarSync } from "@/lib/calendar-sync";
-import { toPortalAppointmentDto } from "@/lib/dto";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { ScheduleOwnAppointment } from '@/application/portal/schedule-own-appointment';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { recordAudit } from '@/lib/audit';
+import { requirePortalSession } from '@/lib/auth/require-session';
+import { scheduleCalendarSync } from '@/lib/calendar-sync';
+import { toPortalAppointmentDto } from '@/lib/dto';
 
 const scheduleSchema = z.object({
   procedureId: z.string().min(1),
@@ -17,13 +17,15 @@ const scheduleSchema = z.object({
 
 /** Auto-agendamento de retorno pelo paciente (PORT4-04..08). */
 export async function POST(request: NextRequest) {
-  const guard = requirePortalSession(request, "patient");
+  const guard = requirePortalSession(request, 'patient');
   if (!guard.ok) return guard.response;
   const { session } = guard;
 
   return handleRequest(async () => {
     const body = scheduleSchema.parse(await request.json());
-    const services = await getRepositories({ clinicId: session.clinicId ?? LEGACY_CLINIC_ID });
+    const services = await getRepositories({
+      clinicId: session.clinicId ?? LEGACY_CLINIC_ID,
+    });
 
     const appointment = await new ScheduleOwnAppointment(
       services.patients,
@@ -39,11 +41,11 @@ export async function POST(request: NextRequest) {
     });
 
     recordAudit(services.auditEvents, session, {
-      action: "create",
-      resourceType: "appointment",
+      action: 'create',
+      resourceType: 'appointment',
       resourceId: appointment.id,
       patientId: appointment.patientId,
-      detail: "agendado pelo portal do paciente",
+      detail: 'agendado pelo portal do paciente',
     });
     scheduleCalendarSync(services, (sync) => sync.created(appointment.id));
     return toPortalAppointmentDto(appointment);

@@ -1,9 +1,14 @@
-import type { Appointment } from "@/domain/scheduling/appointment";
-import type { AppointmentRepository } from "@/domain/scheduling/appointment-repository";
-import { NotFoundError } from "@/domain/shared/errors";
+import type { Appointment } from '@/domain/scheduling/appointment';
+import type { AppointmentRepository } from '@/domain/scheduling/appointment-repository';
+import { NotFoundError } from '@/domain/shared/errors';
 
-export const APPOINTMENT_STATUS_ACTIONS = ["confirm", "cancel", "no_show"] as const;
-export type AppointmentStatusAction = (typeof APPOINTMENT_STATUS_ACTIONS)[number];
+export const APPOINTMENT_STATUS_ACTIONS = [
+  'confirm',
+  'cancel',
+  'no_show',
+] as const;
+export type AppointmentStatusAction =
+  (typeof APPOINTMENT_STATUS_ACTIONS)[number];
 
 export interface ChangeAppointmentStatusInput {
   id: string;
@@ -11,8 +16,8 @@ export interface ChangeAppointmentStatusInput {
 }
 
 export const ACTIONS_REMOVING_EVENT: readonly AppointmentStatusAction[] = [
-  "cancel",
-  "no_show",
+  'cancel',
+  'no_show',
 ];
 
 export class ChangeAppointmentStatus {
@@ -21,7 +26,7 @@ export class ChangeAppointmentStatus {
   async execute(input: ChangeAppointmentStatusInput): Promise<Appointment> {
     const appointment = await this.appointments.findById(input.id);
     if (!appointment) {
-      throw new NotFoundError("Consulta", input.id);
+      throw new NotFoundError('Consulta', input.id);
     }
 
     const changed = this.apply(appointment, input.action);
@@ -31,13 +36,16 @@ export class ChangeAppointmentStatus {
     return changed;
   }
 
-  private apply(appointment: Appointment, action: AppointmentStatusAction): Appointment {
+  private apply(
+    appointment: Appointment,
+    action: AppointmentStatusAction,
+  ): Appointment {
     switch (action) {
-      case "confirm":
+      case 'confirm':
         return appointment.confirm();
-      case "cancel":
+      case 'cancel':
         return appointment.cancel();
-      case "no_show":
+      case 'no_show':
         return appointment.markNoShow();
     }
   }

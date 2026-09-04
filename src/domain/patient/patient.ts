@@ -1,5 +1,5 @@
-import { newId } from "../shared/id";
-import { validatePersonContact } from "../shared/person-validation";
+import { newId } from '../shared/id';
+import { validatePersonContact } from '../shared/person-validation';
 
 export interface PatientProps {
   fullName: string;
@@ -47,7 +47,10 @@ export class Patient {
       fullName: changes.fullName ?? this.state.fullName,
       email: changes.email ?? this.state.email,
       phone: changes.phone ?? this.state.phone,
-      birthDate: changes.birthDate !== undefined ? changes.birthDate : this.state.birthDate,
+      birthDate:
+        changes.birthDate !== undefined
+          ? changes.birthDate
+          : this.state.birthDate,
       notes: changes.notes !== undefined ? changes.notes : this.state.notes,
       referredByPartnerId:
         changes.referredByPartnerId !== undefined

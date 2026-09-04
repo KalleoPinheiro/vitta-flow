@@ -1,9 +1,7 @@
-import type { CarePlan } from "@/domain/clinical/care-plan";
-import type { CarePlanDiagnosis } from "@/domain/clinical/care-plan-diagnosis";
-import type { CarePlanOutcome } from "@/domain/clinical/care-plan-outcome";
-import type { CarePlanIntervention } from "@/domain/clinical/care-plan-intervention";
-import type { OutcomeEvaluation } from "@/domain/clinical/outcome-evaluation";
-import type { InterventionRecord } from "@/domain/clinical/intervention-record";
+import type { CarePlan } from '@/domain/clinical/care-plan';
+import type { CarePlanDiagnosis } from '@/domain/clinical/care-plan-diagnosis';
+import type { CarePlanIntervention } from '@/domain/clinical/care-plan-intervention';
+import type { CarePlanOutcome } from '@/domain/clinical/care-plan-outcome';
 import type {
   CarePlanDiagnosisRepository,
   CarePlanInterventionRepository,
@@ -11,8 +9,10 @@ import type {
   CarePlanRepository,
   InterventionRecordRepository,
   OutcomeEvaluationRepository,
-} from "@/domain/clinical/clinical-repositories";
-import { NotFoundError } from "@/domain/shared/errors";
+} from '@/domain/clinical/clinical-repositories';
+import type { InterventionRecord } from '@/domain/clinical/intervention-record';
+import type { OutcomeEvaluation } from '@/domain/clinical/outcome-evaluation';
+import { NotFoundError } from '@/domain/shared/errors';
 
 export interface CarePlanOutcomeDetail {
   outcome: CarePlanOutcome;
@@ -46,7 +46,7 @@ export class GetCarePlan {
   async execute(input: { id: string }): Promise<CarePlanDetail> {
     const plan = await this.carePlans.findById(input.id);
     if (!plan) {
-      throw new NotFoundError("Plano de cuidados", input.id);
+      throw new NotFoundError('Plano de cuidados', input.id);
     }
 
     const [diagnosisList, outcomeList, interventionList] = await Promise.all([
@@ -56,8 +56,12 @@ export class GetCarePlan {
     ]);
 
     const [evaluationList, recordList] = await Promise.all([
-      this.evaluations.findByOutcomeIds(outcomeList.map((outcome) => outcome.id)),
-      this.records.findByInterventionIds(interventionList.map((intervention) => intervention.id)),
+      this.evaluations.findByOutcomeIds(
+        outcomeList.map((outcome) => outcome.id),
+      ),
+      this.records.findByInterventionIds(
+        interventionList.map((intervention) => intervention.id),
+      ),
     ]);
 
     return {
@@ -65,11 +69,15 @@ export class GetCarePlan {
       diagnoses: diagnosisList,
       outcomes: outcomeList.map((outcome) => ({
         outcome,
-        evaluations: evaluationList.filter((evaluation) => evaluation.outcomeId === outcome.id),
+        evaluations: evaluationList.filter(
+          (evaluation) => evaluation.outcomeId === outcome.id,
+        ),
       })),
       interventions: interventionList.map((intervention) => ({
         intervention,
-        records: recordList.filter((record) => record.interventionId === intervention.id),
+        records: recordList.filter(
+          (record) => record.interventionId === intervention.id,
+        ),
       })),
     };
   }

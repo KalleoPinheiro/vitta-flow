@@ -1,5 +1,5 @@
-import { ValidationError } from "../shared/errors";
-import { newId } from "../shared/id";
+import { ValidationError } from '../shared/errors';
+import { newId } from '../shared/id';
 
 export interface InterventionRecordProps {
   interventionId: string;
@@ -18,7 +18,7 @@ export class InterventionRecord {
 
   static create(props: InterventionRecordProps): InterventionRecord {
     if (props.interventionId.trim().length === 0) {
-      throw new ValidationError("Intervenção prescrita é obrigatória");
+      throw new ValidationError('Intervenção prescrita é obrigatória');
     }
     return new InterventionRecord({
       interventionId: props.interventionId,

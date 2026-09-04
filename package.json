@@ -7,7 +7,8 @@
     "dev": "next dev",
     "build": "node --max-old-space-size=4096 ./node_modules/next/dist/bin/next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "biome check",
+    "format": "biome format --write .",
     "typecheck": "tsc --noEmit",
     "db:migrate": "drizzle-kit migrate",
     "test": "vitest run",
@@ -19,7 +20,7 @@
     "check:sv": "bash scripts/check-sv-adoption.sh"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,jsx}": "eslint --fix"
+    "*.{ts,tsx,js,jsx}": "biome check --write"
   },
   "dependencies": {
     "@still-void/ui": "^3.3.1",
@@ -32,6 +33,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.5.12",
     "@electric-sql/pglite": "^0.5.4",
     "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
@@ -45,8 +47,6 @@
     "@vitest/coverage-v8": "^4.1.10",
     "babel-plugin-react-compiler": "1.0.0",
     "drizzle-kit": "^0.31.10",
-    "eslint": "^9",
-    "eslint-config-next": "16.3.2",
     "husky": "^9.1.7",
     "jsdom": "^29.1.1",
     "lint-staged": "^17.4.1",

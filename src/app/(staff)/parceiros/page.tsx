@@ -1,14 +1,5 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { apiFetch } from "@/lib/client";
-import { useToast } from "@still-void/ui/react/client";
-import type { PartnerDto } from "@/lib/dto";
-import { useApiQuery } from "@/lib/use-api-query";
-import { Modal } from "@/components/modal";
-import { ConfirmAction } from "@/components/confirm-action";
-import { StatusBadge } from "@/components/status-badge";
-import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import {
   Button,
   Card,
@@ -19,49 +10,72 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@still-void/ui/react";
+} from '@still-void/ui/react';
+import { useToast } from '@still-void/ui/react/client';
+import { useState } from 'react';
+import { ConfirmAction } from '@/components/confirm-action';
+import {
+  EmptyState,
+  ErrorAlert,
+  LoadingIndicator,
+} from '@/components/feedback';
+import { Modal } from '@/components/modal';
+import { StatusBadge } from '@/components/status-badge';
+import { apiFetch } from '@/lib/client';
+import type { PartnerDto } from '@/lib/dto';
+import { useApiQuery } from '@/lib/use-api-query';
 
 export default function PartnersPage() {
   const { toast } = useToast();
-  const { data: partners, error, refresh } = useApiQuery<PartnerDto[]>("/api/partners");
-  const [editing, setEditing] = useState<PartnerDto | "new" | null>(null);
+  const {
+    data: partners,
+    error,
+    refresh,
+  } = useApiQuery<PartnerDto[]>('/api/partners');
+  const [editing, setEditing] = useState<PartnerDto | 'new' | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const toggleActive = async (partner: PartnerDto) => {
     try {
       await apiFetch<PartnerDto>(`/api/partners/${partner.id}`, {
-        method: "PUT",
+        method: 'PUT',
         body: JSON.stringify({ active: !partner.active }),
       });
       toast({
-        description: partner.active ? "Parceiro desativado" : "Parceiro ativado",
-        variant: "success",
+        description: partner.active
+          ? 'Parceiro desativado'
+          : 'Parceiro ativado',
+        variant: 'success',
       });
       setActionError(null);
       refresh();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Erro ao atualizar parceiro");
+      setActionError(
+        err instanceof Error ? err.message : 'Erro ao atualizar parceiro',
+      );
     }
   };
 
   return (
     <div>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="sv-display text-2xl font-bold">Parceiros</h1>
+        <h1 className="sv-display font-bold text-2xl">Parceiros</h1>
         <Button
           type="button"
-          onClick={() => setEditing("new")}
+          onClick={() => setEditing('new')}
           variant="accent"
         >
           + Novo parceiro
         </Button>
       </div>
-      <p className="mb-6 text-sm text-ink-3">
-        Parceiros indicam pacientes e acompanham a evolução das suas indicações pelo portal,
-        entrando com a conta Google do email cadastrado aqui.
+      <p className="mb-6 text-ink-3 text-sm">
+        Parceiros indicam pacientes e acompanham a evolução das suas indicações
+        pelo portal, entrando com a conta Google do email cadastrado aqui.
       </p>
 
-      {(actionError ?? error) && <ErrorAlert message={actionError ?? error ?? ""} />}
+      {(actionError ?? error) && (
+        <ErrorAlert message={actionError ?? error ?? ''} />
+      )}
 
       <Card>
         {!partners ? (
@@ -83,30 +97,50 @@ export default function PartnersPage() {
               </TableHeader>
               <TableBody>
                 {partners.map((partner) => (
-                  <TableRow key={partner.id} className={partner.active ? "" : "bg-surface-2/60"}>
-                    <TableCell className="px-4 py-3 font-medium">{partner.fullName}</TableCell>
+                  <TableRow
+                    key={partner.id}
+                    className={partner.active ? '' : 'bg-surface-2/60'}
+                  >
+                    <TableCell className="px-4 py-3 font-medium">
+                      {partner.fullName}
+                    </TableCell>
                     <TableCell className="px-4 py-3 text-ink-2">
                       <div>
-                        <a href={`mailto:${partner.email}`} className="hover:underline">
+                        <a
+                          href={`mailto:${partner.email}`}
+                          className="hover:underline"
+                        >
                           {partner.email}
                         </a>
                       </div>
-                      <div className="text-xs text-ink-3">
-                        <a href={`tel:${partner.phone}`} className="hover:underline">
+                      <div className="text-ink-3 text-xs">
+                        <a
+                          href={`tel:${partner.phone}`}
+                          className="hover:underline"
+                        >
                           {partner.phone}
                         </a>
                       </div>
                     </TableCell>
-                    <TableCell className="px-4 py-3 text-ink-2">{partner.crm ?? "—"}</TableCell>
-                    <TableCell className="px-4 py-3 text-ink-2">{partner.specialty ?? "—"}</TableCell>
+                    <TableCell className="px-4 py-3 text-ink-2">
+                      {partner.crm ?? '—'}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-ink-2">
+                      {partner.specialty ?? '—'}
+                    </TableCell>
                     <TableCell className="px-4 py-3">
                       <StatusBadge
-                        status={partner.active ? "confirmed" : "cancelled"}
-                        label={partner.active ? "Ativo" : "Inativo"}
+                        status={partner.active ? 'confirmed' : 'cancelled'}
+                        label={partner.active ? 'Ativo' : 'Inativo'}
                       />
                     </TableCell>
                     <TableCell className="px-4 py-3 text-right">
-                      <Button type="button" onClick={() => setEditing(partner)} variant="ghost" size="sm">
+                      <Button
+                        type="button"
+                        onClick={() => setEditing(partner)}
+                        variant="ghost"
+                        size="sm"
+                      >
                         Editar
                       </Button>
                       {partner.active ? (
@@ -143,11 +177,11 @@ export default function PartnersPage() {
 
       {editing && (
         <Modal
-          title={editing === "new" ? "Novo parceiro" : "Editar parceiro"}
+          title={editing === 'new' ? 'Novo parceiro' : 'Editar parceiro'}
           onClose={() => setEditing(null)}
         >
           <PartnerForm
-            initial={editing === "new" ? undefined : editing}
+            initial={editing === 'new' ? undefined : editing}
             onSaved={() => {
               setEditing(null);
               refresh();
@@ -169,20 +203,28 @@ interface PartnerFormValues {
 
 const toFormValues = (initial?: PartnerDto): PartnerFormValues => {
   if (!initial) {
-    return { fullName: "", email: "", phone: "", crm: "", specialty: "" };
+    return { fullName: '', email: '', phone: '', crm: '', specialty: '' };
   }
   return {
     fullName: initial.fullName,
     email: initial.email,
     phone: initial.phone,
-    crm: initial.crm ?? "",
-    specialty: initial.specialty ?? "",
+    crm: initial.crm ?? '',
+    specialty: initial.specialty ?? '',
   };
 };
 
-function PartnerForm({ initial, onSaved }: { initial?: PartnerDto; onSaved: () => void }) {
+function PartnerForm({
+  initial,
+  onSaved,
+}: {
+  initial?: PartnerDto;
+  onSaved: () => void;
+}) {
   const { toast } = useToast();
-  const [values, setValues] = useState<PartnerFormValues>(() => toFormValues(initial));
+  const [values, setValues] = useState<PartnerFormValues>(() =>
+    toFormValues(initial),
+  );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -203,22 +245,22 @@ function PartnerForm({ initial, onSaved }: { initial?: PartnerDto; onSaved: () =
       };
       if (initial) {
         await apiFetch<PartnerDto>(`/api/partners/${initial.id}`, {
-          method: "PUT",
+          method: 'PUT',
           body: JSON.stringify(payload),
         });
       } else {
-        await apiFetch<PartnerDto>("/api/partners", {
-          method: "POST",
+        await apiFetch<PartnerDto>('/api/partners', {
+          method: 'POST',
           body: JSON.stringify(payload),
         });
       }
       toast({
-        description: "Parceiro salvo",
-        variant: "success",
+        description: 'Parceiro salvo',
+        variant: 'success',
       });
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao salvar parceiro");
+      setError(err instanceof Error ? err.message : 'Erro ao salvar parceiro');
     } finally {
       setSaving(false);
     }
@@ -227,35 +269,56 @@ function PartnerForm({ initial, onSaved }: { initial?: PartnerDto; onSaved: () =
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       {error && <ErrorAlert message={error} />}
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Nome completo *
-        <Input required value={values.fullName} onChange={(e) => set("fullName")(e.target.value)} className="mt-1" />
+        <Input
+          required
+          value={values.fullName}
+          onChange={(e) => set('fullName')(e.target.value)}
+          className="mt-1"
+        />
       </label>
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Email (usado no login com Google) *
-        <Input required type="email" value={values.email} onChange={(e) => set("email")(e.target.value)} className="mt-1" />
+        <Input
+          required
+          type="email"
+          value={values.email}
+          onChange={(e) => set('email')(e.target.value)}
+          className="mt-1"
+        />
       </label>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <label className="text-sm font-medium">
+        <label className="font-medium text-sm">
           Telefone *
-          <Input required value={values.phone} onChange={(e) => set("phone")(e.target.value)} className="mt-1" />
+          <Input
+            required
+            value={values.phone}
+            onChange={(e) => set('phone')(e.target.value)}
+            className="mt-1"
+          />
         </label>
-        <label className="text-sm font-medium">
+        <label className="font-medium text-sm">
           CRM
-          <Input value={values.crm} onChange={(e) => set("crm")(e.target.value)} placeholder="Ex.: CRM-SP 123456" className="mt-1" />
+          <Input
+            value={values.crm}
+            onChange={(e) => set('crm')(e.target.value)}
+            placeholder="Ex.: CRM-SP 123456"
+            className="mt-1"
+          />
         </label>
       </div>
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Especialidade
-        <Input value={values.specialty} onChange={(e) => set("specialty")(e.target.value)} placeholder="Ex.: Cirurgia vascular" className="mt-1" />
+        <Input
+          value={values.specialty}
+          onChange={(e) => set('specialty')(e.target.value)}
+          placeholder="Ex.: Cirurgia vascular"
+          className="mt-1"
+        />
       </label>
-      <Button
-        type="submit"
-        disabled={saving}
-        variant="accent"
-        className="mt-1"
-      >
-        {saving ? "Salvando…" : "Salvar"}
+      <Button type="submit" disabled={saving} variant="accent" className="mt-1">
+        {saving ? 'Salvando…' : 'Salvar'}
       </Button>
     </form>
   );

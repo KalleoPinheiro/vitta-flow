@@ -1,4 +1,4 @@
-import type { FollowUp, FollowUpStatus } from "./follow-up";
+import type { FollowUp, FollowUpStatus } from './follow-up';
 
 export interface FollowUpFilter {
   status?: FollowUpStatus;

@@ -1,20 +1,23 @@
-import { and, desc, eq, gte, lt, type SQL } from "drizzle-orm";
-import { AuditEvent, type AuditAction } from "@/domain/audit/audit-event";
+import { and, desc, eq, gte, lt, type SQL } from 'drizzle-orm';
+import { type AuditAction, AuditEvent } from '@/domain/audit/audit-event';
 import type {
   AuditEventFilter,
   AuditEventPage,
   AuditEventRepository,
-} from "@/domain/audit/audit-event-repository";
-import { MAX_ROWS, type AppDb } from "./db";
-import { auditEvents } from "./schema";
+} from '@/domain/audit/audit-event-repository';
+import { type AppDb, MAX_ROWS } from './db';
+import { auditEvents } from './schema';
 
 function buildConditions(filter: AuditEventFilter): SQL[] {
   const conditions: SQL[] = [];
-  if (filter.patientId) conditions.push(eq(auditEvents.patientId, filter.patientId));
+  if (filter.patientId)
+    conditions.push(eq(auditEvents.patientId, filter.patientId));
   if (filter.from) conditions.push(gte(auditEvents.occurredAt, filter.from));
   if (filter.to) conditions.push(lt(auditEvents.occurredAt, filter.to));
-  if (filter.resourceType) conditions.push(eq(auditEvents.resourceType, filter.resourceType));
-  if (filter.resourceId) conditions.push(eq(auditEvents.resourceId, filter.resourceId));
+  if (filter.resourceType)
+    conditions.push(eq(auditEvents.resourceType, filter.resourceType));
+  if (filter.resourceId)
+    conditions.push(eq(auditEvents.resourceId, filter.resourceId));
   return conditions;
 }
 

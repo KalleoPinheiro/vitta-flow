@@ -1,12 +1,12 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { EvaluateOutcome } from "@/application/clinical/evaluate-outcome";
-import { handleRequest } from "@/lib/api-response";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { recordAudit } from "@/lib/audit";
-import { toOutcomeEvaluationDto } from "@/lib/dto";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { EvaluateOutcome } from '@/application/clinical/evaluate-outcome';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { recordAudit } from '@/lib/audit';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { toOutcomeEvaluationDto } from '@/lib/dto';
 
 const evaluationSchema = z.object({
   score: z.number().int().min(1).max(5),
@@ -23,9 +23,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleRequest(async () => {
     const { id } = await context.params;
     const body = evaluationSchema.parse(await request.json());
-    const { outcomeEvaluations, carePlanOutcomes, carePlans, auditEvents } = await getRepositories({
-      clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
-    });
+    const { outcomeEvaluations, carePlanOutcomes, carePlans, auditEvents } =
+      await getRepositories({
+        clinicId: guard.session?.clinicId ?? LEGACY_CLINIC_ID,
+      });
     const evaluation = await new EvaluateOutcome(
       outcomeEvaluations,
       carePlanOutcomes,
@@ -39,8 +40,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const outcome = await carePlanOutcomes.findById(id);
     const plan = outcome ? await carePlans.findById(outcome.carePlanId) : null;
     recordAudit(auditEvents, guard.session, {
-      action: "create",
-      resourceType: "outcome_evaluation",
+      action: 'create',
+      resourceType: 'outcome_evaluation',
       resourceId: evaluation.id,
       patientId: plan?.patientId ?? null,
     });

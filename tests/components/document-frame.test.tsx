@@ -1,19 +1,20 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
-import { DocumentFrame, type ClinicInfoDto } from "@/components/document-frame";
+
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { type ClinicInfoDto, DocumentFrame } from '@/components/document-frame';
 
 const fullClinic: ClinicInfoDto = {
-  name: "Clínica Vitta",
-  cnpj: "12.345.678/0001-90",
-  address: "Rua das Flores, 100",
-  professionalName: "Dra. Ana Souza",
-  professionalRegistry: "COREN 123456",
-  city: "São Paulo",
+  name: 'Clínica Vitta',
+  cnpj: '12.345.678/0001-90',
+  address: 'Rua das Flores, 100',
+  professionalName: 'Dra. Ana Souza',
+  professionalRegistry: 'COREN 123456',
+  city: 'São Paulo',
 };
 
 const minimalClinic: ClinicInfoDto = {
-  name: "Clínica Vitta",
+  name: 'Clínica Vitta',
   cnpj: null,
   address: null,
   professionalName: null,
@@ -21,97 +22,140 @@ const minimalClinic: ClinicInfoDto = {
   city: null,
 };
 
-const documentNumber = "ATST-A1B2C3D4";
-const issuedAt = "2026-09-03T14:30:00.000Z";
+const documentNumber = 'ATST-A1B2C3D4';
+const issuedAt = '2026-09-03T14:30:00.000Z';
 
-describe("Feature: Moldura de documento", () => {
+describe('Feature: Moldura de documento', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     cleanup();
   });
 
-  describe("Cenário: cabeçalho com dados completos da clínica", () => {
-    it("Dado clínica com todos os campos, Quando renderizar, Então exibe nome, CNPJ e endereço", () => {
+  describe('Cenário: cabeçalho com dados completos da clínica', () => {
+    it('Dado clínica com todos os campos, Quando renderizar, Então exibe nome, CNPJ e endereço', () => {
       render(
-        <DocumentFrame clinic={fullClinic} title="Atestado" documentNumber={documentNumber} issuedAt={issuedAt}>
+        <DocumentFrame
+          clinic={fullClinic}
+          title="Atestado"
+          documentNumber={documentNumber}
+          issuedAt={issuedAt}
+        >
           <p>Corpo do documento</p>
         </DocumentFrame>,
       );
 
-      expect(screen.getByText("Clínica Vitta")).toBeInTheDocument();
-      expect(screen.getByText("CNPJ: 12.345.678/0001-90")).toBeInTheDocument();
-      expect(screen.getByText("Rua das Flores, 100")).toBeInTheDocument();
+      expect(screen.getByText('Clínica Vitta')).toBeInTheDocument();
+      expect(screen.getByText('CNPJ: 12.345.678/0001-90')).toBeInTheDocument();
+      expect(screen.getByText('Rua das Flores, 100')).toBeInTheDocument();
     });
 
-    it("Dado clínica com todos os campos, Quando renderizar, Então exibe rodapé com cidade e assinatura", () => {
+    it('Dado clínica com todos os campos, Quando renderizar, Então exibe rodapé com cidade e assinatura', () => {
       render(
-        <DocumentFrame clinic={fullClinic} title="Atestado" documentNumber={documentNumber} issuedAt={issuedAt}>
+        <DocumentFrame
+          clinic={fullClinic}
+          title="Atestado"
+          documentNumber={documentNumber}
+          issuedAt={issuedAt}
+        >
           <p>Corpo do documento</p>
         </DocumentFrame>,
       );
 
       expect(screen.getByText(/São Paulo,/)).toBeInTheDocument();
-      expect(screen.getByText("Dra. Ana Souza")).toBeInTheDocument();
-      expect(screen.getByText("COREN 123456")).toBeInTheDocument();
+      expect(screen.getByText('Dra. Ana Souza')).toBeInTheDocument();
+      expect(screen.getByText('COREN 123456')).toBeInTheDocument();
     });
   });
 
-  describe("Cenário: cabeçalho com dados mínimos da clínica", () => {
-    it("Dado clínica sem CNPJ, endereço ou profissional, Quando renderizar, Então omite campos ausentes e usa texto padrão de assinatura", () => {
+  describe('Cenário: cabeçalho com dados mínimos da clínica', () => {
+    it('Dado clínica sem CNPJ, endereço ou profissional, Quando renderizar, Então omite campos ausentes e usa texto padrão de assinatura', () => {
       render(
-        <DocumentFrame clinic={minimalClinic} title="Atestado" documentNumber={documentNumber} issuedAt={issuedAt}>
+        <DocumentFrame
+          clinic={minimalClinic}
+          title="Atestado"
+          documentNumber={documentNumber}
+          issuedAt={issuedAt}
+        >
           <p>Corpo do documento</p>
         </DocumentFrame>,
       );
 
       expect(screen.queryByText(/CNPJ:/)).not.toBeInTheDocument();
-      expect(screen.getByText("Assinatura do profissional")).toBeInTheDocument();
+      expect(
+        screen.getByText('Assinatura do profissional'),
+      ).toBeInTheDocument();
     });
   });
 
-  describe("Cenário: título e conteúdo", () => {
-    it("Dado title e children, Quando renderizar, Então exibe o título em maiúsculas e o conteúdo filho", () => {
+  describe('Cenário: título e conteúdo', () => {
+    it('Dado title e children, Quando renderizar, Então exibe o título em maiúsculas e o conteúdo filho', () => {
       render(
-        <DocumentFrame clinic={fullClinic} title="Relatório de evolução" documentNumber={documentNumber} issuedAt={issuedAt}>
+        <DocumentFrame
+          clinic={fullClinic}
+          title="Relatório de evolução"
+          documentNumber={documentNumber}
+          issuedAt={issuedAt}
+        >
           <p>Conteúdo específico do relatório</p>
         </DocumentFrame>,
       );
 
-      expect(screen.getByText("Relatório de evolução")).toBeInTheDocument();
-      expect(screen.getByText("Conteúdo específico do relatório")).toBeInTheDocument();
+      expect(screen.getByText('Relatório de evolução')).toBeInTheDocument();
+      expect(
+        screen.getByText('Conteúdo específico do relatório'),
+      ).toBeInTheDocument();
     });
   });
 
-  describe("Cenário: ações de voltar e imprimir", () => {
+  describe('Cenário: ações de voltar e imprimir', () => {
     it("Dado clique em 'Voltar', Quando acionado, Então chama window.history.back", () => {
-      const backSpy = vi.spyOn(window.history, "back").mockImplementation(() => {});
+      const backSpy = vi
+        .spyOn(window.history, 'back')
+        .mockImplementation(() => {});
 
       render(
-        <DocumentFrame clinic={fullClinic} title="Atestado" documentNumber={documentNumber} issuedAt={issuedAt}>
+        <DocumentFrame
+          clinic={fullClinic}
+          title="Atestado"
+          documentNumber={documentNumber}
+          issuedAt={issuedAt}
+        >
           <p>Corpo</p>
         </DocumentFrame>,
       );
-      fireEvent.click(screen.getByRole("button", { name: "Voltar" }));
+      fireEvent.click(screen.getByRole('button', { name: 'Voltar' }));
 
       expect(backSpy).toHaveBeenCalledTimes(1);
     });
 
     it("Dado clique em 'Imprimir / salvar PDF', Quando acionado, Então chama window.print", () => {
-      const printSpy = vi.spyOn(window, "print").mockImplementation(() => {});
+      const printSpy = vi.spyOn(window, 'print').mockImplementation(() => {});
 
       render(
-        <DocumentFrame clinic={fullClinic} title="Atestado" documentNumber={documentNumber} issuedAt={issuedAt}>
+        <DocumentFrame
+          clinic={fullClinic}
+          title="Atestado"
+          documentNumber={documentNumber}
+          issuedAt={issuedAt}
+        >
           <p>Corpo</p>
         </DocumentFrame>,
       );
-      fireEvent.click(screen.getByRole("button", { name: "Imprimir / salvar PDF" }));
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Imprimir / salvar PDF' }),
+      );
 
       expect(printSpy).toHaveBeenCalledTimes(1);
     });
 
-    it("Dado a barra de ações, Então os botões vêm do Button do Still Void", () => {
+    it('Dado a barra de ações, Então os botões vêm do Button do Still Void', () => {
       render(
-        <DocumentFrame clinic={fullClinic} title="Atestado" documentNumber={documentNumber} issuedAt={issuedAt}>
+        <DocumentFrame
+          clinic={fullClinic}
+          title="Atestado"
+          documentNumber={documentNumber}
+          issuedAt={issuedAt}
+        >
           <p>Corpo</p>
         </DocumentFrame>,
       );
@@ -122,20 +166,31 @@ describe("Feature: Moldura de documento", () => {
       // listada nas 3 quebras do Problem Statement da spec (mesma raiz do Dialog
       // em tests/components/modal.test.tsx). A prova de origem (vem do Button do
       // pacote, não é markup local) segue as classes reais.
-      expect(screen.getByRole("button", { name: "Voltar" })).toHaveClass("sv-btn--link");
-      expect(screen.getByRole("button", { name: "Imprimir / salvar PDF" })).toHaveClass("sv-btn");
+      expect(screen.getByRole('button', { name: 'Voltar' })).toHaveClass(
+        'sv-btn--link',
+      );
+      expect(
+        screen.getByRole('button', { name: 'Imprimir / salvar PDF' }),
+      ).toHaveClass('sv-btn');
     });
 
-    it("Dado a barra de ações, Então ela some na impressão e o corpo do documento fica em tinta preta", () => {
+    it('Dado a barra de ações, Então ela some na impressão e o corpo do documento fica em tinta preta', () => {
       const { container } = render(
-        <DocumentFrame clinic={fullClinic} title="Atestado" documentNumber={documentNumber} issuedAt={issuedAt}>
+        <DocumentFrame
+          clinic={fullClinic}
+          title="Atestado"
+          documentNumber={documentNumber}
+          issuedAt={issuedAt}
+        >
           <p>Corpo</p>
         </DocumentFrame>,
       );
 
-      expect(container.firstElementChild).toHaveClass("text-black");
+      expect(container.firstElementChild).toHaveClass('text-black');
       expect(
-        screen.getByRole("button", { name: "Voltar" }).closest(".print\\:hidden"),
+        screen
+          .getByRole('button', { name: 'Voltar' })
+          .closest('.print\\:hidden'),
       ).toBeInTheDocument();
     });
   });

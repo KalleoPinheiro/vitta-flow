@@ -1,8 +1,8 @@
 import {
-  NullEmailGateway,
   type EmailGateway,
   type EmailMessage,
-} from "@/application/ports/email-gateway";
+  NullEmailGateway,
+} from '@/application/ports/email-gateway';
 
 export interface ResendConfig {
   apiKey: string;
@@ -10,7 +10,7 @@ export interface ResendConfig {
   from: string;
 }
 
-const RESEND_API_URL = "https://api.resend.com/emails";
+const RESEND_API_URL = 'https://api.resend.com/emails';
 const REQUEST_TIMEOUT_MS = 10_000;
 
 /**
@@ -24,10 +24,10 @@ export class ResendEmailGateway implements EmailGateway {
 
   async send(message: EmailMessage): Promise<void> {
     const response = await fetch(RESEND_API_URL, {
-      method: "POST",
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${this.config.apiKey}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         from: this.config.from,
@@ -38,7 +38,7 @@ export class ResendEmailGateway implements EmailGateway {
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
     if (!response.ok) {
-      const body = await response.text().catch(() => "");
+      const body = await response.text().catch(() => '');
       throw new Error(`Resend API ${response.status}: ${body.slice(0, 300)}`);
     }
   }
@@ -64,10 +64,10 @@ export function buildEmailGateway(): EmailGateway {
   if (config) {
     return new ResendEmailGateway(config);
   }
-  if (process.env.NODE_ENV === "production") {
+  if (process.env.NODE_ENV === 'production') {
     throw new Error(
-      "E-mail transacional não configurado: defina RESEND_API_KEY e EMAIL_FROM " +
-        "(convite e reset de senha dependem deles)",
+      'E-mail transacional não configurado: defina RESEND_API_KEY e EMAIL_FROM ' +
+        '(convite e reset de senha dependem deles)',
     );
   }
   return new NullEmailGateway();

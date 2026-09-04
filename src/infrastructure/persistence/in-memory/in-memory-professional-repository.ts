@@ -1,5 +1,5 @@
-import type { Professional } from "@/domain/professional/professional";
-import type { ProfessionalRepository } from "@/domain/professional/professional-repository";
+import type { Professional } from '@/domain/professional/professional';
+import type { ProfessionalRepository } from '@/domain/professional/professional-repository';
 
 export class InMemoryProfessionalRepository implements ProfessionalRepository {
   private readonly items = new Map<string, Professional>();
@@ -21,6 +21,8 @@ export class InMemoryProfessionalRepository implements ProfessionalRepository {
   }
 
   async findAll(): Promise<Professional[]> {
-    return [...this.items.values()].sort((a, b) => a.fullName.localeCompare(b.fullName));
+    return [...this.items.values()].sort((a, b) =>
+      a.fullName.localeCompare(b.fullName),
+    );
   }
 }

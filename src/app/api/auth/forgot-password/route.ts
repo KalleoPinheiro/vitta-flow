@@ -1,11 +1,11 @@
-import { after, type NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { IssueAuthToken } from "@/application/auth/auth-token-flow";
-import { appUrlFromEnv } from "@/application/auth/send-invite";
-import { RateLimiter } from "@/lib/auth/rate-limit";
-import { clientIp } from "@/lib/auth/client-ip";
-import { fail, ok } from "@/lib/api-response";
+import { after, type NextRequest } from 'next/server';
+import { z } from 'zod';
+import { IssueAuthToken } from '@/application/auth/auth-token-flow';
+import { appUrlFromEnv } from '@/application/auth/send-invite';
+import { getRepositories } from '@/infrastructure/container';
+import { fail, ok } from '@/lib/api-response';
+import { clientIp } from '@/lib/auth/client-ip';
+import { RateLimiter } from '@/lib/auth/rate-limit';
 
 /** Mesmo limite do login: a rota é um oráculo em potencial se puder ser martelada. */
 const FORGOT_RATE_LIMIT = new RateLimiter(5, 60_000);
@@ -20,12 +20,13 @@ const schema = z.object({
  * resposta perceptível) transformaria a rota num verificador de e-mails.
  */
 const NEUTRAL_RESPONSE = {
-  message: "Se houver uma conta com este e-mail, enviamos um link para redefinir a senha.",
+  message:
+    'Se houver uma conta com este e-mail, enviamos um link para redefinir a senha.',
 };
 
 export async function POST(request: NextRequest) {
   if (!FORGOT_RATE_LIMIT.allow(clientIp(request))) {
-    return fail("Muitas tentativas, aguarde um minuto", 429);
+    return fail('Muitas tentativas, aguarde um minuto', 429);
   }
 
   const parsed = schema.safeParse(await request.json().catch(() => null));
@@ -57,10 +58,10 @@ async function issueResetLink(email: string): Promise<void> {
     }
     await new IssueAuthToken(services.authTokens, services.email).execute({
       account,
-      purpose: "reset",
+      purpose: 'reset',
       appUrl: appUrlFromEnv(),
     });
   } catch (error) {
-    console.error("Reset de senha: falha ao emitir o link", error);
+    console.error('Reset de senha: falha ao emitir o link', error);
   }
 }

@@ -1,89 +1,22 @@
-import { getDb } from "./persistence/drizzle/db";
-import { DrizzleClinicRepository } from "./persistence/drizzle/drizzle-clinic-repository";
-import { DrizzlePatientRepository } from "./persistence/drizzle/drizzle-patient-repository";
-import { DrizzleAppointmentRepository } from "./persistence/drizzle/drizzle-appointment-repository";
-import { DrizzleInvoiceRepository } from "./persistence/drizzle/drizzle-invoice-repository";
 import {
-  DrizzleAnamnesisRepository,
-  DrizzleClinicalConditionRepository,
-  DrizzleConditionAssessmentRepository,
-  DrizzleConditionPhotoRepository,
-  DrizzleConsentRecordRepository,
-  DrizzleEvolutionNoteRepository,
-} from "./persistence/drizzle/drizzle-clinical-repositories";
-import type { ConsentRecordRepository } from "@/domain/consent/consent-record";
+  type CalendarGateway,
+  NullCalendarGateway,
+} from '@/application/ports/calendar-gateway';
+import type { EmailGateway } from '@/application/ports/email-gateway';
 import {
-  DrizzleCarePlanDiagnosisRepository,
-  DrizzleCarePlanInterventionRepository,
-  DrizzleCarePlanOutcomeRepository,
-  DrizzleCarePlanRepository,
-  DrizzleInterventionRecordRepository,
-  DrizzleOutcomeEvaluationRepository,
-} from "./persistence/drizzle/drizzle-care-plan-repositories";
-import {
-  DrizzleNursingDiagnosisRepository,
-  DrizzleNursingInterventionRepository,
-  DrizzleNursingOutcomeRepository,
-  DrizzleTaxonomyLinkageRepository,
-} from "./persistence/drizzle/drizzle-taxonomy-repositories";
-import {
-  DrizzleFollowUpRepository,
-  DrizzleStockMovementRepository,
-  DrizzleSupplyBatchRepository,
-  DrizzleSupplyRepository,
-} from "./persistence/drizzle/drizzle-inventory-repositories";
-import {
-  GoogleCalendarGateway,
-  googleCalendarConfigFromEnv,
-} from "./calendar/google-calendar-gateway";
-import { DrizzleGoogleAccountRepository } from "./persistence/drizzle/drizzle-google-account-repository";
-import { DrizzleAuthTokenRepository } from "./persistence/drizzle/drizzle-auth-token-repository";
-import { buildEmailGateway } from "./email/resend-email-gateway";
-import type { EmailGateway } from "@/application/ports/email-gateway";
-import type { AuthTokenRepository } from "@/domain/auth/auth-token";
-import { DrizzlePartnerRepository } from "./persistence/drizzle/drizzle-partner-repository";
-import { DrizzleAuditEventRepository } from "./persistence/drizzle/drizzle-audit-event-repository";
-import { LocalPhotoStorage } from "./storage/local-photo-storage";
-import { LEGACY_CLINIC_ID } from "./persistence/drizzle/legacy-clinic";
-import { DrizzleReminderLogRepository } from "./persistence/drizzle/drizzle-reminder-log-repository";
-import {
-  MetaWhatsAppGateway,
-  metaWhatsAppConfigFromEnv,
-} from "./messaging/meta-whatsapp-gateway";
-import {
-  NullMessagingGateway,
   type MessagingGateway,
-} from "@/application/ports/messaging-gateway";
-import type { ReminderLogRepository } from "@/domain/messaging/reminder-log";
-import { DrizzleProfessionalRepository } from "./persistence/drizzle/drizzle-professional-repository";
-import { DrizzleProfessionalPatientLinkRepository } from "./persistence/drizzle/professional-patient-link-repository";
-import type { ProfessionalPatientLinkRepository } from "@/domain/clinical/professional-patient-link";
-import {
-  DrizzleProcedureKitRepository,
-  DrizzleProcedureRepository,
-  DrizzleScheduleConfigRepository,
-  DrizzleUserAccountRepository,
-} from "./persistence/drizzle/drizzle-foundation-repositories";
-import type { ProcedureKitRepository } from "@/domain/catalog/procedure-kit";
-import { DrizzleSessionPackageRepository } from "./persistence/drizzle/drizzle-package-repository";
-import { DrizzleTransactionManager } from "./persistence/drizzle/drizzle-transaction-manager";
-import type { TransactionManager } from "@/application/ports/transaction-manager";
-import type { SessionPackageRepository } from "@/domain/billing/package";
-import type { ProcedureRepository } from "@/domain/catalog/procedure-repository";
-import type { UserAccountRepository } from "@/domain/auth/user-account";
-import type { ScheduleConfigRepository } from "@/domain/scheduling/schedule-config";
-import type { ProfessionalRepository } from "@/domain/professional/professional-repository";
-import type { PhotoStorage } from "@/application/ports/photo-storage";
-import type { AuditEventRepository } from "@/domain/audit/audit-event-repository";
-import type { PartnerRepository } from "@/domain/partner/partner-repository";
-import { googleCalendarOAuthConfigFromEnv } from "@/lib/auth/google-calendar-oauth";
-import { getAuthConfig } from "@/lib/auth/session";
-import { decryptSecret } from "@/lib/auth/crypto";
-import type { AppDb } from "./persistence/drizzle/db";
-import type { ClinicRepository } from "@/domain/clinic/clinic-repository";
-import type { PatientRepository } from "@/domain/patient/patient-repository";
-import type { AppointmentRepository } from "@/domain/scheduling/appointment-repository";
-import type { InvoiceRepository } from "@/domain/billing/invoice-repository";
+  NullMessagingGateway,
+} from '@/application/ports/messaging-gateway';
+import type { PhotoStorage } from '@/application/ports/photo-storage';
+import type { TransactionManager } from '@/application/ports/transaction-manager';
+import type { AuditEventRepository } from '@/domain/audit/audit-event-repository';
+import type { AuthTokenRepository } from '@/domain/auth/auth-token';
+import type { UserAccountRepository } from '@/domain/auth/user-account';
+import type { InvoiceRepository } from '@/domain/billing/invoice-repository';
+import type { SessionPackageRepository } from '@/domain/billing/package';
+import type { ProcedureKitRepository } from '@/domain/catalog/procedure-kit';
+import type { ProcedureRepository } from '@/domain/catalog/procedure-repository';
+import type { ClinicRepository } from '@/domain/clinic/clinic-repository';
 import type {
   AnamnesisRepository,
   CarePlanDiagnosisRepository,
@@ -96,23 +29,90 @@ import type {
   EvolutionNoteRepository,
   InterventionRecordRepository,
   OutcomeEvaluationRepository,
-} from "@/domain/clinical/clinical-repositories";
+} from '@/domain/clinical/clinical-repositories';
+import type { ProfessionalPatientLinkRepository } from '@/domain/clinical/professional-patient-link';
+import type { ConsentRecordRepository } from '@/domain/consent/consent-record';
+import type { FollowUpRepository } from '@/domain/followup/follow-up-repository';
+import type {
+  StockMovementRepository,
+  SupplyBatchRepository,
+  SupplyRepository,
+} from '@/domain/inventory/inventory-repositories';
+import type { ReminderLogRepository } from '@/domain/messaging/reminder-log';
+import type { PartnerRepository } from '@/domain/partner/partner-repository';
+import type { PatientRepository } from '@/domain/patient/patient-repository';
+import type { ProfessionalRepository } from '@/domain/professional/professional-repository';
+import type { AppointmentRepository } from '@/domain/scheduling/appointment-repository';
+import type { ScheduleConfigRepository } from '@/domain/scheduling/schedule-config';
 import type {
   NursingDiagnosisRepository,
   NursingInterventionRepository,
   NursingOutcomeRepository,
   TaxonomyLinkageRepository,
-} from "@/domain/taxonomy/taxonomy-repositories";
-import type {
-  StockMovementRepository,
-  SupplyBatchRepository,
-  SupplyRepository,
-} from "@/domain/inventory/inventory-repositories";
-import type { FollowUpRepository } from "@/domain/followup/follow-up-repository";
+} from '@/domain/taxonomy/taxonomy-repositories';
+import { decryptSecret } from '@/lib/auth/crypto';
+import { googleCalendarOAuthConfigFromEnv } from '@/lib/auth/google-calendar-oauth';
+import { getAuthConfig } from '@/lib/auth/session';
 import {
-  NullCalendarGateway,
-  type CalendarGateway,
-} from "@/application/ports/calendar-gateway";
+  GoogleCalendarGateway,
+  googleCalendarConfigFromEnv,
+} from './calendar/google-calendar-gateway';
+import { buildEmailGateway } from './email/resend-email-gateway';
+import {
+  MetaWhatsAppGateway,
+  metaWhatsAppConfigFromEnv,
+} from './messaging/meta-whatsapp-gateway';
+import type { AppDb } from './persistence/drizzle/db';
+import { getDb } from './persistence/drizzle/db';
+import { DrizzleAppointmentRepository } from './persistence/drizzle/drizzle-appointment-repository';
+import { DrizzleAuditEventRepository } from './persistence/drizzle/drizzle-audit-event-repository';
+import { DrizzleAuthTokenRepository } from './persistence/drizzle/drizzle-auth-token-repository';
+import {
+  DrizzleCarePlanDiagnosisRepository,
+  DrizzleCarePlanInterventionRepository,
+  DrizzleCarePlanOutcomeRepository,
+  DrizzleCarePlanRepository,
+  DrizzleInterventionRecordRepository,
+  DrizzleOutcomeEvaluationRepository,
+} from './persistence/drizzle/drizzle-care-plan-repositories';
+import { DrizzleClinicRepository } from './persistence/drizzle/drizzle-clinic-repository';
+import {
+  DrizzleAnamnesisRepository,
+  DrizzleClinicalConditionRepository,
+  DrizzleConditionAssessmentRepository,
+  DrizzleConditionPhotoRepository,
+  DrizzleConsentRecordRepository,
+  DrizzleEvolutionNoteRepository,
+} from './persistence/drizzle/drizzle-clinical-repositories';
+import {
+  DrizzleProcedureKitRepository,
+  DrizzleProcedureRepository,
+  DrizzleScheduleConfigRepository,
+  DrizzleUserAccountRepository,
+} from './persistence/drizzle/drizzle-foundation-repositories';
+import { DrizzleGoogleAccountRepository } from './persistence/drizzle/drizzle-google-account-repository';
+import {
+  DrizzleFollowUpRepository,
+  DrizzleStockMovementRepository,
+  DrizzleSupplyBatchRepository,
+  DrizzleSupplyRepository,
+} from './persistence/drizzle/drizzle-inventory-repositories';
+import { DrizzleInvoiceRepository } from './persistence/drizzle/drizzle-invoice-repository';
+import { DrizzleSessionPackageRepository } from './persistence/drizzle/drizzle-package-repository';
+import { DrizzlePartnerRepository } from './persistence/drizzle/drizzle-partner-repository';
+import { DrizzlePatientRepository } from './persistence/drizzle/drizzle-patient-repository';
+import { DrizzleProfessionalRepository } from './persistence/drizzle/drizzle-professional-repository';
+import { DrizzleReminderLogRepository } from './persistence/drizzle/drizzle-reminder-log-repository';
+import {
+  DrizzleNursingDiagnosisRepository,
+  DrizzleNursingInterventionRepository,
+  DrizzleNursingOutcomeRepository,
+  DrizzleTaxonomyLinkageRepository,
+} from './persistence/drizzle/drizzle-taxonomy-repositories';
+import { DrizzleTransactionManager } from './persistence/drizzle/drizzle-transaction-manager';
+import { LEGACY_CLINIC_ID } from './persistence/drizzle/legacy-clinic';
+import { DrizzleProfessionalPatientLinkRepository } from './persistence/drizzle/professional-patient-link-repository';
+import { LocalPhotoStorage } from './storage/local-photo-storage';
 
 export interface Services {
   clinics: ClinicRepository;
@@ -162,7 +162,9 @@ const globalForServices = globalThis as unknown as {
   vittaCalendar?: { key: string; gateway: CalendarGateway };
 };
 
-async function oauthCalendarGateway(db: AppDb): Promise<{ key: string; gateway: CalendarGateway } | null> {
+async function oauthCalendarGateway(
+  db: AppDb,
+): Promise<{ key: string; gateway: CalendarGateway } | null> {
   const oauthConfig = googleCalendarOAuthConfigFromEnv();
   const auth = getAuthConfig();
   if (!oauthConfig || !auth) {
@@ -173,18 +175,21 @@ async function oauthCalendarGateway(db: AppDb): Promise<{ key: string; gateway: 
     return null;
   }
   try {
-    const refreshToken = decryptSecret(account.encryptedRefreshToken, auth.secret);
+    const refreshToken = decryptSecret(
+      account.encryptedRefreshToken,
+      auth.secret,
+    );
     return {
       key: `oauth:${account.email}:${account.connectedAt.getTime()}`,
       gateway: GoogleCalendarGateway.withOAuth({
         clientId: oauthConfig.clientId,
         clientSecret: oauthConfig.clientSecret,
         refreshToken,
-        calendarId: process.env.GOOGLE_CALENDAR_ID || "primary",
+        calendarId: process.env.GOOGLE_CALENDAR_ID || 'primary',
       }),
     };
   } catch (error) {
-    console.error("Google Calendar: falha ao decifrar credencial OAuth", error);
+    console.error('Google Calendar: falha ao decifrar credencial OAuth', error);
     return null;
   }
 }
@@ -197,7 +202,7 @@ async function buildCalendarGateway(db: AppDb): Promise<CalendarGateway> {
   const oauth = await oauthCalendarGateway(db);
   const serviceConfig = oauth ? null : googleCalendarConfigFromEnv();
   const next = oauth ?? {
-    key: serviceConfig ? "service-account" : "null",
+    key: serviceConfig ? 'service-account' : 'null',
     gateway: serviceConfig
       ? GoogleCalendarGateway.withServiceAccount(serviceConfig)
       : new NullCalendarGateway(),
@@ -219,13 +224,15 @@ export interface TenantContext {
   clinicId: string | null;
 }
 
-export async function getRepositories(tenant: TenantContext): Promise<Services> {
+export async function getRepositories(
+  tenant: TenantContext,
+): Promise<Services> {
   const db = await getDb();
   const calendar = await buildCalendarGateway(db);
   const auth = getAuthConfig();
   if (!auth) {
     throw new Error(
-      "AUTH_SECRET ausente — repositórios clínicos cifrados exigem o segredo de autenticação",
+      'AUTH_SECRET ausente — repositórios clínicos cifrados exigem o segredo de autenticação',
     );
   }
   return {
@@ -243,9 +250,21 @@ export async function getRepositories(tenant: TenantContext): Promise<Services> 
     appointments: new DrizzleAppointmentRepository(db, tenant.clinicId),
     invoices: new DrizzleInvoiceRepository(db, tenant.clinicId),
     anamneses: new DrizzleAnamnesisRepository(db, tenant.clinicId),
-    evolutions: new DrizzleEvolutionNoteRepository(db, tenant.clinicId, auth.secret),
-    conditions: new DrizzleClinicalConditionRepository(db, tenant.clinicId, auth.secret),
-    assessments: new DrizzleConditionAssessmentRepository(db, tenant.clinicId, auth.secret),
+    evolutions: new DrizzleEvolutionNoteRepository(
+      db,
+      tenant.clinicId,
+      auth.secret,
+    ),
+    conditions: new DrizzleClinicalConditionRepository(
+      db,
+      tenant.clinicId,
+      auth.secret,
+    ),
+    assessments: new DrizzleConditionAssessmentRepository(
+      db,
+      tenant.clinicId,
+      auth.secret,
+    ),
     conditionPhotos: new DrizzleConditionPhotoRepository(db, tenant.clinicId),
     consentRecords: new DrizzleConsentRecordRepository(db, tenant.clinicId),
     nursingDiagnoses: new DrizzleNursingDiagnosisRepository(db),
@@ -253,17 +272,35 @@ export async function getRepositories(tenant: TenantContext): Promise<Services> 
     nursingInterventions: new DrizzleNursingInterventionRepository(db),
     taxonomyLinkages: new DrizzleTaxonomyLinkageRepository(db),
     carePlans: new DrizzleCarePlanRepository(db, tenant.clinicId),
-    carePlanDiagnoses: new DrizzleCarePlanDiagnosisRepository(db, tenant.clinicId),
+    carePlanDiagnoses: new DrizzleCarePlanDiagnosisRepository(
+      db,
+      tenant.clinicId,
+    ),
     carePlanOutcomes: new DrizzleCarePlanOutcomeRepository(db, tenant.clinicId),
-    carePlanInterventions: new DrizzleCarePlanInterventionRepository(db, tenant.clinicId),
-    outcomeEvaluations: new DrizzleOutcomeEvaluationRepository(db, tenant.clinicId),
-    interventionRecords: new DrizzleInterventionRecordRepository(db, tenant.clinicId),
-    photoStorage: new LocalPhotoStorage(undefined, tenant.clinicId ?? LEGACY_CLINIC_ID),
+    carePlanInterventions: new DrizzleCarePlanInterventionRepository(
+      db,
+      tenant.clinicId,
+    ),
+    outcomeEvaluations: new DrizzleOutcomeEvaluationRepository(
+      db,
+      tenant.clinicId,
+    ),
+    interventionRecords: new DrizzleInterventionRecordRepository(
+      db,
+      tenant.clinicId,
+    ),
+    photoStorage: new LocalPhotoStorage(
+      undefined,
+      tenant.clinicId ?? LEGACY_CLINIC_ID,
+    ),
     supplies: new DrizzleSupplyRepository(db, tenant.clinicId),
     stockMovements: new DrizzleStockMovementRepository(db, tenant.clinicId),
     supplyBatches: new DrizzleSupplyBatchRepository(db, tenant.clinicId),
     followUps: new DrizzleFollowUpRepository(db, tenant.clinicId),
-    professionalPatientLinks: new DrizzleProfessionalPatientLinkRepository(db, tenant.clinicId),
+    professionalPatientLinks: new DrizzleProfessionalPatientLinkRepository(
+      db,
+      tenant.clinicId,
+    ),
     auditEvents: new DrizzleAuditEventRepository(db),
     reminderLog: new DrizzleReminderLogRepository(db, tenant.clinicId),
     calendar,

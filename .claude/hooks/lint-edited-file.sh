@@ -1,5 +1,5 @@
 #!/bin/bash
-# Feedback hook (PostToolUse): roda eslint no arquivo editado, não bloqueia —
+# Feedback hook (PostToolUse): roda biome no arquivo editado, não bloqueia —
 # só devolve o output pro agente ver na hora.
 
 INPUT=$(cat)
@@ -19,6 +19,6 @@ if [[ ! -f "$FILE_PATH" ]]; then
 fi
 
 cd "$CLAUDE_PROJECT_DIR" || exit 0
-npx eslint "$FILE_PATH" --no-warn-ignored 2>&1 | head -50
+npx biome check "$FILE_PATH" 2>&1 | head -50
 
 exit 0

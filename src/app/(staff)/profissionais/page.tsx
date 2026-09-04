@@ -1,14 +1,5 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { apiFetch } from "@/lib/client";
-import { useToast } from "@still-void/ui/react/client";
-import type { ProfessionalDto } from "@/lib/dto";
-import { useApiQuery } from "@/lib/use-api-query";
-import { Modal } from "@/components/modal";
-import { ConfirmAction } from "@/components/confirm-action";
-import { StatusBadge } from "@/components/status-badge";
-import { EmptyState, ErrorAlert, LoadingIndicator } from "@/components/feedback";
 import {
   Button,
   Card,
@@ -19,47 +10,68 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@still-void/ui/react";
+} from '@still-void/ui/react';
+import { useToast } from '@still-void/ui/react/client';
+import { useState } from 'react';
+import { ConfirmAction } from '@/components/confirm-action';
+import {
+  EmptyState,
+  ErrorAlert,
+  LoadingIndicator,
+} from '@/components/feedback';
+import { Modal } from '@/components/modal';
+import { StatusBadge } from '@/components/status-badge';
+import { apiFetch } from '@/lib/client';
+import type { ProfessionalDto } from '@/lib/dto';
+import { useApiQuery } from '@/lib/use-api-query';
 
 export default function ProfessionalsPage() {
   const { toast } = useToast();
-  const { data: professionals, error, refresh } = useApiQuery<ProfessionalDto[]>(
-    "/api/professionals",
-  );
-  const [editing, setEditing] = useState<ProfessionalDto | "new" | null>(null);
+  const {
+    data: professionals,
+    error,
+    refresh,
+  } = useApiQuery<ProfessionalDto[]>('/api/professionals');
+  const [editing, setEditing] = useState<ProfessionalDto | 'new' | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const toggleActive = async (professional: ProfessionalDto) => {
     try {
       await apiFetch(`/api/professionals/${professional.id}`, {
-        method: "PATCH",
+        method: 'PATCH',
         body: JSON.stringify({ active: !professional.active }),
       });
       toast({
-        description: professional.active ? "Profissional desativado" : "Profissional ativado",
-        variant: "success",
+        description: professional.active
+          ? 'Profissional desativado'
+          : 'Profissional ativado',
+        variant: 'success',
       });
       setActionError(null);
       refresh();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Erro ao atualizar profissional");
+      setActionError(
+        err instanceof Error ? err.message : 'Erro ao atualizar profissional',
+      );
     }
   };
 
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="sv-display text-2xl font-bold">Profissionais</h1>
+        <h1 className="sv-display font-bold text-2xl">Profissionais</h1>
         <Button
           type="button"
-          onClick={() => setEditing("new")}
+          onClick={() => setEditing('new')}
           variant="accent"
         >
           + Novo profissional
         </Button>
       </div>
 
-      {(error || actionError) && <ErrorAlert message={actionError ?? error ?? ""} />}
+      {(error || actionError) && (
+        <ErrorAlert message={actionError ?? error ?? ''} />
+      )}
 
       <Card>
         {!professionals ? (
@@ -82,21 +94,32 @@ export default function ProfessionalsPage() {
                 {professionals.map((professional) => (
                   <TableRow
                     key={professional.id}
-                    className={professional.active ? "" : "bg-surface-2/60"}
+                    className={professional.active ? '' : 'bg-surface-2/60'}
                   >
-                    <TableCell className="px-4 py-3 font-medium">{professional.fullName}</TableCell>
-                    <TableCell className="px-4 py-3 text-ink-2">{professional.registry ?? "—"}</TableCell>
+                    <TableCell className="px-4 py-3 font-medium">
+                      {professional.fullName}
+                    </TableCell>
                     <TableCell className="px-4 py-3 text-ink-2">
-                      {professional.commissionPct != null ? `${professional.commissionPct}%` : "—"}
+                      {professional.registry ?? '—'}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-ink-2">
+                      {professional.commissionPct != null
+                        ? `${professional.commissionPct}%`
+                        : '—'}
                     </TableCell>
                     <TableCell className="px-4 py-3">
                       <StatusBadge
-                        status={professional.active ? "confirmed" : "cancelled"}
-                        label={professional.active ? "Ativo" : "Inativo"}
+                        status={professional.active ? 'confirmed' : 'cancelled'}
+                        label={professional.active ? 'Ativo' : 'Inativo'}
                       />
                     </TableCell>
                     <TableCell className="px-4 py-3 text-right">
-                      <Button type="button" onClick={() => setEditing(professional)} variant="ghost" size="sm">
+                      <Button
+                        type="button"
+                        onClick={() => setEditing(professional)}
+                        variant="ghost"
+                        size="sm"
+                      >
                         Editar
                       </Button>
                       {professional.active ? (
@@ -133,11 +156,13 @@ export default function ProfessionalsPage() {
 
       {editing && (
         <Modal
-          title={editing === "new" ? "Novo profissional" : "Editar profissional"}
+          title={
+            editing === 'new' ? 'Novo profissional' : 'Editar profissional'
+          }
           onClose={() => setEditing(null)}
         >
           <ProfessionalForm
-            initial={editing === "new" ? undefined : editing}
+            initial={editing === 'new' ? undefined : editing}
             onSaved={() => {
               setEditing(null);
               refresh();
@@ -157,10 +182,10 @@ function ProfessionalForm({
   onSaved: () => void;
 }) {
   const { toast } = useToast();
-  const [fullName, setFullName] = useState(initial?.fullName ?? "");
-  const [registry, setRegistry] = useState(initial?.registry ?? "");
+  const [fullName, setFullName] = useState(initial?.fullName ?? '');
+  const [registry, setRegistry] = useState(initial?.registry ?? '');
   const [commissionPct, setCommissionPct] = useState(
-    initial?.commissionPct != null ? String(initial.commissionPct) : "",
+    initial?.commissionPct != null ? String(initial.commissionPct) : '',
   );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -177,19 +202,24 @@ function ProfessionalForm({
       };
       if (initial) {
         await apiFetch(`/api/professionals/${initial.id}`, {
-          method: "PATCH",
+          method: 'PATCH',
           body: JSON.stringify(payload),
         });
       } else {
-        await apiFetch("/api/professionals", { method: "POST", body: JSON.stringify(payload) });
+        await apiFetch('/api/professionals', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
       }
       toast({
-        description: "Profissional salvo",
-        variant: "success",
+        description: 'Profissional salvo',
+        variant: 'success',
       });
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao salvar profissional");
+      setError(
+        err instanceof Error ? err.message : 'Erro ao salvar profissional',
+      );
     } finally {
       setSaving(false);
     }
@@ -198,7 +228,7 @@ function ProfessionalForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       {error && <ErrorAlert message={error} />}
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Nome *
         <Input
           required
@@ -207,7 +237,7 @@ function ProfessionalForm({
           className="mt-1"
         />
       </label>
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Registro profissional
         <Input
           value={registry}
@@ -215,11 +245,11 @@ function ProfessionalForm({
           placeholder="Ex.: COREN-SP 123456"
           className="mt-1"
         />
-        <span className="mt-1 block text-xs font-normal text-ink-3">
+        <span className="mt-1 block font-normal text-ink-3 text-xs">
           Ex.: COREN-SP 123456
         </span>
       </label>
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Repasse (%)
         <Input
           type="number"
@@ -230,17 +260,13 @@ function ProfessionalForm({
           placeholder="Ex.: 15"
           className="mt-1"
         />
-        <span className="mt-1 block text-xs font-normal text-ink-3">
-          Percentual repassado ao profissional sobre a receita das consultas concluídas.
+        <span className="mt-1 block font-normal text-ink-3 text-xs">
+          Percentual repassado ao profissional sobre a receita das consultas
+          concluídas.
         </span>
       </label>
-      <Button
-        type="submit"
-        disabled={saving}
-        variant="accent"
-        className="mt-1"
-      >
-        {saving ? "Salvando…" : "Salvar"}
+      <Button type="submit" disabled={saving} variant="accent" className="mt-1">
+        {saving ? 'Salvando…' : 'Salvar'}
       </Button>
     </form>
   );

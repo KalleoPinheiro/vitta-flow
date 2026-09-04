@@ -1,17 +1,21 @@
-import { ValidationError } from "../shared/errors";
-import { newId } from "../shared/id";
+import { ValidationError } from '../shared/errors';
+import { newId } from '../shared/id';
 
-export const PHOTO_CONTENT_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+export const PHOTO_CONTENT_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+] as const;
 export type PhotoContentType = (typeof PHOTO_CONTENT_TYPES)[number];
 
 export const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
 /** Origem da foto: equipe (prontuário) ou paciente (monitoramento remoto). */
-export const PHOTO_ORIGINS = ["staff", "patient"] as const;
+export const PHOTO_ORIGINS = ['staff', 'patient'] as const;
 export type PhotoOrigin = (typeof PHOTO_ORIGINS)[number];
 
 /** Triagem de foto enviada pelo paciente. */
-export const TRIAGE_STATUSES = ["pending", "reviewed", "escalated"] as const;
+export const TRIAGE_STATUSES = ['pending', 'reviewed', 'escalated'] as const;
 export type TriageStatus = (typeof TRIAGE_STATUSES)[number];
 
 export interface ConditionPhotoProps {
@@ -36,15 +40,17 @@ export class ConditionPhoto {
 
   static create(props: ConditionPhotoProps): ConditionPhoto {
     if (!PHOTO_CONTENT_TYPES.includes(props.contentType)) {
-      throw new ValidationError("Formato de imagem não suportado (JPEG, PNG ou WebP)");
+      throw new ValidationError(
+        'Formato de imagem não suportado (JPEG, PNG ou WebP)',
+      );
     }
     if (!Number.isInteger(props.sizeBytes) || props.sizeBytes <= 0) {
-      throw new ValidationError("Arquivo de imagem vazio");
+      throw new ValidationError('Arquivo de imagem vazio');
     }
     if (props.sizeBytes > MAX_PHOTO_BYTES) {
-      throw new ValidationError("Imagem excede o limite de 5 MB");
+      throw new ValidationError('Imagem excede o limite de 5 MB');
     }
-    const origin = props.origin ?? "staff";
+    const origin = props.origin ?? 'staff';
     return new ConditionPhoto({
       conditionId: props.conditionId,
       contentType: props.contentType,
@@ -53,7 +59,7 @@ export class ConditionPhoto {
       origin,
       patientNote: props.patientNote?.trim() || null,
       // Foto do paciente nasce pendente de triagem; foto da equipe não entra na fila.
-      triageStatus: origin === "patient" ? "pending" : null,
+      triageStatus: origin === 'patient' ? 'pending' : null,
       id: newId(),
       createdAt: new Date(),
     });
@@ -84,7 +90,7 @@ export class ConditionPhoto {
   }
 
   get origin(): PhotoOrigin {
-    return this.state.origin ?? "staff";
+    return this.state.origin ?? 'staff';
   }
 
   get patientNote(): string | null {
@@ -96,9 +102,11 @@ export class ConditionPhoto {
   }
 
   /** Triagem: avaliada (manter plano) ou escalada (antecipar retorno). */
-  withTriage(status: Exclude<TriageStatus, "pending">): ConditionPhoto {
-    if (this.origin !== "patient") {
-      throw new ValidationError("Só fotos enviadas pelo paciente passam por triagem");
+  withTriage(status: Exclude<TriageStatus, 'pending'>): ConditionPhoto {
+    if (this.origin !== 'patient') {
+      throw new ValidationError(
+        'Só fotos enviadas pelo paciente passam por triagem',
+      );
     }
     return new ConditionPhoto({ ...this.state, triageStatus: status });
   }
@@ -111,13 +119,40 @@ export class ConditionPhoto {
 /** Assinatura mágica: byte esperado por posição (posições fora da lista são livres). */
 type MagicSignature = Array<[offset: number, value: number]>;
 
-const IMAGE_SIGNATURES: Array<{ type: PhotoContentType; signature: MagicSignature }> = [
-  { type: "image/jpeg", signature: [[0, 0xff], [1, 0xd8], [2, 0xff]] },
-  { type: "image/png", signature: [[0, 0x89], [1, 0x50], [2, 0x4e], [3, 0x47]] },
+const IMAGE_SIGNATURES: Array<{
+  type: PhotoContentType;
+  signature: MagicSignature;
+}> = [
+  {
+    type: 'image/jpeg',
+    signature: [
+      [0, 0xff],
+      [1, 0xd8],
+      [2, 0xff],
+    ],
+  },
+  {
+    type: 'image/png',
+    signature: [
+      [0, 0x89],
+      [1, 0x50],
+      [2, 0x4e],
+      [3, 0x47],
+    ],
+  },
   {
     // RIFF....WEBP
-    type: "image/webp",
-    signature: [[0, 0x52], [1, 0x49], [2, 0x46], [3, 0x46], [8, 0x57], [9, 0x45], [10, 0x42], [11, 0x50]],
+    type: 'image/webp',
+    signature: [
+      [0, 0x52],
+      [1, 0x49],
+      [2, 0x46],
+      [3, 0x46],
+      [8, 0x57],
+      [9, 0x45],
+      [10, 0x42],
+      [11, 0x50],
+    ],
   },
 ];
 
@@ -127,7 +162,9 @@ const IMAGE_SIGNATURES: Array<{ type: PhotoContentType; signature: MagicSignatur
  */
 export function detectImageType(bytes: Uint8Array): PhotoContentType | null {
   const match = IMAGE_SIGNATURES.find(({ signature }) =>
-    signature.every(([offset, value]) => bytes.length > offset && bytes[offset] === value),
+    signature.every(
+      ([offset, value]) => bytes.length > offset && bytes[offset] === value,
+    ),
   );
   return match?.type ?? null;
 }

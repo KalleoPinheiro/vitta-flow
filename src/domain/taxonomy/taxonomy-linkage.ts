@@ -1,6 +1,6 @@
-import { ValidationError } from "../shared/errors";
+import { ValidationError } from '../shared/errors';
 
-export const LINKAGE_ROLES = ["outcome", "intervention"] as const;
+export const LINKAGE_ROLES = ['outcome', 'intervention'] as const;
 export type LinkageRole = (typeof LINKAGE_ROLES)[number];
 
 export interface TaxonomyLinkageProps {
@@ -18,12 +18,21 @@ export class TaxonomyLinkage {
   ) {}
 
   static create(props: TaxonomyLinkageProps): TaxonomyLinkage {
-    if (props.diagnosisCode.trim().length === 0 || props.targetCode.trim().length === 0) {
-      throw new ValidationError("Ligação exige diagnóstico e código de destino");
+    if (
+      props.diagnosisCode.trim().length === 0 ||
+      props.targetCode.trim().length === 0
+    ) {
+      throw new ValidationError(
+        'Ligação exige diagnóstico e código de destino',
+      );
     }
     if (!LINKAGE_ROLES.includes(props.role)) {
-      throw new ValidationError("Papel da ligação inválido");
+      throw new ValidationError('Papel da ligação inválido');
     }
-    return new TaxonomyLinkage(props.diagnosisCode.trim(), props.role, props.targetCode.trim());
+    return new TaxonomyLinkage(
+      props.diagnosisCode.trim(),
+      props.role,
+      props.targetCode.trim(),
+    );
   }
 }

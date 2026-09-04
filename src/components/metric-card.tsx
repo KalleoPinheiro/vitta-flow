@@ -1,4 +1,4 @@
-import { Card } from "@still-void/ui/react";
+import { Card } from '@still-void/ui/react';
 
 interface MetricCardProps {
   label: string;
@@ -8,12 +8,17 @@ interface MetricCardProps {
   delta?: string;
 }
 
-export function MetricCard({ label, value, accent = "text-accent-ink", delta }: MetricCardProps) {
+export function MetricCard({
+  label,
+  value,
+  accent = 'text-accent-ink',
+  delta,
+}: MetricCardProps) {
   return (
     <Card className="p-5">
-      <p className="text-sm text-ink-3">{label}</p>
-      <p className={`mt-1 text-2xl font-bold ${accent}`}>{value}</p>
-      {delta && <p className="mt-1 text-xs text-ink-3">{delta}</p>}
+      <p className="text-ink-3 text-sm">{label}</p>
+      <p className={`mt-1 font-bold text-2xl ${accent}`}>{value}</p>
+      {delta && <p className="mt-1 text-ink-3 text-xs">{delta}</p>}
     </Card>
   );
 }

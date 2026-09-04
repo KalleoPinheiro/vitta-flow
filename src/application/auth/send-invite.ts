@@ -1,14 +1,14 @@
-import type { UserAccount } from "@/domain/auth/user-account";
-import type { AuthTokenRepository } from "@/domain/auth/auth-token";
-import type { EmailGateway } from "@/application/ports/email-gateway";
-import { IssueAuthToken } from "./auth-token-flow";
+import type { EmailGateway } from '@/application/ports/email-gateway';
+import type { AuthTokenRepository } from '@/domain/auth/auth-token';
+import type { UserAccount } from '@/domain/auth/user-account';
+import { IssueAuthToken } from './auth-token-flow';
 
 export interface InviteServices {
   authTokens: AuthTokenRepository;
   email: EmailGateway;
 }
 
-const DEV_APP_URL = "http://localhost:3000";
+const DEV_APP_URL = 'http://localhost:3000';
 
 /**
  * Base pública da aplicação, usada para montar os links de convite e reset.
@@ -21,13 +21,13 @@ const DEV_APP_URL = "http://localhost:3000";
  */
 export const appUrlFromEnv = (): string => {
   const configured = process.env.APP_URL;
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV !== 'production') {
     return configured ?? DEV_APP_URL;
   }
   if (!configured || !isSafeOrigin(configured)) {
     throw new Error(
-      "APP_URL precisa ser uma URL https:// em produção — os links de convite e " +
-        "de reset de senha carregam um segredo de uso único",
+      'APP_URL precisa ser uma URL https:// em produção — os links de convite e ' +
+        'de reset de senha carregam um segredo de uso único',
     );
   }
   return configured;
@@ -41,10 +41,13 @@ export const appUrlFromEnv = (): string => {
 const isSafeOrigin = (url: string): boolean => {
   try {
     const { protocol, hostname } = new URL(url);
-    if (protocol === "https:") {
+    if (protocol === 'https:') {
       return true;
     }
-    return protocol === "http:" && (hostname === "localhost" || hostname === "127.0.0.1");
+    return (
+      protocol === 'http:' &&
+      (hostname === 'localhost' || hostname === '127.0.0.1')
+    );
   } catch {
     return false;
   }
@@ -61,9 +64,12 @@ export async function sendInvite(
   services: InviteServices,
   account: UserAccount,
 ): Promise<{ delivered: boolean }> {
-  const { delivered } = await new IssueAuthToken(services.authTokens, services.email).issueAndTryDeliver({
+  const { delivered } = await new IssueAuthToken(
+    services.authTokens,
+    services.email,
+  ).issueAndTryDeliver({
     account,
-    purpose: "invite",
+    purpose: 'invite',
     appUrl: appUrlFromEnv(),
   });
   return { delivered };

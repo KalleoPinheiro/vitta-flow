@@ -1,28 +1,28 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
 import {
   ACTIONS_REMOVING_EVENT,
   ChangeAppointmentStatus,
-} from "@/application/appointments/change-appointment-status";
-import { CompleteAppointment } from "@/application/appointments/complete-appointment";
-import { RescheduleAppointment } from "@/application/appointments/reschedule-appointment";
-import { RegisterStockMovement } from "@/application/inventory/register-stock-movement";
-import { DispenseProcedureKit } from "@/application/inventory/dispense-procedure-kit";
-import { handleRequest } from "@/lib/api-response";
-import { scheduleCalendarSync } from "@/lib/calendar-sync";
-import { toAppointmentDto } from "@/lib/dto";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+} from '@/application/appointments/change-appointment-status';
+import { CompleteAppointment } from '@/application/appointments/complete-appointment';
+import { RescheduleAppointment } from '@/application/appointments/reschedule-appointment';
+import { DispenseProcedureKit } from '@/application/inventory/dispense-procedure-kit';
+import { RegisterStockMovement } from '@/application/inventory/register-stock-movement';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { scheduleCalendarSync } from '@/lib/calendar-sync';
+import { toAppointmentDto } from '@/lib/dto';
 
-const actionSchema = z.discriminatedUnion("action", [
-  z.object({ action: z.enum(["confirm", "cancel", "no_show"]) }),
+const actionSchema = z.discriminatedUnion('action', [
+  z.object({ action: z.enum(['confirm', 'cancel', 'no_show']) }),
   z.object({
-    action: z.literal("complete"),
+    action: z.literal('complete'),
     followUpInDays: z.number().int().positive().max(365).nullish(),
   }),
   z.object({
-    action: z.literal("reschedule"),
+    action: z.literal('reschedule'),
     startsAt: z.iso.datetime(),
     endsAt: z.iso.datetime(),
   }),
@@ -60,7 +60,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     });
     const { appointments } = services;
 
-    if (body.action === "complete") {
+    if (body.action === 'complete') {
       // Unidade de trabalho (CONS2-01): consulta, fatura e consumo de pacote
       // persistem juntos ou nada persiste. O kit permanece fora — best-effort
       // por contrato (PRD O2.4, "nunca bloqueia a conclusão").
@@ -97,7 +97,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       }
       return { ...toAppointmentDto(completed), kitWarnings };
     }
-    if (body.action === "reschedule") {
+    if (body.action === 'reschedule') {
       const rescheduled = await new RescheduleAppointment(
         appointments,
         services.scheduleConfig,
@@ -106,7 +106,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         startsAt: new Date(body.startsAt),
         endsAt: new Date(body.endsAt),
       });
-      scheduleCalendarSync(services, (sync) => sync.rescheduled(rescheduled.id));
+      scheduleCalendarSync(services, (sync) =>
+        sync.rescheduled(rescheduled.id),
+      );
       return toAppointmentDto(rescheduled);
     }
     const changed = await new ChangeAppointmentStatus(appointments).execute({

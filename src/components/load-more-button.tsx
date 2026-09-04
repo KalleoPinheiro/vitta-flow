@@ -1,6 +1,11 @@
-"use client";
+'use client';
 
-import { Pagination, PaginationContent, PaginationItem, PaginationNext } from "@still-void/ui/react";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+} from '@still-void/ui/react';
 
 interface LoadMoreButtonProps {
   visible: boolean;

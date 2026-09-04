@@ -1,5 +1,5 @@
-import { InsufficientStockError, ValidationError } from "../shared/errors";
-import { newId } from "../shared/id";
+import { InsufficientStockError, ValidationError } from '../shared/errors';
+import { newId } from '../shared/id';
 
 export interface SupplyProps {
   name: string;
@@ -36,23 +36,27 @@ export class Supply {
     const name = props.name.trim();
     const unit = props.unit.trim();
     if (name.length === 0) {
-      throw new ValidationError("Nome do insumo é obrigatório");
+      throw new ValidationError('Nome do insumo é obrigatório');
     }
     if (unit.length === 0) {
-      throw new ValidationError("Unidade é obrigatória");
+      throw new ValidationError('Unidade é obrigatória');
     }
     if (!Number.isInteger(props.minQty) || props.minQty < 0) {
-      throw new ValidationError("Estoque mínimo deve ser inteiro não-negativo");
+      throw new ValidationError('Estoque mínimo deve ser inteiro não-negativo');
     }
     if (!Number.isInteger(props.priceCents) || props.priceCents < 0) {
-      throw new ValidationError("Preço deve ser inteiro não-negativo em centavos");
+      throw new ValidationError(
+        'Preço deve ser inteiro não-negativo em centavos',
+      );
     }
     return { name, unit, minQty: props.minQty, priceCents: props.priceCents };
   }
 
   private static assertPositiveQty(quantity: number): void {
     if (!Number.isInteger(quantity) || quantity <= 0) {
-      throw new ValidationError("Quantidade da movimentação deve ser inteiro positivo");
+      throw new ValidationError(
+        'Quantidade da movimentação deve ser inteiro positivo',
+      );
     }
   }
 
@@ -68,7 +72,10 @@ export class Supply {
 
   registerEntry(quantity: number): Supply {
     Supply.assertPositiveQty(quantity);
-    return new Supply({ ...this.state, stockQty: this.state.stockQty + quantity });
+    return new Supply({
+      ...this.state,
+      stockQty: this.state.stockQty + quantity,
+    });
   }
 
   registerExit(quantity: number): Supply {
@@ -78,7 +85,10 @@ export class Supply {
         `Estoque insuficiente de "${this.state.name}": disponível ${this.state.stockQty}, solicitado ${quantity}`,
       );
     }
-    return new Supply({ ...this.state, stockQty: this.state.stockQty - quantity });
+    return new Supply({
+      ...this.state,
+      stockQty: this.state.stockQty - quantity,
+    });
   }
 
   deactivate(): Supply {

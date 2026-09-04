@@ -1,13 +1,13 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { ScheduleAppointment } from "@/application/appointments/schedule-appointment";
-import { ScheduleRecurringAppointments } from "@/application/appointments/schedule-recurring-appointments";
-import { handleRequest } from "@/lib/api-response";
-import { scheduleCalendarSync } from "@/lib/calendar-sync";
-import { toAppointmentDto } from "@/lib/dto";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { ScheduleAppointment } from '@/application/appointments/schedule-appointment';
+import { ScheduleRecurringAppointments } from '@/application/appointments/schedule-recurring-appointments';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { scheduleCalendarSync } from '@/lib/calendar-sync';
+import { toAppointmentDto } from '@/lib/dto';
 
 const recurringSchema = z.object({
   patientId: z.string().min(1),
@@ -33,7 +33,11 @@ export async function POST(request: NextRequest) {
     });
 
     const result = await new ScheduleRecurringAppointments(
-      new ScheduleAppointment(services.appointments, services.patients, services.scheduleConfig),
+      new ScheduleAppointment(
+        services.appointments,
+        services.patients,
+        services.scheduleConfig,
+      ),
     ).execute({
       patientId: body.patientId,
       startsAt: new Date(body.startsAt),
@@ -52,7 +56,9 @@ export async function POST(request: NextRequest) {
     }
 
     return {
-      created: result.created.map((appointment) => toAppointmentDto(appointment)),
+      created: result.created.map((appointment) =>
+        toAppointmentDto(appointment),
+      ),
       skipped: result.skipped.map((skip) => ({
         startsAt: skip.startsAt.toISOString(),
         reason: skip.reason,

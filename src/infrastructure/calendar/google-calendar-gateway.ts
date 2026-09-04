@@ -1,8 +1,8 @@
-import { google, type calendar_v3 } from "googleapis";
+import { type calendar_v3, google } from 'googleapis';
 import type {
   CalendarEventInput,
   CalendarGateway,
-} from "@/application/ports/calendar-gateway";
+} from '@/application/ports/calendar-gateway';
 
 export interface GoogleCalendarConfig {
   serviceAccountEmail: string;
@@ -19,7 +19,7 @@ export function googleCalendarConfigFromEnv(): GoogleCalendarConfig | null {
   }
   return {
     serviceAccountEmail,
-    privateKey: privateKey.replace(/\\n/g, "\n"),
+    privateKey: privateKey.replace(/\\n/g, '\n'),
     calendarId,
   };
 }
@@ -39,14 +39,16 @@ export class GoogleCalendarGateway implements CalendarGateway {
   ) {}
 
   /** Autenticação por service account (calendário compartilhado com a service account). */
-  static withServiceAccount(config: GoogleCalendarConfig): GoogleCalendarGateway {
+  static withServiceAccount(
+    config: GoogleCalendarConfig,
+  ): GoogleCalendarGateway {
     const auth = new google.auth.JWT({
       email: config.serviceAccountEmail,
       key: config.privateKey,
-      scopes: ["https://www.googleapis.com/auth/calendar"],
+      scopes: ['https://www.googleapis.com/auth/calendar'],
     });
     return new GoogleCalendarGateway(
-      google.calendar({ version: "v3", auth }),
+      google.calendar({ version: 'v3', auth }),
       config.calendarId,
     );
   }
@@ -56,8 +58,8 @@ export class GoogleCalendarGateway implements CalendarGateway {
     const auth = new google.auth.OAuth2(input.clientId, input.clientSecret);
     auth.setCredentials({ refresh_token: input.refreshToken });
     return new GoogleCalendarGateway(
-      google.calendar({ version: "v3", auth }),
-      input.calendarId ?? "primary",
+      google.calendar({ version: 'v3', auth }),
+      input.calendarId ?? 'primary',
     );
   }
 
@@ -78,7 +80,7 @@ export class GoogleCalendarGateway implements CalendarGateway {
       });
       return response.data.id ?? null;
     } catch (error) {
-      console.error("Google Calendar: falha ao criar evento", error);
+      console.error('Google Calendar: falha ao criar evento', error);
       return null;
     }
   }
@@ -91,7 +93,7 @@ export class GoogleCalendarGateway implements CalendarGateway {
         requestBody: this.toEventBody(input),
       });
     } catch (error) {
-      console.error("Google Calendar: falha ao atualizar evento", error);
+      console.error('Google Calendar: falha ao atualizar evento', error);
     }
   }
 
@@ -102,7 +104,7 @@ export class GoogleCalendarGateway implements CalendarGateway {
         eventId,
       });
     } catch (error) {
-      console.error("Google Calendar: falha ao remover evento", error);
+      console.error('Google Calendar: falha ao remover evento', error);
     }
   }
 }

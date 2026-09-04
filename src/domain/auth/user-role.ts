@@ -1,10 +1,10 @@
 export const USER_ROLES = [
-  "super_admin",
-  "company_admin",
-  "atendente",
-  "profissional",
-  "patient",
-  "partner",
+  'super_admin',
+  'company_admin',
+  'atendente',
+  'profissional',
+  'patient',
+  'partner',
 ] as const;
 
 /**

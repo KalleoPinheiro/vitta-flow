@@ -1,20 +1,30 @@
-import type { Metadata } from "next";
-import { Alert, AlertDescription, Header, Icon, Layout } from "@still-void/ui/react";
-import { BrandLogo } from "@/components/brand-logo";
-import { LogoutButton } from "@/components/logout-button";
+import {
+  Alert,
+  AlertDescription,
+  Header,
+  Icon,
+  Layout,
+} from '@still-void/ui/react';
+import type { Metadata } from 'next';
+import { BrandLogo } from '@/components/brand-logo';
+import { LogoutButton } from '@/components/logout-button';
 
 export const metadata: Metadata = {
-  title: "Portal — VittaFlow",
+  title: 'Portal — VittaFlow',
 };
 
-export default function PortalLayout({ children }: { children: React.ReactNode }) {
+export default function PortalLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <>
       <Header
         logo={
           <div>
             <BrandLogo />
-            <p className="text-xs text-ink-3">
+            <p className="text-ink-3 text-xs">
               Portal do paciente e do parceiro
             </p>
           </div>
@@ -30,9 +40,9 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
               não tem esse campo hoje (ver Assumptions do spec). */}
           <Alert variant="warning">
             <AlertDescription>
-              <Icon name="alert-circle" /> Em caso de sangramento, febre ou dor intensa, procure
-              atendimento presencial ou um pronto-socorro imediatamente — não aguarde resposta pelo
-              portal.
+              <Icon name="alert-circle" /> Em caso de sangramento, febre ou dor
+              intensa, procure atendimento presencial ou um pronto-socorro
+              imediatamente — não aguarde resposta pelo portal.
             </AlertDescription>
           </Alert>
           {children}

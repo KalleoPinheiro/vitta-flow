@@ -1,4 +1,4 @@
-import type { Invoice, InvoiceStatus } from "./invoice";
+import type { Invoice, InvoiceStatus } from './invoice';
 
 export interface InvoiceFilter {
   status?: InvoiceStatus;

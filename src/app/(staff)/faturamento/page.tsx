@@ -1,26 +1,5 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { apiFetch } from "@/lib/client";
-import { useToast } from "@still-void/ui/react/client";
-import type { InvoiceDto, PatientDto, ProcedureDto } from "@/lib/dto";
-import type { InvoiceSummary } from "@/domain/billing/invoice-repository";
-import { useApiQuery } from "@/lib/use-api-query";
-import { useCursorPagedQuery } from "@/lib/use-cursor-paged-query";
-import {
-  INVOICE_STATUS_LABELS,
-  PAYMENT_METHOD_LABELS,
-  formatCurrency,
-  formatDate,
-} from "@/lib/format";
-import { Modal } from "@/components/modal";
-import { ConfirmAction } from "@/components/confirm-action";
-import { StatusBadge } from "@/components/status-badge";
-import { MetricCard } from "@/components/metric-card";
-import { ErrorAlert } from "@/components/feedback";
-import { LoadMoreButton } from "@/components/load-more-button";
-import { PagedList } from "@/components/paged-list";
-import { InvoiceForm, type InvoiceFormValues } from "./invoice-form";
 import {
   Button,
   Card,
@@ -32,13 +11,34 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@still-void/ui/react";
+} from '@still-void/ui/react';
+import { useToast } from '@still-void/ui/react/client';
+import { useState } from 'react';
+import { ConfirmAction } from '@/components/confirm-action';
+import { ErrorAlert } from '@/components/feedback';
+import { LoadMoreButton } from '@/components/load-more-button';
+import { MetricCard } from '@/components/metric-card';
+import { Modal } from '@/components/modal';
+import { PagedList } from '@/components/paged-list';
+import { StatusBadge } from '@/components/status-badge';
+import type { InvoiceSummary } from '@/domain/billing/invoice-repository';
+import { apiFetch } from '@/lib/client';
+import type { InvoiceDto, PatientDto, ProcedureDto } from '@/lib/dto';
+import {
+  formatCurrency,
+  formatDate,
+  INVOICE_STATUS_LABELS,
+  PAYMENT_METHOD_LABELS,
+} from '@/lib/format';
+import { useApiQuery } from '@/lib/use-api-query';
+import { useCursorPagedQuery } from '@/lib/use-cursor-paged-query';
+import { InvoiceForm, type InvoiceFormValues } from './invoice-form';
 
 const STATUS_FILTERS = [
-  { value: "", label: "Todas" },
-  { value: "pending", label: "Pendentes" },
-  { value: "paid", label: "Pagas" },
-  { value: "cancelled", label: "Canceladas" },
+  { value: '', label: 'Todas' },
+  { value: 'pending', label: 'Pendentes' },
+  { value: 'paid', label: 'Pagas' },
+  { value: 'cancelled', label: 'Canceladas' },
 ];
 
 const PAGE_SIZE = 100;
@@ -67,8 +67,12 @@ function InvoicesTable({ invoices, onPay, onCancel }: InvoicesTableProps) {
         <TableBody>
           {invoices.map((invoice) => (
             <TableRow key={invoice.id}>
-              <TableCell className="px-4 py-3 text-ink-2">{formatDate(invoice.issuedAt)}</TableCell>
-              <TableCell className="px-4 py-3 font-medium">{invoice.patientName}</TableCell>
+              <TableCell className="px-4 py-3 text-ink-2">
+                {formatDate(invoice.issuedAt)}
+              </TableCell>
+              <TableCell className="px-4 py-3 font-medium">
+                {invoice.patientName}
+              </TableCell>
               <TableCell className="max-w-56 truncate px-4 py-3 text-ink-2">
                 {invoice.description}
               </TableCell>
@@ -78,24 +82,26 @@ function InvoicesTable({ invoices, onPay, onCancel }: InvoicesTableProps) {
               <TableCell className="px-4 py-3">
                 <StatusBadge
                   status={invoice.status}
-                  label={INVOICE_STATUS_LABELS[invoice.status] ?? invoice.status}
+                  label={
+                    INVOICE_STATUS_LABELS[invoice.status] ?? invoice.status
+                  }
                 />
               </TableCell>
               <TableCell className="px-4 py-3 text-ink-2">
                 {invoice.paymentMethod
                   ? `${PAYMENT_METHOD_LABELS[invoice.paymentMethod] ?? invoice.paymentMethod}${
-                      invoice.paidAt ? ` em ${formatDate(invoice.paidAt)}` : ""
+                      invoice.paidAt ? ` em ${formatDate(invoice.paidAt)}` : ''
                     }`
-                  : "—"}
+                  : '—'}
               </TableCell>
               <TableCell className="px-4 py-3 text-right">
-                {invoice.status === "pending" ? (
+                {invoice.status === 'pending' ? (
                   <>
                     <Button
                       type="button"
                       onClick={() => onPay(invoice)}
                       variant="link"
-                      className="h-auto p-0 mr-2 text-success"
+                      className="mr-2 h-auto p-0 text-success"
                     >
                       Receber
                     </Button>
@@ -134,15 +140,23 @@ function BillingSummaryCards({ summary }: { summary: InvoiceSummary | null }) {
 
   return (
     <>
-      <MetricCard label="Total recebido" value={formatCurrency(paidCents)} accent="text-success" />
-      <MetricCard label="Total a receber" value={formatCurrency(pendingCents)} accent="text-warning" />
+      <MetricCard
+        label="Total recebido"
+        value={formatCurrency(paidCents)}
+        accent="text-success"
+      />
+      <MetricCard
+        label="Total a receber"
+        value={formatCurrency(pendingCents)}
+        accent="text-warning"
+      />
     </>
   );
 }
 
 export default function BillingPage() {
   const { toast } = useToast();
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [sellingPackage, setSellingPackage] = useState(false);
@@ -155,22 +169,21 @@ export default function BillingPage() {
     refresh,
     loadMore,
   } = useCursorPagedQuery<InvoiceDto>(
-    `/api/invoices${statusFilter ? `?status=${statusFilter}` : ""}`,
+    `/api/invoices${statusFilter ? `?status=${statusFilter}` : ''}`,
     PAGE_SIZE,
   );
 
-  const { data: patients } = useApiQuery<PatientDto[]>("/api/patients");
-  const { data: summary, refresh: refreshSummary } = useApiQuery<InvoiceSummary>(
-    "/api/invoices/summary",
-  );
+  const { data: patients } = useApiQuery<PatientDto[]>('/api/patients');
+  const { data: summary, refresh: refreshSummary } =
+    useApiQuery<InvoiceSummary>('/api/invoices/summary');
   const error = actionError ?? loadError;
 
   const handleCreate = async (values: InvoiceFormValues) => {
     // Sem try/catch aqui de propósito: InvoiceForm já envolve este onSubmit
     // no próprio catch (mostra ErrorAlert inline e mantém o modal aberto) —
     // interceptar o erro aqui engoliria essa mensagem antes dela chegar lá.
-    await apiFetch<InvoiceDto>("/api/invoices", {
-      method: "POST",
+    await apiFetch<InvoiceDto>('/api/invoices', {
+      method: 'POST',
       body: JSON.stringify({
         patientId: values.patientId,
         description: values.description,
@@ -179,8 +192,8 @@ export default function BillingPage() {
       }),
     });
     toast({
-      description: "Fatura criada",
-      variant: "success",
+      description: 'Fatura criada',
+      variant: 'success',
     });
     setCreating(false);
     refresh();
@@ -190,44 +203,48 @@ export default function BillingPage() {
   const handlePay = async (invoice: InvoiceDto, method: string) => {
     try {
       await apiFetch<InvoiceDto>(`/api/invoices/${invoice.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ action: "pay", method }),
+        method: 'PATCH',
+        body: JSON.stringify({ action: 'pay', method }),
       });
       toast({
-        description: "Pagamento registrado",
-        variant: "success",
+        description: 'Pagamento registrado',
+        variant: 'success',
       });
       setPaying(null);
       setActionError(null);
       refresh();
       refreshSummary();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Erro ao registrar pagamento");
+      setActionError(
+        err instanceof Error ? err.message : 'Erro ao registrar pagamento',
+      );
     }
   };
 
   const handleCancel = async (invoice: InvoiceDto) => {
     try {
       await apiFetch<InvoiceDto>(`/api/invoices/${invoice.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ action: "cancel" }),
+        method: 'PATCH',
+        body: JSON.stringify({ action: 'cancel' }),
       });
       toast({
-        description: "Fatura cancelada",
-        variant: "success",
+        description: 'Fatura cancelada',
+        variant: 'success',
       });
       setActionError(null);
       refresh();
       refreshSummary();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Erro ao cancelar fatura");
+      setActionError(
+        err instanceof Error ? err.message : 'Erro ao cancelar fatura',
+      );
     }
   };
 
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="sv-display text-2xl font-bold">Faturamento</h1>
+        <h1 className="sv-display font-bold text-2xl">Faturamento</h1>
         <div className="flex gap-2">
           <Button
             type="button"
@@ -253,23 +270,26 @@ export default function BillingPage() {
         <BillingSummaryCards summary={summary} />
       </div>
 
-      <div className="mb-4 flex gap-2" role="group" aria-label="Filtrar por situação">
+      <fieldset
+        className="mb-4 flex gap-2 border-0 p-0"
+        aria-label="Filtrar por situação"
+      >
         {STATUS_FILTERS.map((filter) => (
           <Button
             key={filter.value}
             type="button"
             onClick={() => setStatusFilter(filter.value)}
             aria-pressed={statusFilter === filter.value}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium ${
+            className={`rounded-full px-3 py-1.5 font-medium text-sm ${
               statusFilter === filter.value
-                ? "bg-accent-ink text-white"
-                : "border border-border-strong text-ink-2 hover:bg-surface-2"
+                ? 'bg-accent-ink text-white'
+                : 'border border-border-strong text-ink-2 hover:bg-surface-2'
             }`}
           >
             {filter.label}
           </Button>
         ))}
-      </div>
+      </fieldset>
 
       <Card>
         <PagedList
@@ -285,7 +305,10 @@ export default function BillingPage() {
         />
       </Card>
 
-      <LoadMoreButton visible={Boolean(invoices) && hasMore} onClick={loadMore} />
+      <LoadMoreButton
+        visible={Boolean(invoices) && hasMore}
+        onClick={loadMore}
+      />
 
       <PackageSaleModal
         open={sellingPackage}
@@ -300,13 +323,16 @@ export default function BillingPage() {
 
       {creating && (
         <Modal title="Nova fatura" onClose={() => setCreating(false)}>
-          <InvoiceForm patients={(patients ?? []).filter((p) => p.active)} onSubmit={handleCreate} />
+          <InvoiceForm
+            patients={(patients ?? []).filter((p) => p.active)}
+            onSubmit={handleCreate}
+          />
         </Modal>
       )}
 
       {paying && (
         <Modal title="Registrar pagamento" onClose={() => setPaying(null)}>
-          <p className="mb-4 text-sm text-ink-2">
+          <p className="mb-4 text-ink-2 text-sm">
             {paying.patientName} — {formatCurrency(paying.amountCents)}
           </p>
           <div className="grid grid-cols-2 gap-2">
@@ -358,12 +384,12 @@ function PackageForm({
   onSaved: () => void;
 }) {
   const { toast } = useToast();
-  const { data: procedures } = useApiQuery<ProcedureDto[]>("/api/procedures");
-  const [patientId, setPatientId] = useState("");
-  const [procedureId, setProcedureId] = useState("");
-  const [sessions, setSessions] = useState("10");
-  const [price, setPrice] = useState("");
-  const [expiresAt, setExpiresAt] = useState("");
+  const { data: procedures } = useApiQuery<ProcedureDto[]>('/api/procedures');
+  const [patientId, setPatientId] = useState('');
+  const [procedureId, setProcedureId] = useState('');
+  const [sessions, setSessions] = useState('10');
+  const [price, setPrice] = useState('');
+  const [expiresAt, setExpiresAt] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const activeProcedures = (procedures ?? []).filter((p) => p.active);
@@ -373,8 +399,8 @@ function PackageForm({
     setSaving(true);
     setError(null);
     try {
-      await apiFetch("/api/packages", {
-        method: "POST",
+      await apiFetch('/api/packages', {
+        method: 'POST',
         body: JSON.stringify({
           patientId,
           procedureId,
@@ -382,16 +408,18 @@ function PackageForm({
           priceCents: Math.round(Number(price) * 100),
           // Validade opcional: fim do dia escolhido no fuso local da clínica —
           // forçar UTC encurtaria o último dia em fusos a oeste (UTC-3: 20:59).
-          expiresAt: expiresAt ? new Date(`${expiresAt}T23:59:59`).toISOString() : null,
+          expiresAt: expiresAt
+            ? new Date(`${expiresAt}T23:59:59`).toISOString()
+            : null,
         }),
       });
       toast({
-        description: "Pacote vendido",
-        variant: "success",
+        description: 'Pacote vendido',
+        variant: 'success',
       });
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao vender pacote");
+      setError(err instanceof Error ? err.message : 'Erro ao vender pacote');
       setSaving(false);
     }
   };
@@ -399,9 +427,14 @@ function PackageForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       {error && <ErrorAlert message={error} />}
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Paciente *
-        <NativeSelect required value={patientId} onChange={(e) => setPatientId(e.target.value)} className="mt-1">
+        <NativeSelect
+          required
+          value={patientId}
+          onChange={(e) => setPatientId(e.target.value)}
+          className="mt-1"
+        >
           <option value="">Selecione…</option>
           {patients.map((patient) => (
             <option key={patient.id} value={patient.id}>
@@ -410,9 +443,14 @@ function PackageForm({
           ))}
         </NativeSelect>
       </label>
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Procedimento *
-        <NativeSelect required value={procedureId} onChange={(e) => setProcedureId(e.target.value)} className="mt-1">
+        <NativeSelect
+          required
+          value={procedureId}
+          onChange={(e) => setProcedureId(e.target.value)}
+          className="mt-1"
+        >
           <option value="">Selecione…</option>
           {activeProcedures.map((procedure) => (
             <option key={procedure.id} value={procedure.id}>
@@ -421,22 +459,38 @@ function PackageForm({
           ))}
         </NativeSelect>
         {activeProcedures.length === 0 && (
-          <span className="mt-1 block text-xs font-normal text-warning">
+          <span className="mt-1 block font-normal text-warning text-xs">
             Cadastre procedimentos no catálogo para vender pacotes.
           </span>
         )}
       </label>
       <div className="grid grid-cols-2 gap-3">
-        <label className="text-sm font-medium">
+        <label className="font-medium text-sm">
           Sessões *
-          <Input required type="number" min="1" max="100" value={sessions} onChange={(e) => setSessions(e.target.value)} className="mt-1" />
+          <Input
+            required
+            type="number"
+            min="1"
+            max="100"
+            value={sessions}
+            onChange={(e) => setSessions(e.target.value)}
+            className="mt-1"
+          />
         </label>
-        <label className="text-sm font-medium">
+        <label className="font-medium text-sm">
           Preço total (R$) *
-          <Input required type="number" min="0" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className="mt-1" />
+          <Input
+            required
+            type="number"
+            min="0"
+            step="0.01"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            className="mt-1"
+          />
         </label>
       </div>
-      <label className="text-sm font-medium">
+      <label className="font-medium text-sm">
         Validade
         <Input
           type="date"
@@ -444,17 +498,12 @@ function PackageForm({
           onChange={(e) => setExpiresAt(e.target.value)}
           className="mt-1"
         />
-        <span className="mt-1 block text-xs font-normal text-ink-3">
+        <span className="mt-1 block font-normal text-ink-3 text-xs">
           Opcional — sem data, o pacote não expira.
         </span>
       </label>
-      <Button
-        type="submit"
-        disabled={saving}
-        variant="accent"
-        className="mt-1"
-      >
-        {saving ? "Vendendo…" : "Vender pacote"}
+      <Button type="submit" disabled={saving} variant="accent" className="mt-1">
+        {saving ? 'Vendendo…' : 'Vender pacote'}
       </Button>
     </form>
   );

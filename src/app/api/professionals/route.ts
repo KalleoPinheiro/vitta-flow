@@ -1,12 +1,12 @@
-import type { NextRequest } from "next/server";
-import { z } from "zod";
-import { getRepositories } from "@/infrastructure/container";
-import { Professional } from "@/domain/professional/professional";
-import { handleRequest } from "@/lib/api-response";
-import { toProfessionalDto } from "@/lib/dto";
-import { requireStaffSession } from "@/lib/auth/require-session";
-import { LEGACY_CLINIC_ID } from "@/infrastructure/persistence/drizzle/legacy-clinic";
-import { recordAudit } from "@/lib/audit";
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { Professional } from '@/domain/professional/professional';
+import { getRepositories } from '@/infrastructure/container';
+import { LEGACY_CLINIC_ID } from '@/infrastructure/persistence/drizzle/legacy-clinic';
+import { handleRequest } from '@/lib/api-response';
+import { recordAudit } from '@/lib/audit';
+import { requireStaffSession } from '@/lib/auth/require-session';
+import { toProfessionalDto } from '@/lib/dto';
 
 const professionalSchema = z.object({
   fullName: z.string().min(1).max(200),
@@ -43,8 +43,8 @@ export async function POST(request: NextRequest) {
     });
     await professionals.save(professional);
     recordAudit(auditEvents, guard.session, {
-      action: "create",
-      resourceType: "professional",
+      action: 'create',
+      resourceType: 'professional',
       resourceId: professional.id,
     });
     return toProfessionalDto(professional);

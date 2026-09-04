@@ -7,7 +7,11 @@
  * decisão do DocumentFrame — cor neutra é permitida pela regra "toda cor resolve
  * para um token --sv-*".
  */
-export default function DocumentsLayout({ children }: { children: React.ReactNode }) {
+export default function DocumentsLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <div className="mx-auto max-w-3xl bg-white p-8 print:max-w-none print:p-0">
       {children}

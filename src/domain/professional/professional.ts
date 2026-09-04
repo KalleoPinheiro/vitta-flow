@@ -1,5 +1,5 @@
-import { ValidationError } from "../shared/errors";
-import { newId } from "../shared/id";
+import { ValidationError } from '../shared/errors';
+import { newId } from '../shared/id';
 
 export interface ProfessionalProps {
   fullName: string;
@@ -35,21 +35,30 @@ export class Professional {
   private static validate(props: ProfessionalProps): ProfessionalProps {
     const fullName = props.fullName.trim();
     if (fullName.length === 0) {
-      throw new ValidationError("Nome do profissional é obrigatório");
+      throw new ValidationError('Nome do profissional é obrigatório');
     }
     const pct = props.commissionPct ?? null;
     if (pct != null && (!Number.isInteger(pct) || pct < 0 || pct > 100)) {
-      throw new ValidationError("Repasse deve ser um percentual inteiro de 0 a 100");
+      throw new ValidationError(
+        'Repasse deve ser um percentual inteiro de 0 a 100',
+      );
     }
-    return { fullName, registry: props.registry?.trim() || null, commissionPct: pct };
+    return {
+      fullName,
+      registry: props.registry?.trim() || null,
+      commissionPct: pct,
+    };
   }
 
   update(changes: Partial<ProfessionalProps>): Professional {
     const validated = Professional.validate({
       fullName: changes.fullName ?? this.state.fullName,
-      registry: changes.registry !== undefined ? changes.registry : this.state.registry,
+      registry:
+        changes.registry !== undefined ? changes.registry : this.state.registry,
       commissionPct:
-        changes.commissionPct !== undefined ? changes.commissionPct : this.state.commissionPct,
+        changes.commissionPct !== undefined
+          ? changes.commissionPct
+          : this.state.commissionPct,
     });
     return new Professional({ ...this.state, ...validated });
   }

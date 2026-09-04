@@ -4,4 +4,4 @@
  * placeholder para satisfazer a coluna NOT NULL sem alterar comportamento observável —
  * o app roda em mono-tenant até cada entidade ganhar sua própria task de isolamento.
  */
-export const LEGACY_CLINIC_ID = "legacy-clinic";
+export const LEGACY_CLINIC_ID = 'legacy-clinic';

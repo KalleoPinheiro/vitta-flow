@@ -1,13 +1,15 @@
-import { and, asc, desc, eq, gt, isNull, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, isNull, or, sql } from 'drizzle-orm';
 import {
   SessionPackage,
   type SessionPackageRepository,
-} from "@/domain/billing/package";
-import type { AppDb } from "./db";
-import { packageConsumptions, sessionPackages } from "./schema";
-import { withTenant } from "./tenant-scope";
+} from '@/domain/billing/package';
+import type { AppDb } from './db';
+import { packageConsumptions, sessionPackages } from './schema';
+import { withTenant } from './tenant-scope';
 
-export class DrizzleSessionPackageRepository implements SessionPackageRepository {
+export class DrizzleSessionPackageRepository
+  implements SessionPackageRepository
+{
   constructor(
     private readonly db: AppDb,
     private readonly clinicId: string | null,
@@ -16,7 +18,7 @@ export class DrizzleSessionPackageRepository implements SessionPackageRepository
   async save(pkg: SessionPackage): Promise<void> {
     if (this.clinicId === null) {
       throw new Error(
-        "Papel de sistema não pode salvar pacote de sessões (somente leitura cross-empresa)",
+        'Papel de sistema não pode salvar pacote de sessões (somente leitura cross-empresa)',
       );
     }
     const values = {
@@ -41,7 +43,9 @@ export class DrizzleSessionPackageRepository implements SessionPackageRepository
     const rows = await this.db
       .select()
       .from(sessionPackages)
-      .where(withTenant(sessionPackages, this.clinicId, eq(sessionPackages.id, id)))
+      .where(
+        withTenant(sessionPackages, this.clinicId, eq(sessionPackages.id, id)),
+      )
       .limit(1);
     return rows[0] ? SessionPackage.restore(rows[0]) : null;
   }
@@ -50,7 +54,13 @@ export class DrizzleSessionPackageRepository implements SessionPackageRepository
     const rows = await this.db
       .select()
       .from(sessionPackages)
-      .where(withTenant(sessionPackages, this.clinicId, eq(sessionPackages.patientId, patientId)))
+      .where(
+        withTenant(
+          sessionPackages,
+          this.clinicId,
+          eq(sessionPackages.patientId, patientId),
+        ),
+      )
       .orderBy(desc(sessionPackages.createdAt));
     return rows.map((row) => SessionPackage.restore(row));
   }
@@ -76,7 +86,10 @@ export class DrizzleSessionPackageRepository implements SessionPackageRepository
               0,
             ),
             // Validade (COMP3-08): expirado não consome; null = sem validade.
-            or(isNull(sessionPackages.expiresAt), gt(sessionPackages.expiresAt, now)),
+            or(
+              isNull(sessionPackages.expiresAt),
+              gt(sessionPackages.expiresAt, now),
+            ),
           ),
         ),
       )
@@ -85,15 +98,23 @@ export class DrizzleSessionPackageRepository implements SessionPackageRepository
     return rows[0] ? SessionPackage.restore(rows[0]) : null;
   }
 
-  async recordConsumption(packageId: string, appointmentId: string): Promise<void> {
+  async recordConsumption(
+    packageId: string,
+    appointmentId: string,
+  ): Promise<void> {
     if (this.clinicId === null) {
       throw new Error(
-        "Papel de sistema não pode registrar consumo de pacote (somente leitura cross-empresa)",
+        'Papel de sistema não pode registrar consumo de pacote (somente leitura cross-empresa)',
       );
     }
     await this.db
       .insert(packageConsumptions)
-      .values({ packageId, appointmentId, clinicId: this.clinicId, createdAt: new Date() })
+      .values({
+        packageId,
+        appointmentId,
+        clinicId: this.clinicId,
+        createdAt: new Date(),
+      })
       .onConflictDoNothing();
   }
 
@@ -102,7 +123,11 @@ export class DrizzleSessionPackageRepository implements SessionPackageRepository
       .select({ packageId: packageConsumptions.packageId })
       .from(packageConsumptions)
       .where(
-        withTenant(packageConsumptions, this.clinicId, eq(packageConsumptions.appointmentId, appointmentId)),
+        withTenant(
+          packageConsumptions,
+          this.clinicId,
+          eq(packageConsumptions.appointmentId, appointmentId),
+        ),
       )
       .limit(1);
     return rows.length > 0;

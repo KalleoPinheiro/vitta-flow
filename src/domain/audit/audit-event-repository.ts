@@ -1,4 +1,4 @@
-import type { AuditEvent } from "./audit-event";
+import type { AuditEvent } from './audit-event';
 
 export interface AuditEventFilter {
   patientId?: string;
@@ -17,5 +17,8 @@ export interface AuditEventPage {
 /** Append-only: sem update nem delete — integridade da trilha. */
 export interface AuditEventRepository {
   save(event: AuditEvent): Promise<void>;
-  findAll(filter?: AuditEventFilter, page?: AuditEventPage): Promise<AuditEvent[]>;
+  findAll(
+    filter?: AuditEventFilter,
+    page?: AuditEventPage,
+  ): Promise<AuditEvent[]>;
 }

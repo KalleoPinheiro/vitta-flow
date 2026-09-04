@@ -1,5 +1,5 @@
-import { NextRequest } from "next/server";
-import { adminCookieHeader } from "./session";
+import { NextRequest } from 'next/server';
+import { adminCookieHeader } from './session';
 
 /**
  * Builders de requisição compartilhados pelos testes de rota. As rotas exigem
@@ -16,7 +16,11 @@ export const jsonRequest = (
   new NextRequest(`http://localhost${url}`, {
     method,
     body: body === undefined ? undefined : JSON.stringify(body),
-    headers: { "Content-Type": "application/json", ...adminCookieHeader(), ...headers },
+    headers: {
+      'Content-Type': 'application/json',
+      ...adminCookieHeader(),
+      ...headers,
+    },
   });
 
 /** Upload multipart autenticado como equipe — usado pelos endpoints de foto. */
@@ -26,7 +30,7 @@ export const multipartRequest = (
   headers?: Record<string, string>,
 ): NextRequest =>
   new NextRequest(`http://localhost${url}`, {
-    method: "POST",
+    method: 'POST',
     body: formData,
     headers: { ...adminCookieHeader(), ...headers },
   });

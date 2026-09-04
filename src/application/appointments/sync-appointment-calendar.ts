@@ -1,6 +1,6 @@
-import type { AppointmentRepository } from "@/domain/scheduling/appointment-repository";
-import type { PatientRepository } from "@/domain/patient/patient-repository";
-import type { CalendarGateway } from "@/application/ports/calendar-gateway";
+import type { CalendarGateway } from '@/application/ports/calendar-gateway';
+import type { PatientRepository } from '@/domain/patient/patient-repository';
+import type { AppointmentRepository } from '@/domain/scheduling/appointment-repository';
 
 /**
  * Sincronização com Google Calendar fora do caminho crítico do request.
@@ -26,7 +26,7 @@ export class SyncAppointmentCalendar {
       : appointment.patientId;
 
     const eventId = await this.calendar.createEvent({
-      title: `Consulta: ${patient?.fullName ?? "Paciente"}`,
+      title: `Consulta: ${patient?.fullName ?? 'Paciente'}`,
       description: `${appointment.procedure}\nPaciente: ${patientLabel}`,
       startsAt: appointment.slot.start,
       endsAt: appointment.slot.end,
@@ -43,7 +43,7 @@ export class SyncAppointmentCalendar {
       return;
     }
     await this.calendar.updateEvent(appointment.googleEventId, {
-      title: "Consulta remarcada",
+      title: 'Consulta remarcada',
       description: appointment.procedure,
       startsAt: appointment.slot.start,
       endsAt: appointment.slot.end,

@@ -1,19 +1,19 @@
-import type { Anamnesis } from "@/domain/clinical/anamnesis";
-import type { EvolutionNote } from "@/domain/clinical/evolution-note";
-import type { ClinicalCondition } from "@/domain/clinical/clinical-condition";
-import type { ConditionAssessment } from "@/domain/clinical/condition-assessment";
-import type { ConditionPhoto } from "@/domain/clinical/condition-photo";
-import type {
-  ConsentRecord,
-  ConsentRecordRepository,
-} from "@/domain/consent/consent-record";
+import type { Anamnesis } from '@/domain/clinical/anamnesis';
+import type { ClinicalCondition } from '@/domain/clinical/clinical-condition';
 import type {
   AnamnesisRepository,
   ClinicalConditionRepository,
   ConditionAssessmentRepository,
   ConditionPhotoRepository,
   EvolutionNoteRepository,
-} from "@/domain/clinical/clinical-repositories";
+} from '@/domain/clinical/clinical-repositories';
+import type { ConditionAssessment } from '@/domain/clinical/condition-assessment';
+import type { ConditionPhoto } from '@/domain/clinical/condition-photo';
+import type { EvolutionNote } from '@/domain/clinical/evolution-note';
+import type {
+  ConsentRecord,
+  ConsentRecordRepository,
+} from '@/domain/consent/consent-record';
 
 export class InMemoryAnamnesisRepository implements AnamnesisRepository {
   private readonly items = new Map<string, Anamnesis>();
@@ -27,7 +27,9 @@ export class InMemoryAnamnesisRepository implements AnamnesisRepository {
   }
 }
 
-export class InMemoryEvolutionNoteRepository implements EvolutionNoteRepository {
+export class InMemoryEvolutionNoteRepository
+  implements EvolutionNoteRepository
+{
   private readonly items = new Map<string, EvolutionNote>();
   private readonly insertionOrder = new Map<string, number>();
   private sequence = 0;
@@ -35,7 +37,8 @@ export class InMemoryEvolutionNoteRepository implements EvolutionNoteRepository 
   async save(note: EvolutionNote): Promise<void> {
     this.items.set(note.id, note);
     if (!this.insertionOrder.has(note.id)) {
-      this.insertionOrder.set(note.id, (this.sequence += 1));
+      this.sequence += 1;
+      this.insertionOrder.set(note.id, this.sequence);
     }
   }
 
@@ -45,12 +48,15 @@ export class InMemoryEvolutionNoteRepository implements EvolutionNoteRepository 
       .sort(
         (a, b) =>
           b.createdAt.getTime() - a.createdAt.getTime() ||
-          (this.insertionOrder.get(b.id) ?? 0) - (this.insertionOrder.get(a.id) ?? 0),
+          (this.insertionOrder.get(b.id) ?? 0) -
+            (this.insertionOrder.get(a.id) ?? 0),
       );
   }
 }
 
-export class InMemoryClinicalConditionRepository implements ClinicalConditionRepository {
+export class InMemoryClinicalConditionRepository
+  implements ClinicalConditionRepository
+{
   private readonly items = new Map<string, ClinicalCondition>();
 
   async save(condition: ClinicalCondition): Promise<void> {
@@ -80,7 +86,9 @@ export class InMemoryClinicalConditionRepository implements ClinicalConditionRep
   }
 }
 
-export class InMemoryConditionAssessmentRepository implements ConditionAssessmentRepository {
+export class InMemoryConditionAssessmentRepository
+  implements ConditionAssessmentRepository
+{
   private readonly items = new Map<string, ConditionAssessment>();
 
   async save(assessment: ConditionAssessment): Promise<void> {
@@ -93,7 +101,9 @@ export class InMemoryConditionAssessmentRepository implements ConditionAssessmen
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
-  async findByConditionIds(conditionIds: string[]): Promise<ConditionAssessment[]> {
+  async findByConditionIds(
+    conditionIds: string[],
+  ): Promise<ConditionAssessment[]> {
     const ids = new Set(conditionIds);
     return [...this.items.values()]
       .filter((a) => ids.has(a.conditionId))
@@ -101,7 +111,9 @@ export class InMemoryConditionAssessmentRepository implements ConditionAssessmen
   }
 }
 
-export class InMemoryConditionPhotoRepository implements ConditionPhotoRepository {
+export class InMemoryConditionPhotoRepository
+  implements ConditionPhotoRepository
+{
   private readonly items = new Map<string, ConditionPhoto>();
 
   async save(photo: ConditionPhoto): Promise<void> {
@@ -127,7 +139,7 @@ export class InMemoryConditionPhotoRepository implements ConditionPhotoRepositor
 
   async findPendingTriage(): Promise<ConditionPhoto[]> {
     return [...this.items.values()]
-      .filter((p) => p.triageStatus === "pending")
+      .filter((p) => p.triageStatus === 'pending')
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
@@ -136,7 +148,9 @@ export class InMemoryConditionPhotoRepository implements ConditionPhotoRepositor
   }
 }
 
-export class InMemoryConsentRecordRepository implements ConsentRecordRepository {
+export class InMemoryConsentRecordRepository
+  implements ConsentRecordRepository
+{
   private readonly items: ConsentRecord[] = [];
 
   async save(record: ConsentRecord): Promise<void> {
@@ -149,7 +163,9 @@ export class InMemoryConsentRecordRepository implements ConsentRecordRepository 
       .sort((a, b) => b.acceptedAt.getTime() - a.acceptedAt.getTime());
   }
 
-  async findLatestByPatientId(patientId: string): Promise<ConsentRecord | null> {
+  async findLatestByPatientId(
+    patientId: string,
+  ): Promise<ConsentRecord | null> {
     const records = await this.findByPatientId(patientId);
     return records[0] ?? null;
   }

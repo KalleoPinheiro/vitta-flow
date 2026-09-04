@@ -1,20 +1,27 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
-import { LogoutButton } from "@/components/logout-button";
+
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { LogoutButton } from '@/components/logout-button';
 
 const push = vi.fn();
 const refresh = vi.fn();
 
-vi.mock("next/navigation", () => ({
+vi.mock('next/navigation', () => ({
   useRouter: () => ({ push, refresh }),
 }));
 
-describe("Feature: Botão de logout", () => {
+describe('Feature: Botão de logout', () => {
   beforeEach(() => {
     push.mockClear();
     refresh.mockClear();
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true }));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }));
   });
 
   afterEach(() => {
@@ -22,14 +29,14 @@ describe("Feature: Botão de logout", () => {
     vi.unstubAllGlobals();
   });
 
-  describe("Cenário: renderização", () => {
+  describe('Cenário: renderização', () => {
     it("Dado o componente, Quando renderizar, Então exibe o texto 'Sair'", () => {
       render(<LogoutButton />);
 
-      expect(screen.getByRole("button", { name: "Sair" })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Sair' })).toBeInTheDocument();
     });
 
-    it("Dado o componente, Então o botão vem do Button do Still Void", () => {
+    it('Dado o componente, Então o botão vem do Button do Still Void', () => {
       render(<LogoutButton />);
 
       // SPEC_DEVIATION: na 3.x a variante ghost do <Button> do pacote emite a
@@ -37,28 +44,32 @@ describe("Feature: Botão de logout", () => {
       // `hover:bg-sv-surface` da 2.x — mesma mudança de implementação do
       // Dialog/Alert (ver tests/components/modal.test.tsx), não listada nas 3
       // quebras do Problem Statement da spec. Prova de origem segue a classe real.
-      expect(screen.getByRole("button", { name: "Sair" })).toHaveClass("sv-btn--ghost");
+      expect(screen.getByRole('button', { name: 'Sair' })).toHaveClass(
+        'sv-btn--ghost',
+      );
     });
   });
 
-  describe("Cenário: clique aciona logout", () => {
-    it("Dado clique no botão, Quando acionado, Então chama a API de logout", async () => {
+  describe('Cenário: clique aciona logout', () => {
+    it('Dado clique no botão, Quando acionado, Então chama a API de logout', async () => {
       render(<LogoutButton />);
 
-      fireEvent.click(screen.getByRole("button", { name: "Sair" }));
+      fireEvent.click(screen.getByRole('button', { name: 'Sair' }));
 
       await waitFor(() => {
-        expect(fetch).toHaveBeenCalledWith("/api/auth/logout", { method: "POST" });
+        expect(fetch).toHaveBeenCalledWith('/api/auth/logout', {
+          method: 'POST',
+        });
       });
     });
 
-    it("Dado logout concluído, Quando acionado, Então redireciona para login e atualiza a rota", async () => {
+    it('Dado logout concluído, Quando acionado, Então redireciona para login e atualiza a rota', async () => {
       render(<LogoutButton />);
 
-      fireEvent.click(screen.getByRole("button", { name: "Sair" }));
+      fireEvent.click(screen.getByRole('button', { name: 'Sair' }));
 
       await waitFor(() => {
-        expect(push).toHaveBeenCalledWith("/login");
+        expect(push).toHaveBeenCalledWith('/login');
       });
       expect(refresh).toHaveBeenCalledTimes(1);
     });

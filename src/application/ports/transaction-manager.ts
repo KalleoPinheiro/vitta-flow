@@ -1,7 +1,7 @@
-import type { AppointmentRepository } from "@/domain/scheduling/appointment-repository";
-import type { InvoiceRepository } from "@/domain/billing/invoice-repository";
-import type { FollowUpRepository } from "@/domain/followup/follow-up-repository";
-import type { SessionPackageRepository } from "@/domain/billing/package";
+import type { InvoiceRepository } from '@/domain/billing/invoice-repository';
+import type { SessionPackageRepository } from '@/domain/billing/package';
+import type { FollowUpRepository } from '@/domain/followup/follow-up-repository';
+import type { AppointmentRepository } from '@/domain/scheduling/appointment-repository';
 
 /**
  * Repositórios disponíveis dentro de uma transação — escopo enxuto, apenas o

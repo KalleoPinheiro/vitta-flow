@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { apiFetch } from "@/lib/client";
 import { formatDateTime } from "@/lib/format";
 import { Alert, AlertDescription, Button, Card, FileInput, Icon, Input, Prose } from "@still-void/ui/react";
@@ -227,12 +228,14 @@ export function PatientPhotoUpload({
       </div>
       {pendingFile && previewUrl && (
         <div className="mt-2 flex items-center gap-3 rounded border border-border bg-sv-surface p-2">
-          {/* eslint-disable-next-line @next/next/no-img-element -- blob: local, sem otimizador */}
-          <img
-            src={previewUrl}
-            alt="Prévia da foto selecionada"
-            className="h-16 w-16 rounded object-cover"
-          />
+          <div className="relative h-16 w-16 rounded overflow-hidden shrink-0">
+            <Image
+              src={previewUrl}
+              alt="Prévia da foto selecionada"
+              fill
+              className="object-cover"
+            />
+          </div>
           <div className="flex flex-1 flex-col gap-1">
             <p className="text-xs text-ink-3">{pendingFile.name}</p>
             <div className="flex gap-2">

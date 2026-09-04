@@ -1134,7 +1134,7 @@ describe("Feature: Evolução clínica da condição", () => {
       render(<ConditionProgress {...entry} />);
 
       const image = screen.getByAltText(`Foto da condição em ${formatDate(photo.createdAt)}`) as HTMLImageElement;
-      expect(image).toHaveAttribute("src", "/api/portal/patient/photos/photo-1");
+      expect(image.src).toContain("%2Fapi%2Fportal%2Fpatient%2Fphotos%2Fphoto-1");
     });
 
     it("Dado fotos sem base de URL autorizada, Quando renderizar, Então não exibe a galeria", () => {

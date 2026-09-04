@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Button, Card, CardContent } from "@still-void/ui/react";
 import type { ConditionDto, ConditionPhotoDto, PortalAssessmentDto } from "@/lib/dto";
 import {
@@ -102,12 +103,14 @@ function PortalPhotoGallery({
               })
             }
           >
-            {/* eslint-disable-next-line @next/next/no-img-element -- rota autorizada dinâmica, sem otimizador */}
-            <img
-              src={`${photoUrlBase}/${photo.id}`}
-              alt={`Foto da condição em ${formatDate(photo.createdAt)}`}
-              className={`h-24 w-24 rounded border border-border object-cover ${revealed ? "" : "blur-md"}`}
-            />
+            <div className={`relative h-24 w-24 rounded border border-border overflow-hidden ${revealed ? "" : "blur-md"}`}>
+              <Image
+                src={`${photoUrlBase}/${photo.id}`}
+                alt={`Foto da condição em ${formatDate(photo.createdAt)}`}
+                fill
+                className="object-cover"
+              />
+            </div>
           </Button>
         );
       })}

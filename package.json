@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "prepare": "husky",
     "dev": "next dev",
     "build": "node --max-old-space-size=4096 ./node_modules/next/dist/bin/next build",
     "start": "next start",
@@ -16,6 +17,9 @@
     "test:e2e:ui": "playwright test --ui",
     "import-taxonomy": "tsx scripts/import-taxonomy.ts",
     "check:sv": "bash scripts/check-sv-adoption.sh"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": "eslint --fix"
   },
   "dependencies": {
     "@still-void/ui": "^3.3.1",
@@ -43,7 +47,9 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.3.2",
+    "husky": "^9.1.7",
     "jsdom": "^29.1.1",
+    "lint-staged": "^17.4.1",
     "tailwindcss": "^4",
     "tsx": "^4.23.4",
     "typescript": "^5",

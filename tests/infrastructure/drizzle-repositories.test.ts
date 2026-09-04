@@ -1,9 +1,4 @@
-import path from 'node:path';
-import { PGlite } from '@electric-sql/pglite';
-import { btree_gist } from '@electric-sql/pglite/contrib/btree_gist';
-import { pg_trgm } from '@electric-sql/pglite/contrib/pg_trgm';
 import { drizzle, type PgliteDatabase } from 'drizzle-orm/pglite';
-import { migrate } from 'drizzle-orm/pglite/migrator';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { UserAccount } from '@/domain/auth/user-account';
 import { Invoice } from '@/domain/billing/invoice';
@@ -28,6 +23,7 @@ import { DrizzlePatientRepository } from '@/infrastructure/persistence/drizzle/d
 import { DrizzleProfessionalRepository } from '@/infrastructure/persistence/drizzle/drizzle-professional-repository';
 import * as schema from '@/infrastructure/persistence/drizzle/schema';
 import { encodeCursor } from '@/lib/pagination';
+import { createPgliteFromTemplate } from '../support/pglite-template';
 
 const slot = (startIso: string, endIso: string) =>
   TimeSlot.create(new Date(startIso), new Date(endIso));
@@ -45,11 +41,8 @@ describe('Feature: Persistência PostgreSQL (Drizzle)', () => {
   let procedureKitRepo: DrizzleProcedureKitRepository;
 
   beforeAll(async () => {
-    const client = new PGlite({ extensions: { pg_trgm, btree_gist } });
+    const client = await createPgliteFromTemplate();
     db = drizzle(client, { schema });
-    await migrate(db, {
-      migrationsFolder: path.join(process.cwd(), 'drizzle'),
-    });
     appDb = db as unknown as AppDb;
     patientRepo = new DrizzlePatientRepository(appDb, 'legacy-clinic');
     appointmentRepo = new DrizzleAppointmentRepository(appDb, 'legacy-clinic');

@@ -3,7 +3,7 @@ issue: 111 (mãe: #116)
 scope: Large
 ---
 
-# perf(test): reusar PGlite migrado por worker com isolamento via transação+rollback
+# perf(test): migrar PGlite 1x pra suite via snapshot em vez de por arquivo
 
 ## Problema
 
@@ -11,8 +11,8 @@ scope: Large
 
 ## Requisitos (IDs)
 
-- **R1**: Migration do PGlite roda 1x por worker vitest, não 1x por arquivo.
-- **R2**: Isolamento entre arquivos que compartilham o worker é garantido por transação+rollback — nunca por reset best-effort (DELETE manual de tabelas) como mecanismo de limpeza entre arquivos.
+- **R1**: Migration do PGlite roda 1x pra toda a suite, não 1x por arquivo.
+- **R2**: Cada arquivo continua isolado dos demais — sem reset best-effort (DELETE manual de tabelas) como mecanismo de limpeza entre arquivos, e sem estado compartilhado que possa vazar.
 - **R3**: `npm run test` com tempo de execução mensuravelmente menor, sem baixar coverage (piso 90%) nem quebrar teste algum.
 - **R4**: Testes que migram um schema *diferente* do atual (backfill de migração antiga) ficam fora do reuso — precisam de estado de schema próprio, não do banco já totalmente migrado.
 
@@ -20,7 +20,7 @@ scope: Large
 
 Rollback por **arquivo**, não por `it()` individual — confirmado com o usuário antes de implementar. Motivo: dezenas de testes (`api-flow.test.ts`, `consent-record-tenant-isolation.test.ts`, etc.) encadeiam estado propositalmente entre `it()`s do mesmo arquivo — rollback por teste quebraria isso sem relação com o objetivo de #111.
 
-## Mecanismo real (mudou durante a implementação — ver achados)
+## Mecanismo (histórico da implementação)
 
 A ideia inicial (BEGIN/ROLLBACK cru por arquivo num PGlite reusado entre arquivos via `isolate:false`) foi tentada e **descartada por 2 motivos concretos, achados na prática**:
 1. `isolate:false` quebra `vi.mock` de forma sutil (módulo já resolvido na fase de coleta do Vitest fica em cache "real", não mockado, na fase de execução — documentado no próprio código-fonte do Vitest: `mocker.reset()`/`resetModules()` só rodam com `isolate: true`).

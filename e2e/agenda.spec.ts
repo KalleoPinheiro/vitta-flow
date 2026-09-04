@@ -46,7 +46,7 @@ async function goToMonth(page: Page, target: YMD): Promise<void> {
   }
 }
 
-// eslint-disable-next-line max-lines-per-function -- describe agrupa 6 fluxos e2e independentes da agenda
+// biome-ignore lint/complexity/noExcessiveLinesPerFunction: describe agrupa 6 fluxos e2e independentes da agenda
 test.describe("agenda", () => {
   test("agenda uma consulta em dia útil e horário comercial", async ({ page, request }) => {
     const patient = await createPatient(request, { fullName: `Paciente Agenda ${Date.now()}` });

@@ -116,7 +116,6 @@ function mockAgendaFetch(options: AgendaFetchOptions = {}) {
   } = options;
   vi.stubGlobal(
     'fetch',
-    // eslint-disable-next-line complexity -- roteador de mock por url/método, ramificação inerente ao padrão
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input.toString();
       const method = init?.method ?? 'GET';

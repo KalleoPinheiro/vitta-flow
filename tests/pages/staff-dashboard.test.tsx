@@ -111,7 +111,6 @@ function mockFetch(options: FetchOptions = {}) {
 
   vi.stubGlobal(
     'fetch',
-    // eslint-disable-next-line complexity -- roteador de mock por url/método, ramificação inerente ao padrão
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input.toString();
       const method = init?.method ?? 'GET';
@@ -347,7 +346,6 @@ describe('Feature: Dashboard do painel interno', () => {
     it('Dado falha ao concluir retorno, Quando acionado, Então exibe toast de erro', async () => {
       vi.stubGlobal(
         'fetch',
-        // eslint-disable-next-line complexity -- roteador de mock por url/método, ramificação inerente ao padrão
         vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
           const url = typeof input === 'string' ? input : input.toString();
           const method = init?.method ?? 'GET';

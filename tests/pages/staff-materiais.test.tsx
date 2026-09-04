@@ -138,7 +138,6 @@ interface RouterOptions {
 
 const buildRouter =
   (options: RouterOptions = {}) =>
-  // eslint-disable-next-line complexity -- roteador de mock por url/método, ramificação inerente ao padrão
   ({ url, init }: FetchCall) => {
     if (options.patchOrPost) {
       const result = options.patchOrPost({ url, init });

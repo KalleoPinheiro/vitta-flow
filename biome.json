@@ -1,13 +1,28 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.5.12/schema.json",
   "files": {
-    "includes": ["**/src/**/*", "**/tests/**/*"]
+    "includes": [
+      "**/src/**/*",
+      "**/tests/**/*",
+      "!**/.next",
+      "!**/.next-open-mode",
+      "!**/out",
+      "!**/build",
+      "!**/coverage",
+      "!.claude/worktrees"
+    ]
   },
   "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
     "enabled": true,
     "rules": {
       "preset": "recommended",
+      "complexity": {
+        "noExcessiveLinesPerFunction": {
+          "level": "error",
+          "options": { "maxLines": 120, "skipBlankLines": true }
+        }
+      },
       "nursery": {
         "useSortedClasses": {
           "level": "warn",
@@ -51,5 +66,30 @@
     "parser": {
       "tailwindDirectives": true
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["**/*.tsx"],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noExcessiveLinesPerFunction": {
+              "level": "error",
+              "options": { "maxLines": 320, "skipBlankLines": true }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["**/tests/**"],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noExcessiveLinesPerFunction": "off"
+          }
+        }
+      }
+    }
+  ]
 }

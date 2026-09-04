@@ -108,7 +108,6 @@ const defaultRouter =
       createPackage?: { ok: boolean; json: () => Promise<unknown> };
     } = {},
   ) =>
-  // eslint-disable-next-line complexity -- roteador de mock por url/método, ramificação inerente ao padrão
   ({ url, init }: FetchCall) => {
     const method = init?.method ?? 'GET';
 

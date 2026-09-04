@@ -13,7 +13,8 @@ Next.js 16 (App Router), React 19, TypeScript 5, Drizzle ORM + Postgres 16, Tail
 ## Commands
 
 - `npm run typecheck` — `tsc --noEmit`
-- `npm run lint` — eslint
+- `npm run lint` — `biome check`
+- `npm run format` — `biome format --write .`
 - `npm run test` / `test:coverage` — vitest, **90% coverage minimum enforced**
 - `npm run test:e2e` — Playwright
 - `npm run check:sv` — gate enforcing `@still-void/ui` adoption (see below)
@@ -22,9 +23,10 @@ Next.js 16 (App Router), React 19, TypeScript 5, Drizzle ORM + Postgres 16, Tail
 
 ## Code style
 
-- ESLint: `complexity` max 10, `max-depth` 4, `max-lines-per-function` 120 (320 for `.tsx`, unlimited in `tests/**`)
-- Unused vars must be prefixed with `_`
-- No Prettier/Biome — there is no formatter command
+- Biome (`biome.json`) is the single lint + format tool (issue #107, migrated off ESLint): cognitive complexity max 10 (`complexity/noExcessiveCognitiveComplexity`), `max-lines-per-function` 120 (`complexity/noExcessiveLinesPerFunction`, 320 for `.tsx`, off in `tests/**`)
+- Gap vs old ESLint config: Biome's complexity rule measures *cognitive* complexity, not cyclomatic — thresholds are comparable but not identical. There is no Biome equivalent of ESLint's `max-depth`; nesting depth is unenforced by the linter
+- Unused vars must be prefixed with `_` (Biome ignores `_`-prefixed identifiers by default)
+- Suppress a rule inline with `// biome-ignore lint/<category>/<rule>: <reason>`
 
 ## @still-void/ui adoption (in progress)
 

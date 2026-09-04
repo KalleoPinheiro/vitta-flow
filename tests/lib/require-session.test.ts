@@ -140,6 +140,9 @@ describe('Feature: Guarda de sessão nas rotas (camada 2 de autorização)', () 
     });
 
     it('Dada autenticação não configurada, Então responde 503 (fail-closed)', async () => {
+      // invariant: fail-closed só se sustenta se VITTA_ALLOW_OPEN_MODE também
+      // estiver limpo (forçado em vitest.config.mts) — um "true" vazado do
+      // ambiente do host faz este guard responder como modo aberto, não 503.
       delete process.env.AUTH_SECRET;
       delete process.env.AUTH_PASSWORD;
 

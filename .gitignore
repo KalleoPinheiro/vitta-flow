@@ -51,8 +51,16 @@ next-env.d.ts
 uploads/
 
 # Configuração local do Claude Code (contém caminhos absolutos do $HOME e
-# referência a outro projeto; a decisão de não versionar já tinha sido tomada)
-/.claude/
+# referência a outro projeto; a decisão de não versionar já tinha sido tomada).
+# Exceção: settings.json/hooks/commands/agents são portáveis (sem paths
+# absolutos) e precisam estar versionados pro harness-score contar de verdade
+# (HKS-05 exige script de hook commitado) e pra outros devs/CI terem os mesmos
+# guardrails e comandos.
+/.claude/*
+!/.claude/settings.json
+!/.claude/hooks/
+!/.claude/commands/
+!/.claude/agents/
 
 # Playwright E2E
 /test-results/
@@ -63,6 +71,5 @@ uploads/
 
 # IA
 .agents
-.claude
 .cursor
 .windsurf

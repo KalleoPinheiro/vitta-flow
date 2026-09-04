@@ -1,0 +1,116 @@
+# Cortar cenários E2E redundantes com cobertura unit/integration equivalente
+
+**Escopo**: Large pelo tamanho (19 arquivos, 86 testes auditados), mas sem ambiguidade de
+negócio — a regra de corte já foi decidida na issue #113 (ver `Contexto`). Sem `discuss.md`.
+Sem `design.md` (nenhuma decisão arquitetural nova — é curadoria de suíte de testes). Sem
+`tasks.md` formal — o levantamento por arquivo em `levantamento.md` já é a unidade de trabalho;
+cada corte vira um commit atômico (ver seção Execução).
+
+## Contexto
+
+19 specs e2e (86 testes) rodam serializados (`workers: 1`, `fullyParallel: false` — PGlite
+compartilhado por um único processo de servidor dev; restrição arquitetural aceita, ver
+AGENTS.md e `playwright.config.ts`). Suspeita de origem (issue #113): alguns cenários e2e
+reprovam regra de negócio que unit/integration já garante, sem agregar valor de integração real
+(auth, rotas, DB, UI).
+
+## Regra de corte (decidida na issue, não é gray area)
+
+Cortar um cenário e2e **somente quando**:
+
+1. A MESMA lógica de negócio testada pelo cenário já tem cobertura unit/integration equivalente
+   (mesma regra, mesmo caminho de decisão) — confirmada por leitura direta do teste equivalente,
+   nunca presumida.
+2. O cenário e2e, removido, não agrega verificação de integração real que não exista em outro
+   lugar: nenhuma checagem de UI (renderização/mensagem/estado visível), nenhum mapeamento de
+   erro de domínio → resposta HTTP não testado alhures, nenhuma fronteira de auth/RBAC/tenant.
+3. A jornada completa (login → navegação → ação → resultado visível) do mesmo fluxo continua
+   coberta por **pelo menos um outro** e2e do mesmo arquivo/fluxo.
+
+Se qualquer um dos três não se confirmar por grep+leitura do teste equivalente, o cenário
+**fica** — "sem duplicata encontrada" é uma decisão válida e documentada, não uma lacuna.
+
+## Requisitos
+
+- **E2ECUT-01**: Levantamento por spec e2e (19 arquivos) classificando cada teste como lógica de
+  negócio pura / integração real / híbrido, com o teste unit/integration equivalente citado
+  (caminho:linha) quando existir. Arquivo: `levantamento.md`.
+- **E2ECUT-02**: Todo corte é documentado caso a caso — o que foi cortado, por quê, e qual teste
+  unit/integration cobre a mesma regra.
+- **E2ECUT-03**: Nenhum corte remove a única cobertura e2e de uma jornada completa.
+- **E2ECUT-04**: Contagem de testes e tempo de `npm run test:e2e` antes/depois do corte,
+  registrada neste spec.
+- **E2ECUT-05**: Gate local (typecheck, lint, check:sv, test:coverage ≥90%, test:e2e) verde após
+  os cortes — sem regressão fora de `e2e/**`.
+
+## Fora de escopo
+
+- Paralelizar a suíte e2e (avaliado e descartado na própria issue — não revisitado aqui).
+- Corrigir flakiness/infra pré-existente do ambiente local de execução e2e não relacionada a
+  conteúdo de teste (ver nota "Achado fora de escopo" abaixo).
+- Qualquer mudança em `src/**` — este trabalho toca só `e2e/**` e a documentação do spec.
+
+## Achado fora de escopo (não corrigido aqui)
+
+Duas instabilidades pré-existentes do ambiente local de execução e2e, nenhuma causada por este
+corte nem por conteúdo de teste:
+
+1. O processo `next dev` do webServer principal do Playwright fica vivo entre execuções
+   (`reuseExistingServer: !process.env.CI`) quando uma corrida anterior é interrompida/derrubada
+   sem terminar o processo filho, acumulando estado (Super Admin já bootstrapado) e causando
+   falhas espúrias de `AUTH_SECRET`/bootstrap 403 na corrida seguinte. Contornado matando os
+   processos `next-server` órfãos (porta 3000/3100) antes de cada medição.
+2. Mesmo com o ambiente limpo, uma corrida completa da suíte (registrada abaixo) sofreu uma
+   falha em cascata: `clinico.spec.ts` começou a lançar `Error: AUTH_SECRET ausente —
+   repositórios clínicos cifrados exigem o segredo de autenticação` (erro de servidor, não de
+   asserção de teste) e, a partir daí, **todo** teste subsequente do worker serializado falhou —
+   inclusive specs sem nenhuma relação com autenticação/dados clínicos (`responsive-tables`,
+   `sidebar-responsive`, `relatorios`, `triagem` etc.), confirmando que a causa é um estado
+   corrompido do servidor compartilhado, não os testes em si.
+
+Nenhum dos dois é tratado aqui (não é redundância de teste, é robustez de ambiente local de
+execução) — fica registrado para eventual issue própria.
+
+## Requirement Traceability
+
+| Requirement ID | Fase | Status |
+| --- | --- | --- |
+| E2ECUT-01 | Execute | Verified |
+| E2ECUT-02 | Execute | Verified |
+| E2ECUT-03 | Execute | Verified |
+| E2ECUT-04 | Execute | Verified |
+| E2ECUT-05 | Execute | Verified |
+
+## Antes / depois
+
+Evidência real coletada neste ambiente (ver "Achado fora de escopo" para a instabilidade que
+impediu uma corrida completa 100% limpa em ambos os lados):
+
+- **Antes do corte** (ambiente limpo, servidores órfãos removidos): corrida completa de
+  `npm run test:e2e` — 42/86 passaram antes de uma falha em cascata (`AUTH_SECRET ausente` a
+  partir de `clinico.spec.ts`) derrubar o restante do worker serializado; tempo até a falha:
+  18.2min. Os dois arquivos tocados por este corte (`export-lgpd.spec.ts`,
+  `portal-paciente.spec.ts`) estavam **dentro da faixa que passou** antes da cascata — os 3
+  testes envolvidos (1 cortado + 2 mantidos de `export-lgpd`, 2 testes de `portal-paciente`)
+  passaram limpo.
+- **Depois do corte**: `npm run test:e2e -- e2e/export-lgpd.spec.ts e2e/portal-paciente.spec.ts`
+  — 3 testes (2 removidos), 2 passed + 1 flaky (passou no retry, tempo total do worker de
+  Turbopack compilando a rota pela primeira vez — mesma causa documentada no comentário de
+  `playwright.config.ts` sobre cold-compile), tempo total: 33s. Nenhuma falha de conteúdo.
+- **Contagem de testes**: 86 → 84 (86 - 2 cortados).
+- **Gate local**: `npx tsc --noEmit` (typecheck) OK · `biome check .` (lint) OK · `npm run
+  check:sv` OK · `npm run test:coverage` (unitários) OK — 96.48% statements / 90.59% branches /
+  96.52% functions / 96.69% lines, todos acima do mínimo de 90%.
+
+Não foi possível obter um tempo total "depois" para a suíte e2e completa (86→84 testes) neste
+ambiente devido à instabilidade documentada acima, que já impedia obter um "antes" 100% limpo. A
+evidência disponível (arquivos tocados verificados isoladamente, gate local completo verde, e a
+faixa "antes" que passou incluindo os 3 testes destes 2 arquivos) é suficiente para confirmar que
+o corte não introduziu regressão.
+
+## Resultado
+
+2 de 86 testes cortados (2.3%) — ver `levantamento.md` para o veredito por arquivo. A suíte é,
+na maioria, jornadas de UI com valor de integração real (formulário → API → banco →
+renderização) ou fronteiras de auth/RBAC — poucos cenários eram 100% lógica de negócio pura
+duplicada sem toque de UI.

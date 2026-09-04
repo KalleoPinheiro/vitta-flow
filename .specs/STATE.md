@@ -247,6 +247,14 @@
 - **Blockers**: nenhum.
 - **Branch**: `main`. Squash-merge `31771aa` (PR #56, base `100c692`). Branch de trabalho `fix/resolve-open-issues-batch-1` deletada (remota e local) após o merge.
 
+### AD-022
+- **Decision**: E2E (`npm run test:e2e`, 19 specs Playwright) continua fora do CI (`.github/workflows/ci.yml` roda só typecheck/lint/check:sv/test:coverage). Gap aceito por ora, endereçado em issue própria (#115), não bloqueante das demais frentes de redução de custo de testes (mapa #116).
+- **Reason**: sessão de grilling (2026-09-04) sobre custo de tempo/máquina da suite priorizou primeiro as 4 frentes com maior alavanca de velocidade (cache PGlite #111, testes afetados #112, corte de redundância e2e #113, builders #114). E2E-no-CI é decisão de rigor, não de velocidade — não é ADR de domínio (não muda modelagem do sistema), por isso registrado aqui e não em `docs/adr/`.
+- **Trade-off**: regressões que só o e2e completo pega (ver AD já registrado no épico `fundacao-multi-tenancy`, linha ~226, sobre `session-token.ts`) não são pegas em PR, só localmente antes de merge (dependente de disciplina do dev/agente rodar `npm run test:e2e` manualmente).
+- **Scope**: `.github/workflows/ci.yml`, `docs/agents/*` (nenhuma mudança de arquivo agora — só decisão registrada)
+- **Date**: 2026-09-04
+- **Status**: active — fechar/atualizar quando #115 for resolvida
+
 ### Baseline de segurança medido em `fcd6110`
 
 Reproduza pelo procedimento do README (seção "Varredura de segurança").

@@ -66,33 +66,10 @@ test.describe("portal do paciente", () => {
     ).toBeVisible();
   });
 
-  test("paciente não consegue confirmar consulta de outro paciente", async ({
-    page,
-    context,
-    request,
-  }) => {
-    const patientA = await createPatient(request, { fullName: `Paciente A Portal ${unique()}` });
-    const patientB = await createPatient(request, { fullName: `Paciente B Portal ${unique()}` });
-    const slot = slotForAttempt("portal-paciente-ownership");
-    const appointmentA = await createAppointment(request, {
-      patientId: patientA.id,
-      startsAt: toApiDatetime(slot.startsAt),
-      endsAt: toApiDatetime(slot.endsAt),
-      procedure: `Consulta de A E2E ${unique()}`,
-      priceCents: 10000,
-    });
-
-    await context.addCookies([sessionCookie(patientB.email, "patient")]);
-    await page.goto("/portal");
-    await expect(
-      page.getByRole("heading", { name: `Olá, ${patientB.fullName.split(" ")[0]}!` }),
-    ).toBeVisible();
-
-    const response = await page.request.post(
-      `/api/portal/patient/appointments/${appointmentA.id}/confirm`,
-    );
-    expect(response.ok()).toBe(false);
-    const body = await response.json();
-    expect(body.error).toContain("não encontrado");
-  });
+  // why: cenário "paciente não consegue confirmar consulta de outro paciente"
+  // removido (#113) — a navegação ao portal só repetia a sessão já provada pelo
+  // teste acima; a única asserção nova (ownership via API) duplicava
+  // tests/api/portal-routes.test.ts:435 e
+  // tests/application/confirm-own-appointment.test.ts:61. Ver
+  // .specs/features/e2e-cortar-redundantes/levantamento.md.
 });

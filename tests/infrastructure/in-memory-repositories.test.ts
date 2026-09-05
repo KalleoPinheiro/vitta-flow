@@ -24,7 +24,6 @@ import { ReminderLog } from '@/domain/messaging/reminder-log';
 import { Partner } from '@/domain/partner/partner';
 import { Patient } from '@/domain/patient/patient';
 import { Professional } from '@/domain/professional/professional';
-import { Appointment } from '@/domain/scheduling/appointment';
 import { DEFAULT_SCHEDULE_CONFIG } from '@/domain/scheduling/schedule-config';
 import { ValidationError } from '@/domain/shared/errors';
 import { Money } from '@/domain/shared/money';
@@ -58,6 +57,7 @@ import { InMemoryPatientRepository } from '@/infrastructure/persistence/in-memor
 import { InMemoryProfessionalRepository } from '@/infrastructure/persistence/in-memory/in-memory-professional-repository';
 import { InMemoryReminderLogRepository } from '@/infrastructure/persistence/in-memory/in-memory-reminder-log-repository';
 import { encodeCursor } from '@/lib/pagination';
+import { buildAppointment } from '../support/builders';
 
 describe('Feature: Doubles em memória de infraestrutura', () => {
   describe('Cenário: InMemoryProfessionalRepository', () => {
@@ -1219,10 +1219,9 @@ describe('Feature: Doubles em memória de infraestrutura', () => {
       endIso: string,
       price = 20000,
     ) =>
-      Appointment.create({
+      buildAppointment({
         patientId,
         slot: slot(startIso, endIso),
-        procedure: 'Troca de bolsa',
         price: Money.fromCents(price),
       });
 
@@ -1336,11 +1335,9 @@ describe('Feature: Doubles em memória de infraestrutura', () => {
 
     it('Dado consultas de profissionais distintos, Quando findInRange com professionalId, Então filtra', async () => {
       const repo = new InMemoryAppointmentRepository();
-      const withProf = Appointment.create({
+      const withProf = buildAppointment({
         patientId: 'p1',
         slot: slot('2026-07-20T09:00:00Z', '2026-07-20T10:00:00Z'),
-        procedure: 'Troca de bolsa',
-        price: Money.fromCents(25000),
         professionalId: 'prof-1',
       });
       const withoutProf = makeAppointment(
@@ -1362,18 +1359,14 @@ describe('Feature: Doubles em memória de infraestrutura', () => {
 
     it('Dado produção de profissionais distintos, Quando getProductionInRange, Então agrega só concluídas', async () => {
       const repo = new InMemoryAppointmentRepository();
-      const completed = Appointment.create({
+      const completed = buildAppointment({
         patientId: 'p1',
         slot: slot('2026-07-20T09:00:00Z', '2026-07-20T10:00:00Z'),
-        procedure: 'Troca de bolsa',
-        price: Money.fromCents(25000),
         professionalId: 'prof-1',
       }).complete();
-      const scheduled = Appointment.create({
+      const scheduled = buildAppointment({
         patientId: 'p1',
         slot: slot('2026-07-20T11:00:00Z', '2026-07-20T12:00:00Z'),
-        procedure: 'Troca de bolsa',
-        price: Money.fromCents(25000),
         professionalId: 'prof-1',
       });
       await repo.save(completed);
@@ -1391,11 +1384,9 @@ describe('Feature: Doubles em memória de infraestrutura', () => {
 
     it('Dado consulta ativa, Quando findConflicting, Então respeita exclusão de id, status inativo e profissionais distintos', async () => {
       const repo = new InMemoryAppointmentRepository();
-      const active = Appointment.create({
+      const active = buildAppointment({
         patientId: 'p1',
         slot: slot('2026-07-20T09:00:00Z', '2026-07-20T10:00:00Z'),
-        procedure: 'Troca de bolsa',
-        price: Money.fromCents(25000),
         professionalId: 'prof-1',
       });
       await repo.save(active);

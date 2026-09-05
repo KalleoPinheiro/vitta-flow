@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { buildUserAccount } from '../support/builders';
 
 process.env.VITTA_DB_DRIVER = 'pglite';
 
@@ -138,16 +139,13 @@ describe('Feature: Rotas de autenticação (login, logout, provedores)', () => {
 
       const { getRepositories } = await import('@/infrastructure/container');
       const { hashPassword } = await import('@/lib/auth/password');
-      const { UserAccount } = await import('@/domain/auth/user-account');
       const { userAccounts } = await getRepositories({
         clinicId: 'legacy-clinic',
       });
       await userAccounts.save(
-        UserAccount.create({
+        buildUserAccount({
           email: 'equipe@clinica.com',
           passwordHash: await hashPassword('s3nh@individual'),
-          role: 'company_admin',
-          clinicId: 'legacy-clinic',
         }),
       );
 
@@ -171,17 +169,15 @@ describe('Feature: Rotas de autenticação (login, logout, provedores)', () => {
 
       const { getRepositories } = await import('@/infrastructure/container');
       const { hashPassword } = await import('@/lib/auth/password');
-      const { UserAccount } = await import('@/domain/auth/user-account');
       const { verifySessionToken } = await import('@/lib/auth/session');
       const { userAccounts } = await getRepositories({
         clinicId: 'legacy-clinic',
       });
       await userAccounts.save(
-        UserAccount.create({
+        buildUserAccount({
           email: 'profissional@clinica.com',
           passwordHash: await hashPassword('s3nh@profissional'),
           role: 'profissional',
-          clinicId: 'legacy-clinic',
         }),
       );
 
@@ -247,16 +243,13 @@ describe('Feature: Rotas de autenticação (login, logout, provedores)', () => {
 
       const { getRepositories } = await import('@/infrastructure/container');
       const { hashPassword } = await import('@/lib/auth/password');
-      const { UserAccount } = await import('@/domain/auth/user-account');
       const { userAccounts, auditEvents } = await getRepositories({
         clinicId: 'legacy-clinic',
       });
       await userAccounts.save(
-        UserAccount.create({
+        buildUserAccount({
           email: 'auditoria-ok@clinica.com',
           passwordHash: await hashPassword('s3nh@auditoria'),
-          role: 'company_admin',
-          clinicId: 'legacy-clinic',
         }),
       );
 
@@ -288,16 +281,13 @@ describe('Feature: Rotas de autenticação (login, logout, provedores)', () => {
 
       const { getRepositories } = await import('@/infrastructure/container');
       const { hashPassword } = await import('@/lib/auth/password');
-      const { UserAccount } = await import('@/domain/auth/user-account');
       const { userAccounts, auditEvents } = await getRepositories({
         clinicId: 'legacy-clinic',
       });
       await userAccounts.save(
-        UserAccount.create({
+        buildUserAccount({
           email: 'auditoria-falha-senha@clinica.com',
           passwordHash: await hashPassword('s3nh@correta'),
-          role: 'company_admin',
-          clinicId: 'legacy-clinic',
         }),
       );
 
@@ -415,16 +405,13 @@ describe('Feature: Rotas de autenticação (login, logout, provedores)', () => {
 
       const { getRepositories } = await import('@/infrastructure/container');
       const { hashPassword } = await import('@/lib/auth/password');
-      const { UserAccount } = await import('@/domain/auth/user-account');
       const { userAccounts, auditEvents } = await getRepositories({
         clinicId: 'legacy-clinic',
       });
       await userAccounts.save(
-        UserAccount.create({
+        buildUserAccount({
           email: 'logout-audit@clinica.com',
           passwordHash: await hashPassword('s3nh@logout'),
-          role: 'company_admin',
-          clinicId: 'legacy-clinic',
         }),
       );
       const loginResponse = await loginRoute.POST(

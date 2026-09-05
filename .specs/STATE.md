@@ -484,3 +484,13 @@ serviço reindexar o lockfile. Acima disso, reproduza localmente antes de agir.
 - **Next step**: nenhum. Issue fechada apontando pra AD-023.
 - **Blockers**: nenhum.
 - **Branch**: `main` (sem branch de trabalho — nenhum arquivo de código alterado).
+
+- **`google-accounts-tenant-scope` — CONCLUÍDA** (issue #74, "google_accounts sem clinic_id: última conexão de Calendar vence para todas as empresas"). Escopo Medium tratado como execução direta (spec inline, sem `design.md`/`tasks.md`), spec em `.specs/features/google-accounts-tenant-scope/spec.md`.
+- **O que mudou**: `google_accounts` ganhou `clinic_id` (nullable, papel de sistema = null, FK pra `clinics`, índice), mesmo padrão de `user_accounts` (AD-017). `id` virou PK determinística (`` `${clinicId ?? 'system'}:${email}` ``) pra manter upsert por `target` único, já que esta versão do drizzle-kit não suporta `targetWhere` (índice parcial) em Postgres. `DrizzleGoogleAccountRepository` passou a exigir `clinicId` no construtor e escopa `save`/`findByEmail`/`findMostRecent` via `withTenant`.
+- **Segunda metade do bug**: mesmo corrigindo a query, `buildCalendarGateway`/`oauthCalendarGateway` em `container.ts` cacheavam o gateway numa única entrada global (`globalForServices.vittaCalendar`) — virou `Map` chaveado por clínica (`clinicId ?? 'system'`). Sem essa segunda correção, o processo Node reaproveitaria a credencial OAuth resolvida pra uma empresa em qualquer chamada seguinte de outra.
+- **Migration**: `drizzle/0028_google-accounts-clinic-scope.sql` escrita à mão em cima do gerado por `drizzle-kit generate` (ele não sabe automaticamente o nome da PK antiga pra fazer `DROP CONSTRAINT`) — backfill de `id = 'system:' || email` pras linhas legadas antes de tornar `id` NOT NULL/PK, nenhuma linha apagada.
+- **CodeRabbit sem cota diária** (mesmo padrão de sessões anteriores) — merge feito direto após gate local 100% verde e CI verde, sem esperar review automática.
+- **Gate final verde**: `npm run typecheck`, `./node_modules/.bin/biome check .` (507 arquivos, 0 erros), `npm run check:sv`, `npm run test:coverage --no-file-parallelism` (167/167 arquivos, 2751/2751 testes, 96,48%/90,59%/96,52%/96,69% — piso 90%). CI verde (`Typecheck, lint, sv-gate, test:coverage` + `E2E (Playwright)`, PR #123).
+- **Next step**: seguir checando issues restantes do mapa #116 (mesmo next step pendente das últimas 2 sessões).
+- **Blockers**: nenhum.
+- **Branch**: `fix/74-google-accounts-tenant-scope` (deletada remota e local após squash-merge). PR #123, merge commit `16a2a76` em `main`. Issue #74 fechada via `Closes #74`.

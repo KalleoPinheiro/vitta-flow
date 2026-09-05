@@ -94,8 +94,8 @@ test.describe("pacientes", () => {
 
     await expect(page).toHaveURL(rx`/pacientes/${patient.id}`);
     await expect(page.getByRole("heading", { name: patient.fullName })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Anamnese", exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Estomias e feridas" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Evoluções (SOAP)" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Anamnese", exact: true })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Estomias e feridas" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Evoluções (SOAP)" })).toBeVisible();
   });
 });

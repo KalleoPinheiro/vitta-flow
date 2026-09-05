@@ -8,8 +8,8 @@ const TINY_PNG = Buffer.from(
 
 async function openPatientRecord(page: import("@playwright/test").Page, patientId: string) {
   await page.goto(`/pacientes/${patientId}`);
-  await expect(page.getByRole("button", { name: /Estomias e feridas/ })).toBeVisible();
-  await page.getByRole("button", { name: /Estomias e feridas/ }).click();
+  await expect(page.getByRole("tab", { name: /Estomias e feridas/ })).toBeVisible();
+  await page.getByRole("tab", { name: /Estomias e feridas/ }).click();
 }
 
 test.describe("prontuário clínico", () => {
@@ -93,7 +93,7 @@ test.describe("prontuário clínico", () => {
   test("evolução SOAP exige ao menos um campo preenchido", async ({ page, request }) => {
     const patient = await createPatient(request);
     await page.goto(`/pacientes/${patient.id}`);
-    await page.getByRole("button", { name: /Evoluções \(SOAP\)/ }).click();
+    await page.getByRole("tab", { name: /Evoluções \(SOAP\)/ }).click();
     await page.getByRole("button", { name: "+ Nova evolução" }).click();
 
     await page.getByRole("button", { name: "Registrar evolução" }).click();

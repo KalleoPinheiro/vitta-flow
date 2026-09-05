@@ -66,7 +66,7 @@ test.describe("agenda", () => {
 
     await goToMonth(page, slot.ymd);
     await expect(
-      page.getByRole("button", { name: `${slot.startTimeInput} ${patient.fullName}` }),
+      page.getByRole("button", { name: `${slot.startTimeInput} ${patient.fullName}`, exact: true }),
     ).toBeVisible();
   });
 
@@ -133,7 +133,7 @@ test.describe("agenda", () => {
     await page.goto("/agenda");
     await goToMonth(page, original.ymd);
     await page
-      .getByRole("button", { name: `${original.startTimeInput} ${patient.fullName}` })
+      .getByRole("button", { name: `${original.startTimeInput} ${patient.fullName}`, exact: true })
       .click();
 
     await expect(page.getByRole("heading", { name: "Detalhes da consulta" })).toBeVisible();
@@ -146,7 +146,7 @@ test.describe("agenda", () => {
 
     await goToMonth(page, target.ymd);
     await expect(
-      page.getByRole("button", { name: `${target.startTimeInput} ${patient.fullName}` }),
+      page.getByRole("button", { name: `${target.startTimeInput} ${patient.fullName}`, exact: true }),
     ).toBeVisible();
   });
 

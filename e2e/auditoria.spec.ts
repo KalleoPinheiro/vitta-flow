@@ -33,7 +33,7 @@ test.describe("auditoria de prontuário", () => {
     await page.goto("/auditoria");
     await page.getByRole("combobox").selectOption({ label: target.fullName });
 
-    await expect(page.getByRole("cell", { name: target.fullName })).toBeVisible();
+    await expect(page.getByRole("cell", { name: target.fullName }).first()).toBeVisible();
     await expect(page.getByRole("cell", { name: other.fullName })).toHaveCount(0);
   });
 });

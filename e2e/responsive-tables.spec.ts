@@ -68,18 +68,29 @@ async function seedCarePlanWithOutcomeAndIntervention(
   return plan.id;
 }
 
+/**
+ * A página não tem mais `<input type="month">` (achado REL-02 — mês vira texto
+ * pt-BR + navegação ‹›, ver relatorios.spec.ts). Chega no mês pedido clicando
+ * "Próximo mês"/"Mês anterior" a quantidade de vezes necessária.
+ */
 async function setReportMonth(page: Page, year: number, month: number): Promise<void> {
-  const value = `${year}-${String(month).padStart(2, "0")}`;
-  const input = page.locator('input[type="month"]');
-  await expect(async () => {
-    const requested = page.waitForResponse(
-      (response) => response.url().includes(`/api/reports?month=${value}`),
-      { timeout: 5_000 },
-    );
-    await input.fill("2000-01");
-    await input.fill(value);
-    await requested;
-  }).toPass({ timeout: 20_000 });
+  const now = new Date();
+  const delta = (year - now.getFullYear()) * 12 + (month - 1 - now.getMonth());
+  const step = delta >= 0 ? 1 : -1;
+  const button = page.getByRole("button", { name: delta >= 0 ? "Próximo mês" : "Mês anterior" });
+
+  for (let i = 1; i <= Math.abs(delta); i += 1) {
+    const target = new Date(now.getFullYear(), now.getMonth() + step * i, 1);
+    const targetValue = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}`;
+    await expect(async () => {
+      const requested = page.waitForResponse(
+        (response) => response.url().includes(`/api/reports?month=${targetValue}`),
+        { timeout: 5_000 },
+      );
+      await button.click();
+      await requested;
+    }).toPass({ timeout: 20_000 });
+  }
 }
 
 test.describe("tabelas responsivas em viewport mobile (375x667)", () => {
@@ -181,7 +192,9 @@ test.describe("tabelas responsivas em viewport mobile (375x667)", () => {
     const supply = await createSupply(request, { name: `Insumo Responsivo ${unique()}` });
 
     await page.goto("/materiais");
-    await expect(page.getByText(supply.name)).toBeVisible();
+    // Insumo sem saldo entra no alerta de estoque baixo, cujo texto repete o nome
+    // do insumo — getByRole("cell") mira só a linha da tabela, não o alerta.
+    await expect(page.getByRole("cell", { name: supply.name })).toBeVisible();
     await expectTableWrappedInOverflowContainer(page);
     await expectNoHorizontalScroll(page);
   });

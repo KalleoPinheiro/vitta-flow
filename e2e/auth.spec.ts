@@ -124,9 +124,14 @@ test.describe("modo aberto (AUTH_SECRET não configurado)", () => {
     await page.goto("/");
     // timeout maior — primeiro acesso ao servidor "modo aberto" (porta isolada,
     // distDir isolado) ainda pode estar compilando a rota/terminando a migração pglite.
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({
-      timeout: 15_000,
-    });
+    //
+    // Repositórios clínicos cifrados exigem AUTH_SECRET incondicionalmente (fail-closed
+    // por design — não dá pra cifrar PHI sem chave), então widgets que dependem de dados
+    // (ex.: /api/summary) mostram erro em vez de carregar; a página degrada mostrando o
+    // alerta em vez do heading "Dashboard" (ver `if (error) return <ErrorAlert .../>` em
+    // src/app/(staff)/page.tsx). O que este teste prova é o bypass de sessão (sidebar/nav
+    // renderiza sem redirecionar para /login), não que dados clínicos carreguem sem chave.
+    await expect(page.getByRole("navigation")).toBeVisible({ timeout: 15_000 });
     await expect(page).not.toHaveURL(/\/login/);
   });
 

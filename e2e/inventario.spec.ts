@@ -12,6 +12,11 @@ import { slotForAttempt } from "./support/dates";
 import { toApiDatetime } from "./support/iso-datetime";
 import { literal, rx } from "./support/regexp";
 
+async function confirmMovement(page: import("@playwright/test").Page) {
+  await page.getByRole("button", { name: "Registrar movimentação" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Confirmar" }).click();
+}
+
 test.describe("inventário", () => {
   test("cadastra insumo e procedimento com kit, e a conclusão da consulta baixa o estoque", async ({
     page,
@@ -26,7 +31,7 @@ test.describe("inventário", () => {
     await page.getByLabel("Nome *").fill(supplyName);
     await page.getByLabel("Unidade *").fill("un");
     await page.getByLabel("Estoque mínimo *").fill("5");
-    await page.getByLabel("Preço (R$) *").fill("35");
+    await page.getByLabel("Preço *").fill("35");
     await page.getByRole("button", { name: "Salvar" }).click();
     await expect(page.getByRole("heading", { name: "Novo insumo" })).not.toBeVisible();
     await expect(page.getByRole("cell", { name: supplyName })).toBeVisible();
@@ -38,7 +43,7 @@ test.describe("inventário", () => {
       .click();
     await page.getByLabel("Quantidade *").fill("10");
     await page.getByLabel("Motivo *").fill("Compra inicial — E2E");
-    await page.getByRole("button", { name: "Registrar movimentação" }).click();
+    await confirmMovement(page);
     await expect(page.getByRole("heading", { name: /^Movimentar/ })).not.toBeVisible();
     await expect(
       page.getByRole("row", { name: literal(supplyName) }).getByText(/^10 un/),
@@ -48,7 +53,7 @@ test.describe("inventário", () => {
     await page.goto("/procedimentos");
     await page.getByRole("button", { name: "+ Novo procedimento" }).click();
     await page.getByLabel("Nome *").fill(procedureName);
-    await page.getByLabel("Preço (R$) *").fill("150");
+    await page.getByLabel("Preço *").fill("150");
     await page.getByLabel("Duração (min) *").fill("40");
     await page.getByRole("button", { name: "Salvar" }).click();
     await expect(page.getByRole("heading", { name: "Novo procedimento" })).not.toBeVisible();
@@ -99,7 +104,7 @@ test.describe("inventário", () => {
     await row.getByRole("button", { name: "Movimentar" }).click();
     await page.getByLabel("Quantidade *").fill("3");
     await page.getByLabel("Motivo *").fill("Compra pequena — E2E");
-    await page.getByRole("button", { name: "Registrar movimentação" }).click();
+    await confirmMovement(page);
     await expect(page.getByRole("heading", { name: /^Movimentar/ })).not.toBeVisible();
 
     await expect(
@@ -119,9 +124,13 @@ test.describe("inventário", () => {
     await page.getByLabel("Tipo *").selectOption({ label: "Saída (uso/perda)" });
     await page.getByLabel("Quantidade *").fill("1");
     await page.getByLabel("Motivo *").fill("Tentativa sem saldo — E2E");
-    await page.getByRole("button", { name: "Registrar movimentação" }).click();
 
-    await expect(page.getByText(/Estoque insuficiente/)).toBeVisible();
+    // MAT-08: saldo insuficiente é bloqueado no cliente (botão desabilitado),
+    // sem round-trip ao servidor.
+    await expect(
+      page.getByText(/quantidade maior que isso não pode sair/),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Registrar movimentação" })).toBeDisabled();
     await expect(page.getByRole("heading", { name: /^Movimentar/ })).toBeVisible();
   });
 
@@ -139,7 +148,7 @@ test.describe("inventário", () => {
     await page.getByLabel("Motivo *").fill("Compra com validade — E2E");
     await page.getByLabel("Lote (opcional)").fill(`L-${unique()}`);
     await page.getByLabel("Validade (opcional)").fill(dateInput);
-    await page.getByRole("button", { name: "Registrar movimentação" }).click();
+    await confirmMovement(page);
     await expect(page.getByRole("heading", { name: /^Movimentar/ })).not.toBeVisible();
 
     await expect(

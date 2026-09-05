@@ -4,7 +4,7 @@ import { sessionCookie } from "./support/session-token";
 
 async function openCarePlanTab(page: import("@playwright/test").Page, patientId: string) {
   await page.goto(`/pacientes/${patientId}`);
-  await page.getByRole("button", { name: /Plano de Cuidados \(SAE\)/ }).click();
+  await page.getByRole("tab", { name: /Plano de Cuidados \(SAE\)/ }).click();
 }
 
 test.describe("plano de cuidados (SAE)", () => {

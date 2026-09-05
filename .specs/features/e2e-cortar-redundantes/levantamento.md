@@ -29,12 +29,12 @@ infraestrutura best-effort, testado em `tests/api/audit-lgpd-routes.test.ts` a n
 os dois e2e aqui verificam a RENDERIZAÇÃO da trilha (papel do usuário, filtro por paciente) —
 integração real de UI. **Mantém os 2.**
 
-## auth.spec.ts (10 testes)
+## auth.spec.ts (11 testes)
 
 Todos são fronteira de autenticação/RBAC/sessão (redirecionamento, login, logout, recuperação de
 senha, modo aberto, acesso de paciente/parceiro à raiz). Regra do spec: fronteira de
 auth/RBAC/tenant nunca é cortada mesmo que a lógica interna tenha teste unit — o valor aqui é o
-fluxo HTTP+cookie+proxy real. **Mantém os 10.**
+fluxo HTTP+cookie+proxy real. **Mantém os 11.**
 
 ## clinico.spec.ts (5 testes)
 
@@ -111,20 +111,20 @@ Todos UI. O teste "inativa um paciente e bloqueia novo agendamento" tem uma cham
 padrão do clinico.spec.ts: mantida por ser uma asserção final dentro de teste majoritariamente
 UI, não um cenário e2e isolável. **Mantém os 5.**
 
-## plano-cuidados.spec.ts (6 testes)
+## plano-cuidados.spec.ts (5 testes)
 
 Todos exercitam a UI do plano de cuidados (SAE) via `openCarePlanTab` — ciclo completo
 diagnóstico→resultado→intervenção→execução→avaliação, regressão, validação de meta ≤ basal,
 plano resolvido somente-leitura, e o limite staff×portal (paciente não vê SAE). Nenhum é
 API-pura; cada um testa uma transição de UI distinta sem sobreposição total com outro teste do
-arquivo. **Mantém os 6.**
+arquivo. **Mantém os 5.**
 
 ## portal-paciente.spec.ts (2 testes)
 
 | Teste | Classificação | Equivalente | Decisão |
 | --- | --- | --- | --- |
 | paciente confirma presença, aceita consentimento, envia foto | UI completa | — | mantém (única jornada completa do portal do paciente) |
-| **paciente não consegue confirmar consulta de outro paciente** | híbrido fraco: navega ao portal só pra estabelecer sessão (já coberto pelo teste acima), a ÚNICA asserção nova é uma chamada `page.request.post` direta checando `response.ok()===false` e `body.error` contém "não encontrado" | `tests/api/portal-routes.test.ts:435` — "Dado consulta de outro paciente, Quando POST confirm, Então retorna 404 (sem vazar existência)" (chama a rota diretamente, mesmo código) **e** `tests/application/confirm-own-appointment.test.ts:61` — "Dado consulta de outro paciente, Quando confirmar, Então NotFound" (regra de aplicação) | **CORTA** — a fronteira de tenant/ownership já está coberta em DOIS níveis (aplicação + rota HTTP real, incluindo o código de status); a navegação ao portal no e2e não agrega nada que o primeiro teste do arquivo já não prove |
+| paciente não consegue confirmar consulta de outro paciente | híbrido: navega ao portal pra estabelecer sessão + `page.request.post` real (via servidor rodando) checando `response.ok()===false` e `body.error` contém "não encontrado" | `tests/api/portal-routes.test.ts:435` e `tests/application/confirm-own-appointment.test.ts:61` chamam o route handler/caso de uso DIRETO em processo, sem passar pelo servidor HTTP real | **REVERTIDO (não corta)** — decisão original errada: isso é fronteira de tenant/IDOR (paciente A não pode confirmar consulta de paciente B), categoria que o próprio critério deste levantamento (ver `auth.spec.ts`) exclui de corte porque só o e2e prova o fluxo HTTP+cookie+proxy real; os "equivalentes" chamam a função do handler em processo, não fazem requisição de rede de verdade. Achado do CodeRabbit no PR #120, corrigido nesta branch. |
 
 ## portal-parceiro.spec.ts (2 testes)
 
@@ -139,12 +139,12 @@ visibilidade entre parceiros, testada via renderização real. **Mantém os 2.**
 | produção por profissional soma consultas concluídas | UI | idem | mantém |
 | mês sem consultas mostra estado vazio | UI | — | mantém (único teste do estado vazio) |
 
-## responsive-tables.spec.ts (11 testes) e sidebar-responsive.spec.ts (4 testes)
+## responsive-tables.spec.ts (12 testes) e sidebar-responsive.spec.ts (4 testes)
 
 Testam comportamento responsivo/visual (viewport mobile, scroll horizontal, alvo de toque,
 drawer, scroll-lock) — não são regra de negócio, são comportamento de layout só verificável com
 um browser real renderizando CSS/JS. Nenhuma sobreposição possível com teste unit/integration
-(que não renderiza layout). **Mantém todos os 15.**
+(que não renderiza layout). **Mantém todos os 16.**
 
 ## triagem.spec.ts (2 testes)
 
@@ -159,19 +159,21 @@ sem toque de UI. **Mantém os 2.**
 
 | Arquivo | Teste cortado | Equivalente unit/integration |
 | --- | --- | --- |
-| `export-lgpd.spec.ts` | "exportação de paciente inexistente retorna 404" | `tests/api/audit-lgpd-routes.test.ts:223` |
-| `portal-paciente.spec.ts` | "paciente não consegue confirmar consulta de outro paciente" | `tests/api/portal-routes.test.ts:435` + `tests/application/confirm-own-appointment.test.ts:61` |
+| `export-lgpd.spec.ts` | "exportação de paciente inexistente retorna 404" | `tests/api/audit-lgpd-routes.test.ts:223` (reforçado com asserção de envelope completo — `success`/`data`/`error` — apontamento do CodeRabbit no PR #120) |
 
-**Total: 2 de 86 testes cortados (17 arquivos ficam sem alteração).**
+`portal-paciente.spec.ts` teve seu corte revertido nesta branch (ver seção acima) — era fronteira
+de tenant/IDOR, categoria excluída de corte pelo próprio critério deste levantamento.
+
+**Total: 1 de 86 testes cortados (18 arquivos ficam sem alteração).**
 
 ## Antes / depois
 
 | Métrica | Antes | Depois |
 | --- | --- | --- |
 | Nº de arquivos e2e | 19 | 19 |
-| Nº de testes | 86 | 84 |
-| `export-lgpd.spec.ts` + `portal-paciente.spec.ts` isolados | 5 testes, todos verdes (parte da faixa que passou antes da cascata, ver `spec.md`) | 3 testes, 2 passed + 1 flaky-passou-no-retry (33s) |
-| Tempo suíte completa | 18.2min até cascata de `AUTH_SECRET` em `clinico.spec.ts` (falha de ambiente, não de conteúdo — ver `spec.md`) | não medido de ponta a ponta (mesma instabilidade de ambiente) |
+| Nº de testes | 86 | 85 |
+| `export-lgpd.spec.ts` isolado | 3 testes, todos verdes (parte da faixa que passou antes da cascata, ver `spec.md`) | 2 testes verdes |
+| Tempo suíte completa | 18.2min até cascata de `AUTH_SECRET` em `clinico.spec.ts` (falha de ambiente, não de conteúdo — ver `spec.md`) | não medido de ponta a ponta (mesma instabilidade de ambiente) — ver E2ECUT-04/05 em `spec.md`, marcados incompletos por falta dessa evidência |
 
 Ver `spec.md` → "Antes / depois" e "Achado fora de escopo" para o detalhe completo da evidência
 e da instabilidade de ambiente que limitou a medição de tempo total da suíte.

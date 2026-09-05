@@ -97,8 +97,8 @@ execução) — fica registrado para eventual issue própria.
 | E2ECUT-01 | Execute | Verified |
 | E2ECUT-02 | Execute | Verified |
 | E2ECUT-03 | Execute | Verified |
-| E2ECUT-04 | Execute | Verified |
-| E2ECUT-05 | Execute | Verified |
+| E2ECUT-04 | Execute | **Incompleto** — contagem/tempo "antes" só até a cascata de `AUTH_SECRET` (18.2min, 42/86); "depois" medido só nos arquivos tocados (`export-lgpd.spec.ts` isolado), não na suíte completa. Bloqueado pela instabilidade de ambiente documentada em "Achado fora de escopo" (item 1-2), não por este corte. Apontado pelo CodeRabbit no PR #120. |
+| E2ECUT-05 | Execute | **Incompleto** — typecheck/lint/check:sv/test:coverage verdes; `test:e2e` verde só nos arquivos tocados isolados, não na suíte completa (mesma causa acima). |
 
 ## Antes / depois
 
@@ -108,28 +108,32 @@ impediu uma corrida completa 100% limpa em ambos os lados):
 - **Antes do corte** (ambiente limpo, servidores órfãos removidos): corrida completa de
   `npm run test:e2e` — 42/86 passaram antes de uma falha em cascata (`AUTH_SECRET ausente` a
   partir de `clinico.spec.ts`) derrubar o restante do worker serializado; tempo até a falha:
-  18.2min. Os dois arquivos tocados por este corte (`export-lgpd.spec.ts`,
-  `portal-paciente.spec.ts`) estavam **dentro da faixa que passou** antes da cascata — os 3
-  testes envolvidos (1 cortado + 2 mantidos de `export-lgpd`, 2 testes de `portal-paciente`)
-  passaram limpo.
-- **Depois do corte**: `npm run test:e2e -- e2e/export-lgpd.spec.ts e2e/portal-paciente.spec.ts`
-  — 3 testes (2 removidos), 2 passed + 1 flaky (passou no retry, tempo total do worker de
-  Turbopack compilando a rota pela primeira vez — mesma causa documentada no comentário de
-  `playwright.config.ts` sobre cold-compile), tempo total: 33s. Nenhuma falha de conteúdo.
-- **Contagem de testes**: 86 → 84 (86 - 2 cortados).
-- **Gate local**: `npx tsc --noEmit` (typecheck) OK · `biome check .` (lint) OK · `npm run
-  check:sv` OK · `npm run test:coverage` (unitários) OK — 96.48% statements / 90.59% branches /
-  96.52% functions / 96.69% lines, todos acima do mínimo de 90%.
+  18.2min. O arquivo tocado por este corte (`export-lgpd.spec.ts`) estava **dentro da faixa que
+  passou** antes da cascata — os 3 testes originais passaram limpo.
+- **Depois do corte** (re-executado após reverter o corte de `portal-paciente.spec.ts`, ver nota
+  do CodeRabbit no PR #120): `npm run test:e2e -- e2e/export-lgpd.spec.ts
+  e2e/portal-paciente.spec.ts` — 4 testes, **4 passed**, tempo total: 25.3s. Nenhuma falha de
+  conteúdo.
+- **Contagem de testes**: 86 → 85 (86 - 1 cortado; o corte de `portal-paciente.spec.ts` foi
+  revertido — ver `levantamento.md`).
+- **Gate local**: `npx tsc --noEmit` (typecheck) OK · `./node_modules/.bin/biome check .` (lint)
+  OK, 506 arquivos · `npm run check:sv` OK · `npm run test:coverage` (unitários) OK — 96.48%
+  statements / 90.59% branches / 96.52% functions / 96.69% lines, todos acima do mínimo de 90%.
 
-Não foi possível obter um tempo total "depois" para a suíte e2e completa (86→84 testes) neste
-ambiente devido à instabilidade documentada acima, que já impedia obter um "antes" 100% limpo. A
-evidência disponível (arquivos tocados verificados isoladamente, gate local completo verde, e a
-faixa "antes" que passou incluindo os 3 testes destes 2 arquivos) é suficiente para confirmar que
-o corte não introduziu regressão.
+Não foi possível obter um tempo total "antes/depois" para a suíte e2e completa (86→85 testes) de
+ponta a ponta neste ambiente devido à instabilidade documentada acima (cascata de `AUTH_SECRET`
+que derruba o worker serializado a partir de `clinico.spec.ts`, não relacionada a este corte).
+E2ECUT-04/05 ficam marcados **Incompleto** na tabela de rastreabilidade por essa razão — a
+evidência disponível (arquivo tocado verificado isoladamente com 4/4 verde, gate local completo
+verde) confirma que o corte não introduziu regressão, mas não substitui uma corrida completa da
+suíte.
 
 ## Resultado
 
-2 de 86 testes cortados (2.3%) — ver `levantamento.md` para o veredito por arquivo. A suíte é,
+1 de 86 testes cortados (1.2%) — ver `levantamento.md` para o veredito por arquivo. A suíte é,
 na maioria, jornadas de UI com valor de integração real (formulário → API → banco →
-renderização) ou fronteiras de auth/RBAC — poucos cenários eram 100% lógica de negócio pura
-duplicada sem toque de UI.
+renderização) ou fronteiras de auth/RBAC/tenant — poucos cenários eram 100% lógica de negócio
+pura duplicada sem toque de UI. O corte inicial de `portal-paciente.spec.ts` (fronteira de
+tenant/IDOR) foi revertido após revisão do CodeRabbit no PR #120: os testes unit/integration
+citados como equivalentes chamam o route handler em processo, sem passar pelo servidor HTTP
+real — não substituem a garantia que só o e2e oferece para esse tipo de fronteira.

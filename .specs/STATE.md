@@ -252,12 +252,19 @@
 - **Branch**: `main`. Squash-merge `31771aa` (PR #56, base `100c692`). Branch de trabalho `fix/resolve-open-issues-batch-1` deletada (remota e local) após o merge.
 
 ### AD-022
-- **Decision**: E2E (`npm run test:e2e`, 19 specs Playwright) continua fora do CI (`.github/workflows/ci.yml` roda só typecheck/lint/check:sv/test:coverage). Gap aceito por ora, endereçado em issue própria (#115), não bloqueante das demais frentes de redução de custo de testes (mapa #116).
-- **Reason**: sessão de grilling (2026-09-04) sobre custo de tempo/máquina da suite priorizou primeiro as 4 frentes com maior alavanca de velocidade (cache PGlite #111, testes afetados #112, corte de redundância e2e #113, builders #114). E2E-no-CI é decisão de rigor, não de velocidade — não é ADR de domínio (não muda modelagem do sistema), por isso registrado aqui e não em `docs/adr/`.
-- **Trade-off**: regressões que só o e2e completo pega (ver AD já registrado no épico `fundacao-multi-tenancy`, linha ~226, sobre `session-token.ts`) não são pegas em PR, só localmente antes de merge (dependente de disciplina do dev/agente rodar `npm run test:e2e` manualmente).
-- **Scope**: `.github/workflows/ci.yml`, `docs/agents/*` (nenhuma mudança de arquivo agora — só decisão registrada)
-- **Date**: 2026-09-04
-- **Status**: active — fechar/atualizar quando #115 for resolvida
+- **Decision**: E2E (Playwright, 85 execuções de teste) passou a rodar no CI num job dedicado (`e2e` em `.github/workflows/ci.yml`), em paralelo ao job `ci` existente, bloqueando merge. **Resolvido pela issue #115.**
+- **Reason**: gap de rigor registrado em 2026-09-04 (ver histórico abaixo) — e2e nunca tinha rodado em CI, então regressões só apareciam se alguém rodasse a suíte manualmente antes do merge. Ao medir o tempo local (ambiente idêntico ao CI: sem `.env`, `AUTH_SECRET`/`VITTA_BOOTSTRAP_TOKEN` só via `webServer.env` do Playwright) pra decidir se valia a pena, a suíte revelou **24 falhas reais e pré-existentes**, não relacionadas à mudança de CI em si — nenhuma tinha sido pega porque e2e nunca rodou em CI. Causas raiz identificadas e corrigidas nos próprios specs (não na aplicação, exceto onde a asserção testava um comportamento que não fazia mais sentido):
+  - Migração `@still-void/ui` Tabs (commit `ee25ac7`, PR #95) trocou abas de `role="button"` pra `role="tab"` real sem atualizar `clinico.spec.ts`/`pacientes.spec.ts`/`plano-cuidados.spec.ts`.
+  - Célula de dia do calendário (`role="button"` envolvendo `<Button>` de compromisso, nesting deliberado com `biome-ignore`) tornava `getByRole("button", {name})` ambíguo sem `exact: true` em `agenda.spec.ts`.
+  - Dupla linha de auditoria pro mesmo paciente tornava `getByRole("cell")` ambíguo sem `.first()`.
+  - Feature MAT-08 (confirmação de movimentação de estoque via `ConfirmAction`) e o texto atual de bloqueio client-side de saldo insuficiente (`ExceedsBalanceWarning`) nunca foram refletidos em `inventario.spec.ts` — testava um fluxo sem o passo de confirmação e um erro de servidor ("Estoque insuficiente") que não existe mais.
+  - "Modo aberto" (`VITTA_ALLOW_OPEN_MODE=true`, `AUTH_SECRET=""`) bypassa sessão, mas repositórios clínicos cifrados exigem `AUTH_SECRET` incondicionalmente (fail-closed correto pra PHI) — o teste assumia que o Dashboard completo carregaria; corrigido pra verificar só o bypass de sessão (sidebar renderiza, sem redirect a `/login`), não o carregamento de dados cifrados.
+  - Toast + região `aria-live` duplicam o mesmo texto pra leitores de tela (`portal-paciente.spec.ts`) — `getByText` sem `.first()` ficava ambíguo.
+  - `responsive-tables.spec.ts` tinha sua própria cópia (desatualizada) de `setReportMonth` usando `input[type="month"]`, que não existe mais desde o achado REL-02 (mês virou texto + navegação ‹›, já corrigido em `relatorios.spec.ts` mas nunca replicado aqui).
+- **Trade-off**: nenhum novo — o trade-off documentado (regressões só pegas localmente) está resolvido. Custo de runner do job `e2e`: **3m29s medido no GitHub Actions** (PR #122, run `33941141189`) — bate com o baseline local de ~3m46s (85 testes, `workers: 1`, serial por design — PGlite em memória compartilhado pelo processo).
+- **Scope**: `.github/workflows/ci.yml` (job `e2e` novo) + 8 specs em `e2e/*.spec.ts` (fixes de asserção, sem mudança de comportamento da aplicação).
+- **Date**: 2026-09-04 (decisão original) / 2026-09-05 (resolvida)
+- **Status**: resolved — issue #115, PR #122
 
 ### Baseline de segurança medido em `fcd6110`
 

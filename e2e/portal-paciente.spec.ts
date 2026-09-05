@@ -40,7 +40,9 @@ test.describe("portal do paciente", () => {
     // Consentimento digital (LGPD).
     await expect(page.getByRole("heading", { name: "Termo de consentimento pendente" })).toBeVisible();
     await page.getByRole("button", { name: "Li e aceito o termo" }).click();
-    await expect(page.getByText("Termo de consentimento aceito")).toBeVisible();
+    // Toast e a região de notificações (aria-live) duplicam o mesmo texto para
+    // leitores de tela — .first() pega o toast visível, não o anúncio sr-only.
+    await expect(page.getByText("Termo de consentimento aceito").first()).toBeVisible();
 
     // Confirmação de presença.
     const appointmentItem = page.locator("li", { hasText: procedure });
@@ -62,7 +64,9 @@ test.describe("portal do paciente", () => {
     await expect(page.getByAltText("Prévia da foto selecionada")).toBeVisible();
     await page.getByRole("button", { name: "Enviar", exact: true }).click();
     await expect(
-      page.getByText("Foto enviada — a equipe vai avaliar e retorna se for preciso antecipar sua consulta."),
+      page
+        .getByText("Foto enviada — a equipe vai avaliar e retorna se for preciso antecipar sua consulta.")
+        .first(),
     ).toBeVisible();
   });
 

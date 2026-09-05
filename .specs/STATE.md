@@ -266,6 +266,14 @@
 - **Date**: 2026-09-04 (decisão original) / 2026-09-05 (resolvida)
 - **Status**: resolved — issue #115, PR #122
 
+### AD-023
+- **Decision**: Filtro temporal fino por registro (Dr. A só vê o histórico do período em que atendeu, Dr. B só o que registra dali em diante) **não será implementado**. O comportamento atual — profissional com vínculo (`ProfessionalPatientLink`) vê o prontuário inteiro do paciente, vínculo nunca revogado — é aceito como definitivo.
+- **Reason**: decisão de produto do usuário (issue #43), confirmando a leitura já registrada em `.specs/features/rbac-catalogo-papeis/design.md` ("Approach Exploration", abordagem 2): acesso nunca revogado "por construção" é o requisito central de RBAC-21/AC5, e é mais importante que a leitura estrita de P4-AC4 (spec `rbac-catalogo-papeis`) como filtro por período.
+- **Trade-off**: após transferência de caso, tanto Dr. A quanto Dr. B continuam vendo registros clínicos fora do período em que cada um atendeu — aceito.
+- **Scope**: nenhum código alterado; decisão de escopo apenas.
+- **Date**: 2026-09-05
+- **Status**: resolved — issue #43 (fechada sem PR, "não fazer")
+
 ### Baseline de segurança medido em `fcd6110`
 
 Reproduza pelo procedimento do README (seção "Varredura de segurança").
@@ -471,3 +479,8 @@ serviço reindexar o lockfile. Acima disso, reproduza localmente antes de agir.
 - **Next step**: seguir pra 5ª e última filha de #116 — checar issues restantes do mapa #116 (mesmo next step de #114, ainda pendente).
 - **Blockers**: nenhum.
 - **Branch**: `feat/ci-e2e-pipeline` (deletada remota e local após squash-merge). PR #122, merged.
+
+- **Issue #43 — RESOLVIDA sem código** ("Avaliar escopo temporal por registro no acesso do Profissional após transferência de caso"). Decisão de produto (ver AD-023): confirmado com o usuário que manter o acesso ao paciente inteiro (comportamento atual, `ProfessionalPatientLink` nunca revogado) é aceitável — filtro fino por período/registro não será implementado.
+- **Next step**: nenhum. Issue fechada apontando pra AD-023.
+- **Blockers**: nenhum.
+- **Branch**: `main` (sem branch de trabalho — nenhum arquivo de código alterado).

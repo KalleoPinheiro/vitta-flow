@@ -82,14 +82,14 @@ async function setReportMonth(page: Page, year: number, month: number): Promise<
   for (let i = 1; i <= Math.abs(delta); i += 1) {
     const target = new Date(now.getFullYear(), now.getMonth() + step * i, 1);
     const targetValue = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}`;
-    await expect(async () => {
-      const requested = page.waitForResponse(
-        (response) => response.url().includes(`/api/reports?month=${targetValue}`),
-        { timeout: 5_000 },
-      );
-      await button.click();
-      await requested;
-    }).toPass({ timeout: 20_000 });
+    // Um clique só por mês — repetir o clique dentro de um toPass avançaria o mês
+    // de novo se a resposta demorasse mais que o timeout da tentativa anterior.
+    const requested = page.waitForResponse(
+      (response) => response.url().includes(`/api/reports?month=${targetValue}`),
+      { timeout: 20_000 },
+    );
+    await button.click();
+    await requested;
   }
 }
 

@@ -261,10 +261,10 @@
   - "Modo aberto" (`VITTA_ALLOW_OPEN_MODE=true`, `AUTH_SECRET=""`) bypassa sessão, mas repositórios clínicos cifrados exigem `AUTH_SECRET` incondicionalmente (fail-closed correto pra PHI) — o teste assumia que o Dashboard completo carregaria; corrigido pra verificar só o bypass de sessão (sidebar renderiza, sem redirect a `/login`), não o carregamento de dados cifrados.
   - Toast + região `aria-live` duplicam o mesmo texto pra leitores de tela (`portal-paciente.spec.ts`) — `getByText` sem `.first()` ficava ambíguo.
   - `responsive-tables.spec.ts` tinha sua própria cópia (desatualizada) de `setReportMonth` usando `input[type="month"]`, que não existe mais desde o achado REL-02 (mês virou texto + navegação ‹›, já corrigido em `relatorios.spec.ts` mas nunca replicado aqui).
-- **Trade-off**: nenhum novo — o trade-off documentado (regressões só pegas localmente) está resolvido. Custo de runner do job `e2e`: ~3m46s localmente com boot limpo (85 testes, `workers: 1`, serial por design — PGlite em memória compartilhado pelo processo); tempo real do Actions a confirmar no primeiro run da PR.
-- **Scope**: `.github/workflows/ci.yml` (job `e2e` novo) + 7 specs em `e2e/*.spec.ts` (fixes de asserção, sem mudança de comportamento da aplicação).
+- **Trade-off**: nenhum novo — o trade-off documentado (regressões só pegas localmente) está resolvido. Custo de runner do job `e2e`: **3m29s medido no GitHub Actions** (PR #122, run `33941141189`) — bate com o baseline local de ~3m46s (85 testes, `workers: 1`, serial por design — PGlite em memória compartilhado pelo processo).
+- **Scope**: `.github/workflows/ci.yml` (job `e2e` novo) + 8 specs em `e2e/*.spec.ts` (fixes de asserção, sem mudança de comportamento da aplicação).
 - **Date**: 2026-09-04 (decisão original) / 2026-09-05 (resolvida)
-- **Status**: resolved — issue #115, PR a abrir
+- **Status**: resolved — issue #115, PR #122
 
 ### Baseline de segurança medido em `fcd6110`
 

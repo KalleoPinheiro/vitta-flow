@@ -247,7 +247,7 @@ describe('Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
   });
 
   it('Dado conta Google conectada, Quando salvar e reconectar (upsert), Então guarda a mais recente', async () => {
-    const repo = new DrizzleGoogleAccountRepository(appDb);
+    const repo = new DrizzleGoogleAccountRepository(appDb, 'legacy-clinic');
     await repo.save({
       email: 'ana@clinica.com',
       encryptedRefreshToken: 'cifrado-v1',
@@ -268,6 +268,36 @@ describe('Feature: Persistência PostgreSQL — módulos clínico, estoque e ret
       (await repo.findByEmail('ana@clinica.com'))?.encryptedRefreshToken,
     ).toBe('cifrado-v2');
     expect((await repo.findMostRecent())?.email).toBe('ana@clinica.com');
+  });
+
+  it('Dado contas Google de empresas diferentes, Quando buscar a mais recente, Então nunca vaza entre clínicas (issue #74)', async () => {
+    await db
+      .insert(schema.clinics)
+      .values({
+        id: 'other-clinic',
+        name: 'Outra Clínica',
+        createdAt: new Date('2026-01-01T00:00:00Z'),
+        createdBy: 'seed-test',
+      })
+      .onConflictDoNothing();
+    const clinicA = new DrizzleGoogleAccountRepository(appDb, 'legacy-clinic');
+    const clinicB = new DrizzleGoogleAccountRepository(appDb, 'other-clinic');
+    await clinicA.save({
+      email: 'ana@clinica-a.com',
+      encryptedRefreshToken: 'cifrado-a',
+      connectedAt: new Date('2026-07-01T10:00:00Z'),
+    });
+    // Conta da empresa B é conectada DEPOIS — se o filtro por clínica falhar,
+    // `findMostRecent()` da empresa A passaria a devolver a credencial de B.
+    await clinicB.save({
+      email: 'bruno@clinica-b.com',
+      encryptedRefreshToken: 'cifrado-b',
+      connectedAt: new Date('2026-07-20T10:00:00Z'),
+    });
+
+    expect((await clinicA.findMostRecent())?.email).toBe('ana@clinica-a.com');
+    expect((await clinicB.findMostRecent())?.email).toBe('bruno@clinica-b.com');
+    expect(await clinicA.findByEmail('bruno@clinica-b.com')).toBeNull();
   });
 
   it('Dado retornos, Quando filtrar por status e vencimento, Então subconjuntos corretos', async () => {

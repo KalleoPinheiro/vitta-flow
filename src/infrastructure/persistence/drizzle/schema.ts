@@ -303,15 +303,24 @@ export const authTokens = pgTable(
   ],
 );
 
-export const googleAccounts = pgTable('google_accounts', {
-  email: text('email').primaryKey(),
-  // Refresh token do OAuth cifrado com AES-256-GCM (chave derivada de AUTH_SECRET).
-  encryptedRefreshToken: text('encrypted_refresh_token').notNull(),
-  connectedAt: timestamp('connected_at', {
-    withTimezone: true,
-    mode: 'date',
-  }).notNull(),
-});
+export const googleAccounts = pgTable(
+  'google_accounts',
+  {
+    // id determinístico (`${clinicId ?? 'system'}:${email}`) — permite upsert
+    // por `target: id` sem depender de índice único parcial (issue #74).
+    id: text('id').primaryKey(),
+    // Nulo somente para o papel de sistema (modo aberto), igual a user_accounts.
+    clinicId: text('clinic_id').references(() => clinics.id),
+    email: text('email').notNull(),
+    // Refresh token do OAuth cifrado com AES-256-GCM (chave derivada de AUTH_SECRET).
+    encryptedRefreshToken: text('encrypted_refresh_token').notNull(),
+    connectedAt: timestamp('connected_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).notNull(),
+  },
+  (table) => [index('idx_google_accounts_clinic').on(table.clinicId)],
+);
 
 export const anamneses = pgTable(
   'anamneses',

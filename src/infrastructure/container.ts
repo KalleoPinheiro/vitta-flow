@@ -159,18 +159,24 @@ export interface Services {
 }
 
 const globalForServices = globalThis as unknown as {
-  vittaCalendar?: { key: string; gateway: CalendarGateway };
+  // hazard: chave por clínica (não uma entrada única) — cache global sem essa
+  // chave reaproveitava a credencial OAuth de uma empresa em outra (issue #74).
+  vittaCalendar?: Map<string, { key: string; gateway: CalendarGateway }>;
 };
 
 async function oauthCalendarGateway(
   db: AppDb,
+  clinicId: string | null,
 ): Promise<{ key: string; gateway: CalendarGateway } | null> {
   const oauthConfig = googleCalendarOAuthConfigFromEnv();
   const auth = getAuthConfig();
   if (!oauthConfig || !auth) {
     return null;
   }
-  const account = await new DrizzleGoogleAccountRepository(db).findMostRecent();
+  const account = await new DrizzleGoogleAccountRepository(
+    db,
+    clinicId,
+  ).findMostRecent();
   if (!account) {
     return null;
   }
@@ -196,10 +202,14 @@ async function oauthCalendarGateway(
 
 /**
  * Prioridade: conta Google logada (OAuth) → service account → desativado.
- * Cache global por credencial para reaproveitar o access token do googleapis.
+ * Cache por clínica (Map) para reaproveitar o access token do googleapis sem
+ * vazar a credencial de uma empresa para outra (issue #74).
  */
-async function buildCalendarGateway(db: AppDb): Promise<CalendarGateway> {
-  const oauth = await oauthCalendarGateway(db);
+async function buildCalendarGateway(
+  db: AppDb,
+  clinicId: string | null,
+): Promise<CalendarGateway> {
+  const oauth = await oauthCalendarGateway(db, clinicId);
   const serviceConfig = oauth ? null : googleCalendarConfigFromEnv();
   const next = oauth ?? {
     key: serviceConfig ? 'service-account' : 'null',
@@ -208,10 +218,14 @@ async function buildCalendarGateway(db: AppDb): Promise<CalendarGateway> {
       : new NullCalendarGateway(),
   };
 
-  if (globalForServices.vittaCalendar?.key === next.key) {
-    return globalForServices.vittaCalendar.gateway;
+  globalForServices.vittaCalendar ??= new Map();
+  const cache = globalForServices.vittaCalendar;
+  const cacheKey = clinicId ?? 'system';
+  const cached = cache.get(cacheKey);
+  if (cached?.key === next.key) {
+    return cached.gateway;
   }
-  globalForServices.vittaCalendar = next;
+  cache.set(cacheKey, next);
   return next.gateway;
 }
 
@@ -228,7 +242,7 @@ export async function getRepositories(
   tenant: TenantContext,
 ): Promise<Services> {
   const db = await getDb();
-  const calendar = await buildCalendarGateway(db);
+  const calendar = await buildCalendarGateway(db, tenant.clinicId);
   const auth = getAuthConfig();
   if (!auth) {
     throw new Error(
@@ -246,7 +260,7 @@ export async function getRepositories(
     userAccounts: new DrizzleUserAccountRepository(db, tenant.clinicId),
     authTokens: new DrizzleAuthTokenRepository(db),
     scheduleConfig: new DrizzleScheduleConfigRepository(db, tenant.clinicId),
-    googleAccounts: new DrizzleGoogleAccountRepository(db),
+    googleAccounts: new DrizzleGoogleAccountRepository(db, tenant.clinicId),
     appointments: new DrizzleAppointmentRepository(db, tenant.clinicId),
     invoices: new DrizzleInvoiceRepository(db, tenant.clinicId),
     anamneses: new DrizzleAnamnesisRepository(db, tenant.clinicId),

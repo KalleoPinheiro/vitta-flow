@@ -1,6 +1,10 @@
 import { type MockInstance, vi } from 'vitest';
 
 /**
+ * invariant: depende de RESEND_API_KEY/EMAIL_FROM estarem vazios no processo
+ * de teste (forçado em vitest.config.mts) — se vazarem do .env local,
+ * buildEmailGateway() monta o gateway real e nenhum e-mail chega aqui.
+ *
  * A suíte roda sem credenciais de e-mail, então o container monta o
  * `NullEmailGateway` — que, por contrato (AUTH-01), registra em log o que
  * enviaria. Capturar esse log é o jeito de observar o e-mail sem enviar nada,

@@ -225,8 +225,12 @@ describe('Feature: Rotas de auditoria, export LGPD, fotos (staff) e cron de lemb
         jsonRequest('/api/patients/ghost/export', 'GET'),
         context('ghost'),
       );
+      const body = (await response.json()) as Envelope<null>;
 
       expect(response.status).toBe(404);
+      expect(body.success).toBe(false);
+      expect(body.data).toBeNull();
+      expect(body.error).toBeTruthy();
     });
 
     it('Dado falha ao gravar a auditoria, Quando GET export, Então falha a requisição (write-ahead, SEC1-20)', async () => {

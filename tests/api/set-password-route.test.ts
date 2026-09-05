@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { INVALID_TOKEN_MESSAGE } from '@/application/auth/auth-token-flow';
 import { CLINIC_A_ID, ensureTestClinics } from '../support/clinics';
-import { spyOnSentEmails, tokenFromLastEmail } from '../support/email';
+import {
+  spyOnSentEmails,
+  tokenFromLastEmail,
+  waitForEmails,
+} from '../support/email';
 import { jsonRequest } from '../support/request';
 import { cookieHeaderFor } from '../support/session';
 
@@ -34,6 +38,9 @@ const inviteFor = async (email: string): Promise<string> => {
       ),
     );
     expect(response.status).toBe(200);
+    // why: envio de e-mail é fire-and-forget (rota responde antes de despachar) —
+    // sem esperar, a leitura corre contra o console.info assíncrono (flake sob carga).
+    await waitForEmails(emails, 1);
     return tokenFromLastEmail(emails);
   } finally {
     emails.restore();

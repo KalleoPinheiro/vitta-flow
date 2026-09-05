@@ -440,3 +440,11 @@ serviço reindexar o lockfile. Acima disso, reproduza localmente antes de agir.
 - **Next step**: seguir pra próxima filha de #116 (4ª de 5) — checar issues restantes do mapa #116.
 - **Blockers**: nenhum.
 - **Branch**: `fix/e2e-cortar-redundantes` (não deletada ainda — squash-merge feito, branch pode ser removida). PR #120, merged.
+
+- **`domain-fixture-builders` — issue #114, quarta das 5 filhas de #116**. Levantamento via grep de `<Entity>.create(` em `tests/`: Professional (9 arquivos/39 chamadas), Appointment (6/39), Procedure (8/39), UserAccount (10/28), Patient (9/24) escolhidas como top-5 mais transversais (aparecem em domain/application/infrastructure/api) — `ConditionAssessment`/`ConsentRecord` ficaram fora, menor alavancagem. Spec em `.specs/features/domain-fixture-builders/spec.md`.
+- **O que mudou**: novo `tests/support/builders.ts` com `build{Patient,Professional,Appointment,Procedure,UserAccount}(overrides?)` — cada um chama `.create()` com defaults válidos + contador monotônico pra evitar colisão de email/nome. Migrados só onde a entidade era fixture pura (não sujeito de asserção de validação): `tests/infrastructure/in-memory-repositories.test.ts` (4 blocos idênticos de `Appointment.create` com professionalId, + helper local `makeAppointment`) e `tests/api/auth-routes.test.ts` (5 `UserAccount.create` com import dinâmico + role/clinicId boilerplate repetidos).
+- **Deliberadamente fora**: `tests/domain/{patient,professional,appointment,catalog,user-account}.test.ts` — são os testes da própria validação da entidade (ex.: "nome vazio lança ValidationError"), builder esconderia a intenção. Outros arquivos com só 1-2 chamadas (`tests/application/professionals.test.ts`, `operations-wave3.test.ts`, etc.) não migrados — duplicação real insuficiente pra justificar (YAGNI, "não forçar em todo lugar" do critério de aceite).
+- **Gate local verde**: `npm run typecheck`, `./node_modules/.bin/biome check .` (507 arquivos, sem erros), `npm run check:sv`, `npm run test:coverage --no-file-parallelism` (167/167 arquivos, 2750/2750 testes, 96,48%/90,59%/96,52%/96,69% — piso 90%, idêntico ao baseline pré-#114).
+- **Next step**: abrir PR, aguardar CI, squash-merge, fechar #114 via `Closes #114`; depois seguir pra 5ª e última filha de #116.
+- **Blockers**: nenhum.
+- **Branch**: `test/114-domain-fixture-builders`, ainda não mergeada.
